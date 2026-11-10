@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-deploy/
+.vercel/
+.DS_Store
+.claude/
+*.log

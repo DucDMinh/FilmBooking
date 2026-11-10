@@ -1,0 +1,16 @@
+{
+  "source": "office_original.png",
+  "dimensions": [
+    1495,
+    1052
+  ],
+  "status": "pilot: coding seat 01 only, recalibrated for the low-back chair revision",
+  "coding_desk_01": {
+    "seatAnchor": [
+      535,
+      545
+    ],
+    "foreground": "coding_desk_01_foreground.png",
+    "comment": "Floor contact of the chair base; also the bottom-center anchor for the character."
+  }
+}

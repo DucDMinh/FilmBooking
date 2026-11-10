@@ -1,0 +1,135 @@
+{
+  "scale": 0.3007,
+  "poses": {
+    "approve": {
+      "file": "approve.png",
+      "width": 310,
+      "height": 464,
+      "bbox": [
+        8,
+        8,
+        301,
+        455
+      ],
+      "anchorX": 159,
+      "anchorY": 455
+    },
+    "check_a": {
+      "file": "check_a.png",
+      "width": 276,
+      "height": 475,
+      "bbox": [
+        8,
+        8,
+        267,
+        466
+      ],
+      "anchorX": 149,
+      "anchorY": 466
+    },
+    "check_b": {
+      "file": "check_b.png",
+      "width": 274,
+      "height": 475,
+      "bbox": [
+        8,
+        8,
+        265,
+        466
+      ],
+      "anchorX": 142,
+      "anchorY": 466
+    },
+    "glare_a": {
+      "file": "glare_a.png",
+      "width": 274,
+      "height": 475,
+      "bbox": [
+        8,
+        8,
+        265,
+        466
+      ],
+      "anchorX": 153,
+      "anchorY": 466
+    },
+    "glare_b": {
+      "file": "glare_b.png",
+      "width": 271,
+      "height": 475,
+      "bbox": [
+        8,
+        8,
+        262,
+        466
+      ],
+      "anchorX": 153,
+      "anchorY": 466
+    },
+    "hair_tuck": {
+      "file": "hair_tuck.png",
+      "width": 272,
+      "height": 466,
+      "bbox": [
+        8,
+        8,
+        263,
+        457
+      ],
+      "anchorX": 165,
+      "anchorY": 457
+    },
+    "scold": {
+      "file": "scold.png",
+      "width": 325,
+      "height": 475,
+      "bbox": [
+        8,
+        8,
+        316,
+        466
+      ],
+      "anchorX": 166,
+      "anchorY": 466
+    },
+    "sigh": {
+      "file": "sigh.png",
+      "width": 312,
+      "height": 465,
+      "bbox": [
+        8,
+        8,
+        303,
+        456
+      ],
+      "anchorX": 159,
+      "anchorY": 456
+    },
+    "sip_tea": {
+      "file": "sip_tea.png",
+      "width": 273,
+      "height": 466,
+      "bbox": [
+        8,
+        8,
+        264,
+        457
+      ],
+      "anchorX": 165,
+      "anchorY": 457
+    },
+    "talk": {
+      "file": "talk.png",
+      "width": 299,
+      "height": 466,
+      "bbox": [
+        8,
+        8,
+        290,
+        457
+      ],
+      "anchorX": 161,
+      "anchorY": 457
+    }
+  }
+}

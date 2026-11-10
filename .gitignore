@@ -1,0 +1,15 @@
+.env.local
+node_modules/
+dist/
+build/
+.DS_Store
+
+# runtime state (loop ghi, không commit)
+.context/agents-live.json
+.context/agents-live.json.lock
+
+# git worktree của builder chạy song song (scripts/parallel-dispatch.mjs)
+.worktrees/
+
+# Claude Code: cấu hình cá nhân, không commit
+.claude/settings.local.json

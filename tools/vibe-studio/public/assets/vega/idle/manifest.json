@@ -1,0 +1,161 @@
+{
+  "scale": 0.279,
+  "poses": {
+    "chair_back_drink": {
+      "file": "chair_back_drink.png",
+      "width": 267,
+      "height": 418,
+      "bbox": [
+        8,
+        8,
+        258,
+        409
+      ],
+      "anchorX": 152,
+      "anchorY": 409
+    },
+    "chair_back_talk": {
+      "file": "chair_back_talk.png",
+      "width": 263,
+      "height": 417,
+      "bbox": [
+        8,
+        8,
+        254,
+        408
+      ],
+      "anchorX": 139,
+      "anchorY": 409
+    },
+    "chair_front_drink": {
+      "file": "chair_front_drink.png",
+      "width": 250,
+      "height": 416,
+      "bbox": [
+        8,
+        8,
+        241,
+        407
+      ],
+      "anchorX": 143,
+      "anchorY": 407
+    },
+    "chair_front_talk": {
+      "file": "chair_front_talk.png",
+      "width": 268,
+      "height": 419,
+      "bbox": [
+        8,
+        8,
+        259,
+        410
+      ],
+      "anchorX": 143,
+      "anchorY": 412
+    },
+    "sit_back": {
+      "file": "sit_back.png",
+      "width": 229,
+      "height": 348,
+      "bbox": [
+        8,
+        8,
+        220,
+        339
+      ],
+      "anchorX": 115,
+      "anchorY": 339
+    },
+    "sit_doze": {
+      "file": "sit_doze.png",
+      "width": 271,
+      "height": 367,
+      "bbox": [
+        8,
+        9,
+        262,
+        358
+      ],
+      "anchorX": 172,
+      "anchorY": 358
+    },
+    "sit_drink": {
+      "file": "sit_drink.png",
+      "width": 254,
+      "height": 386,
+      "bbox": [
+        8,
+        8,
+        245,
+        377
+      ],
+      "anchorX": 194,
+      "anchorY": 377
+    },
+    "sit_laugh": {
+      "file": "sit_laugh.png",
+      "width": 251,
+      "height": 384,
+      "bbox": [
+        8,
+        8,
+        242,
+        375
+      ],
+      "anchorX": 185,
+      "anchorY": 375
+    },
+    "sit_phone": {
+      "file": "sit_phone.png",
+      "width": 235,
+      "height": 379,
+      "bbox": [
+        8,
+        8,
+        226,
+        370
+      ],
+      "anchorX": 155,
+      "anchorY": 370
+    },
+    "sit_relax": {
+      "file": "sit_relax.png",
+      "width": 285,
+      "height": 378,
+      "bbox": [
+        8,
+        8,
+        276,
+        369
+      ],
+      "anchorX": 183,
+      "anchorY": 369
+    },
+    "stand_brew": {
+      "file": "stand_brew.png",
+      "width": 225,
+      "height": 419,
+      "bbox": [
+        8,
+        8,
+        216,
+        410
+      ],
+      "anchorX": 125,
+      "anchorY": 410
+    },
+    "stand_drink": {
+      "file": "stand_drink.png",
+      "width": 226,
+      "height": 442,
+      "bbox": [
+        8,
+        8,
+        217,
+        433
+      ],
+      "anchorX": 115,
+      "anchorY": 433
+    }
+  }
+}

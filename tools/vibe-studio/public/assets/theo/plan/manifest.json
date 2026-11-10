@@ -1,0 +1,135 @@
+{
+  "scale": 0.3241,
+  "poses": {
+    "approve": {
+      "file": "approve.png",
+      "width": 269,
+      "height": 458,
+      "bbox": [
+        8,
+        8,
+        260,
+        449
+      ],
+      "anchorX": 140,
+      "anchorY": 449
+    },
+    "hair_tuck": {
+      "file": "hair_tuck.png",
+      "width": 238,
+      "height": 452,
+      "bbox": [
+        8,
+        8,
+        229,
+        443
+      ],
+      "anchorX": 148,
+      "anchorY": 443
+    },
+    "note": {
+      "file": "note.png",
+      "width": 245,
+      "height": 450,
+      "bbox": [
+        8,
+        8,
+        236,
+        441
+      ],
+      "anchorX": 141,
+      "anchorY": 441
+    },
+    "read_a": {
+      "file": "read_a.png",
+      "width": 223,
+      "height": 449,
+      "bbox": [
+        8,
+        8,
+        214,
+        440
+      ],
+      "anchorX": 116,
+      "anchorY": 440
+    },
+    "read_b": {
+      "file": "read_b.png",
+      "width": 233,
+      "height": 448,
+      "bbox": [
+        8,
+        8,
+        224,
+        439
+      ],
+      "anchorX": 116,
+      "anchorY": 439
+    },
+    "sip_tea": {
+      "file": "sip_tea.png",
+      "width": 236,
+      "height": 456,
+      "bbox": [
+        8,
+        8,
+        227,
+        447
+      ],
+      "anchorX": 145,
+      "anchorY": 447
+    },
+    "talk_left": {
+      "file": "talk_left.png",
+      "width": 267,
+      "height": 455,
+      "bbox": [
+        8,
+        8,
+        258,
+        446
+      ],
+      "anchorX": 138,
+      "anchorY": 446
+    },
+    "talk_right": {
+      "file": "talk_right.png",
+      "width": 252,
+      "height": 453,
+      "bbox": [
+        8,
+        8,
+        243,
+        444
+      ],
+      "anchorX": 137,
+      "anchorY": 444
+    },
+    "type_a": {
+      "file": "type_a.png",
+      "width": 235,
+      "height": 448,
+      "bbox": [
+        8,
+        8,
+        226,
+        439
+      ],
+      "anchorX": 118,
+      "anchorY": 439
+    },
+    "type_b": {
+      "file": "type_b.png",
+      "width": 233,
+      "height": 449,
+      "bbox": [
+        8,
+        8,
+        224,
+        440
+      ],
+      "anchorX": 124,
+      "anchorY": 440
+    }
+  }
+}

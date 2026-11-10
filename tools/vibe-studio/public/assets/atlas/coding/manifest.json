@@ -1,0 +1,135 @@
+{
+  "scale": 0.3195,
+  "poses": {
+    "lean_left_type_a": {
+      "file": "lean_left_type_a.png",
+      "width": 266,
+      "height": 443,
+      "bbox": [
+        8,
+        8,
+        257,
+        434
+      ],
+      "anchorX": 127,
+      "anchorY": 434
+    },
+    "lean_left_type_b": {
+      "file": "lean_left_type_b.png",
+      "width": 259,
+      "height": 447,
+      "bbox": [
+        8,
+        8,
+        250,
+        438
+      ],
+      "anchorX": 128,
+      "anchorY": 438
+    },
+    "lean_right_type_a": {
+      "file": "lean_right_type_a.png",
+      "width": 262,
+      "height": 442,
+      "bbox": [
+        8,
+        8,
+        253,
+        433
+      ],
+      "anchorX": 126,
+      "anchorY": 433
+    },
+    "lean_right_type_b": {
+      "file": "lean_right_type_b.png",
+      "width": 271,
+      "height": 467,
+      "bbox": [
+        8,
+        8,
+        262,
+        458
+      ],
+      "anchorX": 134,
+      "anchorY": 458
+    },
+    "straight_type_a": {
+      "file": "straight_type_a.png",
+      "width": 265,
+      "height": 451,
+      "bbox": [
+        8,
+        8,
+        256,
+        442
+      ],
+      "anchorX": 131,
+      "anchorY": 442
+    },
+    "straight_type_b": {
+      "file": "straight_type_b.png",
+      "width": 264,
+      "height": 451,
+      "bbox": [
+        8,
+        8,
+        255,
+        442
+      ],
+      "anchorX": 128,
+      "anchorY": 442
+    },
+    "swivel_left": {
+      "file": "swivel_left.png",
+      "width": 270,
+      "height": 466,
+      "bbox": [
+        8,
+        8,
+        261,
+        457
+      ],
+      "anchorX": 135,
+      "anchorY": 457
+    },
+    "swivel_right": {
+      "file": "swivel_right.png",
+      "width": 275,
+      "height": 459,
+      "bbox": [
+        8,
+        8,
+        266,
+        450
+      ],
+      "anchorX": 136,
+      "anchorY": 450
+    },
+    "talk_left": {
+      "file": "talk_left.png",
+      "width": 290,
+      "height": 461,
+      "bbox": [
+        8,
+        8,
+        281,
+        452
+      ],
+      "anchorX": 146,
+      "anchorY": 452
+    },
+    "talk_right": {
+      "file": "talk_right.png",
+      "width": 295,
+      "height": 461,
+      "bbox": [
+        8,
+        8,
+        286,
+        452
+      ],
+      "anchorX": 137,
+      "anchorY": 452
+    }
+  }
+}

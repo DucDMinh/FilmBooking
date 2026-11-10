@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Coding Animation Test</title>
+<style>
+  :root{--bg:#0d1526;--panel:#16223a;--text:#d8e6ff;--muted:#8ea3c7;--accent:#5fd0ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:13px/1.4 ui-monospace,Consolas,monospace}
+  .bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 16px;background:var(--panel)}
+  #bar-review{border-top:1px solid #2a3b5c}
+  #bar-review b{color:#c28aff}
+  #bar-idle{border-top:1px solid #2a3b5c}
+  #bar-idle b{color:#ffb35c}
+  .bar b{margin-right:6px;color:var(--accent)}
+  .bar button{background:#22324f;color:var(--text);border:1px solid #33496f;border-radius:4px;padding:5px 9px;font:inherit;cursor:pointer}
+  .bar button.on{background:var(--accent);color:#06121f;border-color:var(--accent)}
+  #world{padding:0 16px}
+  #world canvas{display:block;width:100%;max-width:1496px;height:auto;image-rendering:pixelated;margin:10px auto}
+  #log{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;padding:0 16px 16px}
+  #log div{background:var(--panel);border-radius:4px;padding:6px 8px}
+  #log small{color:var(--muted)}
+  #loading{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);transition:opacity .5s}
+  #loading.done{opacity:0;pointer-events:none}
+  #loading .title{font-size:18px;font-weight:bold;letter-spacing:2px;color:var(--accent)}
+  #loading .dots span{display:inline-block;width:10px;height:10px;margin:0 4px;background:#c28aff;animation:hop .9s infinite}
+  #loading .dots span:nth-child(2){background:#5fe3b8;animation-delay:.15s}
+  #loading .dots span:nth-child(3){background:#ffb35c;animation-delay:.3s}
+  #loading .dots span:nth-child(4){background:#ff8fb3;animation-delay:.45s}
+  @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  #loading .track{width:min(320px,70vw);height:14px;border:2px solid #33496f;background:#16223a;padding:2px}
+  #loading-bar{width:0;height:100%;background:linear-gradient(90deg,#5fd0ff,#c28aff);transition:width .2s}
+  #loading small{color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="title">VIBE CODE STUDIO</div>
+  <div class="dots"><span></span><span></span><span></span><span></span></div>
+  <div class="track"><div id="loading-bar"></div></div>
+  <small>Đang mở văn phòng… <b id="loading-text">0%</b></small>
+</div>
+<div id="bar" class="bar"><b>CODING TEST</b><span id="force"></span><small style="color:var(--muted)">· click ghế để thêm/bớt người</small></div>
+<div id="bar-review" class="bar"><b>REVIEW</b><span id="force-review"></span></div>
+<div id="bar-idle" class="bar"><b>IDLE</b><span id="force-idle"></span><small style="color:var(--muted)">· bấm vào nhân vật để xem thông tin (đang làm gì, role, agent)</small></div>
+<div id="world"></div>
+<div id="log"></div>
+<script type="module" src="/src/coding-test.ts"></script>
+</body>
+</html>

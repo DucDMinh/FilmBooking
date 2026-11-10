@@ -1,0 +1,343 @@
+{
+  "scale": 0.2695,
+  "poses": {
+    "chair_back_drink": {
+      "file": "chair_back_drink.png",
+      "width": 281,
+      "height": 430,
+      "bbox": [
+        8,
+        8,
+        272,
+        421
+      ],
+      "anchorX": 162,
+      "anchorY": 421
+    },
+    "chair_back_talk": {
+      "file": "chair_back_talk.png",
+      "width": 262,
+      "height": 430,
+      "bbox": [
+        8,
+        8,
+        253,
+        421
+      ],
+      "anchorX": 157,
+      "anchorY": 420
+    },
+    "chair_front_drink": {
+      "file": "chair_front_drink.png",
+      "width": 271,
+      "height": 435,
+      "bbox": [
+        8,
+        8,
+        262,
+        426
+      ],
+      "anchorX": 159,
+      "anchorY": 425
+    },
+    "chair_front_talk": {
+      "file": "chair_front_talk.png",
+      "width": 303,
+      "height": 435,
+      "bbox": [
+        8,
+        8,
+        294,
+        426
+      ],
+      "anchorX": 175,
+      "anchorY": 425
+    },
+    "sit_back": {
+      "file": "sit_back.png",
+      "width": 244,
+      "height": 367,
+      "bbox": [
+        8,
+        8,
+        235,
+        358
+      ],
+      "anchorX": 130,
+      "anchorY": 358
+    },
+    "sit_doze": {
+      "file": "sit_doze.png",
+      "width": 271,
+      "height": 386,
+      "bbox": [
+        8,
+        8,
+        262,
+        377
+      ],
+      "anchorX": 171,
+      "anchorY": 377
+    },
+    "sit_drink": {
+      "file": "sit_drink.png",
+      "width": 296,
+      "height": 388,
+      "bbox": [
+        8,
+        8,
+        287,
+        379
+      ],
+      "anchorX": 190,
+      "anchorY": 379
+    },
+    "sit_laugh": {
+      "file": "sit_laugh.png",
+      "width": 276,
+      "height": 387,
+      "bbox": [
+        8,
+        8,
+        267,
+        378
+      ],
+      "anchorX": 175,
+      "anchorY": 378
+    },
+    "sit_phone": {
+      "file": "sit_phone.png",
+      "width": 282,
+      "height": 388,
+      "bbox": [
+        8,
+        8,
+        273,
+        379
+      ],
+      "anchorX": 187,
+      "anchorY": 379
+    },
+    "sit_relax": {
+      "file": "sit_relax.png",
+      "width": 301,
+      "height": 387,
+      "bbox": [
+        8,
+        8,
+        292,
+        378
+      ],
+      "anchorX": 183,
+      "anchorY": 378
+    },
+    "stand_brew": {
+      "file": "stand_brew.png",
+      "width": 251,
+      "height": 444,
+      "bbox": [
+        8,
+        8,
+        242,
+        435
+      ],
+      "anchorX": 139,
+      "anchorY": 435
+    },
+    "stand_drink": {
+      "file": "stand_drink.png",
+      "width": 247,
+      "height": 442,
+      "bbox": [
+        8,
+        8,
+        238,
+        433
+      ],
+      "anchorX": 133,
+      "anchorY": 433
+    },
+    "read_a": {
+      "file": "read_a.png",
+      "width": 316,
+      "height": 418,
+      "bbox": [
+        5,
+        6,
+        310,
+        412
+      ],
+      "anchorX": 185,
+      "anchorY": 412
+    },
+    "read_b": {
+      "file": "read_b.png",
+      "width": 305,
+      "height": 416,
+      "bbox": [
+        5,
+        5,
+        299,
+        410
+      ],
+      "anchorX": 183,
+      "anchorY": 410
+    },
+    "search_a": {
+      "file": "search_a.png",
+      "width": 284,
+      "height": 435,
+      "bbox": [
+        5,
+        5,
+        277,
+        429
+      ],
+      "anchorX": 153,
+      "anchorY": 429
+    },
+    "search_b": {
+      "file": "search_b.png",
+      "width": 268,
+      "height": 438,
+      "bbox": [
+        5,
+        5,
+        262,
+        432
+      ],
+      "anchorX": 140,
+      "anchorY": 432
+    },
+    "sleep_a": {
+      "file": "sleep_a.png",
+      "width": 406,
+      "height": 337,
+      "bbox": [
+        4,
+        5,
+        400,
+        331
+      ],
+      "anchorX": 202,
+      "anchorY": 331
+    },
+    "sleep_b": {
+      "file": "sleep_b.png",
+      "width": 450,
+      "height": 342,
+      "bbox": [
+        5,
+        5,
+        444,
+        336
+      ],
+      "anchorX": 225,
+      "anchorY": 336
+    },
+    "sleep_c": {
+      "file": "sleep_c.png",
+      "width": 378,
+      "height": 336,
+      "bbox": [
+        5,
+        5,
+        372,
+        330
+      ],
+      "anchorX": 189,
+      "anchorY": 330
+    },
+    "walk_a": {
+      "file": "walk_a.png",
+      "width": 292,
+      "height": 395,
+      "bbox": [
+        7,
+        7,
+        285,
+        387
+      ],
+      "anchorX": 144,
+      "anchorY": 387
+    },
+    "walk_b": {
+      "file": "walk_b.png",
+      "width": 289,
+      "height": 383,
+      "bbox": [
+        7,
+        7,
+        281,
+        375
+      ],
+      "anchorX": 131,
+      "anchorY": 375
+    },
+    "look": {
+      "file": "look.png",
+      "width": 289,
+      "height": 403,
+      "bbox": [
+        7,
+        7,
+        282,
+        395
+      ],
+      "anchorX": 157,
+      "anchorY": 395
+    },
+    "trip": {
+      "file": "trip.png",
+      "width": 359,
+      "height": 296,
+      "bbox": [
+        7,
+        7,
+        351,
+        289
+      ],
+      "anchorX": 179,
+      "anchorY": 319
+    },
+    "down": {
+      "file": "down.png",
+      "width": 405,
+      "height": 241,
+      "bbox": [
+        6,
+        6,
+        397,
+        233
+      ],
+      "anchorX": 202,
+      "anchorY": 233
+    },
+    "peek": {
+      "file": "peek.png",
+      "width": 326,
+      "height": 258,
+      "bbox": [
+        8,
+        6,
+        319,
+        250
+      ],
+      "anchorX": 164,
+      "anchorY": 250
+    },
+    "up": {
+      "file": "up.png",
+      "width": 275,
+      "height": 380,
+      "bbox": [
+        7,
+        20,
+        267,
+        372
+      ],
+      "anchorX": 196,
+      "anchorY": 372
+    }
+  }
+}

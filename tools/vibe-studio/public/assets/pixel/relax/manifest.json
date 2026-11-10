@@ -1,0 +1,135 @@
+{
+  "scale": 0.2563,
+  "poses": {
+    "approve": {
+      "file": "approve.png",
+      "width": 302,
+      "height": 442,
+      "bbox": [
+        8,
+        8,
+        293,
+        433
+      ],
+      "anchorX": 207,
+      "anchorY": 433
+    },
+    "laptop_a": {
+      "file": "laptop_a.png",
+      "width": 295,
+      "height": 448,
+      "bbox": [
+        8,
+        8,
+        286,
+        439
+      ],
+      "anchorX": 227,
+      "anchorY": 439
+    },
+    "laptop_b": {
+      "file": "laptop_b.png",
+      "width": 286,
+      "height": 453,
+      "bbox": [
+        8,
+        8,
+        277,
+        442
+      ],
+      "anchorX": 229,
+      "anchorY": 442
+    },
+    "sip_tea": {
+      "file": "sip_tea.png",
+      "width": 271,
+      "height": 445,
+      "bbox": [
+        8,
+        8,
+        262,
+        435
+      ],
+      "anchorX": 209,
+      "anchorY": 435
+    },
+    "sketch_a": {
+      "file": "sketch_a.png",
+      "width": 268,
+      "height": 453,
+      "bbox": [
+        8,
+        8,
+        259,
+        444
+      ],
+      "anchorX": 209,
+      "anchorY": 444
+    },
+    "sketch_b": {
+      "file": "sketch_b.png",
+      "width": 279,
+      "height": 453,
+      "bbox": [
+        8,
+        8,
+        270,
+        444
+      ],
+      "anchorX": 212,
+      "anchorY": 444
+    },
+    "stretch": {
+      "file": "stretch.png",
+      "width": 293,
+      "height": 444,
+      "bbox": [
+        8,
+        8,
+        284,
+        435
+      ],
+      "anchorX": 236,
+      "anchorY": 435
+    },
+    "swatch": {
+      "file": "swatch.png",
+      "width": 283,
+      "height": 450,
+      "bbox": [
+        8,
+        8,
+        274,
+        441
+      ],
+      "anchorX": 225,
+      "anchorY": 441
+    },
+    "talk": {
+      "file": "talk.png",
+      "width": 296,
+      "height": 447,
+      "bbox": [
+        8,
+        8,
+        287,
+        435
+      ],
+      "anchorX": 218,
+      "anchorY": 435
+    },
+    "think": {
+      "file": "think.png",
+      "width": 286,
+      "height": 444,
+      "bbox": [
+        8,
+        8,
+        277,
+        435
+      ],
+      "anchorX": 226,
+      "anchorY": 435
+    }
+  }
+}
