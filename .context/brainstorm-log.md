@@ -53,3 +53,6 @@ Nguồn: `docs/BRD.md` v0.3 (Q1–Q9 đã chốt, không hỏi lại) · `SPECIF
 
 ### Design — thay thế (2026-11-11)
 User: **bỏ toàn bộ design cũ** (tông vàng hổ phách, Be Vietnam Pro, admin nền sáng). Dùng bộ handoff **CINEMO** (`docs/design/cinemo/`, 40 SVG + `tokens/design-tokens.json` + prototype): dark-cinema cho mọi bề mặt (kể cả admin), màu nhấn coral `#F06D5B`, Inter, desktop 1440 / mobile 390. Giữ: Tailwind + shadcn/ui. Các quyết định D1–D12 cũ huỷ, design agent đề xuất lại theo handoff.
+
+### Phạm vi mobile (2026-11-11)
+User: **vẫn làm giao diện web responsive cho mobile** (mobile-first ≥ 360px theo NFR-11), **không làm app native** (đã ngoài phạm vi BRD §4.2). 3 màn mobile của handoff (30–32) là tham chiếu cho layout mobile.

@@ -443,6 +443,17 @@ Ghế đổi trạng thái do realtime: chỉ chuyển màu 120ms, không bounce
   }
 }
 
+/* Thang chữ mobile (< 768px) theo §2.2 — reconcile 2026-11-11 (review layer-1/task-01 MAJOR-1) */
+@media (max-width: 767.98px) {
+  :root {
+    --text-display: 32px;
+    --text-h1: 26px;
+    --text-h2: 20px;
+    --text-h3: 17px;
+    --text-caption: 11px;
+  }
+}
+
 @utility bg-gradient-brand { background-image: var(--gradient-brand); color: var(--color-fg-on-brand); }
 @utility tabular { font-variant-numeric: tabular-nums; }
 ```
