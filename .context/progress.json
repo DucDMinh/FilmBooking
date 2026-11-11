@@ -1,6 +1,9 @@
 {
-  "mode": "maintenance",
-  "activeWorkItem": null,
+  "mode": "initial-build",
+  "activeWorkItem": "build/build-filmbooking",
   "features": [],
-  "bugs": []
+  "bugs": [],
+  "currentLayer": 0,
+  "totalLayers": 9,
+  "lastUpdated": "2026-11-11T03:27:45.300Z"
 }
