@@ -22,6 +22,7 @@ orders (channel WEB/POS, cinema_id, showtime_id, user_id, trạng thái §8.5: h
 - [ ] pgTAP AC-16: Manager/Staff HN01 không SELECT được orders/payments HN02.
 - [ ] `seat_status_public` có trong publication `supabase_realtime`, anon SELECT được, **không có cột user_id/order_id** (NFR-05); insert/delete ở showtime_seat_states phản ánh sang bảng này trong cùng transaction.
 - [ ] Sửa starts_at của suất có ghế SOLD → lỗi (R-54); không có cột số thẻ/tài khoản ngân hàng (R-81).
+- [ ] (follow-up L2) Trigger bảo vệ suất đã bán vé (R-54): suất có vé/đơn paid không được xoá, không đổi giờ/phòng/phim; chỉ đóng bán hoặc huỷ (R-108 ở layer sau). Test.
 
 ## DoD (Definition of Done)
 - [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
@@ -39,3 +40,4 @@ orders (channel WEB/POS, cinema_id, showtime_id, user_id, trạng thái §8.5: h
 Migration versioned, KHÔNG sửa migration đã apply; chạy local `pnpm db:migrate` (= `supabase migration up`) + `pnpm db:test` PASS. Cấm `db push`/`db reset` cho staging/prod.
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.
+- G1/G2 (tính lại ends_at, lọc rạp đóng) do layer-3-task-01 phụ trách — KHÔNG sửa `showtimes_derive_end` hay policy `showtimes_select` ở task này. Suất của phim bị archive ẩn với khách → bảng đơn phải lưu snapshot suất (tên phim, giờ, rạp, phòng) hoặc đọc qua RPC definer (follow-up L2-T01).

@@ -43,3 +43,4 @@ Public: `GET /provinces`, `GET /cinemas?province=`, `GET /cinemas/:code` (phòng
 Module tự test bằng TestingModule; đăng ký vào app.module ở layer-4-task-07.
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.
+- Test bằng mock SupabaseService (không cần DB). Lọc rạp theo trạng thái OPEN cho khách ở tầng API cũng áp dụng (R-33) kể cả khi RLS (layer-3-task-01) đã lọc. KHÔNG sửa `app.module.ts`: module đăng ký ở task wiring layer 4.

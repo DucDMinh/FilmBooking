@@ -41,3 +41,4 @@ build (initial)
 R-28 avatar MVP theo quyết định brainstorm #1.
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.
+- Test bằng mock SupabaseService (không cần DB). `avatar_url` kiểm scheme https và domain Storage của dự án (follow-up L1-T03). Xoá tài khoản: ẩn danh hoá profile, giữ đơn (ẩn danh). KHÔNG sửa `app.module.ts`.

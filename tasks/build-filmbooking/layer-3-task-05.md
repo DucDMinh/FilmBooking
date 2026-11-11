@@ -43,3 +43,4 @@ CRUD phòng; lưu/sao chép sơ đồ ghế (validate sweetbox 2 ô, lối đi);
 Đăng ký vào app.module ở layer-4-task-07.
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.
+- Test bằng mock SupabaseService (không cần DB). KHÔNG sửa `app.module.ts`: module đăng ký ở task wiring layer 4. Cột `showtime_seat_locks`: liệt kê cột tường minh (grant theo cột — `select *` lỗi).

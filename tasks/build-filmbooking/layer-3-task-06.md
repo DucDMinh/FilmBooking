@@ -23,6 +23,9 @@ build (initial)
 - [ ] Đăng ký `A@x.com` khi đã có `a@x.com` → cùng phản hồi như thành công ('kiểm tra email'), không tạo user mới.
 - [ ] Domain disposable → 422 `DISPOSABLE_EMAIL`; Turnstile sai → 400 `CAPTCHA_FAILED`; mật khẩu yếu → 422 với lý do.
 - [ ] Body register có trường role → bị bỏ qua/400; user mới luôn là CUSTOMER.
+- [ ] (quyết định user, G5 = C) Đặt lại mật khẩu: giữ `otp_expiry=86400`; khi hoàn tất đặt lại, server (Nest) kiểm thời điểm gửi link khôi phục (`auth.users.recovery_sent_at` qua admin API) ≤ 1 giờ, quá hạn → từ chối (mã lỗi rõ + hướng dẫn gửi lại); link xác nhận email vẫn 24h (R-04). Test cả hai biên (59 phút OK, 61 phút từ chối).
+- [ ] (quyết định user, G6) Chấp nhận rủi ro đăng nhập/recover gọi thẳng GoTrue (bỏ qua lockout/rate limit/Turnstile) cho bản demo: KHÔNG làm biện pháp chặn thêm, nhưng ghi rõ trong comment đầu `auth-ext.service.ts` + docs/dev-setup.md (mục "Rủi ro đã chấp nhận"). Đường chuẩn qua Nest vẫn áp dụng đủ R-07/R-08/R-11.
+- [ ] Tạo user bằng Admin API `createUser` với `app_metadata.created_via='nest'` (hook layer 2 yêu cầu); KHÔNG dùng `inviteUserByEmail`/`generateLink({type:'signup'})`; tài khoản nhân sự tạo với `email_confirm:true`. Rate limit IP đọc từ `req.ip` (trust proxy) — ghi giới hạn: qua proxy Next IP là của server Next (follow-up layer 5 truyền IP khách).
 
 ## DoD (Definition of Done)
 - [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
@@ -39,8 +42,10 @@ build (initial)
 - `packages/shared/src/schemas/auth.ts`
 - `packages/shared/src/password-policy.ts`
 - `apps/api/test/auth-ext.e2e-spec.ts`
+- `docs/dev-setup.md`
 
 ## Notes
 password-policy.ts dùng chung web+api. Supabase gửi email xác nhận qua SMTP (config layer 0).
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.
+- Email xác nhận/đặt lại do Supabase Auth gửi (SMTP cấu hình ở Dashboard/Mailpit local); chưa gửi email thật ở task này. Test dùng mock Supabase Admin + Turnstile mock (không cần DB thật trừ khi AC yêu cầu; nếu cần DB dùng khoá `.worktrees/.dblock`).
