@@ -42,22 +42,20 @@
 
 ---
 
-## 3. Trạng thái dự án hiện tại (Layer 3)
+## 3. Trạng thái dự án hiện tại (Hoàn tất Layer 3 → Chuẩn bị Layer 4)
 
 - **Mode:** `initial-build`
 - **Work item:** `build/build-filmbooking`
 - **Đã hoàn thành:**
   - Layer 0 (task-01, task-02): Bootstrap, monorepo pnpm, tooling, Supabase init, CI.
   - Layer 1 (task-01, task-02, task-03): Next.js App Router, NestJS core, migration lõi RLS.
-  - Layer 2 (task-01, task-02, task-03, task-04, task-05): Catalog schema, bảo mật/vận hành, Nest guards, Web data layer & shell. Phase review: PASS.
-- **Đang thực hiện:** **Layer 3** (7 tasks)
-  - Worktrees đã được tạo sẵn tại:
-    - `.worktrees/layer-3__task-01` (Migration bảng giá 2 cấp + ngày lễ + hàm price_quote)
-    - `.worktrees/layer-3__task-02` (Migration đơn hàng, trạng thái ghế, vé, thanh toán, RLS)
-    - `.worktrees/layer-3__task-03` (Wiring API #1: AuthModule global + MeModule, sinh database.types)
-    - `.worktrees/layer-3__task-04` (API catalog công khai + quản lý rạp)
-    - `.worktrees/layer-3__task-05` (API vận hành rạp: phòng, sơ đồ ghế, suất chiếu)
-    - `.worktrees/layer-3__task-06` (API auth mở rộng: đăng ký, đăng nhập server, khoá 5 lần)
-    - `.worktrees/layer-3__task-07` (API hồ sơ khách: xem/sửa, đổi email, xoá tài khoản)
-  - Run Journal: `.context/runs/build-filmbooking-layer-3.md` (`status: running`).
-  - Khi tiếp tục, dispatcher sẽ chạy builder song song cho các task theo wave, reviewer review độc lập, dispatcher commit trong từng worktree, merge về `layer-3-integration`, verify tổng thể, cập nhật `progress.json` và sang Layer 4.
+  - Layer 2 (task-01..05): Catalog schema, bảo mật/vận hành, Nest guards, Web data layer & shell. Phase review: PASS.
+  - Layer 3 (task-01..07): Pricing 2 cấp + ngày lễ (`price_quote`), Booking schema + RLS, AuthModule global + JWKS + MeModule, CatalogModule, CinemaOpsModule, AuthExtModule, ProfileModule. Phase review: PASS (`layer-3-done`).
+- **Tiếp theo:** **Layer 4** (7 tasks — chờ user duyệt Human Checkpoint 3):
+  - `layer-4-task-01`: RPC nguyên tử giữ ghế (`hold_seats`, `release_hold`, `release_expired_holds`)
+  - `layer-4-task-02`: RPC áp mã giảm giá & chốt đơn thanh toán (`apply_voucher`, `confirm_order_paid`, `expire_order`)
+  - `layer-4-task-03`: RPC huỷ suất chiếu hàng loạt + tự động hoàn tiền (`cancel_showtimes_and_refund`)
+  - `layer-4-task-04`: RPC soát vé QR tại quầy (`checkin_ticket` — quy tắc -30' → +20')
+  - `layer-4-task-05`: Seed dữ liệu mẫu (`supabase/seed.sql`)
+  - `layer-4-task-06`: UI công khai xem phim/rạp/lịch chiếu (`apps/web/src/app/(public)/*`)
+  - `layer-4-task-07`: Wiring API #2 (`CatalogModule`, `CinemaOpsModule`, `AuthExtModule`, `ProfileModule` vào `AppModule` + cập nhật `database.types.ts`)
