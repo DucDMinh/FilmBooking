@@ -60,6 +60,7 @@ export interface CinemaDetailDto {
 
 function cinemaToDto(row: CinemaRow): CinemaDto {
   return {
+    id: row.id,
     code: row.code,
     name: row.name,
     provinceCode: row.provinces?.code ?? null,
