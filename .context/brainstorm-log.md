@@ -59,3 +59,8 @@ User: **vẫn làm giao diện web responsive cho mobile** (mobile-first ≥ 360
 
 ### Cookie phiên HttpOnly (2026-11-11, review layer-2/task-04)
 User chọn: **cookie HttpOnly + proxy qua Next** (đúng BRD NFR-06) thay vì cookie đọc được bằng JS. Hệ quả: đăng nhập/OAuth callback/logout ở Route Handler server Next; browser gọi API qua `/api/proxy/*`; Supabase browser client chỉ dùng anon key (Realtime công khai). Đổi `middleware.ts` → `proxy.ts` (Next 16.4.6).
+
+### Quyết định auth trước Layer 3 (2026-11-11)
+- **G5 (R-04 24h vs R-13 1h) → chọn C:** giữ `otp_expiry=86400` (link xác nhận 24h đúng R-04); luồng đặt lại mật khẩu do server kiểm `recovery_sent_at` ≤ 1 giờ (đúng R-13), từ chối nếu quá hạn.
+- **G6 (đăng nhập/recover gọi thẳng GoTrue bỏ qua lockout R-11, rate limit R-08, Turnstile R-07) → chấp nhận rủi ro cho bản demo** (BRD: dự án demo, không khách thật). Phải cân nhắc lại (password verification hook / captcha GoTrue) trước khi có khách thật. Ghi nhận là lệch có chủ đích so với R-07/R-08/R-11 trên đường gọi trực tiếp; đường đăng nhập chuẩn qua Nest vẫn áp dụng đủ quy tắc.
+- Email: Nest gửi qua cấu hình SMTP chung (đổi Gmail/Resend bằng biến môi trường) — chờ user cho biết có domain riêng chưa (không chặn Layer 3).

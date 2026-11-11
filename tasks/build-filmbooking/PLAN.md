@@ -409,9 +409,10 @@ flowchart TD
 | G2 | MED | `showtimes_select` không lọc trạng thái rạp (TEMP_CLOSED/CLOSED đọc được qua PostgREST anon; R-33) → siết RLS hoặc ghi quyết định "chặn ở API" | layer-3-task-01/04 (quyết định + test) |
 | G3 | MED | AC-16 lệch (lịch chiếu công khai) → làm rõ AC-16 qua `/change` sau build: "Manager HN01 không đọc/ghi dữ liệu vận hành của HN02 (đơn, báo cáo, cấu hình, khoá ghế nội bộ, audit, khoá/nhật ký POS); lịch chiếu công khai đọc được như khách" | `/change` (ghi vào `spec/changes/` ở close-out build) |
 | G4 | MED | Phiên bản điều khoản lệch: `apps/web/src/lib/legal.ts` `LEGAL_VERSION="0.1"` vs DB seed `terms_version="1.0"` → chốt MỘT nguồn (R-03) | layer-5-task-10 |
-| G5 | MED | R-13 (reset 1h) vs R-04 (xác nhận 24h) dùng chung `otp_expiry=86400` → **cần user quyết** (3600 vi phạm R-04 / kiểm `recovery_sent_at` ở server / tách luồng reset) | **hỏi user trước layer-3-task-06** |
-| G6 | MED | Captcha GoTrue tắt; lockout/rate limit bypass qua `/auth/v1/token` và recover trực tiếp (N1) | **hỏi user cùng G5 trước layer-3-task-06** |
+| G5 | MED | R-13 (reset 1h) vs R-04 (xác nhận 24h) dùng chung `otp_expiry=86400` → **USER CHỌN C (2026-11-11):** giữ 86400; server kiểm `recovery_sent_at` ≤ 1h khi đặt lại mật khẩu (từ chối nếu quá hạn) | layer-3-task-06 (+ layer-5 form đặt lại MK) |
+| G6 | MED | Captcha GoTrue tắt; lockout/rate limit bypass qua `/auth/v1/token` và recover trực tiếp (N1) | **USER CHẤP NHẬN RỦI RO cho demo (2026-11-11)** — ghi rõ trong tài liệu; cân nhắc lại trước khi có khách thật |
 | G7 | LOW | design doc thiếu hook + AccessService + HS256 | ĐÃ reconcile (mục "Xác thực phía Nest & hook đăng ký") |
 | G8 | LOW | Placeholder email/hotline/thời hạn xoá dữ liệu | trước Facebook App Review / go-live |
 | G9 | LOW | Staff/Manager đọc phim DRAFT (spec im lặng) | ghi vào spec qua `/change` (chấp nhận hiện trạng) |
 | JWKS | **HIGH khi deploy** | AuthGuard chỉ HS256; **Supabase cloud project mới mặc định khoá JWT bất đối xứng (JWKS)** → mọi request 401 nếu không hỗ trợ. Cần: hỗ trợ JWKS (jose `createRemoteJWKSet`) hoặc xác nhận project dùng HS256 | layer-3-task-03 (wiring) + DevOps |
+| Hardening (câu hỏi user về XSS) | MED | Thêm header bảo mật Next: **CSP chặt (nonce), `X-Content-Type-Options`, `Referrer-Policy`, `frame-ancestors`**; rà soát không dùng `dangerouslySetInnerHTML`; zod validate mọi input ở Nest; test XSS payload trong trường tên/ghi chú | layer-8 (task hardening) |
