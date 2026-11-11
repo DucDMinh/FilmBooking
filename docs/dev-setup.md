@@ -50,3 +50,26 @@ Sau `pnpm db:start`, CLI in URL/API key local (Studio `:54323`, API `:54321`, Po
 - **URL Configuration**: Site URL và danh sách Redirect URLs của domain web staging/prod (dạng wildcard `https://<domain>/**`).
 - **Extensions**: bật `pg_cron` (và `pg_net`) trước khi apply migration extensions.
 - **Sessions**: timebox 30 ngày chỉ có ở gói trả phí; gói free dựa vào cookie phía web.
+
+## Auth qua Nest (`apps/api/src/modules/auth-ext`)
+
+Đường chuẩn cho email/mật khẩu (đã áp dụng đủ Turnstile R-07, rate limit R-08, khoá 5 lần R-11, chặn disposable R-09):
+
+| Endpoint | Việc | Phản hồi |
+|---|---|---|
+| `POST /auth/register` | `{email, password, acceptTerms, termsVersion?, fullName?, captchaToken}` | 202 `{status:"CHECK_EMAIL"}` (cả khi email đã tồn tại) |
+| `POST /auth/login` | `{email, password, captchaToken?}` (captcha bắt buộc sau 3 lần sai) | 200 session `{accessToken, refreshToken, expiresIn, expiresAt, tokenType, user}`; 401 / 403 `EMAIL_NOT_CONFIRMED` / 423 `ACCOUNT_LOCKED` |
+| `POST /auth/resend-confirmation` | `{email}` | 202; 429 `RATE_LIMITED` + `details.retryAfter` (60s, 5 lần/giờ) |
+| `POST /auth/forgot-password` | `{email, captchaToken}` | 202 trung tính |
+| `POST /auth/reset-password` | `{accessToken, newPassword}` (accessToken = phiên khôi phục từ link email) | 200; 401 `details.reason = RECOVERY_LINK_EXPIRED` nếu link gửi quá 1 giờ |
+
+Ghi chú vận hành:
+
+- User tạo bằng Admin API `createUser` kèm `app_metadata.created_via='nest'` (hook `before_user_created` yêu cầu). Không dùng `inviteUserByEmail` / `generateLink({type:'signup'})`. Tài khoản nhân sự tạo qua `AuthExtService.createStaffAccount` với `email_confirm:true`; không có endpoint công khai nào tạo vai trò nhân sự (R-17).
+- Link xác nhận email hiệu lực 24h (`otp_expiry=86400`, R-04). Link đặt lại mật khẩu hiệu lực 1 giờ do Nest kiểm `auth.users.recovery_sent_at` khi `reset-password` (quyết định G5 = C); đặt lại thành công đăng xuất mọi phiên khác (R-13).
+- Rate limit IP đọc từ `req.ip`. Qua proxy Next `/api/proxy`, IP thấy được là của server Next nên mọi khách chung một bucket IP. Follow-up layer 5: Route Handler truyền IP khách (`X-Forwarded-For`) và đặt `trust proxy` đúng số hop ở `main.ts`.
+- Email cảnh báo khoá tài khoản chỉ được xếp vào `email_outbox` (`kind='ACCOUNT_LOCKED_ALERT'`); job gửi thuộc task khác. Biến `TURNSTILE_SECRET_KEY` bắt buộc cho đăng ký / quên mật khẩu (thiếu = từ chối, fail-closed).
+
+### Rủi ro đã chấp nhận
+
+Quyết định G6 (bản demo): client vẫn gọi thẳng GoTrue bằng anon key được (`signInWithPassword`, `resetPasswordForEmail`/recover), nên đường đó **bỏ qua** lockout, rate limit và Turnstile của Nest. Không thêm biện pháp chặn ở bản demo. Signup trực tiếp đã bị hook `before_user_created` từ chối. Đường chuẩn qua Nest vẫn áp dụng đủ R-07 / R-08 / R-11. Cần xem lại trước khi chạy production thật.
