@@ -13,25 +13,33 @@
 
 ## Database
 
-**Type:** PostgreSQL / MySQL / MongoDB / SQLite
-**ORM:** Prisma / Drizzle / TypeORM / Mongoose
+**Type:** PostgreSQL (Supabase) · **Migration tool:** Supabase CLI (`supabase/migrations/*.sql`, versioned) · **ORM:** không (supabase-js + RPC)
 
-## Entity overview
+## Entity overview (as-built — cập nhật theo layer)
 
-> Chỉ mô tả **mục đích + quan hệ**; cột/kiểu/index chi tiết lấy từ schema file.
+> Chỉ mô tả **mục đích + quan hệ**; cột/kiểu/index/policy chi tiết lấy từ migration. Mọi bảng `public` bật RLS.
 
-| Entity | Mục đích | Quan hệ chính |
-|--------|----------|---------------|
-| User | Tài khoản đăng nhập | has many `<Entity2>` |
-| `<Entity2>` | ... | belongs to User |
-| `<Entity3>` | ... | ... |
+| Entity | Mục đích | Quan hệ chính | Migration |
+|--------|----------|---------------|-----------|
+| `provinces` | Tỉnh/thành (lọc khu vực) | has many `cinemas` | 20261111010000 |
+| `profiles` | Hồ sơ người dùng (1-1 `auth.users`, tự tạo bằng trigger; email citext unique, nullable cho Facebook không email) | belongs to `auth.users` | 20261111010000 |
+| `user_roles` | Vai trò toàn chuỗi (ADMIN) — chỉ Admin ghi | belongs to `profiles` | 20261111010000 |
+| `cinemas` | Rạp (mã duy nhất, trạng thái COMING_SOON/OPEN/TEMP_CLOSED/CLOSED, cấu hình dọn phòng/đóng bán online) | belongs to `provinces` | 20261111010000 |
+| `staff_assignments` | Gán user ↔ rạp ↔ vai trò (STAFF/MANAGER); Manager chỉ thêm/bớt STAFF rạp mình | belongs to `profiles`, `cinemas` | 20261111010000 |
+| `app_settings` | Cấu hình toàn chuỗi (key/value, đọc công khai — không chứa secret) | has many `cinema_settings` | 20261111010000 |
+| `cinema_settings` | Override cấu hình theo rạp (chỉ Admin ghi) | belongs to `cinemas`, `app_settings` | 20261111010000 |
+| `consents` | Bằng chứng đồng ý điều khoản/chính sách (bất biến, `accepted_at` do DB đặt) | belongs to `profiles` | 20261111010000 |
+| `favorite_cinemas` | Rạp yêu thích của khách | belongs to `profiles`, `cinemas` | 20261111010000 |
+| `audit_logs` | Nhật ký thay đổi (actor, cinema_id, before/after) — ghi bằng trigger `audit_row_change` | (không FK, giữ lâu hơn dữ liệu gốc) | 20261111010000 |
+
+Hàm RLS dùng chung: `is_admin()`, `has_cinema_role(cinema_id, staff_role[])` (SECURITY DEFINER, search_path rỗng).
 
 ## Relationships
 
 ```
-User ─── has many ──→ <Entity2>
-<Entity2> ─── belongs to ──→ User
-<Entity2> ─── has many ──→ <Entity3>
+provinces ──< cinemas ──< staff_assignments >── profiles ── auth.users
+cinemas ──< cinema_settings >── app_settings
+profiles ──< consents · profiles ──< favorite_cinemas >── cinemas · profiles ──< user_roles
 ```
 
 ## Notes (business rules dữ liệu)

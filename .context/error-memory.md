@@ -55,3 +55,6 @@ These rules were learned from real bugs. Apply them to every task, not just when
 ## Entries
 
 _Errors encountered during this project will be logged below._
+
+### 2026-11-11 — agent-guard + Git Bash path
+- Reviewer bị chặn khi `cd "/e/FilmBooking/.worktrees/..."`: hook dùng path.resolve trên win32 → `E:\FilmBooking` ngoài .worktrees. Cách dùng đúng: `cd "E:/FilmBooking/.worktrees/<wt>" && <lệnh>`.

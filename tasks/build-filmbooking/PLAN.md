@@ -373,3 +373,11 @@ flowchart TD
 | L0-T01 review MINOR 4 | shared xuất `.ts` thô: Next cần `transpilePackages`, Nest cần bundle/transpile shared | layer-1 scaffold web + api (đưa vào brief) |
 | L0-T02 review N1 | `/auth/v1/recover` gọi thẳng không qua Turnstile (spam reset tới user có thật; giới hạn bởi max_frequency 60s) | layer-2-task-02 ghi rủi ro + layer-3-task-06 |
 | L0-T02 review N2 | Session timebox 30 ngày chỉ có ở gói trả phí → R-15 phải do cookie web/Nest | layer-2-task-04 / layer-5-task-10 |
+| L1-T02 review MINOR 2 | `all-exceptions.filter.ts`: `AppException` status ≥500 trả nguyên message → che bằng thông điệp chung + log server | Task kế tiếp sửa filter (layer-2-task-03 guards nếu chạm `common/errors`), nếu không → layer 8 polish |
+| L1-T02 review MINOR 3 | 4xx ngoài bảng map (405/413/415) đều thành VALIDATION_ERROR | layer 8 polish |
+| L1-T02 review MINOR 6 | Render build cần devDependencies (typescript, @swc/core); smoke `pnpm --filter @filmbooking/api start` | DevOps deploy |
+| L1-T03 review MINOR 1 | anon đọc mọi key `app_settings` → thêm cờ `is_public` trước khi có key nhạy cảm | Task đầu tiên thêm key không công khai |
+| L1-T03 review MINOR 2 | `avatar_url` không kiểm scheme | layer-3 API hồ sơ |
+| L1-T03 review MINOR 4 | Manager gán bất kỳ UUID làm STAFF rồi đọc hồ sơ → API giới hạn (chỉ user đã được Admin mời / tìm theo email) | layer-5 API quản trị |
+| L1-T03 review MINOR 5 | Ghi qua service role → audit `actor_id` null → truyền actor (set_config `app.actor_id`) | layer-2 guards / layer-5 API |
+| L1-T03 review MINOR 6 | Guard cột cinemas không chạy trong RPC SECURITY DEFINER → mọi RPC tự kiểm quyền | Mọi task RPC layer 4 |

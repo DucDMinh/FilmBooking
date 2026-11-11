@@ -1,0 +1,171 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* 1) Token thương hiệu CINEMO — sinh cả CSS var lẫn class Tailwind (bg-surface, text-fg-secondary, bg-seat-vip...) */
+@theme {
+  --color-bg: #0B0D12;
+  --color-chrome: #111620;
+  --color-surface: #151A24;
+  --color-surface-elevated: #1B222E;
+  --color-surface-input: #121721;
+  --color-surface-control: #202634;
+  --color-border: #2B3340;            /* trùng tên shadcn — cùng ý nghĩa (viền trang trí) */
+  --color-border-subtle: #252C39;
+  --color-border-input: #66768C;
+  --color-overlay: rgb(5 6 9 / 0.72);
+
+  --color-fg: #F5F6F8;                /* = textPrimary */
+  --color-fg-secondary: #AAB3C1;      /* = textSecondary */
+  --color-fg-muted: #7E8999;          /* = textMuted */
+  --color-fg-on-brand: #0B0D12;       /* chữ trên coral / ghế chọn / ghế giữ */
+  --color-link: #FF927E;
+
+  --color-brand: #F06D5B;             /* = accent (handoff) */
+  --color-brand-hover: #FF8A76;       /* = accentHover */
+  --color-brand-soft: #3A2226;
+  --color-sidebar-active: #292331;
+
+  --color-success: #8FE0B1;  --color-success-strong: #9BE6BA;
+  --color-success-soft: #1D3931;  --color-success-line: #2F6B53;  --color-success-banner: #15372D;
+  --color-warning: #F2B17D;  --color-warning-soft: #3A2C20;  --color-warning-line: #7A5A3C;
+  --color-danger: #F07173;   --color-danger-strong: #FFB0A2;
+  --color-danger-soft: #34232B;  --color-danger-line: #7F464B;  --color-danger-banner: #3A1F25;
+  --color-info: #9DB7E0;     --color-info-soft: #1E2A3D;  --color-info-line: #3B5274;
+  --color-neutral-soft: #252D3A;
+  --color-age-pill: #191D2A;
+
+  --color-seat-available: #263847;  --color-seat-available-line: #4F7591;
+  --color-seat-selected: #EF715F;
+  --color-seat-held: #B07C49;
+  --color-seat-sold: #4A505C;       --color-seat-sold-mark: #8A919C;
+  --color-seat-vip: #485B78;        --color-seat-vip-line: #7A8EAD;
+  --color-seat-locked: #1B222E;     --color-seat-locked-line: #5C6B80;
+  --color-seat-sweetbox: #6B3F5E;   --color-seat-sweetbox-line: #C77A9E;
+  --color-seat-screen: #7D8998;
+
+  --font-weight-regular: 450;
+  --font-weight-medium: 550;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 750;
+  --font-weight-heavy: 850;
+
+  --text-display: 44px;  --text-display--line-height: 1.05;
+  --text-h1: 32px;       --text-h1--line-height: 1.15;
+  --text-h2: 24px;       --text-h2--line-height: 1.25;
+  --text-h3: 18px;       --text-h3--line-height: 1.35;
+  --text-body: 14px;     --text-body--line-height: 1.5;
+  --text-body-sm: 13px;  --text-body-sm--line-height: 1.45;
+  --text-small: 12px;    --text-small--line-height: 1.4;
+  --text-caption: 10px;  --text-caption--line-height: 1.3;
+
+  --radius-seat: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-hero: 22px;
+  --radius-pill: 9999px;
+
+  --shadow-overlay: 0 8px 28px rgb(0 0 0 / 0.26);
+  --shadow-cta-glow: 0 6px 20px rgb(240 109 91 / 0.28);
+
+  --breakpoint-2xl: 1440px;
+}
+
+/* 2) Biến shadcn/ui — chỉ dark, đặt thẳng trên :root */
+:root {
+  color-scheme: dark;
+  --gradient-brand: linear-gradient(135deg, #FF6B56, #E63C58);
+
+  --background: var(--color-bg);
+  --foreground: var(--color-fg);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-fg);
+  --popover: var(--color-surface-elevated);
+  --popover-foreground: var(--color-fg);
+  --primary: var(--color-brand);
+  --primary-foreground: var(--color-fg-on-brand);
+  --secondary: var(--color-surface-control);
+  --secondary-foreground: var(--color-fg);
+  --muted: var(--color-surface-elevated);
+  --muted-foreground: var(--color-fg-muted);
+  --accent: var(--color-surface-elevated);       /* shadcn: nền hover item, KHÔNG phải coral */
+  --accent-foreground: var(--color-fg);
+  --destructive: var(--color-danger);
+  --destructive-foreground: var(--color-fg-on-brand);
+  --input: var(--color-border-input);
+  --ring: var(--color-brand);
+  --chart-1: #F06D5B; --chart-2: #8FE0B1; --chart-3: #9DB7E0; --chart-4: #F2B17D; --chart-5: #C77A9E;
+  --sidebar: var(--color-chrome);
+  --sidebar-foreground: var(--color-fg-secondary);
+  --sidebar-primary: var(--color-brand);
+  --sidebar-primary-foreground: var(--color-fg-on-brand);
+  --sidebar-accent: var(--color-sidebar-active);
+  --sidebar-accent-foreground: var(--color-fg);
+  --sidebar-border: #29303C;
+  --sidebar-ring: var(--color-brand);
+  --radius: 12px;
+}
+
+/* 3) Map biến shadcn → class Tailwind (bg-primary, bg-accent, border-input, ring-ring ...) */
+@theme inline {
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1); --color-chart-2: var(--chart-2); --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4); --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { background: var(--color-bg); }
+  body {
+    @apply bg-background text-foreground font-sans text-body font-regular antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+  /* iOS: tránh auto-zoom khi focus */
+  @media (max-width: 767.98px) {
+    input, select, textarea { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+}
+
+@utility bg-gradient-brand { background-image: var(--gradient-brand); color: var(--color-fg-on-brand); }
+@utility tabular { font-variant-numeric: tabular-nums; }
+
+/* Thang chữ mobile (< 768px) theo design-tokens §2.2 */
+@media (max-width: 767.98px) {
+  :root {
+    --text-display: 32px;
+    --text-h1: 26px;
+    --text-h2: 20px;
+    --text-h3: 17px;
+    --text-caption: 11px;
+  }
+}
