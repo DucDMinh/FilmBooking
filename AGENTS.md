@@ -2,7 +2,7 @@
 
 > This is the **always-loaded entry point**. Read it before acting on any request.
 > 🚀 **Start dự án = `/start`** — chuỗi **chạy LIÊN TỤC, tự chuyển bước**: **đọc spec** (`/spec-init` nếu chưa có) → **brainstorm** (clear yêu cầu + design doc + config) → **design** (design spec + tokens) → **graph** (chia layer/task) → **loop** (DevOps lo git/CI-CD/deploy).
-> **Không cần gõ lại lệnh mỗi bước** — agent tự chạy tiếp; chỉ **DỪNG ở human checkpoint** (duyệt/confirm/duyệt plan) rồi chờ anh reply "ok".
+> **Không cần gõ lại lệnh mỗi bước** — agent tự chạy tiếp; chỉ **DỪNG ở human checkpoint** (duyệt/confirm/duyệt plan) rồi chờ bạn reply "ok". Xưng hô thống nhất: **bạn - tôi**.
 > ⭐ **Sau khi build xong, MỌI thay đổi đi qua MỘT agent: `change-request`** (feature mới + fix bug). Cửa vào: **`/change`** (đọc hết `spec/changes/*.md`), hoặc `/bug` / `/feature`. `/bug-check` chỉ soi read-only.
 > Workflow chi tiết: `.agent/FEATURE_WORKFLOW.md`. Giá trị project → `.context/project-config.md` (do brainstorm ghi, không điền tay).
 > Lệnh con `/brainstorm`, `/design`, `/graph` là **manual override** (chạy tay khi muốn chạy lại/update 1 bước); trong `/start` chúng không bắt user gọi.

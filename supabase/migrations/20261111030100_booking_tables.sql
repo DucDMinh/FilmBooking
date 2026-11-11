@@ -397,6 +397,11 @@ begin
   if v_order_showtime is distinct from new.showtime_id then
     raise exception 'Đơn không thuộc suất này' using errcode = '23514';
   end if;
+  if not exists (select 1 from public.seats st
+                  where st.id = new.seat_id and st.room_id = v_room
+                    and st.seat_type in ('NORMAL', 'VIP', 'SWEETBOX')) then
+    raise exception 'Ghế không thuộc phòng chiếu hoặc không bán được' using errcode = '23514';
+  end if;
   if exists (select 1 from public.showtime_seat_locks l
               where l.showtime_id = new.showtime_id and l.seat_id = new.seat_id) then
     raise exception 'Ghế đang bị khoá' using errcode = '23514';
@@ -409,6 +414,50 @@ $$;
 revoke all on function public.showtime_seat_states_fill() from public, anon, authenticated;
 create trigger showtime_seat_states_fill before insert on public.showtime_seat_states
   for each row execute function public.showtime_seat_states_fill();
+
+-- 3.5b showtime_seat_locks (R-55): không khoá đè lên ghế đã bán hoặc đang được giữ còn hạn.
+create function public.showtime_seat_locks_guard_taken()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.showtime_seat_states s
+              where s.showtime_id = new.showtime_id and s.seat_id = new.seat_id
+                and (s.state = 'SOLD' or (s.state = 'HELD' and s.expires_at > now()))) then
+    raise exception 'Ghế đang được giữ hoặc đã bán, không thể khoá' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.showtime_seat_locks_guard_taken() from public, anon, authenticated;
+create trigger showtime_seat_locks_guard_taken before insert on public.showtime_seat_locks
+  for each row execute function public.showtime_seat_locks_guard_taken();
+
+-- 3.5c R-29: khi ẩn danh hoá profile (xoá tài khoản), tự động xoá PII khỏi orders & voucher_redemptions
+-- nhưng giữ nguyên dòng đơn/vé/thanh toán cho kế toán rạp.
+create function public.profiles_scrub_order_pii()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if old.email is not null and new.email is null and new.full_name is null and new.phone is null then
+    update public.orders
+       set user_id = null, contact_email = null, contact_phone = null
+     where user_id = new.id;
+    update public.voucher_redemptions
+       set user_id = null
+     where user_id = new.id;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.profiles_scrub_order_pii() from public, anon, authenticated;
+create trigger profiles_scrub_order_pii after update on public.profiles
+  for each row execute function public.profiles_scrub_order_pii();
 
 -- 3.6 Duy trì seat_status_public trong cùng transaction (không lộ user_id/order_id).
 create function public.seat_status_public_sync()

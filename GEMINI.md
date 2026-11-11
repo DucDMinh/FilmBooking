@@ -20,6 +20,7 @@
 
 ## 2. Quy tắc riêng cho Antigravity (agy)
 
+0. **Xưng hô (bắt buộc):** Luôn xưng hô **bạn - tôi** với người dùng, tuyệt đối không dùng "anh - em".
 1. **Orchestration chạy ở session chính:** Các workflow điều phối (`/start`, `/change`, `/bug`, `/feature`, `/resume`) và dispatcher chạy trong session chính (vì chỉ session chính có quyền tương tác với user ở checkpoint). Không có subagent `change-request`: quy trình `.agent/change-request.md` được session chính thực thi trực tiếp, sau đó gọi các subagent lá (`builder`, `reviewer`, `spec-validator`, `spec-publisher`).
 2. **Builder trong worktree:**
    - Dispatcher giao cho builder đường dẫn tuyệt đối của git worktree (`.worktrees/layer-N__task-NN`).

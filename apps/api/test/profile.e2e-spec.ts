@@ -339,7 +339,7 @@ describe("profile API (mock Supabase)", () => {
       expect(softDeleted).toHaveLength(0);
     });
 
-    it("password account: anonymizes PII, drops account data, soft-deletes auth user, never touches orders", async () => {
+    it("password account: anonymizes PII on profile and orders, drops account data, soft-deletes auth user, never deletes orders/tickets", async () => {
       const response = await request(app.getHttpServer())
         .delete("/me")
         .set(as(aliceToken))
@@ -356,12 +356,18 @@ describe("profile API (mock Supabase)", () => {
         province_id: null,
       });
       expect(own("admin", "profiles").find((op) => op.method === "eq")?.args).toEqual(["id", ALICE]);
+      expect(own("admin", "orders").find((op) => op.method === "update")?.args[0]).toEqual({
+        user_id: null,
+        contact_email: null,
+        contact_phone: null,
+      });
+      expect(own("admin", "orders").find((op) => op.method === "eq")?.args).toEqual(["user_id", ALICE]);
       for (const table of ["favorite_cinemas", "staff_assignments", "user_roles"]) {
         expect(own("admin", table).some((op) => op.method === "delete")).toBe(true);
       }
       expect(own("admin", "storage.avatars")[0]?.args[0]).toEqual([`${ALICE}/a.png`]);
       expect(softDeleted).toEqual([[ALICE, true]]);
-      expect(ops.some((op) => /order|ticket/.test(op.table))).toBe(false);
+      expect(ops.some((op) => /order|ticket/.test(op.table) && op.method === "delete")).toBe(false);
     });
 
     it("OAuth-only account: needs a freshly issued token", async () => {

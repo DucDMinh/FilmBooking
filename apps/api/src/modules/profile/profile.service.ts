@@ -157,6 +157,15 @@ export class ProfileService {
       const { error } = await admin.from(table).delete().eq("user_id", user.id);
       if (error) throw error;
     }
+    // R-29: giữ nguyên bản ghi đơn hàng/vé cho kế toán rạp nhưng phải xoá sạch PII (user_id, contact_email, contact_phone)
+    // vì deleteUser(id, true) là soft-delete nên FK ON DELETE SET NULL không tự kích hoạt.
+    const ordersScrubbed = await admin
+      .from("orders")
+      .update({ user_id: null, contact_email: null, contact_phone: null })
+      .eq("user_id", user.id);
+    if (ordersScrubbed.error && ordersScrubbed.error.code !== "42P01" && ordersScrubbed.error.code !== "PGRST205") {
+      throw ordersScrubbed.error;
+    }
     await this.removeAvatarFiles(user.id);
 
     const removed = await admin.auth.admin.deleteUser(user.id, true);

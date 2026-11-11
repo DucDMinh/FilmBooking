@@ -92,6 +92,7 @@ class FakeDb {
       showtimes: [showtime(SHOWTIME_1900, HN01, ROOM_HN01, at("19:00"))],
       showtime_seat_locks: [],
       showtime_seat_states: [],
+      orders: [],
     };
   }
 
@@ -511,6 +512,16 @@ describe("cinema-ops API", () => {
       expect(closed.body.status).toBe("CLOSED");
       expect((await call("post", `${path()}/reopen`, MANAGER_HN01)).body.status).toBe("ON_SALE");
     });
+
+    it("suất có đơn affected/refunded_manual (dù ghế đã nhả khỏi showtime_seat_states) vẫn chặn sửa/xoá -> 409 SHOWTIME_HAS_SALES", async () => {
+      fakeDb.tables.showtime_seat_states = [];
+      fakeDb.tables.orders = [{ id: uuid(901), showtime_id: SHOWTIME_1900, status: "refunded_manual" }];
+      const editRes = await call("patch", path(), MANAGER_HN01, { startsAt: at("20:00") });
+      expect(editRes.status).toBe(409);
+      expect(editRes.body.error.details.reason).toBe("SHOWTIME_HAS_SALES");
+      const delRes = await call("delete", path(), MANAGER_HN01);
+      expect(delRes.status).toBe(409);
+    });
   });
 
   describe("suất chưa bán", () => {
@@ -636,13 +647,36 @@ describe("cinema-ops API", () => {
       }
     });
 
-    it("không khoá lối đi, ghế phòng khác hoặc ghế đã bán", async () => {
+    it("không khoá lối đi, ghế phòng khác, ghế đã bán hoặc ghế đang HELD còn hạn (nhưng HELD hết hạn thì khoá được)", async () => {
       expect((await call("post", locks, MANAGER_HN01, { seatIds: [SEAT_AISLE] })).status).toBe(400);
       expect((await call("post", locks, MANAGER_HN01, { seatIds: [uuid(53)] })).status).toBe(400);
       fakeDb.tables.showtime_seat_states!.push({ showtime_id: SHOWTIME_1900, seat_id: SEAT_A1, state: "SOLD" });
       const sold = await call("post", locks, MANAGER_HN01, { seatIds: [SEAT_A1] });
       expect(sold.status).toBe(409);
       expect(sold.body.error.code).toBe("SEAT_TAKEN");
+
+      fakeDb.tables.showtime_seat_states = [
+        {
+          showtime_id: SHOWTIME_1900,
+          seat_id: SEAT_A1,
+          state: "HELD",
+          expires_at: new Date(Date.now() + 300_000).toISOString(),
+        },
+      ];
+      const activeHold = await call("post", locks, MANAGER_HN01, { seatIds: [SEAT_A1] });
+      expect(activeHold.status).toBe(409);
+      expect(activeHold.body.error.code).toBe("SEAT_TAKEN");
+
+      fakeDb.tables.showtime_seat_states = [
+        {
+          showtime_id: SHOWTIME_1900,
+          seat_id: SEAT_A1,
+          state: "HELD",
+          expires_at: new Date(Date.now() - 60_000).toISOString(),
+        },
+      ];
+      const expiredHold = await call("post", locks, MANAGER_HN01, { seatIds: [SEAT_A1] });
+      expect(expiredHold.status).toBe(201);
     });
 
     it("Manager HN01 khoá ghế suất của HN02 -> 403", async () => {

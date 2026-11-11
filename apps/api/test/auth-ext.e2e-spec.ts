@@ -404,11 +404,13 @@ describe("Auth mở rộng (e2e, mock Supabase + Turnstile)", () => {
       fake.state.users.get("user-seed")!.recovery_sent_at = new Date(Date.now() - minutes * 60_000).toISOString();
     };
 
-    it("accepts a link sent 59 minutes ago, updates the password and signs out other sessions", async () => {
+    it("accepts a link sent 59 minutes ago, updates the password, clears login lockouts and signs out other sessions", async () => {
       sentMinutesAgo(59);
+      fake.state.attempts.set("real@x.com", { count: 5, lockedUntil: Date.now() + 600_000 });
       const response = await reset();
       expect(response.status).toBe(200);
       expect(fake.state.users.get("user-seed")!.password).toBe("NewPass123");
+      expect(fake.state.attempts.has("real@x.com")).toBe(false);
       expect(fake.state.signOutCalls).toEqual([{ token: "token-user-seed", scope: "others" }]);
     });
 

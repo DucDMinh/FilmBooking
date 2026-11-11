@@ -3,7 +3,7 @@
 -- seat_status_public (Realtime, NFR-05), bảo vệ suất đã bán (R-54), R-81, máy trạng thái §8.5,
 -- Staff ghi kết quả đơn affected rạp mình (#6), snapshot suất.
 begin;
-select plan(55);
+select plan(59);
 
 create function public.tap_as(p_uid uuid, p_role text default 'authenticated')
 returns void language plpgsql as $$
@@ -289,11 +289,36 @@ select throws_ok($$insert into public.showtime_seat_states (showtime_id, seat_id
   '23514', null, 'đơn khác suất không giữ ghế của suất này');
 
 -- ---------------------------------------------------------------------------
--- 10. R-64: một đơn giữ / khách (1)
+-- 10. R-64: một đơn giữ / khách + R-55/R-62/R-29 bảo vệ khoá ghế, ghế lối đi, ẩn danh PII đơn (5)
 -- ---------------------------------------------------------------------------
 select throws_ok($$insert into public.orders (channel, showtime_id, user_id, status)
   values ('WEB', '00000000-0000-0000-0000-00000000a504', '00000000-0000-0000-0000-000000000d01', 'holding')$$,
   '23505', null, 'R-64: khách đã có đơn holding thì không tạo thêm holding');
+
+-- R-55: không khoá đè lên ghế đã SOLD
+select throws_ok($$insert into public.showtime_seat_locks (showtime_id, seat_id, reason)
+  values ('00000000-0000-0000-0000-00000000a501', '00000000-0000-0000-0000-00000000b102', 'OTHER')$$,
+  '23514', null, 'R-55: không khoá được ghế đã SOLD');
+
+-- R-62: không giữ/bán ô AISLE hoặc BROKEN trong showtime_seat_states
+insert into public.seats (id, room_id, cinema_id, row_label, col_number, seat_type, label) values
+  ('00000000-0000-0000-0000-00000000b199', '00000000-0000-0000-0000-00000000f101', '00000000-0000-0000-0000-0000000000c1', 'C', 1, 'AISLE', null);
+select throws_ok($$insert into public.showtime_seat_states (showtime_id, seat_id, state, source, expires_at, order_id)
+  values ('00000000-0000-0000-0000-00000000a501', '00000000-0000-0000-0000-00000000b199', 'HELD', 'WEB', now() + interval '5 minutes', '00000000-0000-0000-0000-5a0000000003')$$,
+  '23514', null, 'R-62: không giữ/bán được ô AISLE trong showtime_seat_states');
+
+-- R-29: ẩn danh profile tự xoá PII trên orders (user_id, contact_email, contact_phone) nhưng vẫn giữ đơn
+update public.orders set contact_email = 'cust1@example.com', contact_phone = '0912345678'
+ where id = '00000000-0000-0000-0000-5a0000000001';
+update public.profiles set email = null, full_name = null, phone = null
+ where id = '00000000-0000-0000-0000-000000000d01';
+select is(
+  (select count(*)::int from public.orders where id = '00000000-0000-0000-0000-5a0000000001'
+     and user_id is null and contact_email is null and contact_phone is null and total_amount = 100000),
+  1, 'R-29: ẩn danh profile tự xoá PII trên orders nhưng giữ nguyên đơn cho kế toán');
+select is(
+  (select count(*)::int from public.tickets where order_id = '00000000-0000-0000-0000-5a0000000001'),
+  1, 'R-29: vé của đơn vẫn còn sau khi ẩn danh tài khoản');
 
 select * from finish();
 rollback;

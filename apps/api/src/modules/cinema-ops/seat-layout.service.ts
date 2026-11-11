@@ -70,7 +70,13 @@ export function throwDbError(error: DbError, details?: Record<string, unknown>):
         reason: "REFERENCE",
         ...details,
       });
-    case "23514": // check_violation: trigger nghiệp vụ (ghế ngoài lưới, phòng bảo trì, phim chưa PUBLISHED...)
+    case "23514": // check_violation: trigger nghiệp vụ (ghế ngoài lưới, phòng bảo trì, phim chưa PUBLISHED, suất đã bán vé...)
+      if (error.message?.includes("Suất đã bán vé")) {
+        throw new AppException(ERROR_CODES.CONFLICT, error.message, { reason: "SHOWTIME_HAS_SALES", ...details });
+      }
+      if (error.message?.includes("đang được giữ hoặc đã bán")) {
+        throw new AppException(ERROR_CODES.SEAT_TAKEN, error.message, details);
+      }
       throw new AppException(ERROR_CODES.VALIDATION_ERROR, error.message ?? "Constraint violated", details);
     case "42501": // insufficient_privilege / RLS: không có quyền ghi dữ liệu rạp này
       throw new AppException(ERROR_CODES.FORBIDDEN_CINEMA, "No permission for this cinema");

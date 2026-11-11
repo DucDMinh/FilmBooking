@@ -325,29 +325,58 @@ export class ShowtimesService {
   }
 
   /**
-   * Suất đã có ghế SOLD (R-54). Đọc bằng service role vì RLS của bảng trạng thái ghế có thể giấu
-   * dòng của khách; quyền thao tác đã được guard theo rạp kiểm ở trên. Bảng chưa có thì coi như chưa bán.
-   * DB trigger (R-54) vẫn là chốt cuối.
+   * Suất có ghế đang bị chiếm (SOLD hoặc HELD còn hạn) — dùng cho R-55 (không khoá ghế đang bán/giữ).
+   * Đọc bằng service role vì RLS của bảng trạng thái ghế giấu dòng của khách.
    */
-  private async soldSeatIds(showtimeId: string, seatIds?: readonly string[]): Promise<string[]> {
+  private async takenSeatIds(showtimeId: string, seatIds?: readonly string[]): Promise<string[]> {
     let query = this.supabase
       .admin()
       .from("showtime_seat_states")
-      .select("seat_id")
-      .eq("showtime_id", showtimeId)
-      .eq("state", "SOLD");
+      .select("seat_id, state, expires_at")
+      .eq("showtime_id", showtimeId);
     if (seatIds) query = query.in("seat_id", [...seatIds]);
     const { data, error } = await query.limit(1000);
     if (error) {
       if (error.code && MISSING_RELATION_CODES.has(error.code)) return [];
       throwDbError(error);
     }
-    return (data ?? []).map((row: { seat_id: string }) => row.seat_id);
+    const now = Date.now();
+    return ((data ?? []) as Array<{ seat_id: string; state?: string; expires_at?: string | null }>)
+      .filter(
+        (row) =>
+          row.state === "SOLD" ||
+          (row.state === "HELD" && (row.expires_at == null || Date.parse(row.expires_at) > now)),
+      )
+      .map((row) => row.seat_id);
+  }
+
+  private async hasSales(showtimeId: string): Promise<boolean> {
+    const admin = this.supabase.admin();
+    const soldSeats = await admin
+      .from("showtime_seat_states")
+      .select("seat_id")
+      .eq("showtime_id", showtimeId)
+      .eq("state", "SOLD")
+      .limit(1);
+    if (soldSeats.error && (!soldSeats.error.code || !MISSING_RELATION_CODES.has(soldSeats.error.code))) {
+      throwDbError(soldSeats.error);
+    }
+    if ((soldSeats.data ?? []).length > 0) return true;
+
+    const orders = await admin
+      .from("orders")
+      .select("id")
+      .eq("showtime_id", showtimeId)
+      .in("status", ["paid", "checked_in", "affected", "exchanged", "refunded_manual", "needs_manual_review"])
+      .limit(1);
+    if (orders.error && (!orders.error.code || !MISSING_RELATION_CODES.has(orders.error.code))) {
+      throwDbError(orders.error);
+    }
+    return (orders.data ?? []).length > 0;
   }
 
   private async assertNoSales(showtimeId: string, action: "edit" | "delete"): Promise<void> {
-    const sold = await this.soldSeatIds(showtimeId);
-    if (sold.length > 0) {
+    if (await this.hasSales(showtimeId)) {
       throw new AppException(ERROR_CODES.CONFLICT, `Showtime already has sold tickets; cannot ${action} it`, {
         reason: "SHOWTIME_HAS_SALES",
       });
@@ -355,9 +384,9 @@ export class ShowtimesService {
   }
 
   private async assertSeatsNotSold(showtimeId: string, seatIds: readonly string[]): Promise<void> {
-    const sold = await this.soldSeatIds(showtimeId, seatIds);
-    if (sold.length > 0) {
-      throw new AppException(ERROR_CODES.SEAT_TAKEN, "Seat is already sold", { seatIds: sold });
+    const taken = await this.takenSeatIds(showtimeId, seatIds);
+    if (taken.length > 0) {
+      throw new AppException(ERROR_CODES.SEAT_TAKEN, "Seat is already sold or currently held", { seatIds: taken });
     }
   }
 

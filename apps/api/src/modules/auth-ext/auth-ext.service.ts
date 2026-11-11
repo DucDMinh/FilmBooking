@@ -72,6 +72,7 @@ export class AuthExtService {
   async register(input: RegisterInput, ip: string | undefined): Promise<AuthNeutralResponse> {
     await this.rateLimit(`register:ip:${ip ?? "unknown"}`, HOUR, 5);
     await this.requireCaptcha(input.captchaToken, ip);
+    await this.rateLimit(`register:email:${emailKey(input.email)}`, HOUR, 5);
     const termsVersion = await this.requireConsent(input);
     this.requireStrongPassword(input.password);
     const admin = this.supabase.admin();
@@ -89,8 +90,11 @@ export class AuthExtService {
       user_metadata: input.fullName ? { full_name: input.fullName } : {},
     });
     if (created.error) {
-      // R-12: email đã tồn tại -> cùng phản hồi như thành công, không tạo user mới, không gửi mail.
-      if (errorCode(created.error) === "email_exists") return NEUTRAL;
+      // R-12: email đã tồn tại (code 'email_exists' hoặc thông báo chuẩn của GoTrue) -> phản hồi trung tính, không tạo user, không gửi mail.
+      const msg = (created.error as { message?: string }).message ?? "";
+      if (errorCode(created.error) === "email_exists" || /already been registered|already exists/i.test(msg)) {
+        return NEUTRAL;
+      }
       throw created.error;
     }
     await this.recordConsentOrRollback(created.data.user.id, termsVersion);
@@ -175,6 +179,9 @@ export class AuthExtService {
     }
     const updated = await auth.admin.updateUserById(userId, { password: input.newPassword });
     if (updated.error) throw updated.error;
+    if (record.data.user.email) {
+      await this.supabase.admin().rpc("clear_login_failures", { p_email: record.data.user.email });
+    }
     // R-13: đăng xuất mọi phiên khác. Phiên khôi phục hiện tại được giữ.
     const signOut = await auth.admin.signOut(input.accessToken, "others");
     if (signOut.error) this.logger.warn(`signOut(others) failed: ${signOut.error.message}`);
