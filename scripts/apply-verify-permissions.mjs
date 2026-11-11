@@ -15,7 +15,10 @@ import { join } from "node:path";
 
 const ROOT = process.cwd();
 const PROFILE = join(ROOT, ".context", "project-config.md");
-const POLICY = join(ROOT, ".claude", "agent-policy.json");
+const POLICY_FILES = [
+  join(ROOT, ".claude", "agent-policy.json"),
+  join(ROOT, ".agents", "agent-policy.json"),
+];
 const DRY_RUN = !process.argv.includes("--write");
 
 const COMMAND_FIELDS = [
@@ -94,24 +97,27 @@ function main() {
     else skipped.push({ command, reason: verdict.reason });
   }
 
-  let policy = {};
-  if (existsSync(POLICY)) {
-    try {
-      policy = JSON.parse(readFileSync(POLICY, "utf8")) || {};
-    } catch (e) {
-      console.error(`.claude/agent-policy.json không parse được: ${e.message} — không ghi.`);
-      process.exitCode = 1;
-      return;
+  for (const policyFile of POLICY_FILES) {
+    const relName = policyFile.replace(ROOT + "\\", "").replace(ROOT + "/", "");
+    let policy = {};
+    if (existsSync(policyFile)) {
+      try {
+        policy = JSON.parse(readFileSync(policyFile, "utf8")) || {};
+      } catch (e) {
+        console.error(`${relName} không parse được: ${e.message} — không ghi.`);
+        process.exitCode = 1;
+        continue;
+      }
     }
-  }
-  const changed = JSON.stringify(policy.verifyCommands || []) !== JSON.stringify(patterns);
-  policy.verifyCommands = patterns;
+    const changed = JSON.stringify(policy.verifyCommands || []) !== JSON.stringify(patterns);
+    policy.verifyCommands = patterns;
 
-  if (!changed) console.log("- .claude/agent-policy.json: unchanged.");
-  else if (DRY_RUN) console.log(`- .claude/agent-policy.json: would-update (${patterns.length} lệnh).`);
-  else {
-    writeFileSync(POLICY, JSON.stringify(policy, null, 2) + "\n", "utf8");
-    console.log(`- .claude/agent-policy.json: updated (${patterns.length} lệnh).`);
+    if (!changed) console.log(`- ${relName}: unchanged.`);
+    else if (DRY_RUN) console.log(`- ${relName}: would-update (${patterns.length} lệnh).`);
+    else {
+      writeFileSync(policyFile, JSON.stringify(policy, null, 2) + "\n", "utf8");
+      console.log(`- ${relName}: updated (${patterns.length} lệnh).`);
+    }
   }
 
   if (patterns.length) console.log("\nverifyCommands: " + patterns.map((p) => "`" + p + "`").join(", "));

@@ -41,6 +41,7 @@ build (initial)
 - `apps/api/test/me.e2e-spec.ts`
 - `apps/api/src/common/auth/auth.guard.ts`
 - `apps/api/src/config/env.ts`
+- `apps/api/src/health/health.controller.ts`
 - `apps/api/test/auth-jwks.spec.ts`
 
 ## Notes

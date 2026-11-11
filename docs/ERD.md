@@ -43,10 +43,27 @@
 | `email_outbox` | Hàng đợi email giao dịch (trạng thái gửi, retry) — chỉ service_role | — | 20261111020100 |
 | `pos_api_keys` | Khoá API POS theo rạp (chỉ lưu hash + prefix, thu hồi được) | belongs to `cinemas` | 20261111020100 |
 | `pos_api_logs` | Nhật ký gọi API POS | belongs to `pos_api_keys` | 20261111020100 |
+| `price_rules` | Bảng giá 2 cấp (`CHAIN` / `CINEMA` / `SHOWTIME`; loại ghế, 2D/3D, ngày thường/cuối tuần/lễ, trước/sau 17h VN; VND int) | belongs to `cinemas`, `showtimes` (nullable theo scope) | 20261111030000 |
+| `holidays` | Ngày lễ toàn chuỗi (ưu tiên hơn cuối tuần trong `price_quote`) | — | 20261111030000 |
+| `orders` | Đơn đặt vé (`WEB`/`POS`, máy trạng thái §8.5, `booking_code` `<MÃRẠP>-XXXXXX` unique, snapshot suất/phim/rạp/phòng) | belongs to `cinemas`, `showtimes`, `profiles` | 20261111030100 |
+| `order_seats` | Ghế thuộc đơn hàng + giá chốt từng ghế (Sweetbox 1 dòng cặp) | belongs to `orders`, `seats` | 20261111030100 |
+| `showtime_seat_states` | Trạng thái ghế theo suất (`HELD` / `SOLD`), **UNIQUE(showtime_id, seat_id)** chống bán trùng (NFR-04) | belongs to `showtimes`, `seats`, `orders` | 20261111030100 |
+| `seat_status_public` | Bảng Realtime công khai (`showtime_id`, `seat_id`, `state`, `expires_at` — không chứa `user_id`/`order_id`, NFR-05; đồng bộ qua trigger) | belongs to `showtimes`, `seats` | 20261111030100 |
+| `tickets` | Vé điện tử (`qr_token` 128-bit hex ngẫu nhiên, không PII, trạng thái check-in) | belongs to `orders`, `showtimes`, `seats`, `cinemas` | 20261111030100 |
+| `payments` | Giao dịch thanh toán PayOS/POS (không lưu số thẻ/tài khoản ngân hàng — R-81) | belongs to `orders`, `cinemas` | 20261111030100 |
+| `payment_events` | Sự kiện webhook/thanh toán idempotent (`UNIQUE(provider, provider_event_id)`, không lưu raw payload) | belongs to `payments`, `orders` | 20261111030100 |
+| `vouchers` | Mã giảm giá (PERCENT / FIXED, phạm vi chuỗi hoặc rạp, giới hạn lượt/ngân sách) | belongs to `cinemas` (nullable) | 20261111030100 |
+| `voucher_redemptions` | Lịch sử áp dụng voucher theo đơn | belongs to `vouchers`, `orders`, `profiles` | 20261111030100 |
+| `affected_order_actions` | Xử lý đơn bị ảnh hưởng khi huỷ suất/đóng rạp (đổi suất / hoàn tiền thủ công bởi Staff/Manager rạp đó) | belongs to `orders`, `cinemas`, `showtimes` | 20261111030100 |
+| `checkin_logs` | Nhật ký soát vé tại rạp | belongs to `tickets`, `orders`, `showtimes`, `cinemas` | 20261111030100 |
 
-Storage buckets: `posters`, `banners` (Admin ghi), `cinema-images` (Admin hoặc Manager đúng thư mục `<cinema_id>/`), `avatars` (thư mục `<uid>/`). Cron: `delete-unconfirmed-users` (mỗi giờ; bỏ qua user Facebook). Auth hook: `public.hook_before_user_created` (chỉ cho `app_metadata.created_via='nest'` hoặc Google/Facebook).
+Storage buckets: `posters`, `banners` (Admin ghi), `cinema-images` (Admin hoặc Manager đúng thư mục `<cinema_id>/`), `avatars` (thư mục `<uid>/`). Cron: `delete-unconfirmed-users` (mỗi giờ; bỏ qua user Facebook), `purge-expired-ops-data` (dọn `rate_limit_buckets`, `login_attempts`, `pos_api_logs` quá hạn). Auth hook: `public.hook_before_user_created` (chỉ cho `app_metadata.created_via='nest'` hoặc Google/Facebook).
 
-Hàm RLS dùng chung: `is_admin()`, `has_cinema_role(cinema_id, staff_role[])` (SECURITY DEFINER, search_path rỗng).
+Hàm RLS & nghiệp vụ dùng chung: `is_admin()`, `has_cinema_role(cinema_id, staff_role[])`, `price_quote(showtime_id, seat_ids[])`, `showtime_has_sales(showtime_id)` (SECURITY DEFINER / STABLE, `search_path = ''`).
+
+Ghi chú thiết kế (G1 & G2 — Layer 3):
+- Nguồn override thời gian dọn phòng theo rạp duy nhất là `cinemas.cleaning_minutes` (fallback `app_settings['default_cleaning_minutes']`); key `default_cleaning_minutes` bị cấm trong `cinema_settings` để tránh 2 nguồn xung đột. Khi đổi `movies.duration_minutes` hoặc `cinemas.cleaning_minutes`, trigger tự tính lại `ends_at` cho các suất tương lai chưa bán vé (nếu gây chồng giờ → raise `23P01`).
+- Policy `showtimes_select` chỉ cho anon/khách thấy suất của phim `PUBLISHED` thuộc rạp `OPEN` (R-33); nhân sự/Admin vẫn thấy theo quyền. Trigger `showtimes_protect_sold` (R-54) chặn sửa giờ/phòng/phim hoặc xoá suất đã có vé/đơn bán.
 
 ## Relationships
 
