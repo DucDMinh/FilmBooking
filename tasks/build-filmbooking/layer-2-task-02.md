@@ -21,6 +21,7 @@ login_attempts + hàm `register_login_failure/clear` (khoá 15' sau 5 lần sai)
 - [ ] `hit_rate_limit` trả false khi vượt ngưỡng trong cửa sổ; chạy 2 transaction không vượt tổng (dùng row lock).
 - [ ] Cron job tồn tại trong `cron.job`; hàm xoá bỏ qua user có identity facebook (test bằng gọi trực tiếp hàm).
 - [ ] anon/authenticated không SELECT được pos_api_keys, email_outbox (RLS).
+- [ ] (bổ sung từ review layer-0/task-02 F3) Hook `before_user_created`: chặn tạo user **email/password** không đi qua Admin API của Nest (vd thiếu cờ `app_metadata.created_via = 'nest'`) → đăng ký/khôi phục trực tiếp qua GoTrue không bỏ qua được Turnstile (R-07), đồng ý điều khoản (R-03), blocklist (R-09); user OAuth (Google/Facebook) vẫn tạo được. Bật hook trong `supabase/config.toml` `[auth.hook.before_user_created]`. pgTAP test hàm hook: email không cờ → từ chối; OAuth → cho phép.
 
 ## DoD (Definition of Done)
 - [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
@@ -33,6 +34,7 @@ login_attempts + hàm `register_login_failure/clear` (khoá 15' sau 5 lần sai)
 ## Files to Create/Modify
 - `supabase/migrations/20261111020100_security_ops.sql`
 - `supabase/tests/021_security_ops.test.sql`
+- `supabase/config.toml`
 
 ## Notes
 Migration versioned, KHÔNG sửa migration đã apply; chạy local `pnpm db:migrate` (= `supabase migration up`) + `pnpm db:test` PASS. Cấm `db push`/`db reset` cho staging/prod.
