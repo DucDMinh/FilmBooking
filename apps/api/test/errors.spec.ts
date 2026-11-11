@@ -42,6 +42,11 @@ class ProbeController {
     throw new HttpException("Too Many Requests", 429);
   }
 
+  @Get("app-500")
+  app500(): never {
+    throw new AppException(ERROR_CODES.INTERNAL_ERROR, `db down ${SECRET}`, { dsn: SECRET });
+  }
+
   @Get("http-500")
   http500(): never {
     throw new HttpException(`leak ${SECRET}`, 500);
@@ -84,6 +89,13 @@ describe("global exception filter", () => {
     const response = await request(app.getHttpServer()).get("/probe/http-500");
     expect(response.status).toBe(500);
     expect(response.body.error.code).toBe("INTERNAL_ERROR");
+    expect(response.text).not.toContain("hunter2");
+  });
+
+  it("does not leak message/details of an AppException with status >= 500", async () => {
+    const response = await request(app.getHttpServer()).get("/probe/app-500");
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
     expect(response.text).not.toContain("hunter2");
   });
 

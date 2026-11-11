@@ -68,7 +68,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private toResponse(exception: unknown): ErrorResponse {
-    if (exception instanceof AppException) {
+    // AppException >= 500 rơi xuống nhánh dưới: message/details do service đặt có thể chứa chi tiết nội bộ.
+    if (exception instanceof AppException && exception.getStatus() < 500) {
       return { status: exception.getStatus(), body: exception.getResponse() as ApiErrorBody };
     }
     if (exception instanceof HttpException && exception.getStatus() < 500) {
