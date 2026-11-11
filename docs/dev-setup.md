@@ -10,7 +10,8 @@
 
 | Lệnh | Việc |
 |---|---|
-| `pnpm db:start` | `supabase start` — dựng Postgres/Auth/Storage local, apply migration trong `supabase/migrations/` + `seed.sql` |
+| `pnpm db:start` | `supabase start` — dựng Postgres/Auth/Storage local, apply migration trong `supabase/migrations/` (KHÔNG nạp seed) |
+| `pnpm db:seed:demo` | nạp `supabase/seed.sql` vào DB local (chặn host không phải loopback) |
 | `pnpm db:stop` | `supabase stop` — tắt stack local |
 | `pnpm db:migrate` | `supabase migration up --local` — apply migration mới lên DB local |
 | `pnpm db:test` | `supabase test db` — chạy pgTAP trong `supabase/tests/*.test.sql` |

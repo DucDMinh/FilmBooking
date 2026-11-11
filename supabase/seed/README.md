@@ -50,17 +50,17 @@ Cơ sở dữ liệu chỉ lưu trữ `key_hash` (chuỗi băm SHA-256) và `pre
 
 ## 4. Hướng dẫn áp dụng Seed trên máy phát triển (Local DB)
 
-### Cách 1: Nạp trực tiếp qua Docker psql
-```bash
-docker exec -i supabase_db_filmbooking psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/seed.sql
-```
+`pnpm db:start` KHÔNG tự nạp seed (`[db.seed] enabled = false` trong `supabase/config.toml`, để pgTAP chạy trên DB sạch). Nạp seed chủ động:
 
-### Cách 2: Khởi động lại cơ sở dữ liệu Supabase local
 ```bash
-pnpm db:stop
 pnpm db:start
+pnpm db:seed:demo
 ```
-*Lưu ý: Lệnh `pnpm db:start` của Supabase CLI sẽ tự động nạp `supabase/seed.sql` sau khi hoàn tất các migration.*
 
-### Tính năng Idempotent:
-Tệp `supabase/seed.sql` được thiết kế chuẩn **Idempotent 100%** bằng các UUID cố định và mệnh đề `ON CONFLICT (...) DO UPDATE` hoặc `DO NOTHING`. Bạn có thể chạy lại tệp này nhiều lần liên tiếp mà không gặp lỗi trùng lặp dữ liệu hay vi phạm ràng buộc unique/exclusion.
+`pnpm db:seed:demo` (`scripts/seed-demo.mjs`) chỉ chạy với DB loopback (mặc định `postgresql://postgres:postgres@127.0.0.1:54322/postgres`, đổi bằng `SEED_DB_URL`; URL có query string, fragment (`#`) hoặc host khác bị từ chối, biến `PG*` bị bỏ qua). `seed.sql` cũng tự chặn nếu thiếu cờ `app.allow_demo_seed = on`, nên chạy psql tay phải thêm `-c "set app.allow_demo_seed = on"` trước `-f supabase/seed.sql`.
+
+### Giới hạn Idempotent
+Chạy lại nhiều lần trên cùng một DB local là an toàn trong trường hợp thông thường (UUID cố định, `ON CONFLICT ... DO UPDATE/DO NOTHING`), nhưng KHÔNG đảm bảo tuyệt đối:
+- Suất chiếu "live" (mục 8.1) dùng `DO NOTHING`: chạy lại không dời giờ. Muốn có suất ON_SALE trong 2 giờ tới thì reset DB local rồi seed lại.
+- Nếu bạn tạo suất qua UI trong phòng của seed ở đúng khung 09:30/14:00/19:30, chạy lại có thể vướng ràng buộc exclusion chống chồng giờ (`23P01`).
+- DB local đã seed bằng bản cũ (trước khi công thức id suất 8.2 đổi sang giờ VN): reset DB local một lần bằng `supabase db reset --local` (`db:stop` + `db:start` KHÔNG xoá dữ liệu) rồi seed lại, nếu không id suất mới lệch id cũ và seed dừng vì `23P01`.

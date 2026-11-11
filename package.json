@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
+    "test": "pnpm -r --if-present test && node --test scripts/*.test.mjs",
     "build": "pnpm -r --if-present build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -17,9 +17,10 @@
     "db:stop": "supabase stop",
     "db:migrate": "supabase migration up --local",
     "db:test": "supabase test db",
-    "db:types": "supabase gen types typescript --local > packages/shared/src/database.types.ts",
+    "db:types": "node scripts/gen-types.mjs",
     "test:int": "pnpm -r --if-present test:int",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "db:seed:demo": "node scripts/seed-demo.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

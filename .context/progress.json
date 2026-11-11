@@ -1,11 +1,26 @@
 {
   "mode": "initial-build",
-  "activeWorkItem": "build/build-filmbooking",
+  "activeWorkItem": "bug/layer34-review",
   "features": [],
-  "bugs": [],
-  "currentLayer": 5,
+  "bugs": [
+    {
+      "id": "layer34-review/phase-1-task-01",
+      "title": "P0-01 seed fix + .env.example",
+      "status": "done",
+      "severity": "high",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 3,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-01-round-3-review.md"
+      },
+      "blocked": "verify DB thật chờ user chạy tay (orioledb_version, thiếu psql/docker)",
+      "updatedAt": "2026-11-11T16:35:40.742Z"
+    }
+  ],
+  "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-11T15:03:11.723Z",
+  "lastUpdated": "2026-11-11T16:35:40.742Z",
   "inProgressTask": null,
   "completedTasks": [
     {
@@ -80,101 +95,169 @@
     },
     {
       "task": "layer-3/task-01",
-      "review": "STRICT PASS",
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
       "round": 1,
       "report": ".context/review-reports/build-filmbooking-layer-3-task-01-round-1-review.md",
-      "completedAt": "2026-11-11T09:38:12.766Z"
+      "completedAt": "2026-11-11T09:38:12.766Z",
+      "previousReview": "STRICT PASS",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-3/task-02",
-      "review": "STRICT PASS",
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
       "round": 1,
       "report": ".context/review-reports/build-filmbooking-layer-3-task-02-round-1-review.md",
-      "completedAt": "2026-11-11T09:38:12.900Z"
+      "completedAt": "2026-11-11T09:38:12.900Z",
+      "previousReview": "STRICT PASS",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-3/task-03",
-      "review": "STRICT PASS",
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
       "round": 1,
       "report": ".context/review-reports/build-filmbooking-layer-3-task-03-round-1-review.md",
-      "completedAt": "2026-11-11T09:38:13.032Z"
+      "completedAt": "2026-11-11T09:38:13.032Z",
+      "previousReview": "STRICT PASS",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-3/task-04",
-      "review": "STRICT PASS",
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
       "round": 1,
       "report": ".context/review-reports/build-filmbooking-layer-3-task-04-round-1-review.md",
-      "completedAt": "2026-11-11T09:38:13.172Z"
+      "completedAt": "2026-11-11T09:38:13.172Z",
+      "previousReview": "STRICT PASS",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-3/task-05",
-      "review": "STRICT PASS",
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
       "round": 1,
       "report": ".context/review-reports/build-filmbooking-layer-3-task-05-round-1-review.md",
-      "completedAt": "2026-11-11T09:38:13.306Z"
+      "completedAt": "2026-11-11T09:38:13.306Z",
+      "previousReview": "STRICT PASS",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-3/task-06",
-      "review": "STRICT PASS",
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
       "round": 1,
       "report": ".context/review-reports/build-filmbooking-layer-3-task-06-round-1-review.md",
-      "completedAt": "2026-11-11T09:38:13.437Z"
+      "completedAt": "2026-11-11T09:38:13.437Z",
+      "previousReview": "STRICT PASS",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-3/task-07",
-      "review": "STRICT PASS",
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
       "round": 1,
       "report": ".context/review-reports/build-filmbooking-layer-3-task-07-round-1-review.md",
-      "completedAt": "2026-11-11T09:38:13.573Z"
+      "completedAt": "2026-11-11T09:38:13.573Z",
+      "previousReview": "STRICT PASS",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-01",
-      "completedAt": "2026-11-11T15:03:10.192Z"
+      "completedAt": "2026-11-11T15:03:10.192Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-02",
-      "completedAt": "2026-11-11T15:03:10.335Z"
+      "completedAt": "2026-11-11T15:03:10.335Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-03",
-      "completedAt": "2026-11-11T15:03:10.472Z"
+      "completedAt": "2026-11-11T15:03:10.472Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-04",
-      "completedAt": "2026-11-11T15:03:10.605Z"
+      "completedAt": "2026-11-11T15:03:10.605Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-05",
-      "completedAt": "2026-11-11T15:03:10.737Z"
+      "completedAt": "2026-11-11T15:03:10.737Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-06",
-      "completedAt": "2026-11-11T15:03:10.870Z"
+      "completedAt": "2026-11-11T15:03:10.870Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-07",
-      "completedAt": "2026-11-11T15:03:11.009Z"
+      "completedAt": "2026-11-11T15:03:11.009Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-08",
-      "completedAt": "2026-11-11T15:03:11.151Z"
+      "completedAt": "2026-11-11T15:03:11.151Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-09",
-      "completedAt": "2026-11-11T15:03:11.299Z"
+      "completedAt": "2026-11-11T15:03:11.299Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-10",
-      "completedAt": "2026-11-11T15:03:11.459Z"
+      "completedAt": "2026-11-11T15:03:11.459Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-11",
-      "completedAt": "2026-11-11T15:03:11.590Z"
+      "completedAt": "2026-11-11T15:03:11.590Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     },
     {
       "task": "layer-4/task-12",
-      "completedAt": "2026-11-11T15:03:11.721Z"
+      "completedAt": "2026-11-11T15:03:11.721Z",
+      "previousReview": null,
+      "review": "SUPERSEDED: review độc lập 2026-11-11 FAIL (xem .context/review-reports/independent-review-layer-3-4-SUMMARY.md); cần sửa trong work item bug/layer34-review",
+      "status": "needs_remediation"
     }
   ],
-  "blockedTasks": []
+  "blockedTasks": [],
+  "remediation": {
+    "workItem": "bug/layer34-review",
+    "since": "2026-11-11",
+    "reason": "Layer 3+4 FAIL review độc lập: 6 CRITICAL + nhiều MAJOR",
+    "scope": "P0+P1 trước Layer 5; P2/P3 gộp vào Layer 5–8",
+    "summary": ".context/review-reports/independent-review-layer-3-4-SUMMARY.md",
+    "completedP0": [
+      "task-01"
+    ],
+    "pendingP0": [
+      "02+03",
+      "05",
+      "06",
+      "07",
+      "04",
+      "08"
+    ]
+  }
 }

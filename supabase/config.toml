@@ -66,8 +66,9 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# If enabled, seeds the database after migrations during a db reset.
-enabled = true
+# TẮT nạp tự động (quyết định review độc lập 2026-11-11): seed demo chèn tỉnh/rạp trùng dữ liệu của pgTAP
+# → làm hỏng test. Nạp dữ liệu demo bằng `pnpm db:seed:demo` (chỉ DB local).
+enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]

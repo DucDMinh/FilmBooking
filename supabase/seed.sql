@@ -7,6 +7,16 @@
 -- TUYỆT ĐỐI KHÔNG SỬ DỤNG TỆP NÀY TRÊN MÔI TRƯỜNG STAGING HOẶC PRODUCTION.
 -- ============================================================================
 
+-- Chặn chạy nhầm lên staging/prod (psql tay, nạp seed qua CLI lên DB linked).
+-- scripts/seed-demo.mjs đặt cờ này sau khi kiểm host là loopback.
+-- Chạy tay lên DB local: psql ... -c "set app.allow_demo_seed = on" -f supabase/seed.sql
+do $$
+begin
+  if current_setting('app.allow_demo_seed', true) is distinct from 'on' then
+    raise exception 'seed.sql bị chặn: dùng script seed demo (chỉ DB local) hoặc set app.allow_demo_seed = on trước.';
+  end if;
+end $$;
+
 -- ----------------------------------------------------------------------------
 -- 1. TỈNH / THÀNH PHỐ (provinces - R-35)
 -- ----------------------------------------------------------------------------
@@ -273,6 +283,7 @@ cross join (
   select 'G', 7, 'SWEETBOX'::public.seat_type, 'G7-G8' union all
   select 'G', 9, 'SWEETBOX'::public.seat_type, 'G9-G10'
 ) grid
+where r.id::text like '30000000-0000-0000-0000-%' -- chỉ phòng seed
 on conflict (id) do update set
   room_id = excluded.room_id,
   cinema_id = excluded.cinema_id,
@@ -691,7 +702,8 @@ on conflict (id) do update set
 -- ----------------------------------------------------------------------------
 -- 8. SUẤT CHIẾU 7 NGÀY TỚI (showtimes - R-49, R-50, R-67)
 -- Cùng room_id không chồng giờ ([starts_at, ends_at) đã bao gồm thời lượng + 15' dọn phòng).
--- BẮT BUỘC có ít nhất 1 suất ON_SALE trong vòng 2 giờ tới cho demo kiểm thử (AC-xx).
+-- Lần seed ĐẦU trên DB mới tạo suất ON_SALE trong vòng 2 giờ tới (demo live). Chạy lại dùng
+-- on conflict do nothing nên KHÔNG dời giờ: muốn có suất live mới thì reset DB rồi seed lại.
 -- ----------------------------------------------------------------------------
 
 -- 8.1 Suất demo Live trong vòng 2 giờ tới (ở các phòng dành riêng: HN01 P4, HCM01 P3)
@@ -744,10 +756,7 @@ insert into public.showtimes (
     'SUBTITLED',
     'ON_SALE'
   )
-on conflict (id) do update set
-  starts_at = excluded.starts_at,
-  ends_at = excluded.ends_at,
-  status = excluded.status;
+on conflict (id) do nothing;
 
 -- 8.2 Suất chiếu lịch 7 ngày cố định cho các phòng chiếu tiêu chuẩn
 -- Khung giờ: 09:30 (suất sáng), 14:00 (suất chiều), 19:30 (suất tối).
@@ -757,7 +766,7 @@ insert into public.showtimes (
 select
   extensions.uuid_generate_v5(
     '00000000-0000-0000-0000-000000000000'::uuid,
-    sched.room_id::text || ':' || to_char(sched.starts_at, 'YYYY-MM-DD"T"HH24:MI:SS')
+    sched.room_id::text || ':' || to_char(sched.starts_at at time zone 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD"T"HH24:MI:SS')
   ) as id,
   sched.cinema_id,
   sched.room_id,
@@ -776,7 +785,7 @@ from (
       when slot.slot_num = 2 then '40000000-0000-0000-0000-000000000004'::uuid -- Spider-Man
       else '40000000-0000-0000-0000-000000000008'::uuid                       -- Mai
     end as movie_id,
-    (current_date + (day_offset || ' days')::interval + slot.start_time) at time zone 'Asia/Ho_Chi_Minh' as starts_at,
+    ((now() at time zone 'Asia/Ho_Chi_Minh')::date + (day_offset || ' days')::interval + slot.start_time) at time zone 'Asia/Ho_Chi_Minh' as starts_at,
     case when '3D' = any (r.supported_formats) and slot.slot_num = 2 then '3D'::public.screen_format else '2D'::public.screen_format end as format,
     'SUBTITLED'::public.language_mode as language_mode
   from public.rooms r
@@ -787,15 +796,13 @@ from (
     select 3 as slot_num, time '19:30' as start_time
   ) slot
   -- Chỉ áp dụng cho các phòng tiêu chuẩn (loại trừ 2 phòng demo live ở mục 8.1)
-  where r.id not in (
+  where r.id::text like '30000000-0000-0000-0000-%' -- chỉ phòng seed, không đụng phòng dev tạo qua UI
+    and r.id not in (
     '30000000-0000-0000-0000-000000000104'::uuid,
     '30000000-0000-0000-0000-000000000403'::uuid
   )
 ) sched
-on conflict (id) do update set
-  starts_at = excluded.starts_at,
-  ends_at = excluded.ends_at,
-  status = excluded.status;
+on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------------------
 -- 9. VOUCHER MẪU (vouchers - R-90, R-92, R-93)
@@ -1073,10 +1080,17 @@ on conflict (user_id, cinema_id) do update set
   role = excluded.role;
 
 -- 10.6 Bằng chứng đồng ý điều khoản (consents - R-03)
-insert into public.consents (user_id, consent_type, version, metadata) values
-  ('70000000-0000-0000-0000-000000000006', 'TERMS_OF_SERVICE', '1.0', '{"channel": "web_signup"}'::jsonb),
-  ('70000000-0000-0000-0000-000000000006', 'PRIVACY_POLICY',   '1.0', '{"channel": "web_signup"}'::jsonb)
-on conflict do nothing;
+-- consents không có unique → dùng where not exists để chạy lại không nhân đôi
+insert into public.consents (user_id, consent_type, version, metadata)
+select v.user_id, v.consent_type::public.consent_type, v.version, v.metadata
+from (values
+  ('70000000-0000-0000-0000-000000000006'::uuid, 'TERMS_OF_SERVICE', '1.0', '{"channel": "web_signup"}'::jsonb),
+  ('70000000-0000-0000-0000-000000000006'::uuid, 'PRIVACY_POLICY',   '1.0', '{"channel": "web_signup"}'::jsonb)
+) as v(user_id, consent_type, version, metadata)
+where not exists (
+  select 1 from public.consents c
+  where c.user_id = v.user_id and c.consent_type = v.consent_type::public.consent_type and c.version = v.version
+);
 
 -- ----------------------------------------------------------------------------
 -- 11. KHOÁ API POS TỪNG RẠP (pos_api_keys - R-111, R-120, R-130)

@@ -19,6 +19,7 @@ test-results/
 .lighthouseci/
 supabase/.temp/
 supabase/.branches/
+packages/shared/src/*.tmp
 
 # runtime state (loop ghi, không commit)
 .context/agents-live.json
