@@ -175,9 +175,8 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project. Existing users can still sign in.
-# CẢNH BÁO: signup/recover gọi thẳng GoTrue (anon key công khai) BỎ QUA Turnstile, consent điều khoản
-# và blocklist email của Nest. Sẽ chặn bằng hook before_user_created ở layer-2-task-02 (hook chưa
-# bật ở đây vì function chưa tồn tại). Đến lúc đó đây vẫn là lỗ hổng đã biết, không coi là xong R-07.
+# Signup email/password gọi thẳng GoTrue (anon key công khai) bị chặn bởi hook before_user_created
+# (bên dưới): chỉ user do Nest tạo qua Admin API (app_metadata.created_via = 'nest') hoặc OAuth được tạo.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
@@ -216,8 +215,10 @@ token_verifications = 30
 web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# Signup/recover gọi thẳng GoTrue sẽ KHÔNG qua Turnstile khi enabled = false; xử lý bằng hook
-# before_user_created ở layer-2-task-02 (xem cảnh báo tại enable_signup).
+# Signup trực tiếp bị hook before_user_created chặn (xem enable_signup).
+# RỦI RO ĐÃ BIẾT (review layer-0 N1): /auth/v1/recover gọi thẳng GoTrue KHÔNG qua Turnstile và hook
+# không chặn được (recover không tạo user) -> có thể bị lạm dụng spam email khôi phục tới địa chỉ
+# đã đăng ký. Giảm thiểu bằng rate limit GoTrue (rate_limit_email_sent) + quota SMTP; chưa chặn tuyệt đối.
 # R-07: Turnstile do NestJS xác minh (đăng ký / quên mật khẩu / đăng nhập sau 3 lần sai).
 # Để enabled = false vì Supabase ép captcha lên MỌI lần đăng nhập mật khẩu, trái với R-07.
 # Cấu hình sẵn provider + secret (env) để bật nếu sau này chọn enforce phía Supabase.
@@ -291,6 +292,8 @@ max_frequency = "5s"
 # 14152127777 = "123456"
 
 # Configure logged in session timeouts.
+# LƯU Ý (review layer-0 N2): timebox/inactivity_timeout chỉ có hiệu lực trên gói Supabase trả phí (Pro+);
+# gói Free bỏ qua giá trị này nên trần 30 ngày (R-15) chưa được đảm bảo ở Free.
 # R-15: "Ghi nhớ đăng nhập" tối đa 30 ngày. Không ghi nhớ = cookie phiên (hết khi đóng trình duyệt)
 # do web quyết định; ở đây chỉ chặn trần 30 ngày. Access token ngắn (jwt_expiry) + refresh ngầm.
 [auth.sessions]
@@ -300,9 +303,9 @@ timebox = "720h"
 # inactivity_timeout = "8h"
 
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
-# [auth.hook.before_user_created]
-# enabled = true
-# uri = "pg-functions://postgres/auth/before-user-created-hook"
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/hook_before_user_created"
 
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]
