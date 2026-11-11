@@ -363,3 +363,13 @@ flowchart TD
 | AC-24 | layer-4-task-04, layer-5-task-08, layer-7-task-03, layer-7-task-06, layer-8-task-04 |
 | AC-25 | layer-5-task-08, layer-7-task-06, layer-7-task-08, layer-8-task-04 |
 | AC-26 | layer-4-task-04, layer-5-task-08, layer-7-task-01, layer-8-task-04 |
+
+## Follow-ups từ review (cập nhật bởi dispatcher)
+| Nguồn | Mô tả | Giao cho |
+|---|---|---|
+| L0-T01 review MINOR 1 | `percentOfVnd` nhận percent thập phân → sai số float; không chặn amount/cap âm. Sửa: percent nguyên (hoặc basis points) + từ chối âm | Task đầu tiên dùng `percentOfVnd` (voucher, layer-4-task-03 phía API/TS) — thêm `packages/shared/src/money.ts` vào scope nếu cần, nếu không → layer 8 polish |
+| L0-T01 review MINOR 2 | `toVnParts`/`isVnWeekend`/`isVnEveningSlot` nhận Invalid Date im lặng → throw RangeError | Cùng task trên / layer 8 |
+| L0-T01 review MINOR 3 | `db:types` redirect `>` xoá trắng file khi gen lỗi | Task đầu tiên chạy `pnpm db:types` (layer 1 migration lõi) |
+| L0-T01 review MINOR 4 | shared xuất `.ts` thô: Next cần `transpilePackages`, Nest cần bundle/transpile shared | layer-1 scaffold web + api (đưa vào brief) |
+| L0-T02 review N1 | `/auth/v1/recover` gọi thẳng không qua Turnstile (spam reset tới user có thật; giới hạn bởi max_frequency 60s) | layer-2-task-02 ghi rủi ro + layer-3-task-06 |
+| L0-T02 review N2 | Session timebox 30 ngày chỉ có ở gói trả phí → R-15 phải do cookie web/Nest | layer-2-task-04 / layer-5-task-10 |

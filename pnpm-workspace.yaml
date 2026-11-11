@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 10 chặn lifecycle script mặc định; chỉ cho phép package cần tải/biên dịch binary.
+onlyBuiltDependencies:
+  - "@swc/core"
+  - esbuild
+  - sharp
+  - supabase

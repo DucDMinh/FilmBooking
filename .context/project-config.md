@@ -27,12 +27,12 @@ web_typecheck_command: null
 web_lint_command: null
 api_typecheck_command: null
 api_lint_command: null
-test_command: null
-install_command: null
-lint_command: null          # generic alias if web/api split does not apply
-typecheck_command: null     # generic alias if web/api split does not apply
-build_command: null
-migration_command: null     # only used when db_tool != none and migration_required: true
+test_command: pnpm test
+install_command: pnpm install --frozen-lockfile
+lint_command: pnpm lint          # generic alias if web/api split does not apply
+typecheck_command: pnpm typecheck     # generic alias if web/api split does not apply
+build_command: pnpm build
+migration_command: pnpm db:migrate     # only used when db_tool != none and migration_required: true
 
 # ── Database ──
 db_tool: other                  # none | prisma | drizzle | other
@@ -106,14 +106,19 @@ worktree_teardown_cmd: 'rm -f ".tmp-$WORKTREE_SLUG.db"'
 
 ```yaml
 check_commands:
-  install: null             # alias of install_command
+  install: pnpm install --frozen-lockfile             # alias of install_command
   web_typecheck: null       # hoặc = web_typecheck_command
+  lint: pnpm lint
+  typecheck: pnpm typecheck
+  db_start: pnpm db:start
+  db_test: pnpm db:test
+  db_stop: pnpm db:stop
   web_lint: null            # hoặc = web_lint_command
   api_typecheck: null       # hoặc = api_typecheck_command
   api_lint: null            # hoặc = api_lint_command
-  test: null                # hoặc = test_command
-  build: null               # hoặc = build_command
-  migration: null           # hoặc = migration_command khi migration_required=true
+  test: pnpm test                # hoặc = test_command
+  build: pnpm build               # hoặc = build_command
+  migration: pnpm db:migrate           # hoặc = migration_command khi migration_required=true
   docs_inventory: null
 ```
 
