@@ -39,7 +39,7 @@ Khởi tạo apps/web: App Router TS, Tailwind v4, chép khối globals.css từ
 - `apps/web/src/app/globals.css`
 - `apps/web/src/app/not-found.tsx`
 - `apps/web/src/app/error.tsx`
-- `apps/web/src/app/forbidden/page.tsx`
+- `apps/web/src/app/khong-co-quyen/page.tsx`
 - `apps/web/src/lib/utils.ts`
 - `apps/web/src/components/ui/button.tsx`
 - `apps/web/src/components/ui/input.tsx`
