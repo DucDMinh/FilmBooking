@@ -32,10 +32,17 @@ Client fetch tới `NEXT_PUBLIC_API_URL` dùng được ở Server Component và
 ## Files to Create/Modify
 - `apps/web/src/lib/api/client.ts`
 - `apps/web/src/lib/api/error-messages.ts`
+- `apps/web/src/lib/api/__tests__/client.test.ts`
 - `apps/web/src/lib/supabase/browser.ts`
 - `apps/web/src/lib/supabase/server.ts`
-- `apps/web/src/middleware.ts`
-- `apps/web/src/lib/api/__tests__/client.test.ts`
+- `apps/web/src/lib/supabase/env.ts`
+- `apps/web/src/lib/supabase/cookie-options.ts`
+- `apps/web/src/lib/auth/safe-next.ts`
+- `apps/web/src/proxy.ts` (thay `middleware.ts` — Next 16.4.6)
+- `apps/web/src/app/api/proxy/[...path]/route.ts`
+- `apps/web/src/app/api/proxy/[...path]/__tests__/route.test.ts`
+
+> **Quyết định (user, 2026-11-11):** cookie phiên HttpOnly + proxy mỏng `/api/proxy/*` qua Next (BRD NFR-06). Proxy không phải lớp authz: không có session thì forward không `Authorization`, Nest quyết định 401. Đăng nhập/OAuth callback/đăng xuất (layer 5) phải chạy phía server và gọi `sanitizeNext` trước khi redirect. Env server-only mới: `API_URL`.
 
 ## Notes
 middleware.ts chỉ task này sửa trong layer 2. 'Ghi nhớ 30 ngày' vs phiên trình duyệt (R-15) hoàn thiện ở form đăng nhập layer-5-task-10.
