@@ -19,17 +19,17 @@ Màn 01/30 + B1 + B10: hero/banner, Đang chiếu/Sắp chiếu theo khu vực, 
 - layer-3-task-04 (API catalog công khai + quản lý rạp: rạp, tỉnh/thành, phim, trang chủ,)
 
 ## Acceptance Criteria
-- [ ] SSR trang chủ và /phim (NFR-13); lọc phản ánh lên URL, back/forward hoạt động.
-- [ ] Lần đầu không có cookie tỉnh → dialog chọn tỉnh; chọn xong lưu cookie, không hỏi lại.
-- [ ] Empty state khi không có phim khớp; skeleton khi tải.
-- [ ] Responsive 360px; card có alt poster + AgeBadge.
+- [x] SSR trang chủ và /phim (NFR-13); lọc phản ánh lên URL, back/forward hoạt động.
+- [x] Lần đầu không có cookie tỉnh → dialog chọn tỉnh; chọn xong lưu cookie, không hỏi lại.
+- [x] Empty state khi không có phim khớp; skeleton khi tải.
+- [x] Responsive 360px; card có alt poster + AgeBadge.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `apps/web/src/app/(public)/page.tsx`

@@ -9,14 +9,27 @@ import { AllExceptionsFilter } from "./common/errors/all-exceptions.filter";
 import { SupabaseModule } from "./common/supabase/supabase.module";
 import { AppConfigModule, ENV, type Env } from "./config/env";
 import { HealthController } from "./health/health.controller";
+import { AuthExtModule } from "./modules/auth-ext/auth-ext.module";
+import { CatalogModule } from "./modules/catalog/catalog.module";
+import { CinemaOpsModule } from "./modules/cinema-ops/cinema-ops.module";
 import { MeModule } from "./modules/me/me.module";
+import { ProfileModule } from "./modules/profile/profile.module";
 
 /**
  * Chỉ task "wiring" được sửa file này; module tính năng tự test bằng TestingModule riêng.
  * Thứ tự APP_GUARD là thứ tự chạy: Auth -> Roles -> CinemaScope -> Throttler.
  */
 @Module({
-  imports: [AppConfigModule, SupabaseModule, AuthModule, MeModule],
+  imports: [
+    AppConfigModule,
+    SupabaseModule,
+    AuthModule,
+    MeModule,
+    CatalogModule,
+    CinemaOpsModule,
+    AuthExtModule,
+    ProfileModule,
+  ],
   controllers: [HealthController],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

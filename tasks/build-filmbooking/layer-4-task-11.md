@@ -19,17 +19,17 @@ Màn 02 + 05: thông tin phim, trailer, nhãn tuổi, lịch chiếu theo ngày 
 - layer-3-task-04 (API catalog công khai + quản lý rạp: rạp, tỉnh/thành, phim, trang chủ,)
 
 ## Acceptance Criteria
-- [ ] SSR + generateMetadata; JSON-LD hợp lệ (test parse schema).
-- [ ] Giờ hiển thị Asia/Ho_Chi_Minh; chọn suất → `/dat-ve/[showtimeId]`.
-- [ ] Stepper hiển thị đúng bước hiện tại, aria-current.
-- [ ] Phim chưa có suất → empty state 'Sắp chiếu' (R-45).
+- [x] SSR + generateMetadata; JSON-LD hợp lệ (test parse schema).
+- [x] Giờ hiển thị Asia/Ho_Chi_Minh; chọn suất → `/dat-ve/[showtimeId]`.
+- [x] Stepper hiển thị đúng bước hiện tại, aria-current.
+- [x] Phim chưa có suất → empty state 'Sắp chiếu' (R-45).
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `apps/web/src/app/(public)/phim/[slug]/page.tsx`

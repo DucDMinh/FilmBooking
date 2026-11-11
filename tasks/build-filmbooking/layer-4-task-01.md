@@ -18,20 +18,20 @@ build (initial)
 - layer-3-task-02 (Migration bảng đơn hàng, trạng thái ghế, vé, thanh toán, voucher, đơn )
 
 ## Acceptance Criteria
-- [ ] pgTAP: giữ ghế đã HELD còn hạn → lỗi SEAT_TAKEN kèm seat; hold hết hạn → giữ được (AC-07 nền).
-- [ ] Ghế lẻ: chọn để trống 1 ghế giữa → ORPHAN_SEAT; 9 ghế (hoặc 7 + 1 sweetbox) → HOLD_LIMIT.
-- [ ] Web sau mốc đóng bán online → SALES_CLOSED; POS cùng thời điểm vẫn giữ được (R-67 chỉ chặn web).
-- [ ] POS hold expires_at = now()+5' (AC-22); extend_pos_hold gia hạn; web hold đọc thời gian từ app_settings.
-- [ ] Giá chốt lưu order_seats khớp price_quote tại thời điểm giữ (R-72).
-- [ ] Test đồng thời thực (2 kết nối) để ở layer-8-task-01; ở đây kiểm unique + rollback toàn bộ.
+- [x] pgTAP: giữ ghế đã HELD còn hạn → lỗi SEAT_TAKEN kèm seat; hold hết hạn → giữ được (AC-07 nền).
+- [x] Ghế lẻ: chọn để trống 1 ghế giữa → ORPHAN_SEAT; 9 ghế (hoặc 7 + 1 sweetbox) → HOLD_LIMIT.
+- [x] Web sau mốc đóng bán online → SALES_CLOSED; POS cùng thời điểm vẫn giữ được (R-67 chỉ chặn web).
+- [x] POS hold expires_at = now()+5' (AC-22); extend_pos_hold gia hạn; web hold đọc thời gian từ app_settings.
+- [x] Giá chốt lưu order_seats khớp price_quote tại thời điểm giữ (R-72).
+- [x] Test đồng thời thực (2 kết nối) để ở layer-8-task-01; ở đây kiểm unique + rollback toàn bộ.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `supabase/migrations/20261111040000_rpc_hold.sql`

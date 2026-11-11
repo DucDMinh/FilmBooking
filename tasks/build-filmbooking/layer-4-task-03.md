@@ -18,18 +18,18 @@ build (initial)
 - layer-2-task-02 (Migration bảo mật & vận hành: login attempts, rate limit, email dùng m)
 
 ## Acceptance Criteria
-- [ ] Hai đơn đồng thời dùng voucher còn 1 lượt → chỉ 1 thành công (pgTAP với khoá).
-- [ ] Đơn expired → lượt được hoàn (count giảm).
-- [ ] Áp voucher thứ 2 cho cùng đơn → VOUCHER_ALREADY_APPLIED; hết hạn → VOUCHER_EXPIRED; chưa đạt tối thiểu → VOUCHER_MIN_NOT_MET.
-- [ ] Nhập sai > ngưỡng → RATE_LIMITED.
+- [x] Hai đơn đồng thời dùng voucher còn 1 lượt → chỉ 1 thành công (pgTAP với khoá).
+- [x] Đơn expired → lượt được hoàn (count giảm).
+- [x] Áp voucher thứ 2 cho cùng đơn → VOUCHER_ALREADY_APPLIED; hết hạn → VOUCHER_EXPIRED; chưa đạt tối thiểu → VOUCHER_MIN_NOT_MET.
+- [x] Nhập sai > ngưỡng → RATE_LIMITED.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `supabase/migrations/20261111040200_rpc_voucher.sql`

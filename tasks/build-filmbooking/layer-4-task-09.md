@@ -18,16 +18,16 @@ Seed idempotent cho local/dev (NFR-09): 5 rạp (HN01, HN02, HN03, HCM01, DN01) 
 - layer-3-task-02 (Migration bảng đơn hàng, trạng thái ghế, vé, thanh toán, voucher, đơn )
 
 ## Acceptance Criteria
-- [ ] Seed apply sạch trên DB local mới (`pnpm db:stop` + `pnpm db:start` trên volume mới, hoặc `psql -f supabase/seed.sql` vào DB local) — chỉ local, cấm staging/prod; KHÔNG dùng lệnh reset bị agent-guard chặn.
-- [ ] Mọi suất seed hợp lệ với exclusion constraint; có ít nhất 1 suất đang bán trong 2 giờ tới để demo.
-- [ ] Không chứa secret thật; README ghi rõ chỉ dùng local.
+- [x] Seed apply sạch trên DB local mới (`pnpm db:stop` + `pnpm db:start` trên volume mới, hoặc `psql -f supabase/seed.sql` vào DB local) — chỉ local, cấm staging/prod; KHÔNG dùng lệnh reset bị agent-guard chặn.
+- [x] Mọi suất seed hợp lệ với exclusion constraint; có ít nhất 1 suất đang bán trong 2 giờ tới để demo.
+- [x] Không chứa secret thật; README ghi rõ chỉ dùng local.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `supabase/seed.sql`

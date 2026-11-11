@@ -151,6 +151,7 @@ export interface ProvinceDto {
 }
 
 export interface CinemaDto {
+  id?: string;
   code: string;
   name: string;
   provinceCode: string | null;

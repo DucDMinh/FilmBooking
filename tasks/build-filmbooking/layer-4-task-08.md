@@ -18,16 +18,16 @@ CRUD price_rules theo scope (Admin: chuỗi; Manager: rạp/suất của mình),
 - layer-2-task-03 (Nest guards: AuthGuard (JWT Supabase), RolesGuard, CinemaScopeGuard, J)
 
 ## Acceptance Criteria
-- [ ] AC-15 qua API: báo giá VIP suất 2D T7 tối tại HN02 = 100.000, HN01 = 120.000.
-- [ ] Manager tạo rule scope CHAIN → 403; rule CINEMA rạp khác → 403.
-- [ ] Giá âm/không nguyên → 422.
+- [x] AC-15 qua API: báo giá VIP suất 2D T7 tối tại HN02 = 100.000, HN01 = 120.000.
+- [x] Manager tạo rule scope CHAIN → 403; rule CINEMA rạp khác → 403.
+- [x] Giá âm/không nguyên → 422.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `apps/api/src/modules/pricing/pricing.module.ts`

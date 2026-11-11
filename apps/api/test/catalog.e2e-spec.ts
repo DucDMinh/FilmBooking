@@ -206,7 +206,7 @@ describe("catalog API (e2e, mock Supabase)", () => {
       const response = await request(server()).get("/cinemas?province=HN");
       expect(response.status).toBe(200);
       expect(response.body[0]).toMatchObject({ code: "HN01", provinceCode: "HN", openingHours: "09:00-23:00" });
-      expect(response.body[0]).not.toHaveProperty("id");
+      expect(response.body[0]).toHaveProperty("id", HN01);
       const query = lastQuery(fake.queries, "cinemas");
       expect(opArgs(query, "eq")).toContainEqual(["status", "OPEN"]);
       expect(opArgs(query, "eq")).toContainEqual(["provinces.code", "HN"]);
