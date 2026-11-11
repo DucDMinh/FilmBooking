@@ -42,3 +42,14 @@ Nguồn: `docs/BRD.md` v0.3 (Q1–Q9 đã chốt, không hỏi lại) · `SPECIF
 - Render free cold start → lệch NFR-01 lượt đầu (chấp nhận cho demo).
 - BRD §10 (công nghệ) cần cập nhật Next + Nest — chờ user duyệt ở checkpoint.
 - Docker daemon có vẻ chưa chạy lúc brainstorm (`docker info` rỗng) — cần bật trước layer 0.
+
+## Design (bước 3, 2026-11-10)
+| Câu hỏi | Trả lời |
+|---|---|
+| Design reference | Không — agent tự design |
+| Phong cách trang khách | Rạp chiếu tối, poster làm chủ, 1 màu nhấn cho CTA; có chế độ sáng |
+| UI library | Tailwind + shadcn/ui (Radix) |
+| Admin UI | Cùng token, bố cục riêng: admin nền sáng mật độ cao; soát vé tối ưu mobile |
+
+### Design — thay thế (2026-11-11)
+User: **bỏ toàn bộ design cũ** (tông vàng hổ phách, Be Vietnam Pro, admin nền sáng). Dùng bộ handoff **CINEMO** (`docs/design/cinemo/`, 40 SVG + `tokens/design-tokens.json` + prototype): dark-cinema cho mọi bề mặt (kể cả admin), màu nhấn coral `#F06D5B`, Inter, desktop 1440 / mobile 390. Giữ: Tailwind + shadcn/ui. Các quyết định D1–D12 cũ huỷ, design agent đề xuất lại theo handoff.

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000">
+<defs>
+        <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#311C39"/><stop offset=".52" stop-color="#171D32"/><stop offset="1" stop-color="#10131C"/></linearGradient>
+        <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6B56"/><stop offset="1" stop-color="#E63C58"/></linearGradient>
+        <linearGradient id="poster1" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F2A65A"/><stop offset=".5" stop-color="#A64D58"/><stop offset="1" stop-color="#261B35"/></linearGradient>
+        <linearGradient id="poster2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#294C60"/><stop offset=".55" stop-color="#4D6D76"/><stop offset="1" stop-color="#171C2D"/></linearGradient>
+        <linearGradient id="poster3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#624D91"/><stop offset=".5" stop-color="#C16A83"/><stop offset="1" stop-color="#23223B"/></linearGradient>
+        <linearGradient id="poster4" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1C7775"/><stop offset=".55" stop-color="#E1B46A"/><stop offset="1" stop-color="#172338"/></linearGradient>
+        <linearGradient id="poster5" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#BE5446"/><stop offset=".5" stop-color="#563D62"/><stop offset="1" stop-color="#111727"/></linearGradient>
+        <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#000" flood-opacity=".26"/></filter>
+        </defs>
+<rect width="100%" height="100%" fill="#0B0D12"/>
+<rect x="0" y="0" width="1440" height="82" rx="0" fill="#10131B" stroke="none" stroke-width="1" opacity="1"/>
+<text x="70" y="49" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="25" font-weight="850" fill="#FFFFFF" text-anchor="start" opacity="1">CINEMO</text>
+<rect x="70" y="58" width="70" height="3" rx="2" fill="url(#accent)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="250" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Phim</text>
+<text x="330" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Rạp chiếu</text>
+<text x="435" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Khuyến mãi</text>
+<rect x="790" y="21" width="190" height="40" rx="10" fill="#171C26" stroke="#2B3240" stroke-width="1" opacity="1"/>
+<circle cx="812" cy="41" r="6" fill="none" stroke="#D1D7E2" stroke-width="1.5"/>
+<line x1="816" y1="45" x2="821" y2="50" stroke="#D1D7E2" stroke-width="1.5"/>
+<text x="832" y="46" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="600" fill="#E8EBF0" text-anchor="start" opacity="1">Hà Nội</text>
+<text x="952" y="46" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="16" font-weight="500" fill="#9EA6B5" text-anchor="start" opacity="1">⌄</text>
+<rect x="1010" y="21" width="210" height="40" rx="10" fill="#171C26" stroke="#2B3240" stroke-width="1" opacity="1"/>
+<text x="1030" y="47" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#768092" text-anchor="start" opacity="1">⌕  Tìm phim, rạp...</text>
+<rect x="1240" y="21" width="130" height="40" rx="12" fill="#202634" stroke="#343B49" stroke-width="1" opacity="1"/>
+<text x="1305.0" y="46.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#E5E8EE" text-anchor="middle" opacity="1">Đăng nhập</text>
+<line x1="0" y1="81" x2="1440" y2="81" stroke="#272D39" stroke-width="1"/>
+<text x="70" y="140" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="28" font-weight="800" fill="#FFFFFF" text-anchor="start" opacity="1">Tài khoản của tôi</text>
+<text x="70" y="170" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="450" fill="#929CAB" text-anchor="start" opacity="1">Quản lý thông tin và trải nghiệm CINEMO.</text>
+<rect x="70" y="210" width="300" height="650" rx="16" fill="#151A24" stroke="#252C39" stroke-width="1" opacity="1"/>
+<circle cx="220" cy="300" r="46" fill="#4B576B" stroke="none" stroke-width="1"/>
+<text x="220" y="309" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="23" font-weight="750" fill="#FFFFFF" text-anchor="middle" opacity="1">MD</text>
+<text x="220" y="380" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle" opacity="1">Nguyễn Minh Đức</text>
+<text x="220" y="405" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="450" fill="#929CAB" text-anchor="middle" opacity="1">duc.nguyen@email.com</text>
+<rect x="92" y="447" width="255" height="40" rx="9" fill="#2A2530" stroke="none" stroke-width="1" opacity="1"/>
+<text x="115" y="470" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#F2F3F6" text-anchor="start" opacity="1">Thông tin cá nhân</text>
+<text x="115" y="522" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#A6AFBD" text-anchor="start" opacity="1">Vé của tôi</text>
+<text x="115" y="574" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#A6AFBD" text-anchor="start" opacity="1">Rạp yêu thích</text>
+<text x="115" y="626" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#A6AFBD" text-anchor="start" opacity="1">Bảo mật &amp; liên kết</text>
+<text x="115" y="678" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#A6AFBD" text-anchor="start" opacity="1">Tuỳ chọn email</text>
+<rect x="400" y="210" width="970" height="650" rx="16" fill="#151A24" stroke="#252C39" stroke-width="1" opacity="1"/>
+<text x="440" y="260" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="start" opacity="1">Thông tin cá nhân</text>
+<text x="440" y="290" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="450" fill="#8994A5" text-anchor="start" opacity="1">Cập nhật hồ sơ để đặt vé thuận tiện hơn.</text>
+<text x="440" y="343" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB1BF" text-anchor="start" opacity="1">Họ và tên</text>
+<rect x="440" y="353" width="400" height="47" rx="10" fill="#121721" stroke="#303746" stroke-width="1" opacity="1"/>
+<text x="454" y="381" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#E8EBF0" text-anchor="start" opacity="1">Nguyễn Minh Đức</text>
+<text x="870" y="343" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB1BF" text-anchor="start" opacity="1">Email</text>
+<rect x="870" y="353" width="450" height="47" rx="10" fill="#121721" stroke="#303746" stroke-width="1" opacity="1"/>
+<text x="884" y="381" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#E8EBF0" text-anchor="start" opacity="1">duc.nguyen@email.com</text>
+<text x="440" y="433" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB1BF" text-anchor="start" opacity="1">Số điện thoại</text>
+<rect x="440" y="443" width="400" height="47" rx="10" fill="#121721" stroke="#303746" stroke-width="1" opacity="1"/>
+<text x="454" y="471" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#E8EBF0" text-anchor="start" opacity="1">0988 123 456</text>
+<text x="870" y="433" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB1BF" text-anchor="start" opacity="1">Ngày sinh</text>
+<rect x="870" y="443" width="210" height="47" rx="10" fill="#121721" stroke="#303746" stroke-width="1" opacity="1"/>
+<text x="884" y="471" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#E8EBF0" text-anchor="start" opacity="1">12/04/2003</text>
+<text x="1100" y="433" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB1BF" text-anchor="start" opacity="1">Giới tính</text>
+<rect x="1100" y="443" width="220" height="47" rx="10" fill="#121721" stroke="#303746" stroke-width="1" opacity="1"/>
+<text x="1114" y="471" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#E8EBF0" text-anchor="start" opacity="1">Nam  ⌄</text>
+<text x="440" y="535" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB3C1" text-anchor="start" opacity="1">Rạp yêu thích</text>
+<rect x="440" y="555" width="180" height="26" rx="13" fill="#293B3A" stroke="none" stroke-width="1" opacity="1"/>
+<text x="530.0" y="572" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#9BE1B6" text-anchor="middle" opacity="1">CINEMO Long Biên  ×</text>
+<rect x="630" y="555" width="180" height="26" rx="13" fill="#293B3A" stroke="none" stroke-width="1" opacity="1"/>
+<text x="720.0" y="572" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#9BE1B6" text-anchor="middle" opacity="1">CINEMO Cầu Giấy  ×</text>
+<rect x="440" y="640" width="150" height="44" rx="12" fill="url(#accent)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="515.0" y="667.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#FFFFFF" text-anchor="middle" opacity="1">Lưu thay đổi</text>
+<text x="440" y="740" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="700" fill="#FF8E80" text-anchor="start" opacity="1">Xoá tài khoản</text>
+<text x="440" y="770" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="450" fill="#909AAA" text-anchor="start" opacity="1">Yêu cầu xoá sẽ ẩn danh dữ liệu cá nhân; dữ liệu đơn hàng được lưu theo quy định.</text>
+</svg>

@@ -3,9 +3,9 @@
 ```yaml
 workItem: start/filmbooking
 phaseTask: brainstorm
-step: ready
+step: done
 agent: null
-status: awaiting
+status: done
 attempt: 0
 interrupted: false
 updatedAt: 2026-11-10T19:00:00+07:00
@@ -15,9 +15,9 @@ evidence:
   reportPath: null
   round: 0
   verdict: null
-next: "⏸ chờ user approve design doc (+ duyệt sửa BRD §10 công nghệ) → git init staging + commit → bước 3 design"
+next: "bước 3 design (journal start-filmbooking-design.md)"
 loopSignal: none
-approvals: []
+approvals: [{gate: design_doc, at: 2026-11-10, ok: true}]
 batchQueue: []
 ```
 
@@ -28,3 +28,4 @@ batchQueue: []
 
 ## History
 - 2026-11-10T19:00:00+07:00 brainstorm xong, chờ checkpoint
+- 2026-11-10 user approve design doc + BRD v0.4; git init staging, commit b9f9cc5

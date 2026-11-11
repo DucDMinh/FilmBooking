@@ -1,0 +1,79 @@
+{
+  "brand": "CINEMO",
+  "color": {
+    "background": "#0B0D12",
+    "surface": "#151A24",
+    "surfaceElevated": "#1B222E",
+    "surfaceBorder": "#2B3340",
+    "textPrimary": "#F5F6F8",
+    "textSecondary": "#AAB3C1",
+    "textMuted": "#7E8999",
+    "accent": "#F06D5B",
+    "accentHover": "#FF8A76",
+    "success": "#8FE0B1",
+    "warning": "#F2B17D",
+    "danger": "#F07173",
+    "seatAvailable": "#263847",
+    "seatSelected": "#EF715F",
+    "seatSold": "#4A505C",
+    "seatHeld": "#B07C49",
+    "seatVip": "#485B78"
+  },
+  "typography": {
+    "family": "Inter, Arial, sans-serif",
+    "scale": {
+      "display": 44,
+      "h1": 32,
+      "h2": 24,
+      "h3": 18,
+      "body": 14,
+      "small": 12,
+      "caption": 10
+    }
+  },
+  "spacing": {
+    "unit": 4,
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius": {
+    "small": 8,
+    "medium": 12,
+    "large": 16,
+    "hero": 22,
+    "pill": 999
+  },
+  "layout": {
+    "desktopFrame": "1440×1000",
+    "mobileFrame": "390×844",
+    "adminSidebar": 250,
+    "customerContentMax": 1300
+  },
+  "components": [
+    "Button / Primary, Secondary, Disabled",
+    "Text field / Default, Focus, Error",
+    "Badge / Status",
+    "Movie card / Poster + rating + age label",
+    "Cinema card",
+    "Seat / Available, Selected, Held, Sold, Locked, VIP, Sweetbox",
+    "Booking stepper",
+    "Order summary",
+    "Warning modal / No cancellation & refund",
+    "QR ticket",
+    "Data table",
+    "Admin sidebar",
+    "Chart card",
+    "Check-in result"
+  ],
+  "accessibility": {
+    "contrast": "Target WCAG 2.1 AA",
+    "minimumMobileWidth": 360,
+    "keyboardFocus": "Visible focus outline",
+    "seatLabels": "Every seat has accessible row/number/status label"
+  }
+}

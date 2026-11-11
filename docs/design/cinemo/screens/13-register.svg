@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000">
+<defs>
+        <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#311C39"/><stop offset=".52" stop-color="#171D32"/><stop offset="1" stop-color="#10131C"/></linearGradient>
+        <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6B56"/><stop offset="1" stop-color="#E63C58"/></linearGradient>
+        <linearGradient id="poster1" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F2A65A"/><stop offset=".5" stop-color="#A64D58"/><stop offset="1" stop-color="#261B35"/></linearGradient>
+        <linearGradient id="poster2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#294C60"/><stop offset=".55" stop-color="#4D6D76"/><stop offset="1" stop-color="#171C2D"/></linearGradient>
+        <linearGradient id="poster3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#624D91"/><stop offset=".5" stop-color="#C16A83"/><stop offset="1" stop-color="#23223B"/></linearGradient>
+        <linearGradient id="poster4" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1C7775"/><stop offset=".55" stop-color="#E1B46A"/><stop offset="1" stop-color="#172338"/></linearGradient>
+        <linearGradient id="poster5" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#BE5446"/><stop offset=".5" stop-color="#563D62"/><stop offset="1" stop-color="#111727"/></linearGradient>
+        <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#000" flood-opacity=".26"/></filter>
+        </defs>
+<rect width="100%" height="100%" fill="#0B0D12"/>
+<rect x="0" y="0" width="1440" height="1000" rx="0" fill="url(#hero)" stroke="none" stroke-width="1" opacity="1"/>
+<circle cx="270" cy="760" r="250" fill="#2A283C" stroke="none" stroke-width="1"/>
+<circle cx="260" cy="760" r="165" fill="#3D3549" stroke="none" stroke-width="1"/>
+<text x="80" y="85" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="26" font-weight="850" fill="#FFFFFF" text-anchor="start" opacity="1">CINEMO</text>
+<text x="80" y="360" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="38" font-weight="800" fill="#FFFFFF" text-anchor="start" opacity="1">Một tài khoản,</text>
+<text x="80" y="407" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="38" font-weight="800" fill="#FFFFFF" text-anchor="start" opacity="1">cả thế giới điện ảnh.</text>
+<text x="80" y="455" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="16" font-weight="450" fill="#CFD4DE" text-anchor="start" opacity="1">Lưu rạp yêu thích, quản lý vé và đặt chỗ</text>
+<text x="80" y="483" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="16" font-weight="450" fill="#CFD4DE" text-anchor="start" opacity="1">nhanh chóng ở mọi rạp trong chuỗi.</text>
+<rect x="760" y="75" width="560" height="850" rx="16" fill="#111722" stroke="#303847" stroke-width="1" opacity="1"/>
+<text x="820" y="135" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="27" font-weight="800" fill="#FFFFFF" text-anchor="start" opacity="1">Tạo tài khoản CINEMO</text>
+<text x="820" y="167" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="450" fill="#9CA6B5" text-anchor="start" opacity="1">Đăng ký để bắt đầu hành trình xem phim.</text>
+<text x="820" y="208" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB1BF" text-anchor="start" opacity="1">Họ và tên</text>
+<rect x="820" y="218" width="440" height="47" rx="10" fill="#121721" stroke="#303746" stroke-width="1" opacity="1"/>
+<text x="834" y="246" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#E8EBF0" text-anchor="start" opacity="1">Nguyễn Minh Đức</text>
+<text x="820" y="293" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB1BF" text-anchor="start" opacity="1">Email</text>
+<rect x="820" y="303" width="440" height="47" rx="10" fill="#121721" stroke="#303746" stroke-width="1" opacity="1"/>
+<text x="834" y="331" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#E8EBF0" text-anchor="start" opacity="1">email@example.com</text>
+<text x="820" y="378" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#AAB1BF" text-anchor="start" opacity="1">Mật khẩu</text>
+<rect x="820" y="388" width="440" height="47" rx="10" fill="#121721" stroke="#303746" stroke-width="1" opacity="1"/>
+<text x="834" y="416" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#E8EBF0" text-anchor="start" opacity="1">Tối thiểu 8 ký tự</text>
+<text x="820" y="455" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="500" fill="#8F9AAA" text-anchor="start" opacity="1">Độ mạnh mật khẩu</text>
+<rect x="820" y="466" width="140" height="4" rx="3" fill="#EF725F" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="965" y="466" width="140" height="4" rx="3" fill="#EF725F" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="1110" y="466" width="150" height="4" rx="3" fill="#303746" stroke="none" stroke-width="1" opacity="1"/>
+<text x="820" y="491" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="550" fill="#8DDEB0" text-anchor="start" opacity="1">Mật khẩu tốt</text>
+<rect x="820" y="520" width="18" height="18" rx="4" fill="#202735" stroke="#FF9B87" stroke-width="1" opacity="1"/>
+<text x="847" y="534" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="450" fill="#BDC5D0" text-anchor="start" opacity="1">Tôi đồng ý Điều khoản sử dụng và Chính sách bảo mật</text>
+<rect x="820" y="559" width="18" height="18" rx="4" fill="#202735" stroke="#596273" stroke-width="1" opacity="1"/>
+<text x="847" y="573" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="450" fill="#8E99A9" text-anchor="start" opacity="1">Tôi muốn nhận email ưu đãi và tin tức (không bắt buộc)</text>
+<rect x="820" y="610" width="440" height="48" rx="12" fill="url(#accent)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="1040.0" y="639.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#FFFFFF" text-anchor="middle" opacity="1">Tạo tài khoản</text>
+<line x1="820" y1="690" x2="1000" y2="690" stroke="#303846" stroke-width="1"/>
+<text x="1040" y="694" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="9" font-weight="650" fill="#778292" text-anchor="middle" opacity="1">HOẶC</text>
+<line x1="1080" y1="690" x2="1260" y2="690" stroke="#303846" stroke-width="1"/>
+<rect x="820" y="715" width="210" height="42" rx="12" fill="#202634" stroke="#343B49" stroke-width="1" opacity="1"/>
+<text x="925.0" y="741.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#E5E8EE" text-anchor="middle" opacity="1">Google</text>
+<rect x="1050" y="715" width="210" height="42" rx="12" fill="#202634" stroke="#343B49" stroke-width="1" opacity="1"/>
+<text x="1155.0" y="741.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#E5E8EE" text-anchor="middle" opacity="1">Facebook</text>
+<text x="1040" y="805" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="500" fill="#D5DBE4" text-anchor="middle" opacity="1">Đã có tài khoản?  Đăng nhập</text>
+<text x="1040" y="870" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="450" fill="#778394" text-anchor="middle" opacity="1">Email xác nhận có hiệu lực trong 24 giờ.</text>
+</svg>

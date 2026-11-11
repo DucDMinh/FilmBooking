@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000">
+<defs>
+        <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#311C39"/><stop offset=".52" stop-color="#171D32"/><stop offset="1" stop-color="#10131C"/></linearGradient>
+        <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6B56"/><stop offset="1" stop-color="#E63C58"/></linearGradient>
+        <linearGradient id="poster1" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F2A65A"/><stop offset=".5" stop-color="#A64D58"/><stop offset="1" stop-color="#261B35"/></linearGradient>
+        <linearGradient id="poster2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#294C60"/><stop offset=".55" stop-color="#4D6D76"/><stop offset="1" stop-color="#171C2D"/></linearGradient>
+        <linearGradient id="poster3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#624D91"/><stop offset=".5" stop-color="#C16A83"/><stop offset="1" stop-color="#23223B"/></linearGradient>
+        <linearGradient id="poster4" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1C7775"/><stop offset=".55" stop-color="#E1B46A"/><stop offset="1" stop-color="#172338"/></linearGradient>
+        <linearGradient id="poster5" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#BE5446"/><stop offset=".5" stop-color="#563D62"/><stop offset="1" stop-color="#111727"/></linearGradient>
+        <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#000" flood-opacity=".26"/></filter>
+        </defs>
+<rect width="100%" height="100%" fill="#0B0D12"/>
+<rect x="0" y="0" width="1440" height="82" rx="0" fill="#10131B" stroke="none" stroke-width="1" opacity="1"/>
+<text x="70" y="49" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="25" font-weight="850" fill="#FFFFFF" text-anchor="start" opacity="1">CINEMO</text>
+<rect x="70" y="58" width="70" height="3" rx="2" fill="url(#accent)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="250" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Phim</text>
+<text x="330" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Rạp chiếu</text>
+<text x="435" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Khuyến mãi</text>
+<rect x="790" y="21" width="190" height="40" rx="10" fill="#171C26" stroke="#2B3240" stroke-width="1" opacity="1"/>
+<circle cx="812" cy="41" r="6" fill="none" stroke="#D1D7E2" stroke-width="1.5"/>
+<line x1="816" y1="45" x2="821" y2="50" stroke="#D1D7E2" stroke-width="1.5"/>
+<text x="832" y="46" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="600" fill="#E8EBF0" text-anchor="start" opacity="1">Hà Nội</text>
+<text x="952" y="46" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="16" font-weight="500" fill="#9EA6B5" text-anchor="start" opacity="1">⌄</text>
+<rect x="1010" y="21" width="210" height="40" rx="10" fill="#171C26" stroke="#2B3240" stroke-width="1" opacity="1"/>
+<text x="1030" y="47" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#768092" text-anchor="start" opacity="1">⌕  Tìm phim, rạp...</text>
+<rect x="1240" y="21" width="130" height="40" rx="12" fill="#202634" stroke="#343B49" stroke-width="1" opacity="1"/>
+<text x="1305.0" y="46.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#E5E8EE" text-anchor="middle" opacity="1">Đăng nhập</text>
+<line x1="0" y1="81" x2="1440" y2="81" stroke="#272D39" stroke-width="1"/>
+<text x="70" y="129" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="750" fill="#FF8A76" text-anchor="start" opacity="1">THƯỞNG THỨC ĐIỆN ẢNH THEO CÁCH CỦA BẠN</text>
+<rect x="70" y="155" width="1300" height="350" rx="22" fill="url(#hero)" stroke="none" stroke-width="1" opacity="1"/>
+<circle cx="1110" cy="300" r="135" fill="#E5A16D" stroke="none" stroke-width="1"/>
+<circle cx="1110" cy="300" r="100" fill="#F2C48D" stroke="none" stroke-width="1"/>
+<circle cx="1110" cy="300" r="62" fill="#24233A" stroke="none" stroke-width="1"/>
+<path d="M820 505 Q920 300 1080 365 Q1200 410 1370 250 L1370 505Z" fill="#0B101C" opacity=".72"/>
+<rect x="112" y="195" width="105" height="26" rx="13" fill="#3A2639" stroke="none" stroke-width="1" opacity="1"/>
+<text x="164.5" y="212" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#FFC3B8" text-anchor="middle" opacity="1">PHIM NỔI BẬT</text>
+<text x="112" y="260" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="44" font-weight="850" fill="#FFFFFF" text-anchor="start" opacity="1">ĐÊM CUỐI</text>
+<text x="112" y="310" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="44" font-weight="850" fill="#FFFFFF" text-anchor="start" opacity="1">CÙNG ÁNH SAO</text>
+<text x="112" y="350" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="16" font-weight="450" fill="#D2D6DF" text-anchor="start" opacity="1">Một hành trình vượt qua mọi giới hạn.</text>
+<text x="112" y="390" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="500" fill="#B8C0CE" text-anchor="start" opacity="1">Khởi chiếu 14.11.2026  •  2D  •  T16</text>
+<rect x="112" y="425" width="155" height="46" rx="12" fill="url(#accent)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="189.5" y="453.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#FFFFFF" text-anchor="middle" opacity="1">Đặt vé ngay  →</text>
+<rect x="280" y="425" width="135" height="46" rx="12" fill="#202634" stroke="#343B49" stroke-width="1" opacity="1"/>
+<text x="347.5" y="453.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#E5E8EE" text-anchor="middle" opacity="1">Xem trailer</text>
+<text x="70" y="565" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="24" font-weight="750" fill="#F6F7F9" text-anchor="start" opacity="1">Phim đang chiếu</text>
+<text x="1370" y="563" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="650" fill="#FF8975" text-anchor="end" opacity="1">Xem tất cả  →</text>
+<rect x="70" y="590" width="185" height="195" rx="12" fill="url(#poster1)" stroke="none" stroke-width="1" opacity="1"/>
+<circle cx="195.8" cy="650.45" r="40.7" fill="#F7C57A" stroke="none" stroke-width="1"/>
+<path d="M70 722.6 Q125.5 671.9 175.45 732.35 T255 710.9 L255 785 L70 785Z" fill="#101521" opacity=".72"/>
+<text x="82" y="747" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="750" fill="#FFFFFF" text-anchor="start" opacity="1">Vệt sáng cuối cùng</text>
+<text x="82" y="766" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="8" font-weight="650" fill="#F4D6C9" text-anchor="start" opacity="1">PHIM ĐANG CHIẾU</text>
+<rect x="79" y="600" width="38" height="26" rx="13" fill="#191D2A" stroke="none" stroke-width="1" opacity="1"/>
+<text x="98.0" y="617" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle" opacity="1">T16</text>
+<text x="70" y="808" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#F3F4F6" text-anchor="start" opacity="1">Vệt sáng cuối cùng</text>
+<text x="70" y="829" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="400" fill="#8F99A9" text-anchor="start" opacity="1">2D • Phụ đề</text>
+<text x="70" y="850" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="650" fill="#E7A89B" text-anchor="start" opacity="1">Từ 75.000đ</text>
+<rect x="336" y="590" width="185" height="195" rx="12" fill="url(#poster2)" stroke="none" stroke-width="1" opacity="1"/>
+<circle cx="461.8" cy="650.45" r="40.7" fill="#A9CED4" stroke="none" stroke-width="1"/>
+<path d="M336 722.6 Q391.5 671.9 441.45 732.35 T521 710.9 L521 785 L336 785Z" fill="#101521" opacity=".72"/>
+<text x="348" y="747" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="750" fill="#FFFFFF" text-anchor="start" opacity="1">Thành phố lạc lối</text>
+<text x="348" y="766" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="8" font-weight="650" fill="#F4D6C9" text-anchor="start" opacity="1">PHIM ĐANG CHIẾU</text>
+<rect x="345" y="600" width="38" height="26" rx="13" fill="#191D2A" stroke="none" stroke-width="1" opacity="1"/>
+<text x="364.0" y="617" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle" opacity="1">T13</text>
+<text x="336" y="808" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#F3F4F6" text-anchor="start" opacity="1">Thành phố lạc lối</text>
+<text x="336" y="829" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="400" fill="#8F99A9" text-anchor="start" opacity="1">2D • Phụ đề</text>
+<text x="336" y="850" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="650" fill="#E7A89B" text-anchor="start" opacity="1">Từ 75.000đ</text>
+<rect x="602" y="590" width="185" height="195" rx="12" fill="url(#poster3)" stroke="none" stroke-width="1" opacity="1"/>
+<circle cx="727.8" cy="650.45" r="40.7" fill="#E8A0B4" stroke="none" stroke-width="1"/>
+<path d="M602 722.6 Q657.5 671.9 707.45 732.35 T787 710.9 L787 785 L602 785Z" fill="#101521" opacity=".72"/>
+<text x="614" y="747" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="750" fill="#FFFFFF" text-anchor="start" opacity="1">Mùa hè năm ấy</text>
+<text x="614" y="766" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="8" font-weight="650" fill="#F4D6C9" text-anchor="start" opacity="1">PHIM ĐANG CHIẾU</text>
+<rect x="611" y="600" width="38" height="26" rx="13" fill="#191D2A" stroke="none" stroke-width="1" opacity="1"/>
+<text x="630.0" y="617" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle" opacity="1">T18</text>
+<text x="602" y="808" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#F3F4F6" text-anchor="start" opacity="1">Mùa hè năm ấy</text>
+<text x="602" y="829" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="400" fill="#8F99A9" text-anchor="start" opacity="1">2D • Phụ đề</text>
+<text x="602" y="850" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="650" fill="#E7A89B" text-anchor="start" opacity="1">Từ 75.000đ</text>
+<rect x="868" y="590" width="185" height="195" rx="12" fill="url(#poster4)" stroke="none" stroke-width="1" opacity="1"/>
+<circle cx="993.8" cy="650.45" r="40.7" fill="#B4D7B9" stroke="none" stroke-width="1"/>
+<path d="M868 722.6 Q923.5 671.9 973.45 732.35 T1053 710.9 L1053 785 L868 785Z" fill="#101521" opacity=".72"/>
+<text x="880" y="747" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="750" fill="#FFFFFF" text-anchor="start" opacity="1">Hành tinh xanh</text>
+<text x="880" y="766" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="8" font-weight="650" fill="#F4D6C9" text-anchor="start" opacity="1">PHIM ĐANG CHIẾU</text>
+<rect x="877" y="600" width="38" height="26" rx="13" fill="#191D2A" stroke="none" stroke-width="1" opacity="1"/>
+<text x="896.0" y="617" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle" opacity="1">P</text>
+<text x="868" y="808" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#F3F4F6" text-anchor="start" opacity="1">Hành tinh xanh</text>
+<text x="868" y="829" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="400" fill="#8F99A9" text-anchor="start" opacity="1">2D • Phụ đề</text>
+<text x="868" y="850" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="650" fill="#E7A89B" text-anchor="start" opacity="1">Từ 75.000đ</text>
+<rect x="1134" y="590" width="185" height="195" rx="12" fill="url(#poster5)" stroke="none" stroke-width="1" opacity="1"/>
+<circle cx="1259.8" cy="650.45" r="40.7" fill="#DE9D7E" stroke="none" stroke-width="1"/>
+<path d="M1134 722.6 Q1189.5 671.9 1239.45 732.35 T1319 710.9 L1319 785 L1134 785Z" fill="#101521" opacity=".72"/>
+<text x="1146" y="747" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="750" fill="#FFFFFF" text-anchor="start" opacity="1">Mật mã bóng đêm</text>
+<text x="1146" y="766" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="8" font-weight="650" fill="#F4D6C9" text-anchor="start" opacity="1">PHIM ĐANG CHIẾU</text>
+<rect x="1143" y="600" width="38" height="26" rx="13" fill="#191D2A" stroke="none" stroke-width="1" opacity="1"/>
+<text x="1162.0" y="617" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle" opacity="1">K</text>
+<text x="1134" y="808" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#F3F4F6" text-anchor="start" opacity="1">Mật mã bóng đêm</text>
+<text x="1134" y="829" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="400" fill="#8F99A9" text-anchor="start" opacity="1">2D • Phụ đề</text>
+<text x="1134" y="850" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="650" fill="#E7A89B" text-anchor="start" opacity="1">Từ 75.000đ</text>
+<text x="70" y="900" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="19" font-weight="750" fill="#F5F6F8" text-anchor="start" opacity="1">Rạp nổi bật gần bạn</text>
+<rect x="70" y="915" width="405" height="76" rx="16" fill="#151A24" stroke="#252C39" stroke-width="1" opacity="1"/>
+<text x="88" y="947" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#F3F4F6" text-anchor="start" opacity="1">CINEMO Long Biên</text>
+<text x="88" y="970" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="400" fill="#969FAE" text-anchor="start" opacity="1">Aeon Mall Long Biên</text>
+<rect x="505" y="915" width="405" height="76" rx="16" fill="#151A24" stroke="#252C39" stroke-width="1" opacity="1"/>
+<text x="523" y="947" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#F3F4F6" text-anchor="start" opacity="1">CINEMO Cầu Giấy</text>
+<text x="523" y="970" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="400" fill="#969FAE" text-anchor="start" opacity="1">Indochina Plaza</text>
+<rect x="940" y="915" width="405" height="76" rx="16" fill="#151A24" stroke="#252C39" stroke-width="1" opacity="1"/>
+<text x="958" y="947" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#F3F4F6" text-anchor="start" opacity="1">CINEMO Hà Đông</text>
+<text x="958" y="970" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="400" fill="#969FAE" text-anchor="start" opacity="1">The Pride, Hà Đông</text>
+</svg>

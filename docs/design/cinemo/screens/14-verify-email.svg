@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000">
+<defs>
+        <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#311C39"/><stop offset=".52" stop-color="#171D32"/><stop offset="1" stop-color="#10131C"/></linearGradient>
+        <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6B56"/><stop offset="1" stop-color="#E63C58"/></linearGradient>
+        <linearGradient id="poster1" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F2A65A"/><stop offset=".5" stop-color="#A64D58"/><stop offset="1" stop-color="#261B35"/></linearGradient>
+        <linearGradient id="poster2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#294C60"/><stop offset=".55" stop-color="#4D6D76"/><stop offset="1" stop-color="#171C2D"/></linearGradient>
+        <linearGradient id="poster3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#624D91"/><stop offset=".5" stop-color="#C16A83"/><stop offset="1" stop-color="#23223B"/></linearGradient>
+        <linearGradient id="poster4" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1C7775"/><stop offset=".55" stop-color="#E1B46A"/><stop offset="1" stop-color="#172338"/></linearGradient>
+        <linearGradient id="poster5" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#BE5446"/><stop offset=".5" stop-color="#563D62"/><stop offset="1" stop-color="#111727"/></linearGradient>
+        <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#000" flood-opacity=".26"/></filter>
+        </defs>
+<rect width="100%" height="100%" fill="#0B0D12"/>
+<rect x="0" y="0" width="1440" height="1000" rx="0" fill="url(#hero)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="80" y="85" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="26" font-weight="850" fill="#FFFFFF" text-anchor="start" opacity="1">CINEMO</text>
+<rect x="390" y="170" width="660" height="610" rx="16" fill="#111722" stroke="#303847" stroke-width="1" opacity="1"/>
+<circle cx="720" cy="280" r="45" fill="#263642" stroke="none" stroke-width="1"/>
+<text x="720" y="292" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="32" font-weight="700" fill="#9ED8D6" text-anchor="middle" opacity="1">✉</text>
+<text x="720" y="365" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="25" font-weight="800" fill="#FFFFFF" text-anchor="middle" opacity="1">Kiểm tra hộp thư của bạn</text>
+<text x="720" y="405" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="450" fill="#AAB3C1" text-anchor="middle" opacity="1">Chúng tôi đã gửi liên kết xác nhận đến</text>
+<text x="720" y="435" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle" opacity="1">duc.nguyen@email.com</text>
+<text x="720" y="495" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#9CA6B5" text-anchor="middle" opacity="1">Mở email và nhấn “Xác nhận tài khoản” để kích hoạt.</text>
+<text x="720" y="520" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="450" fill="#778394" text-anchor="middle" opacity="1">Liên kết có hiệu lực trong 24 giờ.</text>
+<rect x="520" y="575" width="400" height="46" rx="12" fill="url(#accent)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="720.0" y="603.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#FFFFFF" text-anchor="middle" opacity="1">Mở ứng dụng email</text>
+<text x="720" y="665" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="450" fill="#AAB3C1" text-anchor="middle" opacity="1">Chưa nhận được email?</text>
+<text x="720" y="690" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="650" fill="#FF9B87" text-anchor="middle" opacity="1">Gửi lại email  •  Có thể gửi lại sau 00:42</text>
+</svg>

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000">
+<defs>
+        <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#311C39"/><stop offset=".52" stop-color="#171D32"/><stop offset="1" stop-color="#10131C"/></linearGradient>
+        <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6B56"/><stop offset="1" stop-color="#E63C58"/></linearGradient>
+        <linearGradient id="poster1" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F2A65A"/><stop offset=".5" stop-color="#A64D58"/><stop offset="1" stop-color="#261B35"/></linearGradient>
+        <linearGradient id="poster2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#294C60"/><stop offset=".55" stop-color="#4D6D76"/><stop offset="1" stop-color="#171C2D"/></linearGradient>
+        <linearGradient id="poster3" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#624D91"/><stop offset=".5" stop-color="#C16A83"/><stop offset="1" stop-color="#23223B"/></linearGradient>
+        <linearGradient id="poster4" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1C7775"/><stop offset=".55" stop-color="#E1B46A"/><stop offset="1" stop-color="#172338"/></linearGradient>
+        <linearGradient id="poster5" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#BE5446"/><stop offset=".5" stop-color="#563D62"/><stop offset="1" stop-color="#111727"/></linearGradient>
+        <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#000" flood-opacity=".26"/></filter>
+        </defs>
+<rect width="100%" height="100%" fill="#0B0D12"/>
+<rect x="0" y="0" width="1440" height="82" rx="0" fill="#10131B" stroke="none" stroke-width="1" opacity="1"/>
+<text x="70" y="49" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="25" font-weight="850" fill="#FFFFFF" text-anchor="start" opacity="1">CINEMO</text>
+<rect x="70" y="58" width="70" height="3" rx="2" fill="url(#accent)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="250" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Phim</text>
+<text x="330" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Rạp chiếu</text>
+<text x="435" y="48" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="500" fill="#ADB4C1" text-anchor="start" opacity="1">Khuyến mãi</text>
+<rect x="790" y="21" width="190" height="40" rx="10" fill="#171C26" stroke="#2B3240" stroke-width="1" opacity="1"/>
+<circle cx="812" cy="41" r="6" fill="none" stroke="#D1D7E2" stroke-width="1.5"/>
+<line x1="816" y1="45" x2="821" y2="50" stroke="#D1D7E2" stroke-width="1.5"/>
+<text x="832" y="46" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="600" fill="#E8EBF0" text-anchor="start" opacity="1">Hà Nội</text>
+<text x="952" y="46" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="16" font-weight="500" fill="#9EA6B5" text-anchor="start" opacity="1">⌄</text>
+<rect x="1010" y="21" width="210" height="40" rx="10" fill="#171C26" stroke="#2B3240" stroke-width="1" opacity="1"/>
+<text x="1030" y="47" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="400" fill="#768092" text-anchor="start" opacity="1">⌕  Tìm phim, rạp...</text>
+<rect x="1240" y="21" width="130" height="40" rx="12" fill="#202634" stroke="#343B49" stroke-width="1" opacity="1"/>
+<text x="1305.0" y="46.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#E5E8EE" text-anchor="middle" opacity="1">Đăng nhập</text>
+<line x1="0" y1="81" x2="1440" y2="81" stroke="#272D39" stroke-width="1"/>
+<rect x="70" y="105" width="108" height="26" rx="13" fill="#29222D" stroke="none" stroke-width="1" opacity="1"/>
+<text x="124.0" y="122" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#FF9A87" text-anchor="middle" opacity="1">BƯỚC 4 / 5</text>
+<text x="70" y="156" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="28" font-weight="800" fill="#FFFFFF" text-anchor="start" opacity="1">Xác nhận đơn hàng</text>
+<text x="70" y="184" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#9EA8B7" text-anchor="start" opacity="1">Kiểm tra kỹ rạp, suất chiếu và ghế trước khi thanh toán.</text>
+<rect x="70" y="220" width="780" height="485" rx="16" fill="#151A24" stroke="#252C39" stroke-width="1" opacity="1"/>
+<text x="100" y="263" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="18" font-weight="700" fill="#F5F6F8" text-anchor="start" opacity="1">Thông tin suất chiếu</text>
+<rect x="100" y="284" width="115" height="26" rx="13" fill="#273B38" stroke="none" stroke-width="1" opacity="1"/>
+<text x="157.5" y="301" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="600" fill="#92DAB2" text-anchor="middle" opacity="1">RẠP ĐÃ CHỌN</text>
+<text x="100" y="345" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="18" font-weight="800" fill="#FFFFFF" text-anchor="start" opacity="1">CINEMO LONG BIÊN</text>
+<text x="100" y="373" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#AAB3C1" text-anchor="start" opacity="1">Aeon Mall Long Biên, 27 Cổ Linh, Long Biên, Hà Nội</text>
+<text x="100" y="420" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="15" font-weight="650" fill="#F5F6F8" text-anchor="start" opacity="1">Vệt sáng cuối cùng</text>
+<text x="100" y="446" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="450" fill="#8E99A9" text-anchor="start" opacity="1">T16 • 2D • Phụ đề</text>
+<text x="100" y="492" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="550" fill="#DCE1E8" text-anchor="start" opacity="1">19:30  •  Thứ Tư, 11/11/2026  •  Phòng 03</text>
+<text x="100" y="535" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="500" fill="#939EAE" text-anchor="start" opacity="1">Ghế</text>
+<text x="100" y="560" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="start" opacity="1">E5, E6</text>
+<text x="100" y="620" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#AEB7C5" text-anchor="start" opacity="1">Combo Couple × 1</text>
+<text x="790" y="620" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="650" fill="#F0F2F5" text-anchor="end" opacity="1">145.000đ</text>
+<rect x="880" y="220" width="490" height="485" rx="16" fill="#151A24" stroke="#252C39" stroke-width="1" opacity="1"/>
+<text x="910" y="263" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="18" font-weight="700" fill="#F5F6F8" text-anchor="start" opacity="1">Tổng thanh toán</text>
+<text x="910" y="320" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#AAB3C1" text-anchor="start" opacity="1">Vé (2 ghế)</text>
+<text x="1330" y="320" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#F3F5F7" text-anchor="end" opacity="1">180.000đ</text>
+<text x="910" y="355" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="450" fill="#AAB3C1" text-anchor="start" opacity="1">Combo</text>
+<text x="1330" y="355" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="600" fill="#F3F5F7" text-anchor="end" opacity="1">145.000đ</text>
+<line x1="910" y1="382" x2="1330" y2="382" stroke="#2A2F3B" stroke-width="1"/>
+<text x="910" y="430" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="14" font-weight="650" fill="#F3F5F7" text-anchor="start" opacity="1">Tổng cộng</text>
+<text x="1330" y="430" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="24" font-weight="800" fill="#FF9A88" text-anchor="end" opacity="1">325.000đ</text>
+<rect x="910" y="465" width="420" height="145" rx="12" fill="#34232B" stroke="#7F464B" stroke-width="1" opacity="1"/>
+<text x="930" y="494" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="12" font-weight="800" fill="#FFB0A2" text-anchor="start" opacity="1">⚠  LƯU Ý QUAN TRỌNG</text>
+<text x="930" y="520" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="500" fill="#F1D8D4" text-anchor="start" opacity="1">Vé đã mua không thể huỷ, đổi hoặc hoàn tiền,</text>
+<text x="930" y="541" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="500" fill="#F1D8D4" text-anchor="start" opacity="1">trừ trường hợp rạp huỷ suất. Vé chỉ dùng tại</text>
+<text x="930" y="562" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="11" font-weight="500" fill="#F1D8D4" text-anchor="start" opacity="1">CINEMO Long Biên. Vui lòng kiểm tra kỹ thông tin.</text>
+<rect x="910" y="575" width="18" height="18" rx="4" fill="#171B25" stroke="#FF9A88" stroke-width="1" opacity="1"/>
+<text x="938" y="589" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="10" font-weight="500" fill="#DCE0E7" text-anchor="start" opacity="1">Tôi đã đọc và đồng ý điều kiện vé.</text>
+<rect x="910" y="635" width="420" height="48" rx="12" fill="url(#accent)" stroke="none" stroke-width="1" opacity="1"/>
+<text x="1120.0" y="664.0" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="13" font-weight="650" fill="#FFFFFF" text-anchor="middle" opacity="1">Thanh toán 325.000đ  →</text>
+<text x="1120" y="687" font-family="Inter, ui-sans-serif, Arial, sans-serif" font-size="9" font-weight="400" fill="#758092" text-anchor="middle" opacity="1">Nút chỉ khả dụng sau khi xác nhận điều khoản</text>
+</svg>
