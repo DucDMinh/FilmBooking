@@ -41,9 +41,12 @@ Mọi response đi qua helper chung `ok()` / `fail()` (không viết tay `res.js
 
 | Nhóm | Ví dụ | Auth | Ghi chú |
 |------|-------|------|---------|
-| Auth | `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh` | public/refresh | rate-limit chặt (`skills/security/*`) |
-| Users | `GET/POST /users`, `GET/PUT/DELETE /users/:id` | required | `:id` phải verify ownership — BOLA/IDOR |
-| <Resource> | `...` | ... | ... |
+| Health | `GET /health` | `@Public()` | Kiểm tra sống còn API |
+| Me / Wiring | `GET /me` | JWT (HS256 / JWKS RS256·ES256) | Trả profile, `emailConfirmed`, `roles`, `cinemas` được gán |
+| Auth mở rộng | `POST /auth/register`, `POST /auth/login`, `POST /auth/resend-confirmation`, `POST /auth/forgot-password`, `POST /auth/reset-password` | `@Public()` | Turnstile, chặn disposable email, khoá 5 lần sai/15' (`ACCOUNT_LOCKED` 423 + `email_outbox`), cooldown resend 60s (`RATE_LIMITED` 429), hạn link reset 1h (G5=C), không lộ email tồn tại (R-12) |
+| Hồ sơ khách (`ProfileModule`) | `GET/PATCH /me/profile`, `POST /me/email`, `POST /me/avatar`, `PUT /me/preferences`, `PUT/DELETE /me/favorites/:cinemaId`, `PUT /me/province`, `DELETE /me` | JWT (`forUser(jwt)` RLS) | SĐT VN / ngày sinh / avatar ≤2MB (422); xoá tài khoản xác thực lại mật khẩu/fresh token, ẩn danh hoá PII, giữ đơn/vé cho kế toán |
+| Catalog công khai & Quản trị (`CatalogModule`) | `GET /provinces`, `GET /cinemas`, `GET /cinemas/:code`, `GET /home`, `GET /movies`, `GET /movies/:slug`, `POST/PATCH/DELETE /admin/movies`, `POST/PATCH /admin/cinemas` | Public / Admin / Manager (`@CinemaScope`) | Lọc rạp `OPEN` cho khách (AC-19, R-33); phân loại Đang chiếu / Sắp chiếu (#13); Manager chỉ sửa thông tin rạp mình |
+| Vận hành rạp (`CinemaOpsModule`) | `GET/POST/PATCH/DELETE /admin/cinemas/:cinemaId/rooms`, `PUT /admin/rooms/:roomId/seats`, `POST /admin/rooms/:roomId/seats/copy`, `GET/POST/PATCH/DELETE /admin/cinemas/:cinemaId/showtimes`, `POST .../showtimes/bulk`, `POST .../showtimes/:id/close\|open`, `GET/POST/DELETE .../seat-locks`, `GET/PATCH .../settings` | Admin / Manager / Staff (`@CinemaScope`) | Chống trùng lịch chiếu phòng (409 `SHOWTIME_OVERLAP` kèm danh sách suất trùng — AC-14), bảo vệ suất đã bán vé (R-54), chọn cột tường minh cho `showtime_seat_locks` |
 
 ## Error codes
 

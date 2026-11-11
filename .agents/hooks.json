@@ -1,0 +1,78 @@
+{
+  "agent-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/agent-guard.mjs",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/agent-guard.mjs",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "invoke_subagent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/agent-guard.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "session-context": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node ./hooks/session-context.mjs",
+        "timeout": 10
+      }
+    ]
+  },
+  "live-studio": {
+    "PreToolUse": [
+      {
+        "matcher": "invoke_subagent|send_message",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/live-studio.mjs pre",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "invoke_subagent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/live-studio.mjs post",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./hooks/live-studio.mjs stop",
+        "timeout": 10
+      }
+    ]
+  }
+}

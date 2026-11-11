@@ -29,7 +29,13 @@ export const envSchema = z
     SUPABASE_URL: z.url(),
     SUPABASE_ANON_KEY: requiredString,
     SUPABASE_SERVICE_ROLE_KEY: requiredString,
-    SUPABASE_JWT_SECRET: requiredString,
+    // Cần ít nhất một trong SUPABASE_JWT_SECRET (HS256) / SUPABASE_JWKS_URL (RS256, ES256) — kiểm ở superRefine.
+    SUPABASE_JWT_SECRET: optionalString,
+    SUPABASE_JWKS_URL: z.url().optional(),
+    // Mặc định `<SUPABASE_URL>/auth/v1`; đặt khi Supabase phát hành token với issuer khác (custom domain, localhost vs 127.0.0.1).
+    SUPABASE_JWT_ISSUER: optionalString,
+    // Số proxy tin cậy phía trước API (Render/Vercel = 1). Mặc định: 1 ở production, 0 còn lại.
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).optional(),
     PAYOS_CLIENT_ID: optionalString,
     PAYOS_API_KEY: optionalString,
     PAYOS_CHECKSUM_KEY: optionalString,
@@ -67,13 +73,28 @@ export class EnvValidationError extends Error {
   }
 }
 
+/** Phải có ít nhất một cách xác thực JWT: secret (HS256) hoặc JWKS (RS256/ES256). */
+function jwtVerifierIssues(present: Record<string, string | undefined>): z.core.$ZodIssue[] {
+  if (present.SUPABASE_JWT_SECRET || present.SUPABASE_JWKS_URL) return [];
+  return [
+    {
+      code: "custom",
+      path: ["SUPABASE_JWT_SECRET"],
+      message: "required unless SUPABASE_JWKS_URL is set",
+      input: undefined,
+    },
+  ];
+}
+
 /** Chuỗi rỗng coi như chưa đặt (vd `FOO=` trong .env). */
 export function parseEnv(raw: Record<string, string | undefined>): Env {
   const present = Object.fromEntries(
     Object.entries(raw).filter(([, value]) => value !== undefined && value !== ""),
   );
   const result = envSchema.safeParse(present);
-  if (!result.success) throw new EnvValidationError(result.error.issues);
+  // Kiểm ngoài superRefine: Zod bỏ qua refine khi object đã có lỗi field khác, mà ta muốn báo đủ một lượt.
+  const issues = [...(result.success ? [] : result.error.issues), ...jwtVerifierIssues(present)];
+  if (!result.success || issues.length > 0) throw new EnvValidationError(issues);
   return result.data;
 }
 

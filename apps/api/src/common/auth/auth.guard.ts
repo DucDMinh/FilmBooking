@@ -1,7 +1,7 @@
 import { Inject, Injectable, type CanActivate, type ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ERROR_CODES } from "@filmbooking/shared";
-import { jwtVerify } from "jose";
+import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify, type JWTVerifyGetKey } from "jose";
 import { ENV, type Env } from "../../config/env";
 import { AppException } from "../errors/app-exception";
 import { IS_PUBLIC_KEY, type AuthUser } from "./decorators";
@@ -16,22 +16,27 @@ interface AuthRequest {
   user?: AuthUser;
 }
 
+const ASYMMETRIC_ALGORITHMS = ["RS256", "ES256"];
+
 /**
- * Xác thực JWT Supabase (HS256, SUPABASE_JWT_SECRET, aud=authenticated, iss=<SUPABASE_URL>/auth/v1)
- * và gắn `request.user`. Hạn chế: chỉ HS256; project dùng khoá bất đối xứng (JWKS) cần bổ sung sau.
+ * Xác thực JWT Supabase (aud=authenticated, iss=SUPABASE_JWT_ISSUER hoặc <SUPABASE_URL>/auth/v1)
+ * và gắn `request.user`. Thuật toán chọn theo header `alg`: HS256 -> SUPABASE_JWT_SECRET;
+ * RS256/ES256 -> JWKS từ SUPABASE_JWKS_URL (jose tự cache + refetch khi gặp kid mới). Alg khác (kể cả none) bị từ chối.
  * `request.user` chứa JWT thô: không log/serialize. Không tin claim `user_metadata` (user tự sửa được).
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
-  private readonly key: Uint8Array;
+  private readonly secretKey?: Uint8Array;
+  private readonly jwks?: JWTVerifyGetKey;
   private readonly issuer: string;
 
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(ENV) env: Env,
   ) {
-    this.key = new TextEncoder().encode(env.SUPABASE_JWT_SECRET);
-    this.issuer = `${env.SUPABASE_URL.replace(/\/+$/, "")}/auth/v1`;
+    this.secretKey = env.SUPABASE_JWT_SECRET ? new TextEncoder().encode(env.SUPABASE_JWT_SECRET) : undefined;
+    this.jwks = env.SUPABASE_JWKS_URL ? createRemoteJWKSet(new URL(env.SUPABASE_JWKS_URL)) : undefined;
+    this.issuer = env.SUPABASE_JWT_ISSUER ?? `${env.SUPABASE_URL.replace(/\/+$/, "")}/auth/v1`;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -52,11 +57,16 @@ export class AuthGuard implements CanActivate {
 
   private async verify(token: string): Promise<AuthUser> {
     try {
-      const { payload } = await jwtVerify(token, this.key, {
-        algorithms: ["HS256"],
-        audience: "authenticated",
-        issuer: this.issuer,
-      });
+      const { alg } = decodeProtectedHeader(token);
+      const options = { audience: "authenticated", issuer: this.issuer };
+      let payload;
+      if (alg === "HS256" && this.secretKey) {
+        ({ payload } = await jwtVerify(token, this.secretKey, { ...options, algorithms: ["HS256"] }));
+      } else if (alg && ASYMMETRIC_ALGORITHMS.includes(alg) && this.jwks) {
+        ({ payload } = await jwtVerify(token, this.jwks, { ...options, algorithms: ASYMMETRIC_ALGORITHMS }));
+      } else {
+        throw new Error("unsupported alg");
+      }
       const claims = payload as SupabaseClaims;
       if (!claims.sub) throw new Error("missing sub");
       return {

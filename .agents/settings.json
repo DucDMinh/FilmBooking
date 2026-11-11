@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "deny": [
+      "command(git push --force *)",
+      "command(git push -f *)",
+      "command(git reset --hard *)",
+      "command(git clean -f *)",
+      "command(git clean -fd *)",
+      "command(git clean -fdx *)"
+    ]
+  },
+  "toolPermission": "always-proceed",
+  "hooksConfig": "./hooks.json"
+}

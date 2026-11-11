@@ -135,6 +135,16 @@ models:
   reviewer:       opus     
   spec_validator: haiku    # họ thứ 3 nếu có
   change_request: inherit  # ⭐ agent hậu-build (classify/spec/task) — cửa vào /change
+
+agy_models:                # Antigravity (agy) invoke_subagent Model: pro | flash | flash_lite | inherit
+  builder:        flash    # thực thi task nhanh, hiệu quả
+  builder-strong: pro      # chỉ dùng khi user yêu cầu rõ (§7 gate)
+  reviewer:       pro      # khác tier với builder (flash ↔ pro) để chống thiên lệch tự đánh giá
+  spec-validator: flash    # cross-check spec/phase độc lập
+  spec-publisher: inherit
+  design:         inherit
+  graph:          inherit
+  spec-init:      inherit
 ```
 
 ## UI rules (nếu project có UI)
