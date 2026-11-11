@@ -18,18 +18,18 @@ build (initial)
 - layer-2-task-02 (Migration bảo mật & vận hành: login attempts, rate limit, email dùng m)
 
 ## Acceptance Criteria
-- [ ] AC-24 DB: suất có 10 đơn paid → 10 affected, 10 email PENDING trong outbox, hold_seats/POS trả SHOWTIME_CANCELLED (R-127).
-- [ ] Đơn POS paid → affected + cờ counter_contact, không có email.
-- [ ] AC-26: rạp còn 3 suất tương lai đã bán → set_cinema_status lỗi kèm danh sách 3 suất; sau khi huỷ 3 suất → đổi được.
-- [ ] Chỉ Manager rạp đó/Admin gọi được (kiểm trong hàm theo auth.uid()).
+- [x] AC-24 DB: suất có 10 đơn paid → 10 affected, 10 email PENDING trong outbox, hold_seats/POS trả SHOWTIME_CANCELLED (R-127).
+- [x] Đơn POS paid → affected + cờ counter_contact, không có email.
+- [x] AC-26: rạp còn 3 suất tương lai đã bán → set_cinema_status lỗi kèm danh sách 3 suất; sau khi huỷ 3 suất → đổi được.
+- [x] Chỉ Manager rạp đó/Admin gọi được (kiểm trong hàm theo auth.uid()).
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `supabase/migrations/20261111040300_rpc_cancel.sql`

@@ -18,19 +18,19 @@ build (initial)
 - layer-2-task-02 (Migration bảo mật & vận hành: login attempts, rate limit, email dùng m)
 
 ## Acceptance Criteria
-- [ ] AC-10: gọi record_payment_event + confirm_paid 3 lần cùng mã → 1 payment, 1 ticket, 1 email trong outbox.
-- [ ] AC-11: đơn expired, ghế đã SOLD cho đơn khác, tiền về → needs_manual_review + 1 email khách; không sinh vé.
-- [ ] Tiền về cho đơn expired nhưng ghế còn trống & trước mốc đóng bán → paid tự động.
-- [ ] Số tiền lệch → không xác nhận, đơn giữ nguyên, ghi cờ mismatch cho báo cáo đối soát.
-- [ ] confirm_pos_sale với hold đã hết hạn/của nguồn khác → lỗi, không SOLD.
+- [x] AC-10: gọi record_payment_event + confirm_paid 3 lần cùng mã → 1 payment, 1 ticket, 1 email trong outbox.
+- [x] AC-11: đơn expired, ghế đã SOLD cho đơn khác, tiền về → needs_manual_review + 1 email khách; không sinh vé.
+- [x] Tiền về cho đơn expired nhưng ghế còn trống & trước mốc đóng bán → paid tự động.
+- [x] Số tiền lệch → không xác nhận, đơn giữ nguyên, ghi cờ mismatch cho báo cáo đối soát.
+- [x] confirm_pos_sale với hold đã hết hạn/của nguồn khác → lỗi, không SOLD.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `supabase/migrations/20261111040100_rpc_payment.sql`

@@ -43,7 +43,7 @@
 
 ---
 
-## 3. Trạng thái dự án hiện tại (Hoàn tất Layer 3 → Chuẩn bị Layer 4)
+## 3. Trạng thái dự án hiện tại (Hoàn tất Layer 4 → Chuẩn bị Layer 5)
 
 - **Mode:** `initial-build`
 - **Work item:** `build/build-filmbooking`
@@ -52,11 +52,7 @@
   - Layer 1 (task-01, task-02, task-03): Next.js App Router, NestJS core, migration lõi RLS.
   - Layer 2 (task-01..05): Catalog schema, bảo mật/vận hành, Nest guards, Web data layer & shell. Phase review: PASS.
   - Layer 3 (task-01..07): Pricing 2 cấp + ngày lễ (`price_quote`), Booking schema + RLS, AuthModule global + JWKS + MeModule, CatalogModule, CinemaOpsModule, AuthExtModule, ProfileModule. Phase review: PASS (`layer-3-done`).
-- **Tiếp theo:** **Layer 4** (7 tasks — chờ user duyệt Human Checkpoint 3):
-  - `layer-4-task-01`: RPC nguyên tử giữ ghế (`hold_seats`, `release_hold`, `release_expired_holds`)
-  - `layer-4-task-02`: RPC áp mã giảm giá & chốt đơn thanh toán (`apply_voucher`, `confirm_order_paid`, `expire_order`)
-  - `layer-4-task-03`: RPC huỷ suất chiếu hàng loạt + tự động hoàn tiền (`cancel_showtimes_and_refund`)
-  - `layer-4-task-04`: RPC soát vé QR tại quầy (`checkin_ticket` — quy tắc -30' → +20')
-  - `layer-4-task-05`: Seed dữ liệu mẫu (`supabase/seed.sql`)
-  - `layer-4-task-06`: UI công khai xem phim/rạp/lịch chiếu (`apps/web/src/app/(public)/*`)
-  - `layer-4-task-07`: Wiring API #2 (`CatalogModule`, `CinemaOpsModule`, `AuthExtModule`, `ProfileModule` vào `AppModule` + cập nhật `database.types.ts`)
+  - Layer 4 (task-01..12): RPC giữ ghế (`hold_seats`), RPC thanh toán & POS (`confirm_paid`, `confirm_pos_sale`), RPC voucher (`apply_voucher`), RPC huỷ suất hàng loạt (`cancel_showtimes`, `set_cinema_status`), RPC soát vé & 4 view báo cáo (`checkin_ticket`), Identity hooks + `IdentityModule`, Wiring API #2 (`AppModule` + `database.types.ts`), `PricingModule`, Seed demo idempotent (`supabase/seed.sql`), Web công khai (`/`, `/phim`, `/phim/[slug]`, `/lich-chieu`, `/rap`, `/rap/[code]`, `sitemap.ts`, `robots.ts`). Phase review: PASS (`layer-4-done`).
+- **Tiếp theo:** **Layer 5** (13 tasks — chờ user duyệt Human Checkpoint 4):
+  - `layer-5-task-01..09`: API Booking, PayOS Webhook, Mail Worker (`email_outbox`), API Check-in, API POS `/pos/v1/*`, API Quản trị, API Đơn hàng & Báo cáo, API Huỷ suất/Đơn bị ảnh hưởng, Wiring API #3.
+  - `layer-5-task-10..13`: Web Auth, Web Hồ sơ/Tài khoản, Web Liên kết MXH/Bảo mật, Web Admin Shell (`/admin`).

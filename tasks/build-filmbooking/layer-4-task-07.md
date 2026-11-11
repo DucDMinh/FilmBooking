@@ -23,15 +23,15 @@ Import CatalogModule, CinemaOpsModule, AuthExtModule, ProfileModule vào AppModu
 - layer-3-task-07 (API hồ sơ khách: xem/sửa, đổi email, ảnh đại diện, xoá tài khoản, tuỳ )
 
 ## Acceptance Criteria
-- [ ] App khởi động, smoke e2e: `GET /cinemas`, `GET /movies` 200 (public); `GET /me/profile` 401 khi không token.
-- [ ] database.types.ts cập nhật bảng layer 3; `pnpm -w typecheck` PASS.
+- [x] App khởi động, smoke e2e: `GET /cinemas`, `GET /movies` 200 (public); `GET /me/profile` 401 khi không token.
+- [x] database.types.ts cập nhật bảng layer 3; `pnpm -w typecheck` PASS.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `apps/api/src/app.module.ts`

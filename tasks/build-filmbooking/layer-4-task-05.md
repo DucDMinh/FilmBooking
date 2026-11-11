@@ -17,18 +17,18 @@ build (initial)
 - layer-3-task-02 (Migration bảng đơn hàng, trạng thái ghế, vé, thanh toán, voucher, đơn )
 
 ## Acceptance Criteria
-- [ ] AC-12: quét lại vé đã check-in → USED kèm checked_in_at + tên người soát lần đầu.
-- [ ] AC-13: vé HN01, Staff ở HN02 quét → WRONG_CINEMA chỉ có tên + địa chỉ HN01; vé không bị check-in; có log.
-- [ ] Quét sau giờ bắt đầu + thời lượng phim → EXPIRED.
-- [ ] Manager HN01 gọi báo cáo HN02 → rỗng/lỗi (RLS); Admin xem toàn chuỗi.
+- [x] AC-12: quét lại vé đã check-in → USED kèm checked_in_at + tên người soát lần đầu.
+- [x] AC-13: vé HN01, Staff ở HN02 quét → WRONG_CINEMA chỉ có tên + địa chỉ HN01; vé không bị check-in; có log.
+- [x] Quét sau giờ bắt đầu + thời lượng phim → EXPIRED.
+- [x] Manager HN01 gọi báo cáo HN02 → rỗng/lỗi (RLS); Admin xem toàn chuỗi.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `supabase/migrations/20261111040400_rpc_checkin_reports.sql`

@@ -56,10 +56,24 @@
 | `voucher_redemptions` | Lịch sử áp dụng voucher theo đơn | belongs to `vouchers`, `orders`, `profiles` | 20261111030100 |
 | `affected_order_actions` | Xử lý đơn bị ảnh hưởng khi huỷ suất/đóng rạp (đổi suất / hoàn tiền thủ công bởi Staff/Manager rạp đó) | belongs to `orders`, `cinemas`, `showtimes` | 20261111030100 |
 | `checkin_logs` | Nhật ký soát vé tại rạp | belongs to `tickets`, `orders`, `showtimes`, `cinemas` | 20261111030100 |
+| `pos_requests` | Idempotency key cho giữ ghế / thanh toán POS theo rạp (`UNIQUE(cinema_id, request_id)` + `payload_hash` — AC-25) | belongs to `cinemas`, `orders`, `profiles` | 20261111040000 |
+| `affected_order_cases` | Hồ sơ đơn bị ảnh hưởng khi huỷ suất chiếu hàng loạt (`counter_contact` cho đơn POS không email — AC-24) | belongs to `orders`, `showtimes`, `cinemas` | 20261111040300 |
+| `oauth_missing_email_requests` | Token một lần xác thực email bổ sung cho đăng nhập Facebook không có email (R-21, #18) | belongs to `profiles` | 20261111040500 |
 
-Storage buckets: `posters`, `banners` (Admin ghi), `cinema-images` (Admin hoặc Manager đúng thư mục `<cinema_id>/`), `avatars` (thư mục `<uid>/`). Cron: `delete-unconfirmed-users` (mỗi giờ; bỏ qua user Facebook), `purge-expired-ops-data` (dọn `rate_limit_buckets`, `login_attempts`, `pos_api_logs` quá hạn). Auth hook: `public.hook_before_user_created` (chỉ cho `app_metadata.created_via='nest'` hoặc Google/Facebook).
+Views báo cáo MVP (`security_invoker = true`, lọc theo `has_cinema_scope(cinema_id)` / `is_admin()` — `20261111040400`):
+- `v_report_revenue_daily`: doanh thu theo ngày/rạp/kênh (`WEB`/`POS`), tổng đơn, số vé, gross/discount/net VND.
+- `v_report_showtime_sales`: doanh thu & tỷ lệ lấp đầy theo phim/suất/rạp (`room_capacity` loại trừ `AISLE`/`BROKEN`).
+- `v_report_payos_reconciliation`: đối soát PayOS (lệch tiền `AMOUNT_MISMATCH`, pending quá hạn, `NEEDS_MANUAL_REVIEW`).
+- `v_report_cancelled_showtimes`: thống kê suất bị huỷ & số đơn `affected` / đã đổi / hoàn thủ công (lát MVP của R-119).
 
-Hàm RLS & nghiệp vụ dùng chung: `is_admin()`, `has_cinema_role(cinema_id, staff_role[])`, `price_quote(showtime_id, seat_ids[])`, `showtime_has_sales(showtime_id)` (SECURITY DEFINER / STABLE, `search_path = ''`).
+Storage buckets: `posters`, `banners` (Admin ghi), `cinema-images` (Admin hoặc Manager đúng thư mục `<cinema_id>/`), `avatars` (thư mục `<uid>/`). Cron: `delete-unconfirmed-users` (mỗi giờ; bỏ qua user Facebook), `purge-expired-ops-data` (dọn `rate_limit_buckets`, `login_attempts`, `pos_api_logs` quá hạn). Auth hook & triggers: `public.hook_before_user_created` (chỉ cho `app_metadata.created_via='nest'` hoặc Google/Facebook), `trg_guard_identity_insert` (chặn auto-merge OAuth vào tài khoản mật khẩu AC-04 & chặn 1 MXH gắn 2 user R-23), `trg_on_identity_change` (enqueue email thông báo liên kết/huỷ liên kết R-24).
+
+Hàm RLS & RPC nghiệp vụ dùng chung:
+- Lõi & Giá (Layer 1–3): `is_admin()`, `has_cinema_role(cinema_id, staff_role[])`, `has_cinema_scope(cinema_id)`, `price_quote(showtime_id, seat_ids[])`, `showtime_has_sales(showtime_id)`.
+- Đặt vé & Thanh toán (Layer 4): `hold_seats`, `release_seats`, `extend_pos_hold`, `expire_overdue_holds` (`20261111040000`); `confirm_paid`, `mark_payment_cancelled`, `confirm_zero_amount`, `confirm_pos_sale` (`20261111040100`); `apply_voucher`, `remove_voucher` (`20261111040200`).
+- Vận hành, Soát vé & Báo cáo (Layer 4): `preview_cancel_showtimes`, `cancel_showtimes`, `set_cinema_status` (`20261111040300`); `checkin_ticket`, `report_revenue`, `report_by_movie_showtime`, `report_payos_reconciliation`, `report_cancelled_showtimes` (`20261111040400`).
+- Định danh OAuth (Layer 4): `check_oauth_collision`, `get_user_identities`, `link_user_identity`, `unlink_user_identity`, `mark_password_set` (`20261111040500`).
+- Seed demo local (`supabase/seed.sql` + `supabase/seed/README.md`): idempotent 5 rạp (`HN01..DN01`), 16 phòng, 1.056 ghế, 12 phim đủ 5 nhãn tuổi, bảng giá chuỗi + override `HN02` (AC-15), 298 suất chiếu (có suất mở bán trong 2 giờ tới), 6 tài khoản mẫu, 5 POS API keys.
 
 Ghi chú thiết kế (G1 & G2 — Layer 3):
 - Nguồn override thời gian dọn phòng theo rạp duy nhất là `cinemas.cleaning_minutes` (fallback `app_settings['default_cleaning_minutes']`); key `default_cleaning_minutes` bị cấm trong `cinema_settings` để tránh 2 nguồn xung đột. Khi đổi `movies.duration_minutes` hoặc `cinemas.cleaning_minutes`, trigger tự tính lại `ends_at` cho các suất tương lai chưa bán vé (nếu gây chồng giờ → raise `23P01`).

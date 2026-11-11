@@ -18,18 +18,18 @@ Trigger trên auth.identities insert/delete → enqueue email thông báo liên 
 - layer-2-task-03 (Nest guards: AuthGuard (JWT Supabase), RolesGuard, CinemaScopeGuard, J)
 
 ## Acceptance Criteria
-- [ ] **Spike đầu tiên:** xác minh Supabase Auth có tự gộp identity OAuth vào user có cùng email đã xác nhận không. Nếu có → cấu hình/hook (vd Auth Hook hoặc kiểm ở callback) để AC-04 đúng: Google `a@x.com` lần đầu khi đã có tài khoản mật khẩu → không tạo user mới, không tự liên kết, yêu cầu đăng nhập mật khẩu rồi liên kết. Ghi kết quả spike vào Notes task.
-- [ ] AC-05: tài khoản chỉ còn Facebook → DELETE identity facebook → 409 kèm hướng dẫn thêm phương thức khác.
-- [ ] Liên kết/huỷ liên kết → 1 email thông báo trong outbox.
-- [ ] Facebook không email + email nhập trùng → phản hồi chung 'kiểm tra email', không tạo user trùng, không lộ email tồn tại.
+- [x] **Spike đầu tiên:** xác minh Supabase Auth có tự gộp identity OAuth vào user có cùng email đã xác nhận không. Nếu có → cấu hình/hook (vd Auth Hook hoặc kiểm ở callback) để AC-04 đúng: Google `a@x.com` lần đầu khi đã có tài khoản mật khẩu → không tạo user mới, không tự liên kết, yêu cầu đăng nhập mật khẩu rồi liên kết. Ghi kết quả spike vào Notes task.
+- [x] AC-05: tài khoản chỉ còn Facebook → DELETE identity facebook → 409 kèm hướng dẫn thêm phương thức khác.
+- [x] Liên kết/huỷ liên kết → 1 email thông báo trong outbox.
+- [x] Facebook không email + email nhập trùng → phản hồi chung 'kiểm tra email', không tạo user trùng, không lộ email tồn tại.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Migration local apply sạch (`pnpm db:migrate`) + pgTAP `pnpm db:test` PASS; inspect artifact: destructive op → gắn `HIGH_RISK_MIGRATION`
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `supabase/migrations/20261111040500_identity_hooks.sql`
@@ -41,5 +41,10 @@ Trigger trên auth.identities insert/delete → enqueue email thông báo liên 
 
 ## Notes
 Migration versioned, KHÔNG sửa migration đã apply; chạy local `pnpm db:migrate` (= `supabase migration up`) + `pnpm db:test` PASS. Cấm `db push`/`db reset` cho staging/prod. Rủi ro cao: hành vi auto-linking của Supabase (xem PLAN § Rủi ro).
+- **Kết quả Spike (Supabase GoTrue Auto-linking — AC-04 & R-23):**
+  1. Mặc định Supabase GoTrue có xu hướng tự động gộp (auto-link) identity OAuth mới vào tài khoản đã tồn tại có cùng email đã xác nhận (`email_confirmed_at is not null`).
+  2. Giải pháp phòng vệ 2 lớp đã triển khai:
+     - **Lớp 1 (Database Trigger `trg_guard_identity_insert` BEFORE INSERT ON `auth.identities` trong `20261111040500_identity_hooks.sql`):** Nếu `NEW.provider not in ('email', 'phone')` và user `NEW.user_id` đã có phương thức mật khẩu (`provider = 'email'` hoặc `encrypted_password <> ''`) mà biến phiên `current_setting('app.allow_identity_link', true) <> 'true'` → chặn đứng bằng lỗi `OAUTH_AUTO_MERGE_BLOCKED` (`23514`). Chỉ RPC `public.link_user_identity` (khi user đã đăng nhập chủ động liên kết) mới bật `app.allow_identity_link = 'true'`. Đồng thời cưỡng chế `(provider, provider_id)` duy nhất toàn hệ thống (`OAUTH_IDENTITY_ALREADY_LINKED`, R-23).
+     - **Lớp 2 (API Callback Guard `POST /auth/oauth/callback-check` gọi RPC `public.check_oauth_collision`):** Kiểm tra trước khi hoàn tất OAuth callback, trả `409 Conflict` (`OAUTH_EMAIL_COLLISION_LOGIN_REQUIRED`) hướng dẫn người dùng đăng nhập bằng mật khẩu trước rồi vào trang Hồ sơ để liên kết.
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.

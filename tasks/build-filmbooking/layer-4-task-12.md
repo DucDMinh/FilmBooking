@@ -20,17 +20,17 @@ Màn 03 + 04: danh sách rạp theo tỉnh, chi tiết rạp (địa chỉ, bả
 - layer-3-task-07 (API hồ sơ khách: xem/sửa, đổi email, ảnh đại diện, xoá tài khoản, tuỳ )
 
 ## Acceptance Criteria
-- [ ] SSR trang rạp; bản đồ không chặn LCP (dynamic import, ssr:false).
-- [ ] Chưa đăng nhập bấm yêu thích → chuyển `/dang-nhap?next=` (R-16).
-- [ ] `/sitemap.xml` liệt kê rạp OPEN + phim; `/robots.txt` chặn /admin, /staff, /pos, /tai-khoan.
-- [ ] Không lưu toạ độ người dùng (NFR-08).
+- [x] SSR trang rạp; bản đồ không chặn LCP (dynamic import, ssr:false).
+- [x] Chưa đăng nhập bấm yêu thích → chuyển `/dang-nhap?next=` (R-16).
+- [x] `/sitemap.xml` liệt kê rạp OPEN + phim; `/robots.txt` chặn /admin, /staff, /pos, /tai-khoan.
+- [x] Không lưu toạ độ người dùng (NFR-08).
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `apps/web/src/app/(public)/rap/page.tsx`

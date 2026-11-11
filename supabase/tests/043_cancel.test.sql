@@ -317,7 +317,7 @@ select is(
   'AC-24: Không có email nào được tạo cho đơn POS không có email'
 );
 
-select tap_as('00000000-0000-0000-0000-000000000b01'); -- Trở lại Manager HN01
+select tap_as('00000000-0000-0000-0000-000000000d12'); -- Đăng nhập khách hàng 0d12 để thử gọi hold_seats
 
 -- Thử gọi hold_seats vào suất chiếu đã CANCELLED -> trả lỗi SHOWTIME_CANCELLED (R-127)
 select throws_ok(
@@ -331,6 +331,8 @@ select throws_ok(
   null,
   'AC-24 / R-127: hold_seats từ chối suất đã huỷ với lỗi SHOWTIME_CANCELLED'
 );
+
+select tap_as('00000000-0000-0000-0000-000000000b01'); -- Trở lại Manager HN01
 
 -- ---------------------------------------------------------------------------
 -- 4. Test set_cinema_status & AC-26 (Chặn đóng rạp khi còn suất đã bán)
