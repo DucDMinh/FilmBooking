@@ -1,8 +1,24 @@
+# env: chỉ .env.example được commit
+.env
+.env.*
+!.env.example
+!.env.local.example
 .env.local
+
 node_modules/
 dist/
 build/
+.next/
+coverage/
+*.tsbuildinfo
 .DS_Store
+
+# tool output
+playwright-report/
+test-results/
+.lighthouseci/
+supabase/.temp/
+supabase/.branches/
 
 # runtime state (loop ghi, không commit)
 .context/agents-live.json
