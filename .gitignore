@@ -29,3 +29,6 @@ supabase/.branches/
 
 # Claude Code: cấu hình cá nhân, không commit
 .claude/settings.local.json
+
+# Next.js (file tự sinh)
+next-env.d.ts

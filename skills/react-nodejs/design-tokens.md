@@ -120,7 +120,7 @@ Mặc định theo handoff: **pill trung tính** `--color-age-pill` + chữ tr�
 | T16 | `--color-accent-soft` | `--color-accent-hover` | 6.37 | ≥ 16 tuổi |
 | T18 | `--color-danger-banner` | `--color-danger-strong` | 8.54 | ≥ 18 tuổi |
 
-Luôn hiển thị **chữ** nhãn (không chỉ màu); `aria-label="Phân loại T16: phim dành cho khán giả từ 16 tuổi trở lên"`.
+Luôn hiển thị **chữ** nhãn (không chỉ màu); tên đọc được qua `role="img"` + `aria-label="Phân loại T16: phim dành cho khán giả từ 16 tuổi trở lên"` (`aria-label` trên `<span>` không role bị trình đọc màn hình bỏ qua — reconcile theo review layer-2/task-05).
 
 ### 1.8 Trạng thái đơn / soát vé / email / thực thể [bổ sung]
 

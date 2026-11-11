@@ -56,3 +56,6 @@ User: **bỏ toàn bộ design cũ** (tông vàng hổ phách, Be Vietnam Pro, a
 
 ### Phạm vi mobile (2026-11-11)
 User: **vẫn làm giao diện web responsive cho mobile** (mobile-first ≥ 360px theo NFR-11), **không làm app native** (đã ngoài phạm vi BRD §4.2). 3 màn mobile của handoff (30–32) là tham chiếu cho layout mobile.
+
+### Cookie phiên HttpOnly (2026-11-11, review layer-2/task-04)
+User chọn: **cookie HttpOnly + proxy qua Next** (đúng BRD NFR-06) thay vì cookie đọc được bằng JS. Hệ quả: đăng nhập/OAuth callback/logout ở Route Handler server Next; browser gọi API qua `/api/proxy/*`; Supabase browser client chỉ dùng anon key (Realtime công khai). Đổi `middleware.ts` → `proxy.ts` (Next 16.4.6).

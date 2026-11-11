@@ -15,7 +15,7 @@ Ba bất biến quyết định kiến trúc:
 
 ## Approach (đã chọn — user, 2026-11-10)
 **Next.js (frontend) + NestJS (backend API) + Supabase**, pnpm monorepo.
-- **Next.js** (App Router, TS): chỉ UI. Mọi dữ liệu đi qua REST của Nest (kể cả SSR trang phim/rạp). Dùng Supabase Auth ở client cho đăng nhập/OAuth/linking và **subscribe Supabase Realtime trực tiếp** cho sơ đồ ghế.
+- **Next.js** (App Router, TS): chỉ UI. Mọi dữ liệu đi qua REST của Nest (kể cả SSR trang phim/rạp). Phiên đăng nhập nằm trong **cookie HttpOnly** do server Next quản lý (BRD NFR-06; quyết định user 2026-11-11): đăng nhập/OAuth callback/đăng xuất chạy qua Route Handler phía server, lời gọi API từ trình duyệt đi qua **proxy mỏng của Next** (`/api/proxy/*`, gắn Bearer từ cookie) tới Nest. **Realtime sơ đồ ghế** chạy trực tiếp ở client bằng anon key trên kênh công khai (không cần token user).
 - **NestJS** (TS): toàn bộ API nghiệp vụ, webhook PayOS, API POS, job endpoints, gửi email. Verify JWT Supabase ở guard; truy cập DB bằng **supabase-js mang JWT của user** → RLS vẫn thực thi theo user/rạp. **Service role** chỉ dùng trong: webhook PayOS, job, API POS (đã xác thực khoá API, cinema_id cố định), tác vụ admin cần vượt RLS có kiểm quyền ở Nest.
 - **Postgres function** cho mọi thao tác nguyên tử: giữ/nhả/bán ghế, tính & chốt giá, giữ/hoàn lượt voucher, chuyển trạng thái đơn, xác nhận thanh toán, huỷ suất. Nest không tự viết transaction nhiều bước cho các bất biến trên.
 - **Tác vụ nền** (Nest trên Render free sẽ ngủ sau 15'): việc thuần SQL (hết hạn giữ ghế, xoá tài khoản chưa xác nhận 7 ngày) chạy bằng **pg_cron** trong DB; việc cần HTTP (gửi email outbox, đối soát PayOS 5', email nhắc) → **pg_cron + pg_net** gọi `POST /jobs/*` của Nest (header `x-job-secret`, timeout đủ dài để đánh thức service).
@@ -64,7 +64,7 @@ pnpm-workspace.yaml · turbo.json (tuỳ chọn)
 
 | Module | Trách nhiệm (Nest module + DB) | Điểm thiết kế |
 |---|---|---|
-| AUTH/SOCIAL/PROFILE | Supabase Auth là nguồn đăng nhập; Nest bổ sung: lockout 5 lần/15', rate limit, blocklist email dùng một lần, consent điều khoản, profile, vai trò & rạp được gán | Đăng ký email đi qua Nest (kiểm Turnstile + rate limit + blocklist) rồi gọi Supabase Admin API; OAuth/linking chạy ở client SDK |
+| AUTH/SOCIAL/PROFILE | Supabase Auth là nguồn đăng nhập; Nest bổ sung: lockout 5 lần/15', rate limit, blocklist email dùng một lần, consent điều khoản, profile, vai trò & rạp được gán | Đăng ký email đi qua Nest (kiểm Turnstile + rate limit + blocklist) rồi gọi Supabase Admin API; OAuth/linking: khởi tạo ở client, hoàn tất (exchange code → cookie HttpOnly) ở Route Handler server |
 | CHAIN/MOVIE | CRUD rạp, phim; API công khai cho SSR | Khu vực lưu cookie + profile; định vị chỉ ở client, không lưu toạ độ |
 | CINEMA | Phòng, sơ đồ ghế, suất, bảng giá 2 cấp, ngày lễ | Exclusion constraint chống chồng giờ trong phòng; suất có vé → khoá sửa |
 | BOOKING | Giữ ghế, đơn, đếm ngược, cảnh báo + consent | RPC `hold_seats` nguyên tử; 1 đơn giữ/khách; ≤ 8 ghế; quy tắc ghế lẻ kiểm trong RPC |
@@ -91,6 +91,13 @@ Entity: `profiles`, `staff_assignments` (user ↔ cinema ↔ role), `cinemas`, `
 5. **POS:** `/pos/v1/*` xác thực Bearer key (hash) → cinema_id cố định → cùng RPC với channel `POS`; `confirm_sale` chỉ cho ghế đang được chính POS đó giữ hợp lệ. **POS giả lập** (#7): trang Staff ở Next → endpoint Nest dành cho Staff → server dùng khoá API của rạp gọi đúng service POS (khoá không ra client).
 6. **Huỷ suất/đóng rạp:** preview số đơn → RPC `cancel_showtimes(ids, reason)`: suất `cancelled`, nhả hold, đơn paid (WEB **và** POS) → `affected`, vé vô hiệu check-in; enqueue email cho đơn có email; đơn POS đánh dấu "không có email — liên hệ tại quầy" (#8). Đóng rạp bị chặn nếu còn suất tương lai đã bán chưa huỷ.
 7. **Email:** mọi email giao dịch qua `email_outbox` (trạng thái, retry, gửi lại) → job Nest gửi bằng Resend.
+
+## Xác thực phía Nest & hook đăng ký (as-built layer 2)
+- **AuthGuard**: verify JWT Supabase bằng `jose` (HS256 + `SUPABASE_JWT_SECRET`, `aud=authenticated`, `iss=<SUPABASE_URL>/auth/v1`); `AuthUser = {id, email, jwt}`. **Không tin `user_metadata`** (user tự sửa được): trạng thái xác nhận email lấy từ `auth.users.email_confirmed_at` qua `AccessService.isEmailConfirmed(req)` (service role, lazy, memo theo request).
+- **AccessService** dùng service role để tra `user_roles`/`staff_assignments`/trạng thái email (chỉ đọc, phía server); RolesGuard → CinemaScopeGuard (fail-closed, mọi cinemaId phải thuộc rạp được gán) → throttler.
+- **Hook `before_user_created`** (Postgres, `supabase/config.toml`): chỉ cho tạo user có `app_metadata.created_via='nest'` hoặc provider Google/Facebook → signup trực tiếp qua GoTrue bị chặn (bắt buộc đi qua Nest: Turnstile, consent, blocklist). Nest tạo user bằng Admin API `createUser` (không dùng `inviteUserByEmail`/`generateLink(signup)`).
+- **Proxy `/api/proxy/*`** (Next): gắn Bearer từ cookie HttpOnly; không phải lớp authz (không session → forward ẩn danh, Nest quyết định).
+- Giới hạn đã biết: chỉ HS256 (JWKS chưa hỗ trợ — xem PLAN).
 
 ## Phân quyền
 - **RLS** (DB): khách chỉ đọc/ghi dữ liệu của mình; Staff/Manager theo `cinema_id ∈ assignments(auth.uid())`; Admin toàn chuỗi.
