@@ -98,11 +98,24 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-08-round-1-review.md"
       },
       "updatedAt": "2026-11-12T04:00:42.744Z"
+    },
+    {
+      "id": "layer34-review/phase-1-task-04",
+      "title": "K2 liên kết MXH không bằng chứng sở hữu (hướng a)",
+      "status": "done",
+      "severity": "blocker",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-04-round-2-review.md"
+      },
+      "updatedAt": "2026-11-12T04:15:36.501Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T04:00:42.744Z",
+  "lastUpdated": "2026-11-12T04:15:36.501Z",
   "inProgressTask": null,
   "completedTasks": [
     {
@@ -337,11 +350,10 @@
       "task-05",
       "task-07",
       "task-06",
-      "task-08"
+      "task-08",
+      "task-04"
     ],
-    "pendingP0": [
-      "04"
-    ],
+    "pendingP0": [],
     "followups": [
       "P0-08: test 046 thêm quyền helper assert_identity_rpc_caller + case A->B cho unlink/mark_password_set",
       "Layer 5 web: AC-04 thông báo \"hãy đăng nhập bằng mật khẩu\" trước login (API không còn pre-login check)",
@@ -355,7 +367,8 @@
       "task-08 m1: 048 test anon hold_seats so khớp message permission denied; m2: test Staff/Manager đúng rạp áp/gỡ voucher đơn POS; m4: like tap_%",
       "task-08 red-before chỉ có trong journal builder, không có output thô; verify lại quyền trên staging sau deploy",
       "P1: confirm_zero_amount :805-811 nhánh elsif dead code (current_user luôn postgres); hold_seats p_request_id trả booking_code trước kiểm quyền; confirm_pos_sale chỉ service_role -> Layer 5 POS gọi qua admin() sau guard",
-      "bug-check full-project scan (2026-11-12, session khác): Defect #4 là false positive (wiring theo kế hoạch layer-5-task-09); đề xuất thêm backlog: report doanh thu theo paid_at, extend_pos_hold giới hạn số lần, sitemap lastModified, movie-card releaseDate null"
+      "bug-check full-project scan (2026-11-12, session khác): Defect #4 là false positive (wiring theo kế hoạch layer-5-task-09); đề xuất thêm backlog: report doanh thu theo paid_at, extend_pos_hold giới hạn số lần, sitemap lastModified, movie-card releaseDate null",
+      "F-2 HIGH (task-04): guard_identity_insert chặn liên kết thủ công hợp lệ cho user có mật khẩu/identity email (R-20, AC-04, R-21, NFR-17) -> thiết kế link-intent, cần chốt trước layer-5-task-12; N-1 gỡ cờ allow_identity_link thừa trong fixture 045/046"
     ],
     "newCritical": [
       "K7: SECURITY DEFINER mở cho authenticated (gộp task-08, user duyệt 2026-11-12)"
@@ -366,6 +379,8 @@
       "test": "api 211, web 93, shared, scripts 16 PASS",
       "lint": "PASS",
       "typecheck": "PASS"
-    }
+    },
+    "p0Status": "done",
+    "p0DoneAt": "2026-11-12T04:15:36.501Z"
   }
 }

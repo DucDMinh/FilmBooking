@@ -93,7 +93,6 @@ select ok(not exists (
       'public.expire_overdue_holds()',
       'public.assert_identity_rpc_caller(uuid)',
       'public.get_user_identities(uuid)',
-      'public.link_user_identity(uuid,text,text,jsonb)',
       'public.unlink_user_identity(uuid,text)',
       'public.mark_password_set(uuid)',
       'public.check_oauth_collision(text,text,text,uuid)',

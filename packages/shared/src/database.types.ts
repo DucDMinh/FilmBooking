@@ -1061,9 +1061,6 @@ isOneToOne: false
 "is_login_locked":
 { Args: { "p_email": string }; Returns: boolean
                            },
-"link_user_identity":
-{ Args: { "p_identity_data"?: Json,"p_provider": string,"p_provider_id": string,"p_user_id": string }; Returns: Json
-                           },
 "mark_password_set":
 { Args: { "p_user_id": string }; Returns: Json
                            },

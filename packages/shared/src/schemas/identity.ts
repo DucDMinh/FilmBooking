@@ -31,13 +31,6 @@ export const identityListResponseSchema = z.object({
 });
 export type IdentityListResponse = z.infer<typeof identityListResponseSchema>;
 
-export const linkIdentityInputSchema = z.object({
-  provider: z.enum(["google", "facebook"]),
-  providerId: z.string().trim().min(1).max(255),
-  identityData: z.record(z.string(), z.unknown()).optional(),
-});
-export type LinkIdentityInput = z.infer<typeof linkIdentityInputSchema>;
-
 export const addPasswordInputSchema = z.object({
   password: z
     .string()

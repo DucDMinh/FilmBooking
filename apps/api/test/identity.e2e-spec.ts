@@ -161,56 +161,6 @@ function createFakeSupabase() {
       });
     }
 
-    if (name === "link_user_identity") {
-      const userId = String(args.p_user_id);
-      const provider = String(args.p_provider);
-      const providerId = String(args.p_provider_id);
-
-      // R-23: kiểm tra xem provider + provider_id đã thuộc user khác chưa
-      const existing = [...identities.values()].find(
-        (i) => i.provider === provider && i.provider_id === providerId && i.user_id !== userId,
-      );
-      if (existing) {
-        return Promise.resolve({
-          data: null,
-          error: { code: "23505", message: "IDENTITY_ALREADY_LINKED" },
-        });
-      }
-
-      // Kiểm tra xem chính user đã có provider này chưa
-      const ownExisting = identities.get(`${userId}:${provider}`);
-      if (ownExisting) {
-        return Promise.resolve({
-          data: null,
-          error: { code: "23505", message: "IDENTITY_ALREADY_LINKED" },
-        });
-      }
-
-      const id = randomUUID();
-      const user = users.get(userId);
-      identities.set(`${userId}:${provider}`, {
-        id,
-        user_id: userId,
-        provider,
-        provider_id: providerId,
-        email: user?.email ?? null,
-        created_at: new Date().toISOString(),
-        last_sign_in_at: new Date().toISOString(),
-      });
-
-      // Trigger R-24: enqueue email_outbox
-      if (user?.email) {
-        emailOutbox.push({
-          kind: "identity_linked",
-          to_email: user.email,
-          payload: { template: "identity_linked", provider, user_id: userId, action: "linked" },
-          status: "PENDING",
-        });
-      }
-
-      return Promise.resolve({ data: { success: true, provider }, error: null });
-    }
-
     if (name === "unlink_user_identity") {
       const userId = String(args.p_user_id);
       const provider = String(args.p_provider);
@@ -608,42 +558,18 @@ describe("IdentityModule (e2e)", () => {
     });
   });
 
-  describe("POST /me/identities/link (R-21, R-23, R-24)", () => {
-    it("R-23: Từ chối liên kết tài khoản MXH đã thuộc về người dùng khác (409 IDENTITY_ALREADY_LINKED)", async () => {
+  describe("POST /me/identities/link đã gỡ (K2: không nhận providerId/identityData từ client)", () => {
+    it("providerId tự khai từ client -> 404, không tạo identity (liên kết chỉ qua supabase.auth.linkIdentity)", async () => {
       const token = await signJwt(USER_OAUTH_ONLY, "facebook_user@example.com");
-
-      // Cố liên kết provider_id 'google_bob_999' vốn đã thuộc về USER_OTHER
-      const res = await request(app.getHttpServer())
-        .post("/me/identities/link")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          provider: "google",
-          providerId: "google_bob_999",
-        });
-
-      expect(res.status).toBe(409);
-      expect(res.body.error.details?.code).toBe("IDENTITY_ALREADY_LINKED");
-    });
-
-    it("Liên kết thành công phương thức mới và enqueue email thông báo (R-24)", async () => {
-      const token = await signJwt(USER_OAUTH_ONLY, "facebook_user@example.com");
+      const before = fake.emailOutbox.length;
 
       const res = await request(app.getHttpServer())
         .post("/me/identities/link")
         .set("Authorization", `Bearer ${token}`)
-        .send({
-          provider: "google",
-          providerId: "google_brand_new_123",
-        });
+        .send({ provider: "google", providerId: "google_victim_not_owned_123" });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.provider).toBe("google");
-
-      // Kiểm tra email_outbox có email identity_linked
-      const email = fake.emailOutbox.find((m) => m.kind === "identity_linked");
-      expect(email).toBeDefined();
-      expect(email?.to_email).toBe("facebook_user@example.com");
+      expect(res.status).toBe(404);
+      expect(fake.emailOutbox.length).toBe(before);
     });
   });
 

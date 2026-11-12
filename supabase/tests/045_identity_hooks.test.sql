@@ -137,18 +137,23 @@ select is(
 );
 
 -- ---------------------------------------------------------------------------
--- 3. Kiểm tra RPC link_user_identity & Trigger trg_guard_identity_insert (AC-04, R-23)
+-- 3. Kiểm tra Trigger trg_guard_identity_insert (AC-04, R-23)
 -- ---------------------------------------------------------------------------
 
 -- R-23: Chặn liên kết tài khoản MXH đã thuộc về người dùng khác (SQLSTATE 23505)
 select throws_ok(
-  $$select public.link_user_identity('00000000-0000-0000-0000-00000000a001'::uuid, 'google', 'g_oauth_222')$$,
+  $$insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at)
+    values (gen_random_uuid(), 'google', 'g_oauth_222', '00000000-0000-0000-0000-00000000a001', '{"sub":"g_oauth_222"}'::jsonb, now(), now())$$,
   '23505',
   null,
   'R-23: Từ chối liên kết tài khoản MXH (g_oauth_222) đã thuộc về a002'
 );
 
--- AC-04: Chặn auto-merge khi chèn trực tiếp identity vào user đã có mật khẩu mà không có cờ session
+-- AC-04: Chặn auto-merge khi chèn trực tiếp identity vào user đã có mật khẩu mà không có cờ session.
+-- KNOWN GAP F-2 (task bug-layer34-review phase-1-task-04): trigger KHÔNG phân biệt được auto-merge với
+-- manual linkIdentity hợp lệ của user có mật khẩu/identity email -> cả hai đều bị chặn 23514 ở đây
+-- (R-20/AC-04 yêu cầu cho liên kết sau khi đăng nhập mật khẩu). Khi thiết kế link-intent (Layer 5) vào,
+-- test này BẮT BUỘC được cập nhật có chủ đích.
 select throws_ok(
   $$insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at)
     values (gen_random_uuid(), 'google', 'g_unauthorized_999', '00000000-0000-0000-0000-00000000a001', '{"sub":"g_unauthorized_999"}'::jsonb, now(), now())$$,
@@ -157,15 +162,17 @@ select throws_ok(
   'AC-04: Trigger trg_guard_identity_insert chặn auto-merge vào tài khoản mật khẩu'
 );
 
--- Liên kết hợp lệ qua RPC link_user_identity (chủ động set cờ phiên)
+-- Liên kết hợp lệ (đường GoTrue linkIdentity): user CHỈ OAuth, không mật khẩu, KHÔNG có cờ phiên.
+-- K2 đã gỡ RPC link_user_identity nên không còn code nào đặt app.allow_identity_link.
 select lives_ok(
-  $$select public.link_user_identity('00000000-0000-0000-0000-00000000a001'::uuid, 'facebook', 'fb_new_444')$$,
-  'Liên kết chủ động qua link_user_identity thành công'
+  $$insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at)
+    values (gen_random_uuid(), 'facebook', 'fb_new_444', '00000000-0000-0000-0000-00000000a002', '{"sub":"fb_new_444"}'::jsonb, now(), now())$$,
+  'GoTrue linkIdentity hợp lệ cho user OAuth-only (không mật khẩu, không cờ) thành công'
 );
 
 -- R-24: Trigger tự động enqueue email identity_linked
 select is(
-  (select count(*)::int from public.email_outbox where to_email = 'user_pwd@test.local' and kind = 'identity_linked'),
+  (select count(*)::int from public.email_outbox where to_email = 'user_oauth@test.local' and kind = 'identity_linked' and payload->>'provider' = 'facebook'),
   1,
   'R-24: Trigger tự động enqueue email identity_linked vào email_outbox'
 );

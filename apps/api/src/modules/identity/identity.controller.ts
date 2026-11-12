@@ -1,13 +1,11 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Req } from "@nestjs/common";
 import {
   addPasswordInputSchema,
-  linkIdentityInputSchema,
   missingEmailOAuthInputSchema,
   oauthCallbackVerifyInputSchema,
   unlinkProviderSchema,
   type AddPasswordInput,
   type IdentityListResponse,
-  type LinkIdentityInput,
   type MissingEmailOAuthInput,
   type OAuthCallbackVerifyInput,
   type UnlinkProvider,
@@ -27,15 +25,6 @@ export class IdentityController {
   @Get("me/identities")
   getIdentities(@CurrentUser() user: AuthUser): Promise<IdentityListResponse> {
     return this.identityService.getIdentities(user);
-  }
-
-  @Post("me/identities/link")
-  @HttpCode(200)
-  linkIdentity(
-    @CurrentUser() user: AuthUser,
-    @Body(new ZodValidationPipe(linkIdentityInputSchema)) body: LinkIdentityInput,
-  ): Promise<{ success: boolean; provider: string }> {
-    return this.identityService.linkIdentity(user, body);
   }
 
   @Delete("me/identities/:provider")

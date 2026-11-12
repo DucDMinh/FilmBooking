@@ -15,7 +15,8 @@
  *          `app.allow_identity_link = 'true'` -> ném ngoại lệ OAUTH_AUTO_MERGE_BLOCKED (23514).
  *      (b) Email OAuth trùng với tài khoản khác đã có -> ném OAUTH_EMAIL_COLLISION_LOGIN_REQUIRED (23514).
  *      (c) Provider + provider_id đã thuộc user khác (R-23) -> ném OAUTH_IDENTITY_ALREADY_LINKED (23505).
- *      Chỉ RPC chủ động `link_user_identity` (sau khi user đã đăng nhập) mới set cờ phiên cho phép insert.
+ *      Liên kết MXH chỉ qua luồng OAuth của GoTrue (client gọi supabase.auth.linkIdentity); server KHÔNG nhận
+ *      providerId/identityData từ client (K2: RPC link_user_identity + POST /me/identities/link đã gỡ).
  *
  *    - Lớp 2 (API Callback Collision Guard - POST /auth/oauth/callback-check):
  *      Trước khi frontend hoàn tất đổi code lấy session, API check_oauth_collision được gọi
@@ -29,7 +30,6 @@ import { ERROR_CODES } from "@filmbooking/shared";
 import type {
   AddPasswordInput,
   IdentityListResponse,
-  LinkIdentityInput,
   MissingEmailOAuthInput,
   OAuthCallbackVerifyInput,
 } from "@filmbooking/shared/schemas/identity";
@@ -67,33 +67,6 @@ export class IdentityService {
       canUnlink: Boolean(data.canUnlink),
       totalMethods: Number(data.totalMethods ?? 0),
     };
-  }
-
-  /**
-   * POST /me/identities/link (R-21, R-23)
-   * Liên kết phương thức mạng xã hội vào tài khoản hiện tại.
-   * Chặn nếu MXH đã thuộc về người dùng khác (R-23).
-   */
-  async linkIdentity(user: AuthUser, input: LinkIdentityInput): Promise<{ success: boolean; provider: string }> {
-    const admin = this.supabase.admin();
-    const { error } = await admin.rpc("link_user_identity", {
-      p_user_id: user.id,
-      p_provider: input.provider,
-      p_provider_id: input.providerId,
-      p_identity_data: input.identityData ?? {},
-    });
-
-    if (error) {
-      const msg = error.message ?? "";
-      if (error.code === "23505" || msg.includes("IDENTITY_ALREADY_LINKED") || msg.includes("da duoc lien ket")) {
-        throw new AppException(ERROR_CODES.CONFLICT, "Tài khoản mạng xã hội này đã được liên kết với một tài khoản khác.", {
-          code: "IDENTITY_ALREADY_LINKED",
-        });
-      }
-      throw error;
-    }
-
-    return { success: true, provider: input.provider };
   }
 
   /**
