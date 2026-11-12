@@ -222,11 +222,25 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-06-round-1-review.md"
       },
       "updatedAt": "2026-11-12T10:08:10.000Z"
+    },
+    {
+      "id": "layer34-review/phase-2-task-05",
+      "title": "RBAC theo §5.3: đóng/mở rạp chỉ Admin, báo cáo chỉ Manager/Admin",
+      "status": "done",
+      "severity": "high",
+      "highRiskMigration": false,
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-05-round-1-review.md"
+      },
+      "updatedAt": "2026-11-12T10:36:20.000Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T10:08:10.000Z",
+  "lastUpdated": "2026-11-12T10:36:20.000Z",
   "inProgressTask": null,
   "completedTasks": [
     {

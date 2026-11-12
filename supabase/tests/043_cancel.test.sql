@@ -1,7 +1,7 @@
 -- pgTAP: Huỷ suất chiếu hàng loạt + chặn đóng rạp còn suất đã bán (layer 4 / task 04)
 -- R-33, R-108, R-109, R-110, R-127, R-134, AC-24, AC-26
 begin;
-select plan(32);
+select plan(33);
 
 -- Helper functions
 create function public.tap_as(p_uid uuid, p_role text default 'authenticated')
@@ -343,6 +343,17 @@ select tap_as('00000000-0000-0000-0000-000000000b01'); -- Trở lại Manager HN
 -- ---------------------------------------------------------------------------
 -- 4. Test set_cinema_status & AC-26 (Chặn đóng rạp khi còn suất đã bán)
 -- ---------------------------------------------------------------------------
+-- Manager HN01 gọi set_cinema_status -> Bị từ chối 42501 (FORBIDDEN_ADMIN_REQUIRED, R-32, AC-26, M7)
+select throws_ok(
+  $$select public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'TEMP_CLOSED'::public.cinema_status)$$,
+  '42501',
+  'FORBIDDEN_ADMIN_REQUIRED',
+  'Phân quyền: Manager gọi set_cinema_status bị chặn FORBIDDEN_ADMIN_REQUIRED'
+);
+
+-- Di chuyển các bước test AC-26 sang thực hiện dưới quyền Admin
+select tap_as('00000000-0000-0000-0000-000000000a01'); -- Admin
+
 -- Rạp HN01 còn 3 suất tương lai đã bán vé (Showtime 2, 3, 4)
 -- Gọi set_cinema_status sang 'TEMP_CLOSED' phải bị lỗi kèm mã CINEMA_HAS_ACTIVE_SOLD_SHOWTIMES
 select throws_ok(
@@ -403,7 +414,7 @@ select throws_ok(
 select throws_ok(
   $$select public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'OPEN'::public.cinema_status)$$,
   '42501',
-  'FORBIDDEN_CINEMA_SCOPE',
+  'FORBIDDEN_ADMIN_REQUIRED',
   'Phân quyền: Staff không được gọi set_cinema_status'
 );
 
@@ -428,7 +439,7 @@ select throws_ok(
 select throws_ok(
   $$select public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'OPEN'::public.cinema_status)$$,
   '42501',
-  'FORBIDDEN_CINEMA_SCOPE',
+  'FORBIDDEN_ADMIN_REQUIRED',
   'Phân quyền: Manager HN02 không được đổi trạng thái rạp HN01'
 );
 

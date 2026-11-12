@@ -39,6 +39,7 @@ select set_eq(
     ('cancel_showtimes(uuid[],text,uuid)'),
     ('checkin_ticket(text,uuid,uuid)'),
     ('confirm_zero_amount(uuid)'),
+    ('has_cinema_manager_scope(uuid)'),
     ('has_cinema_role(uuid,staff_role[])'),
     ('has_cinema_scope(uuid)'),
     ('hold_seats(uuid,uuid[],text,uuid,text)'),

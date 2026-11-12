@@ -2,7 +2,7 @@
 -- Requirements: R-97, R-98, R-99, R-101, R-102, R-112, R-113, R-116, R-132
 -- Acceptance Criteria: AC-12, AC-13
 begin;
-select plan(39);
+select plan(47);
 
 create function public.tap_as(p_uid uuid, p_role text default 'authenticated')
 returns void language plpgsql as $$
@@ -476,6 +476,65 @@ select is(
   (select public.checkin_ticket('HN01-MLT001', '00000000-0000-0000-0000-0000000000c1')->>'status'),
   'USED',
   'Finding 3: Quét lần 3 khi toàn bộ vé trong đơn đã check-in trả status USED'
+);
+
+-- ---------------------------------------------------------------------------
+-- TEST 15 (M7): Phân quyền Báo cáo - Staff không được gọi 4 RPC báo cáo và View trả 0 dòng
+-- ---------------------------------------------------------------------------
+select public.tap_as('00000000-0000-0000-0000-000000000c01'); -- Staff HN01
+
+-- 1. Staff gọi 4 RPC báo cáo bị chặn 42501 FORBIDDEN_CINEMA_SCOPE
+select throws_ok(
+  $$ select * from public.report_revenue('00000000-0000-0000-0000-0000000000c1'::uuid) $$,
+  '42501',
+  'FORBIDDEN_CINEMA_SCOPE',
+  'M7: Staff HN01 gọi report_revenue bị chặn FORBIDDEN_CINEMA_SCOPE'
+);
+
+select throws_ok(
+  $$ select * from public.report_by_movie_showtime('00000000-0000-0000-0000-0000000000c1'::uuid) $$,
+  '42501',
+  'FORBIDDEN_CINEMA_SCOPE',
+  'M7: Staff HN01 gọi report_by_movie_showtime bị chặn FORBIDDEN_CINEMA_SCOPE'
+);
+
+select throws_ok(
+  $$ select * from public.report_payos_reconciliation('00000000-0000-0000-0000-0000000000c1'::uuid) $$,
+  '42501',
+  'FORBIDDEN_CINEMA_SCOPE',
+  'M7: Staff HN01 gọi report_payos_reconciliation bị chặn FORBIDDEN_CINEMA_SCOPE'
+);
+
+select throws_ok(
+  $$ select * from public.report_cancelled_showtimes('00000000-0000-0000-0000-0000000000c1'::uuid) $$,
+  '42501',
+  'FORBIDDEN_CINEMA_SCOPE',
+  'M7: Staff HN01 gọi report_cancelled_showtimes bị chặn FORBIDDEN_CINEMA_SCOPE'
+);
+
+-- 2. Staff select 4 view v_report_* trả về 0 dòng
+select is(
+  (select count(*) from public.v_report_revenue_daily),
+  0::bigint,
+  'M7: Staff HN01 đọc v_report_revenue_daily trả về 0 dòng'
+);
+
+select is(
+  (select count(*) from public.v_report_showtime_sales),
+  0::bigint,
+  'M7: Staff HN01 đọc v_report_showtime_sales trả về 0 dòng'
+);
+
+select is(
+  (select count(*) from public.v_report_payos_reconciliation),
+  0::bigint,
+  'M7: Staff HN01 đọc v_report_payos_reconciliation trả về 0 dòng'
+);
+
+select is(
+  (select count(*) from public.v_report_cancelled_showtimes),
+  0::bigint,
+  'M7: Staff HN01 đọc v_report_cancelled_showtimes trả về 0 dòng'
 );
 
 rollback;

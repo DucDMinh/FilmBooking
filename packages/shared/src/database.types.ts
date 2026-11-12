@@ -963,6 +963,9 @@ isOneToOne: false
 "get_user_identities":
 { Args: { "p_user_id": string }; Returns: Json
                            },
+"has_cinema_manager_scope":
+{ Args: { "p_cinema_id": string }; Returns: boolean
+                           },
 "has_cinema_role":
 { Args: { "p_cinema_id": string,"p_roles": (Database["public"]['Enums']["staff_role"])[] }; Returns: boolean
                            },
