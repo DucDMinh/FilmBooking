@@ -811,14 +811,14 @@ isOneToOne: false
                   ]
                 },"tickets": {
                   Row: {
-                    "checked_in_at": string | null,"checked_in_by": string | null,"cinema_id": string,"created_at": string,"id": string,"order_id": string,"order_seat_id": string,"qr_token": string,"showtime_id": string
+                    "checked_in_at": string | null,"checked_in_by": string | null,"cinema_id": string,"created_at": string,"id": string,"order_id": string,"order_seat_id": string,"qr_token": string,"seat_id": string,"showtime_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "checked_in_at"?: string | null,"checked_in_by"?: string | null,"cinema_id": string,"created_at"?: string,"id"?: string,"order_id": string,"order_seat_id": string,"qr_token"?: string,"showtime_id": string
+                    "checked_in_at"?: string | null,"checked_in_by"?: string | null,"cinema_id": string,"created_at"?: string,"id"?: string,"order_id": string,"order_seat_id": string,"qr_token"?: string,"seat_id": string,"showtime_id": string
                   }
                   Update: {
-                    "checked_in_at"?: string | null,"checked_in_by"?: string | null,"cinema_id"?: string,"created_at"?: string,"id"?: string,"order_id"?: string,"order_seat_id"?: string,"qr_token"?: string,"showtime_id"?: string
+                    "checked_in_at"?: string | null,"checked_in_by"?: string | null,"cinema_id"?: string,"created_at"?: string,"id"?: string,"order_id"?: string,"order_seat_id"?: string,"qr_token"?: string,"seat_id"?: string,"showtime_id"?: string
                   }
                   Relationships: [
                     {
@@ -1132,6 +1132,9 @@ isOneToOne: false
 { Args: { "p_channel"?: Database["public"]['Enums']["order_channel"],"p_cinema_id"?: string,"p_from_date"?: string,"p_to_date"?: string }; Returns: {
               "channel": Database["public"]['Enums']["order_channel"],"cinema_code": string,"cinema_id": string,"cinema_name": string,"gross_revenue": number,"net_revenue": number,"report_date": string,"total_discount": number,"total_orders": number,"total_tickets": number
             }[]
+                           },
+"sell_order_seats":
+{ Args: { "p_order_id": string }; Returns: boolean
                            },
 "set_cinema_status":
 { Args: { "p_cinema_id": string,"p_status": Database["public"]['Enums']["cinema_status"] }; Returns: Json

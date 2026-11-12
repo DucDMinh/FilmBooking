@@ -49,7 +49,7 @@
 | `order_seats` | Ghế thuộc đơn hàng + giá chốt từng ghế (Sweetbox 1 dòng cặp) | belongs to `orders`, `seats` | 20261111030100 |
 | `showtime_seat_states` | Trạng thái ghế theo suất (`HELD` / `SOLD`), **UNIQUE(showtime_id, seat_id)** chống bán trùng (NFR-04) | belongs to `showtimes`, `seats`, `orders` | 20261111030100 |
 | `seat_status_public` | Bảng Realtime công khai (`showtime_id`, `seat_id`, `state`, `expires_at` — không chứa `user_id`/`order_id`, NFR-05; đồng bộ qua trigger) | belongs to `showtimes`, `seats` | 20261111030100 |
-| `tickets` | Vé điện tử (`qr_token` 128-bit hex ngẫu nhiên, không PII, trạng thái check-in) | belongs to `orders`, `showtimes`, `seats`, `cinemas` | 20261111030100 |
+| `tickets` | Vé điện tử (`qr_token` 128-bit hex ngẫu nhiên, không PII, trạng thái check-in; `seat_id` denormalize từ `order_seats` bằng trigger, **UNIQUE(showtime_id, seat_id)** — một ghế × một suất tối đa một vé, lớp chặn cuối chống bán trùng, K4) | belongs to `orders`, `showtimes`, `seats`, `cinemas` | 20261111030100, 20261112060000 |
 | `payments` | Giao dịch thanh toán PayOS/POS (không lưu số thẻ/tài khoản ngân hàng — R-81) | belongs to `orders`, `cinemas` | 20261111030100 |
 | `payment_events` | Sự kiện webhook/thanh toán idempotent (`UNIQUE(provider, provider_event_id)`, không lưu raw payload) | belongs to `payments`, `orders` | 20261111030100 |
 | `vouchers` | Mã giảm giá (PERCENT / FIXED, phạm vi chuỗi hoặc rạp, giới hạn lượt/ngân sách) | belongs to `cinemas` (nullable) | 20261111030100 |
