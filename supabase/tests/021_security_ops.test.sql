@@ -1,7 +1,7 @@
 -- pgTAP: bảo mật & vận hành (layer 2 / task 02): khoá đăng nhập (AC-03), rate limit, email dùng một lần,
 -- cron xoá tài khoản chưa xác nhận (trừ Facebook), RLS/quyền, hook before_user_created.
 begin;
-select plan(27);
+select plan(26);
 
 -- ---------------------------------------------------------------------------
 -- R-11: 5 lần sai -> khoá 15 phút; sau 15 phút mở
@@ -67,10 +67,8 @@ select is((select count(*) from auth.users where id in (
 -- RLS / quyền: client không đọc được bảng nhạy cảm, không gọi được hàm
 -- ---------------------------------------------------------------------------
 select is((select count(*) from pg_tables where schemaname = 'public'
-  and tablename in ('login_attempts','rate_limit_buckets','disposable_email_domains','email_outbox','pos_api_keys','pos_api_logs')
-  and rowsecurity)::int, 6, 'RLS bật trên cả 6 bảng');
-select ok(not has_table_privilege('anon', 'public.pos_api_keys', 'select')
-      and not has_table_privilege('authenticated', 'public.pos_api_keys', 'select'), 'anon/authenticated không SELECT pos_api_keys');
+  and tablename in ('login_attempts','rate_limit_buckets','disposable_email_domains','email_outbox')
+  and rowsecurity)::int, 4, 'RLS bật trên cả 4 bảng');
 select ok(not has_table_privilege('anon', 'public.email_outbox', 'select')
       and not has_table_privilege('authenticated', 'public.email_outbox', 'select'), 'anon/authenticated không SELECT email_outbox');
 select ok(not has_function_privilege('authenticated', 'public.hit_rate_limit(text, interval, integer)', 'execute')

@@ -4,7 +4,7 @@ import { sanitizeNext } from "@/lib/auth/safe-next";
 import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
-const PROTECTED_PREFIXES = ["/tai-khoan", "/ve", "/admin", "/staff", "/pos"];
+const PROTECTED_PREFIXES = ["/tai-khoan", "/ve", "/admin", "/staff"];
 
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));

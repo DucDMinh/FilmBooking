@@ -10,7 +10,7 @@
 -- ============================================================================
 
 begin;
-select plan(41);
+select plan(39);
 
 -- ---------------------------------------------------------------------------
 -- 1. Allowlist EXECUTE (snapshot TRƯỚC khi test tạo helper nào)
@@ -39,7 +39,6 @@ select set_eq(
     ('cancel_showtimes(uuid[],text,uuid)'),
     ('checkin_ticket(text,uuid,uuid)'),
     ('confirm_zero_amount(uuid)'),
-    ('extend_pos_hold(uuid,integer)'),
     ('has_cinema_role(uuid,staff_role[])'),
     ('has_cinema_scope(uuid)'),
     ('hold_seats(uuid,uuid[],text,uuid,text)'),
@@ -88,7 +87,6 @@ select ok(not exists (
       'public.record_payment_event(bigint,text,integer,text,boolean,timestamptz,uuid,uuid)',
       'public.confirm_paid(uuid,integer,text,bigint)',
       'public.mark_payment_cancelled(uuid,text)',
-      'public.confirm_pos_sale(uuid,text)',
       'public.generate_booking_code(text)',
       'public.expire_overdue_holds()',
       'public.assert_identity_rpc_caller(uuid)',
@@ -112,9 +110,8 @@ select ok(
   has_function_privilege('service_role', 'public.record_payment_event(bigint,text,integer,text,boolean,timestamptz,uuid,uuid)', 'execute')
   and has_function_privilege('service_role', 'public.confirm_paid(uuid,integer,text,bigint)', 'execute')
   and has_function_privilege('service_role', 'public.mark_payment_cancelled(uuid,text)', 'execute')
-  and has_function_privilege('service_role', 'public.confirm_pos_sale(uuid,text)', 'execute')
   and has_function_privilege('service_role', 'public.generate_booking_code(text)', 'execute'),
-  'service_role vẫn EXECUTE được 5 hàm thanh toán/bán vé');
+  'service_role vẫn EXECUTE được 4 hàm thanh toán/bán vé');
 
 select ok(not has_function_privilege('anon', 'public.assert_identity_rpc_caller(uuid)', 'execute'),
   'anon không execute assert_identity_rpc_caller (follow-up P0-02)');
@@ -184,11 +181,11 @@ insert into public.showtimes (id, cinema_id, room_id, movie_id, starts_at, forma
    '00000000-0000-0000-0000-00000000f048', '00000000-0000-0000-0000-00000000e048', '2026-12-05 19:00:00+07', '2D');
 insert into public.vouchers (id, code, discount_type, discount_value, applies_to, active) values
   ('00000000-0000-0000-0000-000000004810', 'T48VOUCH', 'FIXED', 10000, 'ORDER', true);
--- Đơn của B (WEB) và đơn mồ côi không có chủ (POS, user_id null)
+-- Đơn của B (WEB) và đơn mồ côi không có chủ (user_id null)
 insert into public.orders (id, channel, showtime_id, user_id, status, subtotal_amount, total_amount, hold_expires_at) values
   ('00000000-0000-0000-0000-000000004851', 'WEB', '00000000-0000-0000-0000-00000000a048',
    '00000000-0000-0000-0000-000000004802', 'holding', 300000, 300000, now() + interval '10 minutes'),
-  ('00000000-0000-0000-0000-000000004852', 'POS', '00000000-0000-0000-0000-00000000a048',
+  ('00000000-0000-0000-0000-000000004852', 'WEB', '00000000-0000-0000-0000-00000000a048',
    null, 'holding', 300000, 300000, now() + interval '10 minutes');
 
 -- ---------------------------------------------------------------------------
@@ -199,8 +196,6 @@ select throws_ok($$select public.record_payment_event(1, 'evil-ref', 1, 'PAID', 
   'authenticated không ghi payment_events giả qua record_payment_event');
 select throws_ok($$select public.mark_payment_cancelled('00000000-0000-0000-0000-000000004851'::uuid, 'CANCELLED')$$, '42501', null,
   'authenticated không huỷ đơn người khác qua mark_payment_cancelled');
-select throws_ok($$select public.confirm_pos_sale('00000000-0000-0000-0000-000000004852'::uuid)$$, '42501', null,
-  'authenticated không chốt bán POS qua confirm_pos_sale');
 select throws_ok($$select public.confirm_paid('00000000-0000-0000-0000-000000004851'::uuid, 300000, 'evil', 1)$$, '42501', null,
   'authenticated không gọi confirm_paid');
 select throws_ok($$select public.generate_booking_code('T4801')$$, '42501', null,
@@ -238,8 +233,6 @@ select throws_ok($$select public.confirm_zero_amount('00000000-0000-0000-0000-00
   'A không chốt đơn 0đ của B');
 select throws_ok($$select public.confirm_zero_amount('00000000-0000-0000-0000-000000004852'::uuid)$$, '42501', null,
   'A không chốt đơn 0đ không chủ');
-select throws_ok($$select public.extend_pos_hold('00000000-0000-0000-0000-000000004852'::uuid, 5)$$, '42501', null,
-  'A (không phải nhân sự rạp) không gia hạn đơn POS');
 select throws_ok($$select public.preview_cancel_showtimes(array['00000000-0000-0000-0000-00000000a048'::uuid])$$, '42501', null,
   'A không xem trước huỷ suất của rạp khác');
 select throws_ok($$select public.cancel_showtimes(array['00000000-0000-0000-0000-00000000a048'::uuid], 'x')$$, '42501', null,

@@ -1,7 +1,7 @@
 -- pgTAP: RPC giữ/nhả/gia hạn ghế nguyên tử (layer 4 / task 01):
 -- AC-06, AC-07, AC-21, AC-22, R-55, R-61..R-67, R-72, R-122..R-124, R-126.
 begin;
-select plan(52);
+select plan(43);
 
 create function public.tap_as(p_uid uuid, p_role text default 'authenticated')
 returns void language plpgsql as $$
@@ -259,18 +259,12 @@ select throws_ok(
   'Web sau mốc cutoff 15 phút -> lỗi SALES_CLOSED'
 );
 
--- POS: cùng thời điểm suất 2 vẫn giữ được (R-67 chỉ chặn Web; gọi bởi staff1)
-select lives_ok(
-  $$select * from public.hold_seats('00000000-0000-0000-0000-000000005002'::uuid, array['00000000-0000-0000-0000-00000000a101', '00000000-0000-0000-0000-00000000a102']::uuid[], 'POS', '00000000-0000-0000-0000-000000000c01'::uuid)$$,
-  'POS sau mốc cutoff online vẫn giữ được'
-);
-
--- POS: quá giờ kết thúc phim -> lỗi SALES_CLOSED
+-- POS đã bị gỡ (CR remove-pos): kênh POS bị từ chối INVALID_CHANNEL, kể cả khi trước đây được miễn cutoff (R-67)
 select throws_ok(
-  $$select * from public.hold_seats('00000000-0000-0000-0000-000000005003'::uuid, array['00000000-0000-0000-0000-00000000a101', '00000000-0000-0000-0000-00000000a102']::uuid[], 'POS', '00000000-0000-0000-0000-000000000c01'::uuid)$$,
-  '23514',
+  $$select * from public.hold_seats('00000000-0000-0000-0000-000000005002'::uuid, array['00000000-0000-0000-0000-00000000a101', '00000000-0000-0000-0000-00000000a102']::uuid[], 'POS', '00000000-0000-0000-0000-000000000c01'::uuid)$$,
+  '22023',
   null,
-  'POS sau giờ kết thúc phim -> lỗi SALES_CLOSED'
+  'Kênh POS bị từ chối INVALID_CHANNEL (CR remove-pos)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -342,19 +336,6 @@ select throws_ok(
   '23514',
   null,
   'Ghế A2 đang HELD -> Cust2 bị lỗi SEAT_TAKEN'
-);
-
--- POS cố giữ A1 -> SEAT_TAKEN (AC-21)
-select throws_ok(
-  $$select * from public.hold_seats(
-      '00000000-0000-0000-0000-000000005001'::uuid,
-      array['00000000-0000-0000-0000-00000000a101', '00000000-0000-0000-0000-00000000a102']::uuid[],
-      'POS',
-      '00000000-0000-0000-0000-000000000c01'::uuid
-    )$$,
-  '23514',
-  null,
-  'Ghế Web đang giữ -> POS cố giữ bị lỗi SEAT_TAKEN (AC-21)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -532,9 +513,9 @@ select ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 12. Test POS Hold, Thời hạn 5' (AC-22) & extend_pos_hold (R-124) & Phân quyền POS (Defect 2)
+-- 12. Phân quyền hold_seats (Defect 2); phần POS (hold 5', extend_pos_hold, idempotent) đã bỏ cùng POS (CR remove-pos)
 -- ---------------------------------------------------------------------------
--- Khách thường (Cust2) cố gọi hold_seats kênh POS -> PERMISSION_DENIED (Defect 2)
+-- Khách thường (Cust2) gọi kênh POS: bị từ chối INVALID_CHANNEL ngay đầu hàm (trước đây PERMISSION_DENIED)
 select tap_as('00000000-0000-0000-0000-000000000d02');
 select throws_ok(
   $$select * from public.hold_seats(
@@ -542,9 +523,9 @@ select throws_ok(
     array['00000000-0000-0000-0000-00000000a107', '00000000-0000-0000-0000-00000000a108']::uuid[],
     'POS'
   )$$,
-  '42501',
+  '22023',
   null,
-  'Khách thường gọi hold_seats kênh POS bị chặn PERMISSION_DENIED (Defect 2)'
+  'Khách thường gọi hold_seats kênh POS bị từ chối INVALID_CHANNEL'
 );
 
 -- Khách thường (Cust2) cố mạo danh p_user_id của Cust1 trên Web -> PERMISSION_DENIED (Defect 2)
@@ -561,61 +542,7 @@ select throws_ok(
 );
 select tap_owner();
 
--- Tạo đơn POS mới hợp lệ (gọi bởi Staff1 của rạp HN01)
-create temp table _pos_order as
-  select * from public.hold_seats(
-    '00000000-0000-0000-0000-000000005001'::uuid,
-    array['00000000-0000-0000-0000-00000000a101', '00000000-0000-0000-0000-00000000a102']::uuid[],
-    'POS',
-    '00000000-0000-0000-0000-000000000c01'::uuid,
-    'req-pos-001'
-  );
-grant select on _pos_order to public;
-
--- Kiểm tra thời hạn hold của POS xấp xỉ now() + 5 phút (AC-22)
-select ok(
-  (select hold_expires_at from _pos_order) between (now() + interval '4 minutes 50 seconds') and (now() + interval '5 minutes 10 seconds'),
-  'AC-22: POS hold có thời hạn xấp xỉ now() + 5 phút'
-);
-
--- Idempotency POS (R-126): gọi lại cùng request_id 'req-pos-001' -> trả về cùng đơn
-select is(
-  (select order_id from public.hold_seats(
-    '00000000-0000-0000-0000-000000005001'::uuid,
-    array['00000000-0000-0000-0000-00000000a101', '00000000-0000-0000-0000-00000000a102']::uuid[],
-    'POS',
-    '00000000-0000-0000-0000-000000000c01'::uuid,
-    'req-pos-001'
-  )),
-  (select order_id from _pos_order),
-  'R-126: POS hold idempotent với cùng request_id trả về cùng order_id'
-);
-
--- Khách thường cố gia hạn đơn POS -> PERMISSION_DENIED
-select tap_as('00000000-0000-0000-0000-000000000d01');
-select throws_ok(
-  $$select public.extend_pos_hold((select order_id from _pos_order)::uuid, 5)$$,
-  '42501',
-  null,
-  'Khách thường không được gia hạn đơn POS'
-);
-
--- Nhân viên rạp (Staff1) gia hạn đơn POS -> thành công (R-124)
-select tap_as('00000000-0000-0000-0000-000000000c01');
-select lives_ok(
-  $$select public.extend_pos_hold((select order_id from _pos_order)::uuid, 5)$$,
-  'Staff rạp gia hạn đơn POS thành công'
-);
-
-select tap_owner();
-
--- Kiểm tra thời hạn mới được cộng thêm 5 phút
-select ok(
-  (select hold_expires_at from public.orders where id = (select order_id from _pos_order)) >= (now() + interval '9 minutes'),
-  'R-124: Đơn POS được gia hạn thêm 5 phút'
-);
-
--- Cố gia hạn đơn Web bằng extend_pos_hold -> POS_ONLY
+-- Đơn Web tạm (Cust1) dùng cho phần expire_overdue_holds bên dưới
 create temp table _web_temp_order as
   select * from public.hold_seats(
     '00000000-0000-0000-0000-000000005001'::uuid,
@@ -625,24 +552,17 @@ create temp table _web_temp_order as
   );
 grant select on _web_temp_order to public;
 
-select throws_ok(
-  $$select public.extend_pos_hold((select order_id from _web_temp_order)::uuid, 5)$$,
-  '23514',
-  null,
-  'extend_pos_hold trên đơn Web -> lỗi POS_ONLY'
-);
-
 -- ---------------------------------------------------------------------------
 -- 13. Test expire_overdue_holds & pg_cron
 -- ---------------------------------------------------------------------------
--- Giả lập đơn POS bị quá hạn
+-- Giả lập đơn Web tạm bị quá hạn
 update public.orders
    set hold_expires_at = now() - interval '10 seconds'
- where id = (select order_id from _pos_order);
+ where id = (select order_id from _web_temp_order);
 
 update public.showtime_seat_states
    set expires_at = now() - interval '10 seconds'
- where order_id = (select order_id from _pos_order);
+ where order_id = (select order_id from _web_temp_order);
 
 -- Chạy expire_overdue_holds()
 select is(
@@ -653,7 +573,7 @@ select is(
 
 -- Trạng thái đơn chuyển sang expired
 select is(
-  (select status from public.orders where id = (select order_id from _pos_order)),
+  (select status from public.orders where id = (select order_id from _web_temp_order)),
   'expired'::public.order_status,
   'Đơn quá hạn đã chuyển sang status expired'
 );
@@ -662,7 +582,7 @@ select is(
 select ok(
   not exists (
     select 1 from public.showtime_seat_states
-     where order_id = (select order_id from _pos_order)
+     where order_id = (select order_id from _web_temp_order)
   ),
   'Ghế của đơn quá hạn đã bị xoá khỏi showtime_seat_states'
 );
@@ -778,15 +698,6 @@ select tap_as('00000000-0000-0000-0000-000000000d02');
 select lives_ok(
   $$select * from public.hold_seats('00000000-0000-0000-0000-000000005018'::uuid, array['00000000-0000-0000-0000-00000000a109']::uuid[], 'WEB')$$,
   'Mua 1 ghế khi phân đoạn chỉ còn 2 ghế trống được miễn trừ ORPHAN_SEAT (Defect 5)'
-);
-select tap_owner();
-
--- Kênh POS (gọi bởi Staff1) được miễn trừ hoàn toàn kiểm tra ORPHAN_SEAT:
--- Trên suất 5001, hàng B còn trống B1, B2, B3. Nhân viên POS chọn B2 (để lại B1 và B3 trơ trọi) -> thành công!
-select tap_as('00000000-0000-0000-0000-000000000c01');
-select lives_ok(
-  $$select * from public.hold_seats('00000000-0000-0000-0000-000000005001'::uuid, array['00000000-0000-0000-0000-00000000b102']::uuid[], 'POS', '00000000-0000-0000-0000-000000000c01'::uuid)$$,
-  'Kênh POS được miễn trừ kiểm tra ghế lẻ ORPHAN_SEAT (Defect 5)'
 );
 select tap_owner();
 

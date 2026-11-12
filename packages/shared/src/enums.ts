@@ -3,7 +3,7 @@
  * Dạng `as const` + type suy ra để dùng được trong zod (`z.enum(ORDER_STATUSES)`).
  */
 
-/** Vai trò lưu trong DB. Guest = chưa đăng nhập; POS xác thực bằng khoá API theo rạp (không phải vai trò user). */
+/** Vai trò lưu trong DB. Guest = chưa đăng nhập. */
 export const USER_ROLES = ["customer", "staff", "cinema_manager", "admin"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
@@ -22,7 +22,7 @@ export const ORDER_STATUSES = [
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-export const ORDER_CHANNELS = ["WEB", "POS"] as const;
+export const ORDER_CHANNELS = ["WEB"] as const;
 export type OrderChannel = (typeof ORDER_CHANNELS)[number];
 
 /** Loại ô trên sơ đồ ghế (R-48). `sweetbox` = ghế đôi, chiếm 2 ô, bán theo cặp. */

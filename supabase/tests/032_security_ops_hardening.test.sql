@@ -2,7 +2,7 @@
 -- Sửa test "không gia hạn" cũ (021 chỉ chứng minh hai lần cùng now() trong transaction),
 -- subdomain disposable, validate hit_rate_limit, purge định kỳ, quyền execute hàm.
 begin;
-select plan(25);
+select plan(24);
 
 -- ---------------------------------------------------------------------------
 -- R-11: sai khi đang khoá KHÔNG gia hạn — đặt khoá còn hạn 5 phút (khác 15 phút của lần khoá mới)
@@ -49,16 +49,12 @@ insert into public.login_attempts (email, failed_count, last_failed_at, locked_u
   ('old-expired-lock@example.com', 5, now() - interval '3 days', now() - interval '2 days'),
   ('active-lock@example.com', 5, now() - interval '3 days', now() + interval '10 minutes'),
   ('recent@example.com', 2, now() - interval '1 hour', null);
-insert into public.pos_api_logs (occurred_at, method, path) values
-  (now() - interval '91 days', 'GET', '/old'), (now() - interval '10 days', 'GET', '/recent');
-select is((select row(r.rate_limit_buckets, r.login_attempts, r.pos_api_logs)::text from public.purge_expired_ops_data() r),
-          '(1,2,1)', 'purge báo đúng số dòng xoá');
+select is((select row(r.rate_limit_buckets, r.login_attempts)::text from public.purge_expired_ops_data() r),
+          '(1,2)', 'purge báo đúng số dòng xoá');
 select is((select count(*) from public.rate_limit_buckets where key in ('old', 'fresh'))::int, 1, 'bucket quá hạn bị xoá, bucket mới giữ');
 select is((select array_agg(email::text order by email) from public.login_attempts
             where email::text in ('old-free@example.com', 'old-expired-lock@example.com', 'active-lock@example.com', 'recent@example.com')),
           array['active-lock@example.com', 'recent@example.com'], 'giữ khoá còn hạn và lỗi gần đây, xoá phần còn lại');
-select is((select count(*) from public.pos_api_logs where path in ('/old', '/recent'))::int, 1, 'log POS > 90 ngày bị xoá');
-
 -- ---------------------------------------------------------------------------
 -- Quyền execute
 -- ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 -- pgTAP: Kiểm thử RPC thanh toán & bán vé (Layer 4 / task 02)
 -- R-75, R-76, R-77, R-78, R-82, R-85, R-86, R-125, R-128; AC-10, AC-11.
 begin;
-select plan(54);
+select plan(46);
 
 create function public.tap_as(p_uid uuid, p_role text default 'authenticated')
 returns void language plpgsql as $$
@@ -386,77 +386,14 @@ select cmp_ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 10. Test confirm_pos_sale (R-125, R-128)
+-- 10. Fixture ghế B1..B3 + đơn WEB giữ B3 (các ca confirm_pos_sale đã bỏ cùng POS, CR remove-pos)
 -- ---------------------------------------------------------------------------
--- Setup thêm 2 ghế mới cho POS test: B1, B2 ở phòng 1 suất 1
+-- Setup thêm ghế mới: B1, B2 ở phòng 1 suất 1
 insert into public.seats (id, room_id, cinema_id, row_label, col_number, seat_type, label) values
   ('00000000-0000-0000-0000-00000000b201', '00000000-0000-0000-0000-00000000f101', '00000000-0000-0000-0000-0000000000c1', 'B', 1, 'NORMAL', 'B1'),
   ('00000000-0000-0000-0000-00000000b202', '00000000-0000-0000-0000-00000000f101', '00000000-0000-0000-0000-0000000000c1', 'B', 2, 'NORMAL', 'B2'),
   ('00000000-0000-0000-0000-00000000b203', '00000000-0000-0000-0000-00000000f101', '00000000-0000-0000-0000-0000000000c1', 'B', 3, 'NORMAL', 'B3');
 
--- Đơn POS 1: giữ hợp lệ ghế B1 (source = 'POS', expires_at > now())
-insert into public.orders (id, channel, showtime_id, status, subtotal_amount, total_amount) values
-  ('00000000-0000-0000-0000-500000000007', 'POS', '00000000-0000-0000-0000-00000000a501',
-   'holding', 80000, 80000);
-insert into public.order_seats (id, order_id, seat_id, seat_label, seat_type, price_amount) values
-  ('00000000-0000-0000-0000-600000000007', '00000000-0000-0000-0000-500000000007',
-   '00000000-0000-0000-0000-00000000b201', 'B1', 'NORMAL', 80000);
-insert into public.showtime_seat_states (showtime_id, seat_id, state, source, expires_at, order_id) values
-  ('00000000-0000-0000-0000-00000000a501', '00000000-0000-0000-0000-00000000b201',
-   'HELD', 'POS', now() + interval '5 minutes', '00000000-0000-0000-0000-500000000007');
-
--- Xác nhận bán POS thành công
-select is(
-  (select (public.confirm_pos_sale('00000000-0000-0000-0000-500000000007', 'REQ_POS_001'))->>'status'),
-  'SUCCESS',
-  'confirm_pos_sale thành công khi ghế đang được POS giữ hợp lệ'
-);
-
-select is(
-  (select status from public.orders where id = '00000000-0000-0000-0000-500000000007'),
-  'paid'::public.order_status,
-  'Đơn POS 7 chuyển sang paid'
-);
-
-select is(
-  (select state from public.showtime_seat_states where order_id = '00000000-0000-0000-0000-500000000007'),
-  'SOLD'::public.seat_state,
-  'Ghế B1 chuyển sang SOLD cho đơn POS 7'
-);
-
--- Defect 4: Kiểm tra order_code của POS sinh từ sequence an toàn (>= 900000000000000)
-select cmp_ok(
-  (select order_code from public.payments where order_id = '00000000-0000-0000-0000-500000000007'),
-  '>=',
-  900000000000000::bigint,
-  'Defect 4: confirm_pos_sale sinh order_code từ internal_payment_order_code_seq an toàn'
-);
-
--- Đơn POS 2: Ghế B2 nhưng hold đã HẾT HẠN
-insert into public.orders (id, channel, showtime_id, status, subtotal_amount, total_amount) values
-  ('00000000-0000-0000-0000-500000000008', 'POS', '00000000-0000-0000-0000-00000000a501',
-   'holding', 80000, 80000);
-insert into public.order_seats (id, order_id, seat_id, seat_label, seat_type, price_amount) values
-  ('00000000-0000-0000-0000-600000000008', '00000000-0000-0000-0000-500000000008',
-   '00000000-0000-0000-0000-00000000b202', 'B2', 'NORMAL', 80000);
-insert into public.showtime_seat_states (showtime_id, seat_id, state, source, expires_at, order_id) values
-  ('00000000-0000-0000-0000-00000000a501', '00000000-0000-0000-0000-00000000b202',
-   'HELD', 'POS', now() - interval '1 minute', '00000000-0000-0000-0000-500000000008');
-
-select throws_ok(
-  $$ select public.confirm_pos_sale('00000000-0000-0000-0000-500000000008') $$,
-  '23514',
-  null,
-  'Từ chối bán POS khi hold đã hết hạn (R-125, R-128)'
-);
-
--- Đơn POS 3: Ghế B3 nhưng đang bị giữ bởi nguồn WEB
-insert into public.orders (id, channel, showtime_id, status, subtotal_amount, total_amount) values
-  ('00000000-0000-0000-0000-500000000009', 'POS', '00000000-0000-0000-0000-00000000a501',
-   'holding', 80000, 80000);
-insert into public.order_seats (id, order_id, seat_id, seat_label, seat_type, price_amount) values
-  ('00000000-0000-0000-0000-600000000009', '00000000-0000-0000-0000-500000000009',
-   '00000000-0000-0000-0000-00000000b203', 'B3', 'NORMAL', 80000);
 -- Khách web giữ ghế B3 (khách vãng lai, user_id null để không đụng unique partial index R-64)
 insert into public.orders (id, channel, showtime_id, user_id, status, subtotal_amount, total_amount) values
   ('00000000-0000-0000-0000-500000000010', 'WEB', '00000000-0000-0000-0000-00000000a501',
@@ -467,13 +404,6 @@ insert into public.order_seats (id, order_id, seat_id, seat_label, seat_type, pr
 insert into public.showtime_seat_states (showtime_id, seat_id, state, source, expires_at, order_id) values
   ('00000000-0000-0000-0000-00000000a501', '00000000-0000-0000-0000-00000000b203',
    'HELD', 'WEB', now() + interval '10 minutes', '00000000-0000-0000-0000-500000000010');
-
-select throws_ok(
-  $$ select public.confirm_pos_sale('00000000-0000-0000-0000-500000000009') $$,
-  '23514',
-  null,
-  'Từ chối bán POS khi ghế đang bị nguồn khác/đơn khác giữ (R-122, R-128)'
-);
 
 -- ---------------------------------------------------------------------------
 -- 11. Test Defect 1: Tranh chấp ghế khi đơn đang pending_payment hoặc holding
@@ -588,35 +518,5 @@ select is(
 select public.tap_owner();
 
 -- ---------------------------------------------------------------------------
--- 13. Test Defect 3: confirm_pos_sale từ chối bán vé khi suất CANCELLED / không mở bán
--- ---------------------------------------------------------------------------
--- Đơn POS 13: Đặt suất chiếu CANCELLED (suất a502)
-insert into public.orders (id, channel, showtime_id, status, subtotal_amount, total_amount) values
-  ('00000000-0000-0000-0000-500000000013', 'POS', '00000000-0000-0000-0000-00000000a502',
-   'holding', 80000, 80000);
-insert into public.order_seats (id, order_id, seat_id, seat_label, seat_type, price_amount) values
-  ('00000000-0000-0000-0000-600000000013', '00000000-0000-0000-0000-500000000013',
-   '00000000-0000-0000-0000-00000000b304', 'C4', 'NORMAL', 80000);
-insert into public.showtime_seat_states (showtime_id, seat_id, state, source, expires_at, order_id) values
-  ('00000000-0000-0000-0000-00000000a502', '00000000-0000-0000-0000-00000000b304',
-   'HELD', 'POS', now() + interval '5 minutes', '00000000-0000-0000-0000-500000000013');
-
-select throws_ok(
-  $$ select public.confirm_pos_sale('00000000-0000-0000-0000-500000000013') $$,
-  '23514',
-  null,
-  'Defect 3: confirm_pos_sale từ chối bán vé khi suất chiếu đã bị CANCELLED (R-127, AC-24)'
-);
-
--- Cập nhật suất sang trạng thái khác ON_SALE (CLOSED)
-update public.showtimes set status = 'CLOSED' where id = '00000000-0000-0000-0000-00000000a502';
-
-select throws_ok(
-  $$ select public.confirm_pos_sale('00000000-0000-0000-0000-500000000013') $$,
-  '23514',
-  null,
-  'Defect 3: confirm_pos_sale từ chối bán vé khi suất chiếu không ở trạng thái ON_SALE'
-);
-
 select * from finish();
 rollback;

@@ -25,7 +25,7 @@ export class SupabaseService {
   }
 
   /**
-   * Service role: BỎ QUA RLS. Chỉ gọi từ webhook PayOS, job, API POS (đã xác thực khóa)
+   * Service role: BỎ QUA RLS. Chỉ gọi từ webhook PayOS, job (đã xác thực khóa)
    * và tác vụ admin đã kiểm quyền ở Nest. Không bao giờ trả client này ra ngoài API.
    */
   admin(): SupabaseClient {

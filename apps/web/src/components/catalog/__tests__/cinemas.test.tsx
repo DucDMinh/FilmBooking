@@ -240,7 +240,6 @@ describe("robots & sitemap", () => {
     const disallowed = (generalRule?.disallow as string[]) ?? [];
     expect(disallowed).toContain("/admin");
     expect(disallowed).toContain("/staff");
-    expect(disallowed).toContain("/pos");
     expect(disallowed).toContain("/tai-khoan");
     expect(disallowed).toContain("/dat-ve");
     expect(disallowed).toContain("/checkin");

@@ -118,7 +118,6 @@ describe("shared catalogs", () => {
       "WRONG_CINEMA",
       "TICKET_USED",
       "SHOWTIME_CANCELLED",
-      "POS_KEY_INVALID",
       "FORBIDDEN_CINEMA",
       "VALIDATION_ERROR",
     ]) {

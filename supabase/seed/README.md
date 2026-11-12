@@ -24,21 +24,7 @@ Tất cả các tài khoản mẫu dưới đây đều được kích hoạt s�
 
 ---
 
-## 2. Danh sách khoá API POS giả lập (POS API Keys)
-
-Cơ sở dữ liệu chỉ lưu trữ `key_hash` (chuỗi băm SHA-256) và `prefix`. Giá trị Plaintext dưới đây chỉ dùng để cấu hình header `x-pos-api-key` khi gọi API POS giả lập trên máy phát triển:
-
-| Mã rạp | Tên rạp | Prefix | Plaintext API Key (Dùng gọi API) | SHA-256 Key Hash (Lưu trong DB) |
-| :---: | :--- | :---: | :--- | :--- |
-| **`HN01`** | FilmBooking Cầu Giấy | `pos_hn01_` | `pos_hn01_secret_dev_key_2026` | `7a2efaf93c1ca7a3ec5524a86af0311d3e3a72d6362e7fd9db99a594e4de4463` |
-| **`HN02`** | FilmBooking Ba Đình | `pos_hn02_` | `pos_hn02_secret_dev_key_2026` | `dc7a8e66525aa93e83d4c1500444855409036f275fb9b19664a599d481e1cc26` |
-| **`HN03`** | FilmBooking Hà Đông | `pos_hn03_` | `pos_hn03_secret_dev_key_2026` | `1862fb8cd01ca05eb8d0da7fb4ca00fe04e6480531a195b4fc43c378502a2c7c` |
-| **`HCM01`** | FilmBooking Quận 1 | `pos_hcm01_` | `pos_hcm01_secret_dev_key_2026` | `6d50f2ca01d134c0b2871f052af85c9480ddafea8b691eede15c3cc590bbca99` |
-| **`DN01`** | FilmBooking Hải Châu | `pos_dn01_` | `pos_dn01_secret_dev_key_2026` | `9b2c5d93b58848d1dadf255cc42023002be7ebb64ce024965409497adc956a7b` |
-
----
-
-## 3. Mã giảm giá mẫu (Vouchers)
+## 2. Mã giảm giá mẫu (Vouchers)
 
 | Mã voucher | Loại giảm | Giá trị giảm | Điều kiện áp dụng | Hạn dùng |
 | :---: | :---: | :---: | :--- | :---: |
@@ -48,7 +34,7 @@ Cơ sở dữ liệu chỉ lưu trữ `key_hash` (chuỗi băm SHA-256) và `pre
 
 ---
 
-## 4. Hướng dẫn áp dụng Seed trên máy phát triển (Local DB)
+## 3. Hướng dẫn áp dụng Seed trên máy phát triển (Local DB)
 
 `pnpm db:start` KHÔNG tự nạp seed (`[db.seed] enabled = false` trong `supabase/config.toml`, để pgTAP chạy trên DB sạch). Nạp seed chủ động:
 

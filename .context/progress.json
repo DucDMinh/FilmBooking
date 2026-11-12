@@ -1,12 +1,12 @@
 {
   "mode": "initial-build",
-  "activeWorkItem": "feature/remove-pos",
+  "activeWorkItem": "bug/layer34-review",
   "features": [
     {
       "id": "remove-pos",
       "title": "Bỏ toàn bộ POS khỏi dự án (spec 2.0.0)",
       "class": "REMOVE",
-      "status": "in_progress",
+      "status": "done",
       "phases": [
         {
           "phase": 1,
@@ -20,11 +20,18 @@
         },
         {
           "phase": 2,
-          "title": "code/DB: thu hẹp task-03 (confirm_zero_amount), gỡ entry point POS",
-          "status": "pending"
+          "title": "code/DB: confirm_zero_amount hardening + gỡ POS (migrations 20261112120000, 20261112130000)",
+          "status": "done",
+          "highRiskMigration": true,
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 1,
+            "reportPath": ".context/review-reports/feature-remove-pos-phase-2-task-01-round-1-review.md"
+          }
         }
       ],
-      "updatedAt": "2026-11-12T08:47:30.564Z"
+      "updatedAt": "2026-11-12T09:11:22.639Z"
     },
     {
       "id": "remove-showtime-exchange",
@@ -176,21 +183,22 @@
     {
       "id": "layer34-review/phase-2-task-03",
       "title": "confirm_zero_amount + confirm_pos_sale + FK tickets.seat_id",
-      "status": "blocked",
+      "status": "done",
       "severity": "high",
-      "blocked": "superseded by feature/remove-pos (reviewer round 3 FAIL F11; re-scope ở remove-pos phase-2)",
+      "blocked": null,
       "reviewer": {
         "verdict": "FAIL",
         "level": "STRICT",
         "rounds": 3,
         "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-03-round-3-review.md"
       },
-      "updatedAt": "2026-11-12T08:47:30.564Z"
+      "updatedAt": "2026-11-12T09:11:22.639Z",
+      "note": "re-scoped: chỉ confirm_zero_amount, giao qua feature/remove-pos phase-2-task-01 (STRICT PASS); phần POS bỏ; FK tickets.seat_id -> backlog CR-002"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T08:59:36.880Z",
+  "lastUpdated": "2026-11-12T09:11:22.639Z",
   "inProgressTask": null,
   "completedTasks": [
     {

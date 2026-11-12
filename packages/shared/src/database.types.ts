@@ -469,72 +469,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"pos_api_keys": {
-                  Row: {
-                    "cinema_id": string,"created_at": string,"id": string,"key_hash": string,"prefix": string,"revoked_at": string | null
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "cinema_id": string,"created_at"?: string,"id"?: string,"key_hash": string,"prefix": string,"revoked_at"?: string | null
-                  }
-                  Update: {
-                    "cinema_id"?: string,"created_at"?: string,"id"?: string,"key_hash"?: string,"prefix"?: string,"revoked_at"?: string | null
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "pos_api_keys_cinema_id_fkey"
-      columns: ["cinema_id"]
-isOneToOne: false
-      referencedRelation: "cinemas"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"pos_api_logs": {
-                  Row: {
-                    "cinema_id": string | null,"id": number,"key_id": string | null,"method": string,"occurred_at": string,"path": string,"request_id": string | null,"status_code": number | null
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "cinema_id"?: string | null,"id"?: never,"key_id"?: string | null,"method": string,"occurred_at"?: string,"path": string,"request_id"?: string | null,"status_code"?: number | null
-                  }
-                  Update: {
-                    "cinema_id"?: string | null,"id"?: never,"key_id"?: string | null,"method"?: string,"occurred_at"?: string,"path"?: string,"request_id"?: string | null,"status_code"?: number | null
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "pos_api_logs_cinema_id_fkey"
-      columns: ["cinema_id"]
-isOneToOne: false
-      referencedRelation: "cinemas"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "pos_api_logs_key_id_fkey"
-      columns: ["key_id"]
-isOneToOne: false
-      referencedRelation: "pos_api_keys"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"pos_requests": {
-                  Row: {
-                    "created_at": string,"order_id": string,"request_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "created_at"?: string,"order_id": string,"request_id": string
-                  }
-                  Update: {
-                    "created_at"?: string,"order_id"?: string,"request_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "pos_requests_order_id_fkey"
-      columns: ["order_id"]
-isOneToOne: false
-      referencedRelation: "orders"
-      referencedColumns: ["id"]
-    }
-                  ]
                 },"price_rules": {
                   Row: {
                     "amount": number,"cinema_id": string | null,"created_at": string,"day_type": Database["public"]['Enums']["price_day_type"] | null,"format": Database["public"]['Enums']["screen_format"] | null,"id": string,"scope": Database["public"]['Enums']["price_scope"],"seat_type": Database["public"]['Enums']["seat_type"],"showtime_id": string | null,"time_band": Database["public"]['Enums']["price_time_band"] | null,"updated_at": string
@@ -1014,9 +948,6 @@ isOneToOne: false
 "confirm_paid":
 { Args: { "p_amount": number,"p_order_code"?: number,"p_order_id": string,"p_transaction_ref": string }; Returns: Json
                            },
-"confirm_pos_sale":
-{ Args: { "p_order_id": string,"p_request_id"?: string }; Returns: Json
-                           },
 "confirm_zero_amount":
 { Args: { "p_order_id": string }; Returns: Json
                            },
@@ -1025,9 +956,6 @@ isOneToOne: false
                            },
 "expire_overdue_holds":
 { Args: Record<PropertyKey, never>; Returns: number
-                           },
-"extend_pos_hold":
-{ Args: { "p_extra_minutes"?: number,"p_order_id": string }; Returns: string
                            },
 "generate_booking_code":
 { Args: { "p_cinema_code": string }; Returns: string
@@ -1077,7 +1005,7 @@ isOneToOne: false
                            },
 "purge_expired_ops_data":
 { Args: Record<PropertyKey, never>; Returns: {
-              "login_attempts": number,"pos_api_logs": number,"rate_limit_buckets": number
+              "login_attempts": number,"rate_limit_buckets": number
             }[]
                            },
 "recompute_future_showtime_ends":

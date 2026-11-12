@@ -40,7 +40,6 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   TICKET_NOT_FOUND: "Không tìm thấy vé.",
   TICKET_NOT_PAID: "Vé chưa được thanh toán.",
   CHECKIN_OUTSIDE_WINDOW: "Chưa đến hoặc đã quá thời gian soát vé của suất chiếu.",
-  POS_KEY_INVALID: "Khoá tích hợp POS không hợp lệ.",
   JOB_SECRET_INVALID: "Khoá tác vụ nền không hợp lệ.",
 };
 

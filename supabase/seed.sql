@@ -2,7 +2,7 @@
 -- FilmBooking MVP - Database Seed Data (Local / Development Only)
 -- ============================================================================
 -- CẢNH BÁO AN TOÀN:
--- Tệp này chứa dữ liệu mẫu, tài khoản mẫu và khoá API POS giả lập phục vụ
+-- Tệp này chứa dữ liệu mẫu và tài khoản mẫu phục vụ
 -- kiểm thử và phát triển trên môi trường LOCAL DEV.
 -- TUYỆT ĐỐI KHÔNG SỬ DỤNG TỆP NÀY TRÊN MÔI TRƯỜNG STAGING HOẶC PRODUCTION.
 -- ============================================================================
@@ -1091,43 +1091,3 @@ where not exists (
   select 1 from public.consents c
   where c.user_id = v.user_id and c.consent_type = v.consent_type::public.consent_type and c.version = v.version
 );
-
--- ----------------------------------------------------------------------------
--- 11. KHOÁ API POS TỪNG RẠP (pos_api_keys - R-111, R-120, R-130)
--- Chỉ lưu key_hash (SHA-256) và prefix; plaintext ghi trong supabase/seed/README.md.
--- ----------------------------------------------------------------------------
-insert into public.pos_api_keys (id, cinema_id, prefix, key_hash) values
-  (
-    '80000000-0000-0000-0000-000000000001',
-    '20000000-0000-0000-0000-000000000001',
-    'pos_hn01_',
-    encode(extensions.digest('pos_hn01_secret_dev_key_2026', 'sha256'), 'hex')
-  ),
-  (
-    '80000000-0000-0000-0000-000000000002',
-    '20000000-0000-0000-0000-000000000002',
-    'pos_hn02_',
-    encode(extensions.digest('pos_hn02_secret_dev_key_2026', 'sha256'), 'hex')
-  ),
-  (
-    '80000000-0000-0000-0000-000000000003',
-    '20000000-0000-0000-0000-000000000003',
-    'pos_hn03_',
-    encode(extensions.digest('pos_hn03_secret_dev_key_2026', 'sha256'), 'hex')
-  ),
-  (
-    '80000000-0000-0000-0000-000000000004',
-    '20000000-0000-0000-0000-000000000004',
-    'pos_hcm01_',
-    encode(extensions.digest('pos_hcm01_secret_dev_key_2026', 'sha256'), 'hex')
-  ),
-  (
-    '80000000-0000-0000-0000-000000000005',
-    '20000000-0000-0000-0000-000000000005',
-    'pos_dn01_',
-    encode(extensions.digest('pos_dn01_secret_dev_key_2026', 'sha256'), 'hex')
-  )
-on conflict (id) do update set
-  cinema_id = excluded.cinema_id,
-  prefix = excluded.prefix,
-  key_hash = excluded.key_hash;

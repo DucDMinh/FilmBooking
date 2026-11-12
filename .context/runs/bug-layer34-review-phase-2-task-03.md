@@ -3,16 +3,16 @@
 ```yaml
 workItem: bug/layer34-review
 phaseTask: phase-2-task-03
-step: reviewer
+step: done
 agent: reviewer
-status: blocked            # superseded by change remove-pos
+status: done
 attempt: 2
 interrupted: false
-updatedAt: 2026-11-12T08:24:17.310Z
+updatedAt: 2026-11-12T09:11:22.639Z
 filesTouched: [tasks/bug-layer34-review/phase-2-task-03.md, docs/ERD.md]
 filesNew: [supabase/migrations/20261112120000_zero_amount_pos_sell_hardening.sql, supabase/tests/053_zero_amount_pos_sell.test.sql, supabase/tests/054_zero_amount_pos_concurrency.test.sql]
 evidence: {reportPath: .context/review-reports/bug-layer34-review-phase-2-task-03-round-3-review.md, round: 3, verdict: FAIL}
-next: "superseded: change 2026-11-12-remove-pos sẽ thu hẹp task-03 (giữ confirm_zero_amount, bỏ phần POS + FK tickets.seat_id -> backlog)"
+next: "bug/layer34-review phase-2: task-04 (đã thu hẹp, bỏ POS) -> 06 -> 05 -> 07"
 loopSignal: none
 approvals: [{gate: extra_round_f8_f9, at: 2026-11-12T08:06:00.127Z, ok: true}, {gate: keep_pos_scope, at: 2026-11-12T07:53:03.036Z, ok: true}, {gate: f1_pos_block_closed_cinema, at: 2026-11-12T07:45:14.722Z, ok: true}, {gate: f3_seat_taken_accepted, at: 2026-11-12T07:45:14.722Z, ok: true}, {gate: p1_task_list, ok: true}, {gate: start_task_03, at: 2026-11-12T07:30:58.768Z, ok: true}]
 batchQueue: [03, 04, 06, 05, 07]
@@ -31,3 +31,4 @@ batchQueue: [03, 04, 06, 05, 07]
 - 2026-11-12T08:11:30.244Z builder round3 xong: F8 race thật (pos sold~6 seat_taken~6); lộ 40P01 2/12 do FK tickets.seat_id lấy KEY SHARE seats sau seat_states -> thêm seats FOR KEY SHARE trước sell_order_seats ở 2 hàm; F9 P8 đỏ->xanh; pgTAP 23/768 PASS. Nghi confirm_paid cùng đảo khoá do FK -> awaiting -> reviewer round3 running
 - 2026-11-12T08:20:37.834Z reviewer round3 STRICT FAIL: F8/F9 đóng; F11 MAJOR FK tickets.seat_id gây 40P01 confirm_paid x hold_seats (repro dblink tái hiện) — regression do task-03. Khuyến nghị CREATE OR REPLACE sell_order_seats thêm seats FOR KEY SHARE trong cùng migration. Đã 3 lần FAIL -> architecture_review_needed
 - 2026-11-12T08:24:17.310Z USER: "dừng toàn bộ lại, BỎ TOÀN BỘ POS RA KHỎI DỰ ÁN ... chỉ làm thuần web. Sửa intent, sửa cả spec đi ... thực hiện ngay lập tức không hỏi lại" -> task-03 blocked/superseded, KHÔNG commit (round3 FAIL)
+- 2026-11-12T09:11:22.639Z re-scoped và giao qua feature/remove-pos phase-2-task-01 (STRICT PASS) -> done
