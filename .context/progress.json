@@ -43,11 +43,40 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-02-round-1-review.md"
       },
       "updatedAt": "2026-11-12T02:40:53.538Z"
+    },
+    {
+      "id": "layer34-review/phase-1-task-05",
+      "title": "K4 bán trùng ghế",
+      "status": "done",
+      "severity": "blocker",
+      "highRiskMigration": true,
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-05-round-2-review.md"
+      },
+      "commit": "78b759b",
+      "updatedAt": "2026-11-12T03:19:22.296Z"
+    },
+    {
+      "id": "layer34-review/phase-1-task-07",
+      "title": "K6 XSS popup bản đồ",
+      "status": "done",
+      "severity": "blocker",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-07-round-1-review.md"
+      },
+      "commit": "f4d2e4c",
+      "updatedAt": "2026-11-12T03:19:22.296Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T02:40:53.538Z",
+  "lastUpdated": "2026-11-12T03:19:22.296Z",
   "inProgressTask": null,
   "completedTasks": [
     {
@@ -278,19 +307,32 @@
     "completedP0": [
       "task-01",
       "task-02",
-      "task-03"
+      "task-03",
+      "task-05",
+      "task-07"
     ],
     "pendingP0": [
-      "05",
       "06",
-      "07",
-      "04",
-      "08"
+      "08+K7",
+      "04"
     ],
     "followups": [
       "P0-08: test 046 thêm quyền helper assert_identity_rpc_caller + case A->B cho unlink/mark_password_set",
       "Layer 5 web: AC-04 thông báo \"hãy đăng nhập bằng mật khẩu\" trước login (API không còn pre-login check)",
-      "P2: schema identity.ts:63-64 bỏ email bắt buộc; dọn comment spike identity.service.ts:20-23 + nhánh CONFLICT_EMAIL chết :281-285"
-    ]
+      "P2: schema identity.ts:63-64 bỏ email bắt buộc; dọn comment spike identity.service.ts:20-23 + nhánh CONFLICT_EMAIL chết :281-285",
+      "task-07 MINOR-1: test link javascript: dùng toBeNull + it.each JavaScript:/data:/vbscript:",
+      "task-05: confirm_zero_amount/confirm_pos_sale chuyển sang sell_order_seats (P1); m1 errcode riêng, m2 FK tickets.seat_id, m7 case (d) kiểm seat_state",
+      "parallel-dispatch.mjs: setup đặt branch wt/<scope>__phase-N__task-NN nhưng merge/cleanup tìm wt/<scope>-phase-N__ -> lệch, merge tay"
+    ],
+    "newCritical": [
+      "K7: SECURITY DEFINER mở cho authenticated (gộp task-08, user duyệt 2026-11-12)"
+    ],
+    "verifyWave1": {
+      "at": "2026-11-12T03:19:22.296Z",
+      "pgtap": "16 files/622 PASS",
+      "test": "api 211, web 93, shared, scripts 16 PASS",
+      "lint": "PASS",
+      "typecheck": "PASS"
+    }
   }
 }
