@@ -125,11 +125,25 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-01-round-4-review.md"
       },
       "updatedAt": "2026-11-12T06:55:39.174Z"
+    },
+    {
+      "id": "layer34-review/phase-2-task-02",
+      "title": "confirm_paid hardening: tiền về muộn, suất/rạp/cutoff, ghế khoá, voucher trần, idempotent (M1c, M3, M4, M5, M9, M10a)",
+      "status": "done",
+      "severity": "blocker",
+      "highRiskMigration": true,
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-02-round-2-review.md"
+      },
+      "updatedAt": "2026-11-12T07:25:44.447Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T06:55:39.174Z",
+  "lastUpdated": "2026-11-12T07:25:44.447Z",
   "inProgressTask": null,
   "completedTasks": [
     {
