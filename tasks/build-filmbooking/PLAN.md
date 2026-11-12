@@ -3,6 +3,7 @@
 > Sinh bởi agent `graph` (2026-11-11) từ `SPECIFICATIONS.md` 1.1.0 + `docs/specs/2026-11-10-filmbooking-mvp-design.md` + `.context/design-spec.md`.
 > **9 layer · 65 task** (63 task còn hiệu lực — **2 task REMOVED** bởi CR `remove-pos`, spec 2.0.0, 2026-11-12: layer-5-task-05, layer-7-task-09; không đánh số lại).
 > **Scope change 2026-11-12 (CR `remove-pos`, spec 2.0.0, PO duyệt): bỏ toàn bộ POS — chỉ làm thuần web.** R-111, R-120→R-130, AC-20→AC-23 REMOVED. Task đã xong (layer 0–4) giữ nguyên lịch sử (ID gạch `~~R-xx~~`); task chưa làm (layer 5–8) đã cắt phần POS. Phần POS đã build (enum/bảng/RPC) được chặn/gỡ ở CR `remove-pos` phase-2.
+> **Scope change 2026-11-12 (CR `remove-showtime-exchange`, spec 3.0.0, PO duyệt): bỏ đổi suất khi rạp huỷ suất** — khách liên hệ CSKH (`1900 0000`), chỉ còn hoàn tiền thủ công. Ảnh hưởng layer-5-task-03, layer-5-task-08, layer-7-task-06 (đã cập nhật); số task / R-xx không đổi.
 > Layer N+1 chỉ mở khi toàn bộ Layer N PASS review **và** user duyệt (human checkpoint).
 > Số task vượt nhẹ mục tiêu 60 vì giữ task nhỏ (1–7 file) và tách riêng các bất biến rủi ro cao (giữ ghế, thanh toán, RLS, huỷ suất) + 4 task wiring để tránh trùng file khi chạy song song.
 

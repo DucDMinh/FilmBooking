@@ -23,6 +23,7 @@
 | 0.3 | 2026-11-10 | AI (Claude) | Chốt câu hỏi mở Q1–Q9: đồng bộ khoá ghế với POS (module POS mới), bắt buộc đăng nhập, quy trình huỷ suất / đóng cửa rạp + email hàng loạt (ngoại lệ của chính sách không hoàn tiền), bỏ hoá đơn điện tử & phân loại giá, PayOS chung, voucher chỉ Admin, thu nhỏ quy mô về dự án demo ~5 rạp |
 | 0.4 | 2026-11-10 | AI (Claude) | Cập nhật §10 công nghệ theo brainstorm (Next.js + NestJS + Supabase, Render, OpenStreetMap) — chỉ ràng buộc kỹ thuật, không đổi nghiệp vụ; Product Owner duyệt BRD |
 | 0.5 | 2026-11-12 | AI (Claude) | Change Request `remove-pos` (Product Owner ra lệnh 2026-11-12: "bỏ toàn bộ POS, chỉ làm thuần web"): **bỏ module POS** — §6.14 (BR-POS-01…11), BR-ADM-15 (khoá API POS), vai trò POS, AC-20→23, rủi ro R10 đánh dấu **REMOVED** (giữ nội dung để truy vết, không đánh số lại); mọi tham chiếu "web và POS / web ↔ POS / kênh POS / POS giả lập" sửa thành chỉ web. Quầy vé vật lý (đổi suất / mua tại quầy / nhận combo) giữ nguyên, nằm ngoài hệ thống. Tương ứng `SPECIFICATIONS.md` spec 2.0.0 |
+| 0.6 | 2026-11-12 | AI (Claude) | Change Request `remove-showtime-exchange` (Product Owner 2026-11-12: "đổi suất thì bỏ luôn, báo liên hệ cskh, thế thôi"): khi rạp huỷ suất / đóng cửa **không còn lựa chọn đổi suất** — email và màn hình hướng dẫn khách **liên hệ CSKH** (hotline rạp, mặc định tổng đài giả lập `1900 0000`); kết quả xử lý duy nhất là **hoàn tiền thủ công** (`refunded_manual`); trạng thái đơn `exchanged` bỏ. Sửa §1, phạm vi #14, §7.3, BR-ADM-13, BR-ADM-14, BR-RPT-09, §8.5, AC-24, Q3. Khách vẫn không tự huỷ/đổi/hoàn (§7.1 giữ nguyên). Tương ứng `SPECIFICATIONS.md` spec 3.0.0 |
 
 ### Người duyệt
 
@@ -38,7 +39,7 @@
 
 Dự án xây dựng một website cho phép khách hàng **chọn rạp trong chuỗi, xem lịch chiếu, chọn ghế, mua vé và thanh toán online**. Chuỗi gồm **nhiều rạp** đặt tại nhiều tỉnh/thành; danh mục phim dùng chung toàn chuỗi, còn phòng chiếu, suất chiếu và giá vé được quản lý theo từng rạp. Khách đăng ký bằng email/mật khẩu (bắt buộc **xác nhận email** để chống spam) hoặc đăng nhập nhanh bằng **Google / Facebook**, có thể **liên kết** nhiều phương thức đăng nhập vào cùng một tài khoản. Thanh toán qua **PayOS** (chuyển khoản VietQR). Vé điện tử dạng **QR** được gửi qua email và soát tại cửa phòng chiếu của đúng rạp.
 
-Chính sách bán vé áp dụng thống nhất toàn chuỗi: **khách không được huỷ vé, không được hoàn tiền**; hệ thống bắt buộc hiển thị cảnh báo và khách phải xác nhận trước khi thanh toán. Ngoại lệ duy nhất là khi **rạp huỷ suất chiếu hoặc đóng cửa** — khi đó khách được đổi suất tại quầy hoặc hoàn tiền thủ công, và hệ thống gửi email thông báo hàng loạt (xem §7).
+Chính sách bán vé áp dụng thống nhất toàn chuỗi: **khách không được huỷ vé, không được hoàn tiền**; hệ thống bắt buộc hiển thị cảnh báo và khách phải xác nhận trước khi thanh toán. Ngoại lệ duy nhất là khi **rạp huỷ suất chiếu hoặc đóng cửa** — khi đó khách **liên hệ CSKH** của rạp để được hoàn tiền thủ công, và hệ thống gửi email thông báo hàng loạt (xem §7).
 
 Dự án **chỉ có kênh web**: không tích hợp POS / phần mềm quầy vé (bỏ từ BRD v0.5 / spec 2.0.0, 2026-11-12 — quyết định Product Owner). Web là nguồn sự thật duy nhất về trạng thái ghế; quầy vé vật lý (nếu có) nằm ngoài hệ thống, không đồng bộ ghế.
 
@@ -96,7 +97,7 @@ Dự án **chỉ có kênh web**: không tích hợp POS / phần mềm quầy v
 11. Trang quản trị phân cấp: **Admin chuỗi** và **Quản lý rạp (Cinema Manager)**.
 12. Báo cáo doanh thu, lấp đầy ghế theo **từng rạp** và **toàn chuỗi**.
 13. ~~**API đồng bộ khoá ghế với hệ thống POS** tại quầy (giữ / nhả / bán ghế) + **POS giả lập** đơn giản để demo và kiểm thử.~~ **[REMOVED — BRD v0.5 / spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án]**
-14. **Huỷ suất chiếu / đóng cửa rạp** bởi quản trị, đánh dấu đơn bị ảnh hưởng, **gửi email thông báo hàng loạt**, ghi nhận xử lý đổi suất / hoàn tiền thủ công.
+14. **Huỷ suất chiếu / đóng cửa rạp** bởi quản trị, đánh dấu đơn bị ảnh hưởng, **gửi email thông báo hàng loạt**, ghi nhận xử lý hoàn tiền thủ công (khách liên hệ CSKH).
 
 ### 4.2 Ngoài phạm vi (Out-of-scope) — giai đoạn hiện tại
 - Nhiều thương hiệu / nhiều chuỗi rạp khác nhau trên cùng hệ thống (multi-tenant).
@@ -344,8 +345,8 @@ Dự án **chỉ có kênh web**: không tích hợp POS / phần mềm quầy v
 | BR-ADM-10 | Cấu hình toàn chuỗi: thời gian giữ ghế, nội dung cảnh báo không hoàn tiền, điều khoản sử dụng, giá trị mặc định cho cấu hình rạp. | Admin | S |
 | BR-ADM-11 | **Audit log** mọi thao tác thay đổi dữ liệu của Admin/Manager/Staff (ai, rạp nào, khi nào, đối tượng, giá trị trước/sau). | Hệ thống | M |
 | BR-ADM-12 | **Huỷ suất chiếu**: chọn một hoặc nhiều suất (hoặc tất cả suất tương lai của một rạp khi **đóng cửa rạp**), nhập lý do → xem trước số đơn/vé bị ảnh hưởng → xác nhận. Suất chuyển `cancelled`, ngừng bán trên web, các ghế đang giữ bị nhả, mọi đơn `paid` của suất chuyển `affected`, vé không còn check-in được. | Manager (rạp mình), Admin | M |
-| BR-ADM-13 | **Email thông báo hàng loạt** tự động gửi tới mọi khách có đơn `affected`: tên rạp, phim, suất bị huỷ, lý do, hướng xử lý (huỷ suất: **mang mã đặt vé tới quầy để đổi suất khác, hoặc liên hệ rạp để hoàn tiền nếu đồng ý**; đóng cửa rạp: **rạp sẽ liên hệ hoàn tiền thủ công**), hotline rạp. Theo dõi trạng thái gửi từng email, cho phép **gửi lại** email lỗi. | Hệ thống | M |
-| BR-ADM-14 | Màn **Đơn bị ảnh hưởng**: danh sách đơn `affected` theo suất/rạp, lọc theo trạng thái xử lý; nhân viên ghi nhận kết quả từng đơn: **Đã đổi suất** (ghi suất mới / mã vé mới cấp tại quầy) hoặc **Đã hoàn tiền thủ công** (số tiền, ngày, phương thức, mã giao dịch ngân hàng, người thực hiện). Xuất CSV. | Staff/Manager (rạp mình), Admin | M |
+| BR-ADM-13 | **Email thông báo hàng loạt** tự động gửi tới mọi khách có đơn `affected`: tên rạp, phim, suất bị huỷ, lý do, hướng xử lý (huỷ suất: **liên hệ CSKH của rạp để được hoàn tiền thủ công**; đóng cửa rạp: **rạp sẽ liên hệ hoàn tiền thủ công**), hotline / kênh CSKH của rạp (rạp chưa cấu hình hotline → dùng tổng đài CSKH mặc định của chuỗi `1900 0000` — số giả lập cho demo). Theo dõi trạng thái gửi từng email, cho phép **gửi lại** email lỗi. | Hệ thống | M |
+| BR-ADM-14 | Màn **Đơn bị ảnh hưởng**: danh sách đơn `affected` theo suất/rạp, lọc theo trạng thái xử lý; nhân viên ghi nhận kết quả từng đơn: **Đã hoàn tiền thủ công** (số tiền, ngày, phương thức, mã giao dịch ngân hàng, người thực hiện) — kết quả duy nhất kể từ BRD v0.6. Xuất CSV. | Staff/Manager (rạp mình), Admin | M |
 | ~~BR-ADM-15~~ | **[REMOVED — BRD v0.5 / spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án]** Quản lý **khoá API POS** cho từng rạp: tạo, xem lần đầu, thu hồi, xoay khoá; xem nhật ký gọi API của POS. | Admin | M |
 
 ### 6.13 Module REPORT — Báo cáo
@@ -360,7 +361,7 @@ Dự án **chỉ có kênh web**: không tích hợp POS / phần mềm quầy v
 | BR-RPT-06 | Báo cáo **đối soát PayOS**: danh sách giao dịch, đơn lệch trạng thái/số tiền, tổng tiền theo rạp. | M |
 | BR-RPT-07 | Xuất báo cáo ra **CSV**. | S |
 | BR-RPT-08 | Dashboard tổng quan: doanh thu hôm nay, số vé hôm nay, suất sắp chiếu, số tài khoản mới — Manager thấy rạp mình, Admin thấy toàn chuỗi + từng rạp. | C |
-| BR-RPT-09 | Báo cáo **suất bị huỷ** (phần tách kênh bán Web / POS bỏ ở BRD v0.5 / spec 2.0.0): số đơn ảnh hưởng, số đã đổi suất, số đã hoàn tiền, tổng tiền hoàn thủ công. | S |
+| BR-RPT-09 | Báo cáo **suất bị huỷ** (phần tách kênh bán Web / POS bỏ ở BRD v0.5 / spec 2.0.0): số đơn ảnh hưởng, số đã hoàn tiền, tổng tiền hoàn thủ công. | S |
 
 ### 6.14 ~~Module POS — Đồng bộ khoá ghế với quầy vé~~ — REMOVED (BRD v0.5 / spec 2.0.0)
 
@@ -408,9 +409,9 @@ Dự án **chỉ có kênh web**: không tích hợp POS / phần mềm quầy v
 
 | Tình huống | Cách xử lý | Hệ thống hỗ trợ |
 |---|---|---|
-| **Rạp buộc phải huỷ suất** (sự cố kỹ thuật, mất điện…) | Khách chọn một trong hai: **(a) đổi sang suất khác tại quầy** (mang mã đặt vé tới quầy, nhân viên cấp vé mới tại quầy — ngoài hệ thống, ghi nhận qua màn Đơn bị ảnh hưởng), hoặc **(b) hoàn tiền** nếu khách đồng ý — rạp chuyển khoản **thủ công**. | Huỷ suất (BR-ADM-12) → **email hàng loạt** (BR-ADM-13) → ghi nhận kết quả từng đơn (BR-ADM-14) |
+| **Rạp buộc phải huỷ suất** (sự cố kỹ thuật, mất điện…) | Khách **liên hệ CSKH** của rạp (hotline rạp, mặc định tổng đài `1900 0000`) để được **hoàn tiền** — rạp chuyển khoản **thủ công**, ghi nhận qua màn Đơn bị ảnh hưởng. | Huỷ suất (BR-ADM-12) → **email hàng loạt** (BR-ADM-13) → ghi nhận kết quả từng đơn (BR-ADM-14) |
 | **Rạp đóng cửa** (tạm đóng / ngừng hoạt động khi còn suất đã bán) | **Hoàn tiền thủ công** cho toàn bộ đơn của các suất tương lai. | Huỷ hàng loạt suất của rạp (BR-CHN-02, BR-ADM-12) → email hàng loạt → ghi nhận hoàn tiền |
-| Thanh toán đến muộn, ghế đã bán cho người khác (BR-PAY-07) | Đơn `needs_manual_review`; Cinema Manager liên hệ khách để xử lý (đổi suất hoặc hoàn tiền thủ công). | Danh sách cần xử lý + ghi chú |
+| Thanh toán đến muộn, ghế đã bán cho người khác (BR-PAY-07) | Đơn `needs_manual_review`; Cinema Manager liên hệ khách để xử lý (hoàn tiền thủ công). | Danh sách cần xử lý + ghi chú |
 | Khách chuyển khoản sai số tiền | Đơn không được xác nhận; giao dịch xuất hiện trong báo cáo đối soát để xử lý thủ công. | Báo cáo đối soát (BR-RPT-06) |
 | Khách đến **nhầm rạp** | Staff thấy kết quả "Sai rạp" kèm địa chỉ rạp đúng; **không** đổi vé, **không** hoàn tiền (theo §7.1). | Soát vé (BR-CHK-02) |
 
@@ -511,9 +512,7 @@ stateDiagram-v2
     paid --> checked_in: Soát vé tại đúng rạp
     paid --> [*]: Suất kết thúc (không check-in)
     paid --> affected: Rạp huỷ suất / đóng cửa
-    affected --> exchanged: Đổi suất tại quầy
     affected --> refunded_manual: Hoàn tiền thủ công
-    exchanged --> [*]
     refunded_manual --> [*]
     checked_in --> [*]
     needs_manual_review --> [*]: Manager/Admin xử lý xong
@@ -640,7 +639,7 @@ stateDiagram-v2
 | ~~AC-21~~ | **[REMOVED — BRD v0.5 / spec 2.0.0]** BR-POS-03/04 | **Given** khách web đang giữ ghế F8 **When** nhân viên chọn F8 trên POS **Then** API trả về ghế không khả dụng; khi web và POS cùng chọn F9 gần như đồng thời thì chỉ một bên giữ được. |
 | ~~AC-22~~ | **[REMOVED — BRD v0.5 / spec 2.0.0]** BR-POS-05 | **Given** POS giữ ghế G1 nhưng nhân viên bỏ dở **When** quá 5 phút không gia hạn/xác nhận **Then** G1 tự trở về Trống trên cả web và POS. |
 | ~~AC-23~~ | **[REMOVED — BRD v0.5 / spec 2.0.0]** BR-POS-01 | **Given** khoá API của rạp HN01 **When** POS dùng khoá đó gọi giữ ghế suất của rạp HN02 **Then** bị từ chối (403). |
-| AC-24 | BR-ADM-12/13 | **Given** suất có 10 đơn `paid` **When** Manager huỷ suất **Then** suất ngừng bán trên web, 10 đơn chuyển `affected`, vé không check-in được, 10 email thông báo được gửi với hướng dẫn đổi suất tại quầy hoặc hoàn tiền, trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. |
+| AC-24 | BR-ADM-12/13 | **Given** suất có 10 đơn `paid` **When** Manager huỷ suất **Then** suất ngừng bán trên web, 10 đơn chuyển `affected`, vé không check-in được, 10 email thông báo được gửi với hướng dẫn liên hệ CSKH để hoàn tiền, trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. |
 | AC-25 | BR-ADM-14 | **Given** một đơn `affected` **When** nhân viên ghi nhận "Đã hoàn tiền thủ công" thiếu số tiền hoặc mã giao dịch ngân hàng **Then** hệ thống chặn lưu; nhập đủ thì đơn chuyển `refunded_manual` và xuất hiện trong báo cáo suất bị huỷ. |
 | AC-26 | BR-CHN-02 | **Given** rạp HN03 còn 3 suất tương lai đã bán vé **When** Admin chuyển rạp sang "Tạm đóng" **Then** hệ thống yêu cầu chạy huỷ hàng loạt 3 suất (kèm email) trước khi cho đổi trạng thái. |
 
@@ -652,7 +651,7 @@ stateDiagram-v2
 |---|---|---|---|
 | Q1 | Quầy vé dùng chung hệ thống hay riêng? | ~~**POS riêng**, nhưng đồng bộ khoá ghế qua API: ghế một bên đang thao tác thì bên kia không thao tác được~~ → **Đổi 2026-11-12 (BRD v0.5):** **không tích hợp POS**, chỉ kênh web; quầy vé vật lý nằm ngoài hệ thống | §6.14 (REMOVED), BR-BKG-01, R10 (REMOVED), AC-20→23 (REMOVED) |
 | Q2 | Bắt buộc đăng nhập để đặt vé? | **Bắt buộc đăng nhập** (email đã xác nhận / Google / Facebook) | BR-AUTH-05, §11.1 |
-| Q3 | Rạp huỷ suất / đóng cửa xử lý thế nào? | **Huỷ suất**: đổi suất khác tại quầy, hoặc hoàn tiền nếu khách đồng ý. **Đóng cửa**: hoàn tiền thủ công. **Có gửi email hàng loạt** | §7.3, BR-ADM-12→14, BR-CHN-02, AC-24→26 |
+| Q3 | Rạp huỷ suất / đóng cửa xử lý thế nào? | **Huỷ suất**: khách liên hệ CSKH để hoàn tiền thủ công (cập nhật v0.6). **Đóng cửa**: hoàn tiền thủ công. **Có gửi email hàng loạt** | §7.3, BR-ADM-12→14, BR-CHN-02, AC-24→26 |
 | Q4 | Hoá đơn điện tử? | **Không cần** | §4.2 |
 | Q5 | Phân loại giá theo đối tượng? | **Không**; chỉ kiểm tra tuổi theo nhãn phim | §4.2, BR-BKG-10 |
 | Q6 | Thương hiệu, design, mẫu email? | **Làm sau** ở bước `/design` | §11.1 |

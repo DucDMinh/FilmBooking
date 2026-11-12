@@ -3,7 +3,8 @@
 > Sinh bởi `.agent/design.md` (Phase 3), ngày 2026-11-11. **Trạng thái: chờ user confirm tokens** (checkpoint ở session chính) trước khi Graph chia layer.
 > **Nguồn sự thật thiết kế:** handoff CINEMO `docs/design/cinemo/` (40 SVG: 37 desktop 1440×1000, 3 mobile 390×844; `tokens/design-tokens.json`; `prototype/index.html`; `CINEMO-contact-sheet.jpg`). Tài liệu này **chuyển handoff thành tài liệu build**, không sáng tác phong cách khác. Thay thế hoàn toàn design-spec cũ.
 > Phạm vi: requirement tag **MVP** trong `SPECIFICATIONS.md` 1.1.0. Nội dung handoff thuộc **GĐ2** được đánh dấu và **không build** ở initial build.
-> **Scope change 2026-11-12 — CR `remove-pos` (spec 2.0.0, PO duyệt): bỏ toàn bộ POS, chỉ làm thuần web.** Màn **29 POS giả lập** (`/pos`) và **39 Tích hợp POS & khoá API** (`/admin/tich-hop-pos`), bổ sung B24, mọi nhãn/badge/cột kênh POS ở màn khác đều **REMOVED** — không build. Giữ nội dung đã gạch để truy vết. Màn Staff soát vé (17) và các thao tác "tại quầy" vật lý (đổi suất, mua tại quầy) giữ nguyên.
+> **Scope change 2026-11-12 — CR `remove-pos` (spec 2.0.0, PO duyệt): bỏ toàn bộ POS, chỉ làm thuần web.** Màn **29 POS giả lập** (`/pos`) và **39 Tích hợp POS & khoá API** (`/admin/tich-hop-pos`), bổ sung B24, mọi nhãn/badge/cột kênh POS ở màn khác đều **REMOVED** — không build. Giữ nội dung đã gạch để truy vết. Màn Staff soát vé (17) và các thao tác "tại quầy" vật lý (mua tại quầy) giữ nguyên.
+> **Scope change 2026-11-12 — CR `remove-showtime-exchange` (spec 3.0.0, PO duyệt):** khi rạp huỷ suất, phương án xử lý duy nhất là **hoàn tiền thủ công**; mọi nhãn/nút/bộ lọc/phương án khác ở màn 24/34, màn vé của khách, soát vé và email đều bỏ. Nội dung hướng dẫn khách: **liên hệ CSKH** — hotline rạp, mặc định tổng đài giả lập `1900 0000`.
 > Token: `skills/react-nodejs/design-tokens.md` (tên khái niệm §1; tên CSS thực thi §4.2). Stack: Next.js App Router + Tailwind v4 + shadcn/ui (Radix) + lucide-react.
 
 ## Mục lục
@@ -329,7 +330,7 @@ Mỗi màn: **Mục đích · R-xx · Bố cục (D = desktop, M = mobile < 768)
 
 ### 11 — Vé của tôi `/ve`
 - **R:** R-87, R-131, R-05.
-- **D:** h1 + mô tả; Tabs "SẮP TỚI" / "ĐÃ XEM"; danh sách card ngang: poster 120, tên phim, **"CINEMO Long Biên • Hà Nội"**, giờ • ngày, "Phòng 03 • Ghế E5, E6 • 2 vé", badge trạng thái (`OrderStatusBadge`: Đã thanh toán / Đã check-in / Bị ảnh hưởng), ô QR nhỏ, link "Xem chi tiết vé →". Đơn `affected`: badge danger + dòng "Suất đã bị huỷ — mang mã đặt vé tới quầy để đổi suất hoặc liên hệ rạp" + hotline.
+- **D:** h1 + mô tả; Tabs "SẮP TỚI" / "ĐÃ XEM"; danh sách card ngang: poster 120, tên phim, **"CINEMO Long Biên • Hà Nội"**, giờ • ngày, "Phòng 03 • Ghế E5, E6 • 2 vé", badge trạng thái (`OrderStatusBadge`: Đã thanh toán / Đã check-in / Bị ảnh hưởng), ô QR nhỏ, link "Xem chi tiết vé →". Đơn `affected`: badge danger + dòng "Suất đã bị huỷ — vui lòng liên hệ CSKH để được hoàn tiền" + hotline rạp (mặc định tổng đài `1900 0000`).
 - **M:** card dọc, QR mini bấm mở `/ve/[code]`.
 - **States:** chưa xác nhận email → rỗng + banner (R-87, §5.3 BRD); empty "Bạn chưa có vé nào" + "Đặt vé ngay"; tab Đã xem rỗng "Chưa có vé đã xem". **Không có** nút huỷ/đổi vé (R-131).
 
@@ -398,7 +399,7 @@ Mỗi màn: **Mục đích · R-xx · Bố cục (D = desktop, M = mobile < 768)
 | ✓ VÉ HỢP LỆ | success-banner, "✓ VÉ HỢP LỆ" success-strong 20/800 + pill "CHƯA CHECK-IN" | Phim 23/750, "CINEMO Long Biên • Phòng 03 • 19:30", Ghế 20/750, (combo — GĐ2, ẩn), nhãn tuổi semantic + "T16 • Kiểm tra giấy tờ nếu cần" (warning) | CTA gradient "Xác nhận check-in" → thành công: banner chuyển "✓ ĐÃ CHECK-IN 19:05", rung nhẹ (Vibration API nếu có), tự đóng sau 3s, focus về ô nhập |
 | ✕ ĐÃ SỬ DỤNG | danger-banner | "Vé đã check-in lúc {19:02, 11/11} bởi {Minh Anh}" + phim/suất/ghế (cùng rạp nên được xem) | "Quét vé khác" |
 | ✕ SAI RẠP | danger-banner | **Chỉ**: "Vé thuộc rạp khác. Vui lòng hướng dẫn khách tới:" + **tên rạp đúng** 20/750 + **địa chỉ**. **Không** hiện tên khách, phim, ghế (R-102, AC-13). Ghi chú "Vé không bị đánh dấu check-in." | "Quét vé khác" |
-| ✕ SAI SUẤT / CHƯA TỚI GIỜ / SUẤT ĐÃ KẾT THÚC | danger-banner (tiêu đề cụ thể theo lý do) | Suất của vé "19:30, 11/11 • Phòng 03"; với "chưa tới giờ": "Mở check-in từ {19:00}" (30' trước); với suất bị huỷ (`affected`): "Suất chiếu đã bị huỷ — hướng dẫn khách đổi suất/hoàn tiền tại quầy" (R-99) | "Quét vé khác" |
+| ✕ SAI SUẤT / CHƯA TỚI GIỜ / SUẤT ĐÃ KẾT THÚC | danger-banner (tiêu đề cụ thể theo lý do) | Suất của vé "19:30, 11/11 • Phòng 03"; với "chưa tới giờ": "Mở check-in từ {19:00}" (30' trước); với suất bị huỷ (`affected`): "Suất chiếu đã bị huỷ — hướng dẫn khách liên hệ CSKH để được hoàn tiền" (R-99) | "Quét vé khác" |
 | ✕ KHÔNG TỒN TẠI / CHƯA THANH TOÁN | danger-banner | "Không tìm thấy vé hợp lệ với mã {mã}" | "Nhập lại mã" |
 
 - Mỗi biến thể có icon + tiêu đề chữ (không chỉ màu); vùng `role="status" aria-live="assertive"`. Mọi lượt quét ghi log (R-101) — UI không cần thao tác thêm.
@@ -467,9 +468,8 @@ Chung: `AdminShell` + `PageHeader` + `CinemaScopeSelect` (topbar). Mọi danh s�
 
 ### 24 — Đơn bị ảnh hưởng `/admin/don-bi-anh-huong` · 34 — Chi tiết
 - **R:** R-109, R-110, R-134. Staff/Manager rạp mình + Admin.
-- **24:** lọc theo Suất/Rạp, Trạng thái xử lý (Chờ xử lý / Đã đổi suất / Đã hoàn tiền), Trạng thái email; cột: Mã đơn, Rạp, Suất bị huỷ, Khách hàng, Email đã gửi (`EmailStatusBadge`), Xử lý, Thao tác (Ghi nhận / Chi tiết / **Gửi lại** khi email lỗi). **[bổ sung] Nút "Xuất CSV"** ở PageHeader (MVP theo R-110, xuất theo bộ lọc hiện tại).
-- **34:** header "ĐƠN BỊ ẢNH HƯỞNG / HN01-7K3P9Q" + CTA "Lưu xử lý". "Thông tin đơn hàng": khách, suất bị huỷ, rạp • phòng • ghế, **Lý do huỷ**, "Email thông báo" badge + thời điểm + nút "Gửi lại email" (khi lỗi). "Ghi nhận phương án xử lý" badge "BẮT BUỘC CHỌN 1" — RadioGroup card:
-  - **Đã đổi suất tại quầy** → Suất mới / mã vé mới.
+- **24:** lọc theo Suất/Rạp, Trạng thái xử lý (Chờ xử lý / Đã hoàn tiền), Trạng thái email; cột: Mã đơn, Rạp, Suất bị huỷ, Khách hàng, Email đã gửi (`EmailStatusBadge`), Xử lý, Thao tác (Ghi nhận / Chi tiết / **Gửi lại** khi email lỗi). **[bổ sung] Nút "Xuất CSV"** ở PageHeader (MVP theo R-110, xuất theo bộ lọc hiện tại).
+- **34:** header "ĐƠN BỊ ẢNH HƯỞNG / HN01-7K3P9Q" + CTA "Lưu xử lý". "Thông tin đơn hàng": khách, suất bị huỷ, rạp • phòng • ghế, **Lý do huỷ**, "Email thông báo" badge + thời điểm + nút "Gửi lại email" (khi lỗi). "Ghi nhận phương án xử lý" một phương án duy nhất (không còn RadioGroup — spec 3.0.0):
   - **Đã hoàn tiền thủ công** → Số tiền*, Ngày*, **Phương thức*** (Chuyển khoản/Tiền mặt — bổ sung, handoff thiếu), **Mã giao dịch ngân hàng*** ; người thực hiện tự điền ("Người xử lý: Manager HN01"). Thiếu trường → lỗi field + chặn lưu (R-110, AC-25).
   - Ghi chú nội bộ (tuỳ chọn).
   Đã ghi nhận → form chỉ đọc + timeline.
@@ -485,7 +485,7 @@ Chung: `AdminShell` + `PageHeader` + `CinemaScopeSelect` (topbar). Mọi danh s�
   1. **Doanh thu** (R-112): KPI Doanh thu (sau giảm), Trước giảm giá, Vé đã bán; biểu đồ cột doanh thu theo kỳ (chart-1); bảng kỳ × (vé, combo = 0 ở MVP, trước/sau giảm).
   2. **Theo phim / suất / rạp** (R-113): bảng có Tabs con Phim / Suất / Rạp: doanh thu + số vé (Rạp: chỉ liệt kê, **không** xếp hạng so sánh — R-115 GĐ2).
   3. **Đối soát PayOS** (R-116): bảng giao dịch (orderCode, mã giao dịch, số tiền, thời điểm, đơn, trạng thái khớp/lệch), lọc "Chỉ đơn lệch" (badge danger "Lệch số tiền"/"Lệch trạng thái"), tổng tiền theo rạp.
-  4. **Suất bị huỷ** (R-119 phần MVP): mỗi suất huỷ: số đơn ảnh hưởng, đã đổi suất, đã hoàn tiền, **tổng tiền hoàn thủ công**.
+  4. **Suất bị huỷ** (R-119 phần MVP): mỗi suất huỷ: số đơn ảnh hưởng, đã hoàn tiền, **tổng tiền hoàn thủ công**.
 - **Không build:** KPI "Tỷ lệ lấp đầy", "Voucher đã dùng", "Hiệu quả theo rạp" xếp hạng, nút "Xuất CSV" báo cáo (GĐ2).
 - **States:** khoảng ngày không có dữ liệu → EmptyState "Không có giao dịch trong khoảng đã chọn".
 
@@ -559,7 +559,7 @@ AlertDialog không đóng được bằng Esc: icon Clock warning, "Đã hết t
 ### B20 — Huỷ suất chiếu (R-108, R-109, R-33, AC-24, AC-26)
 `CancelShowtimesDialog` (Dialog rộng 640, 3 bước):
 1. **Phạm vi:** danh sách suất đã chọn (phim, rạp, phòng, giờ) — mở từ chi tiết suất (1 suất), chọn nhiều trong lưới lịch chiếu (checkbox mode), hoặc "tất cả suất tương lai của rạp" (từ đổi trạng thái rạp). Ô **Lý do huỷ*** (textarea, hiển thị trong email khách).
-2. **Xem trước ảnh hưởng:** card số liệu "{3} suất • {10} đơn đã thanh toán • {18} vé • {2} đơn đang giữ/chờ thanh toán sẽ bị huỷ" + mẫu email (hướng xử lý theo loại: huỷ suất → đổi suất tại quầy / liên hệ hoàn tiền; đóng cửa → rạp liên hệ hoàn tiền) — R-109.
+2. **Xem trước ảnh hưởng:** card số liệu "{3} suất • {10} đơn đã thanh toán • {18} vé • {2} đơn đang giữ/chờ thanh toán sẽ bị huỷ" + mẫu email (hướng xử lý theo loại: huỷ suất → liên hệ CSKH (hotline rạp, mặc định `1900 0000`) để được hoàn tiền thủ công; đóng cửa → rạp liên hệ hoàn tiền) — R-109.
 3. **Xác nhận:** Alert danger "Không thể hoàn tác. Suất sẽ ngừng bán trên web; vé không thể check-in." Ô nhập xác nhận gõ mã rạp (vd `HN01`) để bật nút destructive "Huỷ {3} suất chiếu".
 Kết quả: toast + điều hướng `/admin/don-bi-anh-huong?showtime=…` nơi theo dõi trạng thái gửi email (AC-24).
 

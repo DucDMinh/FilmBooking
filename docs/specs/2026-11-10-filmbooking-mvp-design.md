@@ -1,9 +1,11 @@
 # Design: FilmBooking — Web đặt vé chuỗi rạp (Initial build / MVP)
 Date: 2026-11-10
 Status: Approved (user, 2026-11-10)
-Nguồn: `docs/BRD.md` v0.3 · `SPECIFICATIONS.md` 1.1.0 (R-01…R-134) · `.context/brainstorm-log.md` — **cập nhật 2026-11-12: BRD v0.5 · SPEC 2.0.0 (bỏ POS)**
+Nguồn: `docs/BRD.md` v0.3 · `SPECIFICATIONS.md` 1.1.0 (R-01…R-134) · `.context/brainstorm-log.md` — **cập nhật 2026-11-12: BRD v0.5 · SPEC 2.0.0 (bỏ POS); BRD v0.6 · SPEC 3.0.0 (rạp huỷ suất → khách liên hệ CSKH)**
 
-> **Scope change 2026-11-12 — Change Request `remove-pos` (BRD v0.5 · spec 2.0.0, Product Owner duyệt):** **bỏ toàn bộ POS**, dự án chỉ còn kênh web. Mọi phần POS trong tài liệu này (API `/pos/v1/*`, khoá API POS + nhật ký/rate limit, POS giả lập `pos-sim`, đơn kênh `POS`, đồng bộ ghế web↔POS, R-111, R-120→R-130, AC-20→AC-23) được đánh dấu **REMOVED** — giữ chữ để truy vết, **không implement, không test**. Vai trò Staff (soát vé, tra cứu đơn, đơn bị ảnh hưởng) và quầy vé vật lý (đổi suất / mua tại quầy, ngoài hệ thống) giữ nguyên. Phần POS đã build ở layer 1–4 (cột/enum/bảng/RPC) được chặn/gỡ ở CR `remove-pos` phase-2 (xem task code).
+> **Scope change 2026-11-12 — Change Request `remove-pos` (BRD v0.5 · spec 2.0.0, Product Owner duyệt):** **bỏ toàn bộ POS**, dự án chỉ còn kênh web. Mọi phần POS trong tài liệu này (API `/pos/v1/*`, khoá API POS + nhật ký/rate limit, POS giả lập `pos-sim`, đơn kênh `POS`, đồng bộ ghế web↔POS, R-111, R-120→R-130, AC-20→AC-23) được đánh dấu **REMOVED** — giữ chữ để truy vết, **không implement, không test**. Vai trò Staff (soát vé, tra cứu đơn, đơn bị ảnh hưởng) và quầy vé vật lý (mua tại quầy, ngoài hệ thống) giữ nguyên. Phần POS đã build ở layer 1–4 (cột/enum/bảng/RPC) được chặn/gỡ ở CR `remove-pos` phase-2 (xem task code).
+>
+> **Scope change 2026-11-12 — Change Request `remove-showtime-exchange` (BRD v0.6 · spec 3.0.0, Product Owner duyệt):** khi rạp huỷ suất / đóng cửa, hệ thống **không có** lựa chọn nào khác ngoài hoàn tiền thủ công. Email và màn hình hướng dẫn khách **liên hệ CSKH** (hotline rạp; mặc định tổng đài giả lập `1900 0000`); kết quả xử lý duy nhất ghi nhận là `refunded_manual`. API/Web không cung cấp thao tác nào khác cho đơn `affected`.
 ## Overview
 Website đặt vé cho chuỗi ~5 rạp (dự án demo/học tập): khách chọn khu vực → rạp/phim → suất → ghế (giữ realtime 10') → thanh toán PayOS → vé QR qua email. Quản trị 2 cấp (Admin chuỗi, Cinema Manager), soát vé QR, ~~API khoá ghế cho POS + POS giả lập~~ (REMOVED 2.0.0), huỷ suất/đóng rạp + email hàng loạt.
 **Initial build = phạm vi MVP** (~~121~~ **109** requirement tag `MVP` sau khi bỏ POS ở spec 2.0.0). 13 requirement `GĐ2` làm sau qua `/change`.
@@ -89,7 +91,7 @@ Entity: `profiles`, `staff_assignments` (user ↔ cinema ↔ role), `cinemas`, `
 3. **Tiền về khi đơn không còn chờ** (#9/#10/#17): áp cho `expired` và `cancelled` (kể cả đơn cũ bị thay): tự chốt **chỉ khi** suất chưa huỷ/đóng bán, chưa qua mốc đóng bán online **và** mọi ghế còn trống; ngược lại → `needs_manual_review` + báo Admin/Manager rạp + email khách. Tạo đơn mới khi đơn cũ `pending_payment` → đơn cũ `cancelled` + huỷ payment link. Huỷ suất → đơn `holding`/`pending_payment` → `cancelled`.
 4. **Đối soát:** pg_cron 5' → pg_net → `POST /jobs/reconcile` → truy vấn PayOS các đơn pending quá hạn → đi lại đường `confirm_paid`/tiền về muộn. Webhook lỡ khi Nest đang ngủ/khởi động được job này bù.
 5. ~~**POS:**~~ **[REMOVED — spec 2.0.0, 2026-11-12]** ~~`/pos/v1/*` xác thực Bearer key (hash) → cinema_id cố định → cùng RPC với channel `POS`; `confirm_sale` chỉ cho ghế đang được chính POS đó giữ hợp lệ. **POS giả lập** (#7): trang Staff ở Next → endpoint Nest dành cho Staff → server dùng khoá API của rạp gọi đúng service POS (khoá không ra client).~~
-6. **Huỷ suất/đóng rạp:** preview số đơn → RPC `cancel_showtimes(ids, reason)`: suất `cancelled`, nhả hold, đơn paid → `affected`, vé vô hiệu check-in; enqueue email cho khách (~~đơn POS / #8~~ — REMOVED 2.0.0). Đóng rạp bị chặn nếu còn suất tương lai đã bán chưa huỷ.
+6. **Huỷ suất/đóng rạp:** preview số đơn → RPC `cancel_showtimes(ids, reason)`: suất `cancelled`, nhả hold, đơn paid → `affected`, vé vô hiệu check-in; enqueue email cho khách — nội dung hướng dẫn **liên hệ CSKH** (hotline rạp, mặc định `1900 0000`) để được hoàn tiền thủ công (~~đơn POS / #8~~ — REMOVED 2.0.0). Đóng rạp bị chặn nếu còn suất tương lai đã bán chưa huỷ.
 7. **Email:** mọi email giao dịch qua `email_outbox` (trạng thái, retry, gửi lại) → job Nest gửi bằng Resend.
 
 ## Xác thực phía Nest & hook đăng ký (as-built layer 2)

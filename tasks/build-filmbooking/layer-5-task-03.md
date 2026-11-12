@@ -1,5 +1,7 @@
 # Task 03: Mail (Resend) + worker email_outbox (retry) + job endpoint gửi email
 
+> **Scope change: bỏ đổi suất (CR remove-showtime-exchange, spec 3.0.0, 2026-11-12).** Email huỷ suất chỉ hướng dẫn khách **liên hệ CSKH** (hotline rạp, mặc định tổng đài giả lập `1900 0000`) để được hoàn tiền thủ công.
+
 ## Layer
 5
 
@@ -11,7 +13,7 @@ build (initial)
 - AC-xx: —
 
 ## Description
-MailService gửi qua Resend; template tiếng Việt: vé (mã đặt vé + QR + rạp/địa chỉ + nhắc 'chỉ dùng tại rạp ghi trên vé', 'không huỷ/không hoàn' — lớp cảnh báo email R-133), cảnh báo khoá đăng nhập, thông báo liên kết MXH, tiền về muộn cần liên hệ rạp, huỷ suất (hướng dẫn đổi suất/hoàn tiền). `POST /jobs/send-emails` (JobSecretGuard): lấy batch PENDING (FOR UPDATE SKIP LOCKED qua RPC/service role), gửi, cập nhật SENT/FAILED, retry backoff, max attempts.
+MailService gửi qua Resend; template tiếng Việt: vé (mã đặt vé + QR + rạp/địa chỉ + nhắc 'chỉ dùng tại rạp ghi trên vé', 'không huỷ/không hoàn' — lớp cảnh báo email R-133), cảnh báo khoá đăng nhập, thông báo liên kết MXH, tiền về muộn cần liên hệ rạp, huỷ suất (hướng dẫn liên hệ CSKH — hotline rạp, mặc định `1900 0000` — để được hoàn tiền thủ công; R-109). `POST /jobs/send-emails` (JobSecretGuard): lấy batch PENDING (FOR UPDATE SKIP LOCKED qua RPC/service role), gửi, cập nhật SENT/FAILED, retry backoff, max attempts.
 
 ## Dependencies
 - layer-2-task-02 (Migration bảo mật & vận hành: login attempts, rate limit, email dùng m)

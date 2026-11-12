@@ -1,6 +1,7 @@
 # Task 06: Web admin đơn bị ảnh hưởng: danh sách, chi tiết, ghi kết quả xử lý, gửi lại email, CSV
 
 > **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ badge 'liên hệ tại quầy' cho đơn POS (không còn đơn kênh POS).
+> **Scope change: bỏ đổi suất (CR remove-showtime-exchange, spec 3.0.0, 2026-11-12).** Form xử lý chỉ còn một phương án "Đã hoàn tiền thủ công"; bộ lọc trạng thái xử lý: Chờ xử lý / Đã hoàn tiền.
 
 ## Layer
 7
@@ -13,7 +14,7 @@ build (initial)
 - AC-xx: AC-24, AC-25
 
 ## Description
-Màn 24/34: lọc theo suất/trạng thái xử lý/trạng thái email, gửi lại email, form xử lý (đổi suất / hoàn tiền thủ công cần số tiền + mã giao dịch ngân hàng), tải CSV.
+Màn 24/34: lọc theo suất/trạng thái xử lý/trạng thái email, gửi lại email, form xử lý (hoàn tiền thủ công — cần số tiền + mã giao dịch ngân hàng), tải CSV.
 
 ## Dependencies
 - layer-5-task-13 (Web admin shell: layout `/admin`, sidebar theo vai trò, bộ chọn phạm v)

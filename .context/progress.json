@@ -25,6 +25,14 @@
         }
       ],
       "updatedAt": "2026-11-12T08:47:30.564Z"
+    },
+    {
+      "id": "remove-showtime-exchange",
+      "title": "Bỏ đổi suất khi rạp huỷ suất — liên hệ CSKH (spec 3.0.0)",
+      "class": "MODIFY",
+      "status": "done",
+      "note": "docs/spec only; spec-validator bỏ qua theo chỉ đạo PO (dự án demo, giữ gọn); DB as-built còn enum exchanged = nợ kỹ thuật",
+      "updatedAt": "2026-11-12T08:59:36.880Z"
     }
   ],
   "bugs": [
@@ -182,7 +190,7 @@
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T08:47:30.564Z",
+  "lastUpdated": "2026-11-12T08:59:36.880Z",
   "inProgressTask": null,
   "completedTasks": [
     {

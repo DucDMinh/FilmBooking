@@ -1,6 +1,7 @@
 # Task 08: API huỷ suất / đóng rạp / đơn bị ảnh hưởng (+ CSV, gửi lại email)
 
 > **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ R-127 (từ chối POS khi suất huỷ — REMOVED).
+> **Scope change: bỏ đổi suất (CR remove-showtime-exchange, spec 3.0.0, 2026-11-12).** Kết quả xử lý đơn `affected` duy nhất là hoàn tiền thủ công → `refunded_manual`. **Nợ kỹ thuật:** DB as-built (layer 3–4) còn giá trị enum `exchanged` và chuyển trạng thái `affected → exchanged` — không tạo lại enum (destructive); **API không cung cấp thao tác này** (không endpoint, không nhận giá trị `exchanged` ở DTO). Muốn chặn cứng ở DB → mở task riêng.
 
 ## Layer
 5
@@ -13,7 +14,7 @@ build (initial)
 - AC-xx: AC-24, AC-25, AC-26
 
 ## Description
-Preview + huỷ một/nhiều/tất cả suất của rạp (lý do bắt buộc); đổi trạng thái rạp qua set_cinema_status (AC-26). Đơn bị ảnh hưởng: danh sách/chi tiết, trạng thái gửi email, gửi lại (đặt outbox về PENDING), ghi kết quả xử lý — đổi suất / hoàn tiền thủ công **bắt buộc số tiền + mã giao dịch ngân hàng** (AC-25) → refunded_manual; Staff rạp mình được ghi (#6). Xuất CSV đơn bị ảnh hưởng.
+Preview + huỷ một/nhiều/tất cả suất của rạp (lý do bắt buộc); đổi trạng thái rạp qua set_cinema_status (AC-26). Đơn bị ảnh hưởng: danh sách/chi tiết, trạng thái gửi email, gửi lại (đặt outbox về PENDING), ghi kết quả xử lý — chỉ **hoàn tiền thủ công**, **bắt buộc số tiền + mã giao dịch ngân hàng** (AC-25) → refunded_manual; Staff rạp mình được ghi (#6). Xuất CSV đơn bị ảnh hưởng.
 
 ## Dependencies
 - layer-4-task-04 (RPC huỷ suất hàng loạt + chặn đóng rạp còn suất đã bán)
