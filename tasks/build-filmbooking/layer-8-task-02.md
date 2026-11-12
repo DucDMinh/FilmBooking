@@ -1,4 +1,6 @@
-# Task 02: Test phân quyền theo rạp & dữ liệu khách (RLS + Nest guard + khoá POS)
+# Task 02: Test phân quyền theo rạp & dữ liệu khách (RLS + Nest guard)
+
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ R-120, AC-23 (khoá API POS sai rạp).
 
 ## Layer
 8
@@ -7,20 +9,19 @@
 build (initial)
 
 ## Requirements
-- R-xx: R-39, R-102, R-103, R-120
-- AC-xx: AC-13, AC-16, AC-17, AC-23
+- R-xx: R-39, R-102, R-103
+- AC-xx: AC-13, AC-16, AC-17
 
 ## Description
-Ma trận quyền §5.3: Staff/Manager/khoá POS HN01 thử đọc/ghi suất, đơn, báo cáo, đơn affected, khoá ghế của HN02 qua API **và** truy vấn trực tiếp Supabase bằng JWT (bỏ qua Nest) → bị chặn; khách A đọc đơn/vé khách B → rỗng; pgTAP kiểm mọi bảng public có RLS.
+Ma trận quyền §5.3: Staff/Manager HN01 thử đọc/ghi suất, đơn, báo cáo, đơn affected, khoá ghế của HN02 qua API **và** truy vấn trực tiếp Supabase bằng JWT (bỏ qua Nest) → bị chặn; khách A đọc đơn/vé khách B → rỗng; pgTAP kiểm mọi bảng public có RLS.
 
 ## Dependencies
 - layer-6-task-07 (Harness integration test API ↔ Supabase local (helpers tạo user/role/r)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 
 ## Acceptance Criteria
 - [ ] AC-16: Manager HN01 → không nhận/không sửa dữ liệu HN02 (API 403 + query trực tiếp trả 0 dòng).
 - [ ] AC-17: khách A truy vấn đơn khách B → 0 dòng.
-- [ ] AC-23: khoá POS HN01 gọi suất HN02 → 403.
 - [ ] AC-13: Staff HN02 quét vé HN01 → WRONG_CINEMA, không lộ PII.
 - [ ] pgTAP: không còn bảng public nào thiếu RLS.
 

@@ -1,4 +1,6 @@
-# Task 01: Test đồng thời giữ ghế web↔web↔POS + hết hạn + tải ≥20 hold/giây
+# Task 01: Test đồng thời giữ ghế web↔web + hết hạn + tải ≥20 hold/giây
+
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ R-122/123/124, AC-21, AC-22 (tranh ghế web↔POS, hold POS 5'). Đồng thời web↔web (AC-06) giữ nguyên.
 
 ## Layer
 8
@@ -7,20 +9,19 @@
 build (initial)
 
 ## Requirements
-- R-xx: R-62, R-63, R-122, R-123, R-124
-- AC-xx: AC-06, AC-07, AC-21, AC-22
+- R-xx: R-62, R-63
+- AC-xx: AC-06, AC-07
 
 ## Description
-Integration trên Supabase local qua API thật: N client web + POS bắn cùng ghế/cùng lúc; kiểm không bao giờ có 2 bản ghi giữ/bán cho 1 ghế; hết hạn hold web/POS; tải 20 hold/s trong 30s (NFR-02) đo p95 giữ ghế ≤ 1s (NFR-01).
+Integration trên Supabase local qua API thật: N client web bắn cùng ghế/cùng lúc; kiểm không bao giờ có 2 bản ghi giữ/bán cho 1 ghế; hết hạn hold web; tải 20 hold/s trong 30s (NFR-02) đo p95 giữ ghế ≤ 1s (NFR-01).
 
 ## Dependencies
 - layer-6-task-07 (Harness integration test API ↔ Supabase local (helpers tạo user/role/r)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 
 ## Acceptance Criteria
 - [ ] AC-06: 2 khách cùng E5 đồng thời → đúng 1 thành công (lặp 50 lần).
-- [ ] AC-21: web giữ F8, POS hold F8 → 409; web + POS cùng F9 đồng thời → đúng 1 thắng (lặp 50 lần).
-- [ ] AC-07 / AC-22: hold web 10' (cấu hình rút ngắn trong test) và POS 5' hết hạn → ghế đọc là trống, đơn expired sau cron.
+- [ ] AC-07: hold web 10' (cấu hình rút ngắn trong test) hết hạn → ghế đọc là trống, đơn expired sau cron.
 - [ ] 100 client × ghế ngẫu nhiên: 0 ghế bán trùng; p95 hold ≤ 1s trên local (ghi số đo vào task).
 
 ## DoD (Definition of Done)

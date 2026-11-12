@@ -15,7 +15,7 @@ Màn 35 + B22 + 25: ma trận giá (loại ghế × định dạng × loại ng�
 
 ## Dependencies
 - layer-5-task-13 (Web admin shell: layout `/admin`, sidebar theo vai trò, bộ chọn phạm v)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 - layer-4-task-08 (API bảng giá & ngày lễ (quản trị) + báo giá)
 - layer-5-task-06 (API quản trị: người dùng & vai trò, gán rạp, cấu hình chuỗi, khoá API )
 

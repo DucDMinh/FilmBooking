@@ -3,6 +3,7 @@
 > Sinh bởi `.agent/design.md` (Phase 3), ngày 2026-11-11. **Trạng thái: chờ user confirm tokens** (checkpoint ở session chính) trước khi Graph chia layer.
 > **Nguồn sự thật thiết kế:** handoff CINEMO `docs/design/cinemo/` (40 SVG: 37 desktop 1440×1000, 3 mobile 390×844; `tokens/design-tokens.json`; `prototype/index.html`; `CINEMO-contact-sheet.jpg`). Tài liệu này **chuyển handoff thành tài liệu build**, không sáng tác phong cách khác. Thay thế hoàn toàn design-spec cũ.
 > Phạm vi: requirement tag **MVP** trong `SPECIFICATIONS.md` 1.1.0. Nội dung handoff thuộc **GĐ2** được đánh dấu và **không build** ở initial build.
+> **Scope change 2026-11-12 — CR `remove-pos` (spec 2.0.0, PO duyệt): bỏ toàn bộ POS, chỉ làm thuần web.** Màn **29 POS giả lập** (`/pos`) và **39 Tích hợp POS & khoá API** (`/admin/tich-hop-pos`), bổ sung B24, mọi nhãn/badge/cột kênh POS ở màn khác đều **REMOVED** — không build. Giữ nội dung đã gạch để truy vết. Màn Staff soát vé (17) và các thao tác "tại quầy" vật lý (đổi suất, mua tại quầy) giữ nguyên.
 > Token: `skills/react-nodejs/design-tokens.md` (tên khái niệm §1; tên CSS thực thi §4.2). Stack: Next.js App Router + Tailwind v4 + shadcn/ui (Radix) + lucide-react.
 
 ## Mục lục
@@ -13,7 +14,7 @@
 5. App shell & component dùng chung
 6. Trạng thái chung (loading / empty / error / success)
 7. Màn khách hàng
-8. Màn Staff (soát vé) & POS giả lập
+8. Màn Staff (soát vé) ~~& POS giả lập~~ (POS REMOVED 2.0.0)
 9. Màn quản trị (Admin / Cinema Manager)
 10. Màn MVP thiếu trong handoff
 11. Điều chỉnh so với handoff
@@ -35,7 +36,7 @@
 - **Mint `#8FE0B1` = trạng thái tốt / thời gian còn**, cam `#F2B17D` = lưu ý (độ tuổi, sắp hết giờ), đỏ hồng `#F07173` = lỗi. Badge dùng mẫu "nền tối ngả màu + chữ sáng cùng tông", bo pill.
 - **Typography Inter, tương phản trọng lượng mạnh:** display 44/850 UPPERCASE cho tên phim hero; tiêu đề trang 25–32/750; body 13–14/450; overline 10–11/750 UPPERCASE tracking rộng ("BƯỚC 2 / 5", "RẠP ĐÃ CHỌN", "PHIM NỔI BẬT").
 - **Rạp luôn nổi bật:** tên rạp in hoa đậm + địa chỉ đầy đủ ở xác nhận đơn, thanh toán, vé (BRD: vé chỉ dùng tại rạp ghi trên vé).
-- **Bố cục:** khách — header 72px (logo, nav, chọn tỉnh/thành, tìm kiếm, đăng nhập), nội dung max 1300, lưới 2 cột "nội dung + aside 370px" cho luồng đặt vé. Admin — sidebar 250 + topbar 72 (breadcrumb, **bộ chọn phạm vi rạp**, thông báo, avatar), tiêu đề trang + mô tả, thanh filter, DataTable, phân trang. Soát vé / POS — header riêng không sidebar, nhãn rạp mint góc phải.
+- **Bố cục:** khách — header 72px (logo, nav, chọn tỉnh/thành, tìm kiếm, đăng nhập), nội dung max 1300, lưới 2 cột "nội dung + aside 370px" cho luồng đặt vé. Admin — sidebar 250 + topbar 72 (breadcrumb, **bộ chọn phạm vi rạp**, thông báo, avatar), tiêu đề trang + mô tả, thanh filter, DataTable, phân trang. Soát vé — header riêng không sidebar, nhãn rạp mint góc phải.
 - **Mobile 390:** header 56 (logo, tìm, menu), chip tỉnh/thành, bottom nav 4 mục (Trang chủ / Rạp / Vé / Tài khoản), thanh tóm tắt dính đáy ở luồng đặt vé.
 
 ## 2. Quyết định thiết kế
@@ -45,7 +46,7 @@
 | D1 | **Chỉ dark theme** mọi bề mặt; **không làm light mode**, không có nút đổi theme. | Handoff không có light; user chốt 2026-11-11. |
 | D2 | Stepper đặt vé MVP = **4 bước**: 1 Chọn suất · 2 Chọn ghế · 3 Xác nhận · 4 Thanh toán. Handoff "BƯỚC x / 5" có bước Combo (07) thuộc **GĐ2** (R-58, R-69). Khi GĐ2 bật combo → chèn bước 3 Combo, quay lại 5 bước. | SPEC phase tag. |
 | D3 | Cảnh báo không huỷ/không hoàn (R-71, R-133): **khối cảnh báo inline** trong aside màn Xác nhận (giữ handoff 08) có checkbox gating nút Thanh toán **+ AlertDialog xác nhận cuối** khi bấm "Thanh toán" nhắc lại `{Tên rạp} – {Địa chỉ}`, `suất {giờ} ngày {ngày}`. Xem "Điểm cần user quyết" #2 (phương án chỉ inline). | R-71 ghi "hộp thoại cảnh báo"; handoff có component "Warning modal / No cancellation & refund". |
-| D4 | Admin, Cinema Manager, Staff **dùng chung một shell `/admin`**; sidebar lọc theo vai trò; bộ chọn phạm vi rạp ở topbar (Admin: "Toàn chuỗi" + từng rạp; Manager/Staff: chỉ rạp được gán, ẩn "Toàn chuỗi"). Soát vé `/staff/soat-ve` và POS `/pos` là màn **toàn màn hình riêng** như handoff 17/29. | Handoff 18–40, 40 ghi "Dữ liệu chỉ giới hạn trong rạp được phân công"; R-39. |
+| D4 | Admin, Cinema Manager, Staff **dùng chung một shell `/admin`**; sidebar lọc theo vai trò; bộ chọn phạm vi rạp ở topbar (Admin: "Toàn chuỗi" + từng rạp; Manager/Staff: chỉ rạp được gán, ẩn "Toàn chuỗi"). Soát vé `/staff/soat-ve` là màn **toàn màn hình riêng** như handoff 17 (~~POS `/pos`, 29~~ — REMOVED 2.0.0). | Handoff 18–40, 40 ghi "Dữ liệu chỉ giới hạn trong rạp được phân công"; R-39. |
 | D5 | Màn đích sau đăng nhập của nhân sự ở MVP = **"Việc cần làm"** (`/admin`): đơn cần xử lý, đơn bị ảnh hưởng chưa xử lý, email lỗi, suất sắp bắt đầu. KPI doanh thu/biểu đồ của handoff 18/40 là **dashboard R-118 (GĐ2)** — không build. | R-118 = GĐ2. |
 | D6 | Icon dùng **lucide-react** thay glyph ký tự trong SVG. | Taste-skill §4: SVG icon, không emoji/glyph. |
 | D7 | Không dùng bóng đổ cho card; overlay (dialog/popover/sheet) dùng `--shadow-overlay`. | Handoff. |
@@ -56,7 +57,7 @@
 
 ## 3. IA / sitemap & route
 
-Route group Next.js theo design doc: `(public)`, `(auth)`, `account`, `booking`, `admin`, `staff`, `pos-sim`. Slug tiếng Việt không dấu.
+Route group Next.js theo design doc: `(public)`, `(auth)`, `account`, `booking`, `admin`, `staff` (~~`pos-sim`~~ — REMOVED 2.0.0). Slug tiếng Việt không dấu.
 
 ```
 (public)  /                         Trang chủ                       01, 30
@@ -78,7 +79,7 @@ account   /ve · /ve/[bookingCode]   Vé của tôi, chi tiết vé         11, 
           /tai-khoan/rap-yeu-thich · /tai-khoan/email               [bổ sung theo menu 15]
 staff     /staff/chon-rap           Chọn rạp làm việc               [bổ sung]
           /staff/soat-ve            Soát vé QR                      17
-pos-sim   /pos                      POS giả lập (Staff)             29
+~~pos-sim /pos~~             ~~POS giả lập (Staff)~~  29  — REMOVED 2.0.0
 admin     /admin                    Việc cần làm (MVP) | Dashboard (GĐ2) 18, 40
           /admin/phim · /admin/phim/moi · /admin/phim/[id]          20, 37
           /admin/rap · /admin/rap/moi · /admin/rap/[id]             19, 36
@@ -92,7 +93,7 @@ admin     /admin                    Việc cần làm (MVP) | Dashboard (GĐ2) 1
           /admin/nguoi-dung                                         26
           /admin/bao-cao                                            27 (phần MVP)
           /admin/cau-hinh · /admin/audit-log                        28
-          /admin/tich-hop-pos                                       39
+          ~~/admin/tich-hop-pos~~                                   39  — REMOVED 2.0.0
 system    not-found · error · /khong-co-quyen (403)                 [bổ sung]
 ```
 
@@ -114,8 +115,8 @@ system    not-found · error · /khong-co-quyen (403)                 [bổ sung
 | Báo cáo | ✅ | ✅ | — |
 | Audit log | ✅ | — (R-107 không nêu Manager được xem; xem "Điểm cần user quyết") | — |
 | Cấu hình | ✅ | ✅ cấu hình rạp | — |
-| Tích hợp POS | ✅ | — | — |
-| Soát vé ↗ · POS giả lập ↗ | ✅ | ✅ | ✅ |
+| ~~Tích hợp POS~~ (REMOVED 2.0.0) | — | — | — |
+| Soát vé ↗ (~~POS giả lập ↗~~ REMOVED 2.0.0) | ✅ | ✅ | ✅ |
 
 > Ẩn menu chỉ là UX; quyền thực thi ở RLS + Nest guard (R-39, NFR-05). Truy cập URL không có quyền → trang `/khong-co-quyen`.
 
@@ -155,7 +156,7 @@ Cột "Phase": **MVP** = build ở initial build · **MVP*** = build nhưng bỏ
 | 26 | Người dùng & phân quyền | `/admin/nguoi-dung` | R-105, R-17, R-39 | MVP | Dialog gán vai trò + rạp; khoá/mở khoá |
 | 27 | Báo cáo | `/admin/bao-cao` | R-112, R-113, R-116, (R-119 phần suất huỷ) | MVP* | Bỏ KPI "Tỷ lệ lấp đầy" (R-114), "Hiệu quả theo rạp" so sánh (R-115), "Xuất CSV" (R-117), "Voucher đã dùng" theo rạp (R-96) — đều GĐ2 |
 | 28 | Cấu hình & audit log | `/admin/cau-hinh`, `/admin/audit-log` | R-106, R-56, R-107 | MVP | Thêm sửa nội dung cảnh báo + điều khoản (có phiên bản); tách audit log thành trang có lọc |
-| 29 | POS giả lập | `/pos` | R-129, R-121…R-128 | MVP | Thêm gia hạn/nhả giữ; in mã đặt vé |
+| 29 | ~~POS giả lập~~ | ~~`/pos`~~ | ~~R-129, R-121…R-128~~ | **REMOVED** (spec 2.0.0) | Không build — CR remove-pos |
 | 30 | Mobile trang chủ | `/` (< 768) | như 01 | MVP* | Như 01 |
 | 31 | Mobile chọn ghế | `/dat-ve/[showtimeId]` (< 768) | như 06 | MVP | Chú thích đủ trạng thái |
 | 32 | Mobile vé điện tử | `/ve/[bookingCode]` | R-85, R-87, R-133 | MVP | "Mở vé toàn màn hình" tăng độ sáng (R-87) |
@@ -165,7 +166,7 @@ Cột "Phase": **MVP** = build ở initial build · **MVP*** = build nhưng bỏ
 | 36 | Form rạp | `/admin/rap/moi`, `/admin/rap/[id]` | R-32, R-38, R-56 | MVP | Thêm toạ độ bản đồ, tiện ích, ảnh, cấu hình dọn phòng/đóng bán |
 | 37 | Form phim | `/admin/phim/moi`, `/admin/phim/[id]` | R-41, R-42 | MVP | Thêm diễn viên, ngôn ngữ/phụ đề/lồng tiếng, trạng thái hiển thị |
 | 38 | Form suất chiếu | `/admin/lich-chieu/moi` | R-49, R-50, R-51, R-52, R-56 | MVP | Tạo hàng loạt nhiều rạp (Admin) |
-| 39 | API keys POS | `/admin/tich-hop-pos` | R-111, R-130 | MVP | Thêm dialog hiển thị secret một lần, xoay/thu hồi, nhật ký gọi API |
+| 39 | ~~API keys POS~~ | ~~`/admin/tich-hop-pos`~~ | ~~R-111, R-130~~ | **REMOVED** (spec 2.0.0) | Không build — CR remove-pos |
 | 40 | Dashboard Cinema Manager | `/admin` (Manager) | (R-118) | **GĐ2** | MVP như D5, phạm vi rạp được gán |
 
 **Tổng:** 40 màn → **37 build ở MVP** (trong đó 6 màn MVP* bỏ phần GĐ2) + **3 màn GĐ2** (07, 18, 40). Bổ sung **22 màn/khối** không có trong handoff (§10).
@@ -186,9 +187,9 @@ Cột "Phase": **MVP** = build ở initial build · **MVP*** = build nhưng bỏ
 | `ProvinceSelect` | header | Popover danh sách tỉnh/thành có rạp; ghi nhớ cookie + profile (R-35). Lần đầu chưa chọn → `ProvincePickerDialog` (§10). |
 | `UnverifiedEmailBanner` | mọi trang khách khi Customer chưa xác nhận | Dải warning-soft dưới header: "Xác nhận email để đặt vé. Đã gửi tới {email}." + nút "Gửi lại email" (đếm ngược 60s, R-06). (R-05) |
 | `AdminShell` | /admin/* | Sidebar 250 (chrome, logo + pill vai trò "ADMIN"/"MANAGER"/"STAFF" brand-soft, nhóm "WORKSPACE" overline, item 40px radius 10, active = nền `sidebar-active` + vạch 3px brand trái + chữ trắng 650; footer avatar + tên + email) · Topbar 72: breadcrumb "Quản trị hệ thống / {trang}" · `CinemaScopeSelect` · chuông thông báo · avatar. Nội dung padding 32. **< 1024px:** sidebar thành Sheet (nút menu ở topbar). |
-| `CinemaScopeSelect` | topbar admin, soát vé, POS | Admin: "Toàn chuỗi" + danh sách rạp `HN01 • Long Biên`; Manager/Staff: chỉ rạp được gán, 1 rạp → hiển thị dạng nhãn không mở được. Đổi phạm vi → giữ trong URL `?cinema=HN01`. Kèm ghi chú text-muted "Dữ liệu chỉ giới hạn trong rạp được phân công" (40). (R-39) |
+| `CinemaScopeSelect` | topbar admin, soát vé | Admin: "Toàn chuỗi" + danh sách rạp `HN01 • Long Biên`; Manager/Staff: chỉ rạp được gán, 1 rạp → hiển thị dạng nhãn không mở được. Đổi phạm vi → giữ trong URL `?cinema=HN01`. Kèm ghi chú text-muted "Dữ liệu chỉ giới hạn trong rạp được phân công" (40). (R-39) |
 | `PageHeader` | admin | Tiêu đề h1 27/760 + mô tả 12 text-muted + slot hành động phải (nút gradient "＋ Tạo …"). Mô tả **theo từng trang**, không lặp câu chung "Cập nhật dữ liệu và theo dõi vận hành chuỗi rạp" của handoff. |
-| `StaffHeader` | /staff/*, /pos | 72px chrome: "CINEMO / SOÁT VÉ" hoặc "CINEMO POS / HN01" 17/800 · pill mint mã rạp (`success-soft`) · (POS) pill trạng thái kết nối API · menu người dùng. |
+| `StaffHeader` | /staff/* | 72px chrome: "CINEMO / SOÁT VÉ" 17/800 · pill mint mã rạp (`success-soft`) · menu người dùng. (Biến thể POS — REMOVED 2.0.0.) |
 
 ### 5.2 Component nghiệp vụ
 
@@ -247,7 +248,7 @@ Handoff chưa có các trạng thái này (README). Quy ước dùng chung, đú
 | Lỗi nghiệp vụ trong luồng | `Alert` danger-soft inline gần CTA (vd "Ghế E5, E6 vừa có người giữ. Vui lòng chọn ghế khác." — R-62 nêu ghế trùng). | |
 | Thành công | `Sonner` toast góc dưới phải (desktop) / trên (mobile), nền elevated viền success-line, icon `CheckCircle2` success, tự ẩn 4s; thao tác quan trọng (check-in, thanh toán) dùng màn/banner kết quả thay toast. | |
 | Đang xác nhận (async) | Panel với icon `RefreshCw` quay chậm + "Đang chờ xác nhận" + mô tả, polling 3s, timeout mềm 2' → nút "Kiểm tra lại". | R-79. |
-| Offline | Dải warning trên cùng "Mất kết nối. Trạng thái ghế có thể chưa cập nhật." ; ở POS chặn bán (R-128). | |
+| Offline | Dải warning trên cùng "Mất kết nối. Trạng thái ghế có thể chưa cập nhật." | |
 
 Trang hệ thống: **404** "Không tìm thấy trang" (hero gradient nhỏ + nút "Về trang chủ"); **500** "Đã có lỗi xảy ra" + "Thử lại"; **403** `/khong-co-quyen` "Bạn không có quyền truy cập trang này" + nút về trang phù hợp vai trò.
 
@@ -380,7 +381,7 @@ Mỗi màn: **Mục đích · R-xx · Bố cục (D = desktop, M = mobile < 768)
 
 ---
 
-## 8. Màn Staff (soát vé) & POS giả lập
+## 8. Màn Staff (soát vé) ~~& POS giả lập~~ (POS REMOVED 2.0.0)
 
 ### Bổ sung — Chọn rạp làm việc `/staff/chon-rap`
 - **R:** R-97, R-39. Hiện khi Staff/Manager được gán > 1 rạp và chưa chọn trong phiên. Card giữa trang (nền bg): "Chọn rạp bạn đang làm việc", danh sách radio-card `HN01 • CINEMO Long Biên` + địa chỉ (≥ 56px mỗi hàng), CTA gradient "Bắt đầu soát vé". Lựa chọn lưu theo phiên; đổi lại qua pill mã rạp ở `StaffHeader`. Gán 1 rạp → bỏ qua màn này.
@@ -403,7 +404,9 @@ Mỗi màn: **Mục đích · R-xx · Bố cục (D = desktop, M = mobile < 768)
 - Mỗi biến thể có icon + tiêu đề chữ (không chỉ màu); vùng `role="status" aria-live="assertive"`. Mọi lượt quét ghi log (R-101) — UI không cần thao tác thêm.
 - **States:** camera bị từ chối quyền → khối camera đổi thành hướng dẫn "Cho phép camera trong cài đặt trình duyệt hoặc nhập mã thủ công" (ô nhập vẫn dùng được); đang tra cứu → skeleton trong Sheet; lỗi mạng → Alert "Không kết nối được máy chủ. Thử lại." (không coi là vé không hợp lệ).
 
-### 29 — POS giả lập `/pos`
+### ~~29 — POS giả lập `/pos`~~ — REMOVED (spec 2.0.0, 2026-11-12)
+> **[REMOVED — CR remove-pos: bỏ POS khỏi dự án]** Không build, không test. Nội dung dưới giữ để truy vết.
+
 - **R:** R-129, R-121…R-128, R-130 (log ở server).
 - **D:** `StaffHeader` "CINEMO POS / HN01" + pill "KẾT NỐI API • ONLINE" (mint; mất kết nối → danger "OFFLINE — không thể bán", R-128) + menu nhân viên. h1 "Bán vé tại quầy". 3 cột: (1) "Suất đang mở bán" — card suất: phim, "19:30 • Phòng 03", "92/120 ghế", chọn = viền brand; suất huỷ/đóng bán không hiện (R-127). (2) "Sơ đồ ghế • {phim}" — `SeatMap` dùng chung (realtime, POS thấy cả ghế web đang giữ); chọn ghế → **gọi giữ ngay** (R-121), ghế chuyển Đang chọn; "Đã chọn: C4, C5", pill đồng hồ "Giữ ghế 04:58" (5', R-124) + nút "Gia hạn" (+5') + nút "Nhả ghế" (secondary). (3) "Thanh toán": Ghế, "2 × 90k", Tổng tiền 26/800, CTA gradient "Xác nhận bán", ghi chú "Đơn tại quầy không đi qua PayOS." + "Hệ thống web là nguồn dữ liệu trạng thái ghế duy nhất."
 - **Sau bán:** Dialog "Đã bán • Mã đặt vé HN01-8Q2P7B" + QR + nút "In mã đặt vé" (`window.print`, stylesheet in nền trắng) + "Giao dịch mới".
@@ -418,7 +421,7 @@ Chung: `AdminShell` + `PageHeader` + `CinemaScopeSelect` (topbar). Mọi danh s�
 
 ### Bổ sung (thay 18/40) — Việc cần làm `/admin` (D5)
 - **R:** R-104, R-110, R-109, R-39. Theo phạm vi rạp ở topbar.
-- **Nội dung:** h1 "Việc cần làm"; hàng 3 card đếm có link: "Đơn cần xử lý" (danger nếu > 0) → `/admin/don-can-xu-ly`; "Đơn bị ảnh hưởng chưa xử lý" → `/admin/don-bi-anh-huong?status=pending`; "Email gửi lỗi" → lọc `failed`. Bảng "Suất chiếu sắp bắt đầu" (Rạp, Phim, Suất, Phòng, Vé bán `92/120`, Trạng thái) — giữ bảng handoff 18. Staff: chỉ card "Đơn bị ảnh hưởng" + lối tắt Soát vé / POS.
+- **Nội dung:** h1 "Việc cần làm"; hàng 3 card đếm có link: "Đơn cần xử lý" (danger nếu > 0) → `/admin/don-can-xu-ly`; "Đơn bị ảnh hưởng chưa xử lý" → `/admin/don-bi-anh-huong?status=pending`; "Email gửi lỗi" → lọc `failed`. Bảng "Suất chiếu sắp bắt đầu" (Rạp, Phim, Suất, Phòng, Vé bán `92/120`, Trạng thái) — giữ bảng handoff 18. Staff: chỉ card "Đơn bị ảnh hưởng" + lối tắt Soát vé.
 - **Không build:** KPI doanh thu, biểu đồ doanh thu, doanh thu theo rạp (R-118 GĐ2).
 - **Empty:** "Không có việc cần xử lý" (icon CheckCircle mint).
 
@@ -459,12 +462,12 @@ Chung: `AdminShell` + `PageHeader` + `CinemaScopeSelect` (topbar). Mọi danh s�
 
 ### 23 — Đơn hàng `/admin/don-hang` · Bổ sung chi tiết đơn
 - **R:** R-103, R-104. Staff chỉ đọc.
-- **23:** ô tìm "Mã đặt vé, email, SĐT, mã giao dịch PayOS" (R-103); lọc Trạng thái (§1.8), Kênh (Web/POS), Ngày, Rạp (Admin). Cột: Mã đơn, Khách hàng, Rạp, Phim / suất, Ghế, Tổng tiền, Kênh, Trạng thái (`OrderStatusBadge`).
-- **Chi tiết `/admin/don-hang/[code]` (bổ sung):** header mã đơn + badge; 2 cột: thông tin đơn (khách, rạp, phim, suất, ghế, giá chốt, voucher, tổng, kênh) | "Thanh toán" (orderCode PayOS, mã giao dịch, số tiền, thời điểm — không có dữ liệu thẻ/tài khoản, R-81) ; **Timeline "Lịch sử trạng thái"** (dọc: chấm màu tone + trạng thái + thời điểm + tác nhân); "Bằng chứng đồng ý" (thời điểm, phiên bản nội dung, IP — chỉ Admin/Manager). Đơn `needs_manual_review` → khối xử lý (§10).
+- **23:** ô tìm "Mã đặt vé, email, SĐT, mã giao dịch PayOS" (R-103); lọc Trạng thái (§1.8), Ngày, Rạp (Admin). Cột: Mã đơn, Khách hàng, Rạp, Phim / suất, Ghế, Tổng tiền, Trạng thái (`OrderStatusBadge`).
+- **Chi tiết `/admin/don-hang/[code]` (bổ sung):** header mã đơn + badge; 2 cột: thông tin đơn (khách, rạp, phim, suất, ghế, giá chốt, voucher, tổng) | "Thanh toán" (orderCode PayOS, mã giao dịch, số tiền, thời điểm — không có dữ liệu thẻ/tài khoản, R-81) ; **Timeline "Lịch sử trạng thái"** (dọc: chấm màu tone + trạng thái + thời điểm + tác nhân); "Bằng chứng đồng ý" (thời điểm, phiên bản nội dung, IP — chỉ Admin/Manager). Đơn `needs_manual_review` → khối xử lý (§10).
 
 ### 24 — Đơn bị ảnh hưởng `/admin/don-bi-anh-huong` · 34 — Chi tiết
 - **R:** R-109, R-110, R-134. Staff/Manager rạp mình + Admin.
-- **24:** lọc theo Suất/Rạp, Trạng thái xử lý (Chờ xử lý / Đã đổi suất / Đã hoàn tiền), Trạng thái email; cột: Mã đơn, Rạp, Suất bị huỷ, Khách hàng, Email đã gửi (`EmailStatusBadge`; đơn POS = "Không có email — liên hệ tại quầy"), Xử lý, Thao tác (Ghi nhận / Chi tiết / **Gửi lại** khi email lỗi). **[bổ sung] Nút "Xuất CSV"** ở PageHeader (MVP theo R-110, xuất theo bộ lọc hiện tại).
+- **24:** lọc theo Suất/Rạp, Trạng thái xử lý (Chờ xử lý / Đã đổi suất / Đã hoàn tiền), Trạng thái email; cột: Mã đơn, Rạp, Suất bị huỷ, Khách hàng, Email đã gửi (`EmailStatusBadge`), Xử lý, Thao tác (Ghi nhận / Chi tiết / **Gửi lại** khi email lỗi). **[bổ sung] Nút "Xuất CSV"** ở PageHeader (MVP theo R-110, xuất theo bộ lọc hiện tại).
 - **34:** header "ĐƠN BỊ ẢNH HƯỞNG / HN01-7K3P9Q" + CTA "Lưu xử lý". "Thông tin đơn hàng": khách, suất bị huỷ, rạp • phòng • ghế, **Lý do huỷ**, "Email thông báo" badge + thời điểm + nút "Gửi lại email" (khi lỗi). "Ghi nhận phương án xử lý" badge "BẮT BUỘC CHỌN 1" — RadioGroup card:
   - **Đã đổi suất tại quầy** → Suất mới / mã vé mới.
   - **Đã hoàn tiền thủ công** → Số tiền*, Ngày*, **Phương thức*** (Chuyển khoản/Tiền mặt — bổ sung, handoff thiếu), **Mã giao dịch ngân hàng*** ; người thực hiện tự điền ("Người xử lý: Manager HN01"). Thiếu trường → lỗi field + chặn lưu (R-110, AC-25).
@@ -489,9 +492,11 @@ Chung: `AdminShell` + `PageHeader` + `CinemaScopeSelect` (topbar). Mọi danh s�
 ### 28 — Cấu hình `/admin/cau-hinh` · Audit log `/admin/audit-log`
 - **R:** R-106, R-56, R-107.
 - **Cấu hình (Admin):** "Cấu hình toàn chuỗi": Thời gian giữ ghế (phút, mặc định 10), Đóng bán online trước suất (mặc định), Thời gian dọn phòng (mặc định), Email hỗ trợ; **[bổ sung] "Nội dung cảnh báo không hoàn tiền"** (textarea có biến `{Tên rạp}`, `{Địa chỉ}`, `{giờ}`, `{ngày}` + preview khối `NoRefundNotice`) và **"Điều khoản sử dụng"** (editor markdown đơn giản), mỗi lần lưu tạo **phiên bản mới** (hiển thị "Phiên bản 3 • 11/11/2026 09:10"), ConfirmDialog "Thay đổi áp dụng cho đơn/đăng ký mới". **Manager:** chỉ thấy "Cấu hình rạp {HN01}" (dọn phòng, đóng bán online — R-56), không thấy chính sách.
-- **Audit log (Admin):** DataTable Thời gian, Người thực hiện (vai trò + tên/POS key), Rạp, Thao tác, Đối tượng; lọc theo rạp/người/loại thao tác/ngày; bấm hàng → Sheet "Giá trị trước / sau" (diff 2 cột, mono 12).
+- **Audit log (Admin):** DataTable Thời gian, Người thực hiện (vai trò + tên), Rạp, Thao tác, Đối tượng; lọc theo rạp/người/loại thao tác/ngày; bấm hàng → Sheet "Giá trị trước / sau" (diff 2 cột, mono 12).
 
-### 39 — Tích hợp POS & khoá API `/admin/tich-hop-pos`
+### ~~39 — Tích hợp POS & khoá API `/admin/tich-hop-pos`~~ — REMOVED (spec 2.0.0, 2026-11-12)
+> **[REMOVED — CR remove-pos: bỏ POS khỏi dự án]** Không build, không test. Nội dung dưới giữ để truy vết.
+
 - **R:** R-111, R-130. Chỉ Admin.
 - **Nội dung:** "Khoá API theo từng rạp" + CTA "＋ Tạo khoá API"; mô tả "Mỗi khoá chỉ có quyền đọc / giữ / nhả / bán ghế thuộc rạp được gán."; danh sách hàng: "HN01 • Long Biên", khoá che `cnm_live_•••••••82K1` (mono), badge trạng thái, "Gọi gần nhất: 09:12 hôm nay", "•••" (Xoay khoá, Thu hồi, Xem nhật ký). Alert warning cuối: "Secret chỉ hiển thị một lần khi tạo; thu hồi hoặc xoay khoá sẽ ngắt kết nối POS cũ."
 - **[bổ sung] Dialog secret một lần:** sau tạo/xoay: khoá đầy đủ trong ô mono read-only + nút "Sao chép", Alert danger "Đây là lần duy nhất khoá được hiển thị", checkbox "Tôi đã lưu khoá" mới cho đóng.
@@ -529,7 +534,7 @@ Spec theo ngôn ngữ handoff (cùng token, shell, component). Các màn đã sp
 | B21 | Danh sách phòng + Sao chép sơ đồ | `/admin/rap/[id]/phong`, Dialog | R-47, R-48 | §9 |
 | B22 | Ngày lễ | `/admin/ngay-le` | R-53 | §9 |
 | B23 | Cấu hình nội dung cảnh báo + điều khoản (phiên bản) | `/admin/cau-hinh` | R-106 | §9 |
-| B24 | Dialog secret API một lần + nhật ký API POS | `/admin/tich-hop-pos` | R-111, R-130 | §9 |
+| ~~B24~~ | ~~Dialog secret API một lần + nhật ký API POS~~ | ~~`/admin/tich-hop-pos`~~ | ~~R-111, R-130~~ | **REMOVED** (spec 2.0.0) |
 | B25 | Trang 404 / 500 / 403 | system | — | §6 |
 
 ### B8 — Xoá tài khoản (R-29)
@@ -554,8 +559,8 @@ AlertDialog không đóng được bằng Esc: icon Clock warning, "Đã hết t
 ### B20 — Huỷ suất chiếu (R-108, R-109, R-33, AC-24, AC-26)
 `CancelShowtimesDialog` (Dialog rộng 640, 3 bước):
 1. **Phạm vi:** danh sách suất đã chọn (phim, rạp, phòng, giờ) — mở từ chi tiết suất (1 suất), chọn nhiều trong lưới lịch chiếu (checkbox mode), hoặc "tất cả suất tương lai của rạp" (từ đổi trạng thái rạp). Ô **Lý do huỷ*** (textarea, hiển thị trong email khách).
-2. **Xem trước ảnh hưởng:** card số liệu "{3} suất • {10} đơn đã thanh toán • {18} vé • {2} đơn đang giữ/chờ thanh toán sẽ bị huỷ • {1} đơn POS (không có email)" + mẫu email (hướng xử lý theo loại: huỷ suất → đổi suất tại quầy / liên hệ hoàn tiền; đóng cửa → rạp liên hệ hoàn tiền) — R-109.
-3. **Xác nhận:** Alert danger "Không thể hoàn tác. Suất sẽ ngừng bán trên web và POS; vé không thể check-in." Ô nhập xác nhận gõ mã rạp (vd `HN01`) để bật nút destructive "Huỷ {3} suất chiếu".
+2. **Xem trước ảnh hưởng:** card số liệu "{3} suất • {10} đơn đã thanh toán • {18} vé • {2} đơn đang giữ/chờ thanh toán sẽ bị huỷ" + mẫu email (hướng xử lý theo loại: huỷ suất → đổi suất tại quầy / liên hệ hoàn tiền; đóng cửa → rạp liên hệ hoàn tiền) — R-109.
+3. **Xác nhận:** Alert danger "Không thể hoàn tác. Suất sẽ ngừng bán trên web; vé không thể check-in." Ô nhập xác nhận gõ mã rạp (vd `HN01`) để bật nút destructive "Huỷ {3} suất chiếu".
 Kết quả: toast + điều hướng `/admin/don-bi-anh-huong?showtime=…` nơi theo dõi trạng thái gửi email (AC-24).
 
 ---
@@ -593,7 +598,7 @@ Kết quả: toast + điều hướng `/admin/don-bi-anh-huong?showtime=…` nơ
 | H10 | 24/34 | Thiếu Xuất CSV, thiếu "phương thức" hoàn tiền | Thêm (R-110) |
 | H11 | 35 | Thiếu khung giờ trước/sau 17h; có combo | Thêm khung giờ; bỏ combo |
 | H12 | 28 | Chỉ 4 cấu hình số | Thêm nội dung cảnh báo + điều khoản có phiên bản |
-| H13 | 39 | Không có dialog secret, nhật ký API | Thêm |
+| ~~H13~~ | 39 | ~~Không có dialog secret, nhật ký API~~ | REMOVED (màn 39 bỏ, spec 2.0.0) |
 | H14 | 02/04/05 | Dữ liệu demo lệch (badge T18, meta "T16") | Một nguồn `ageRating` |
 | H15 | Admin | Mô tả trang lặp một câu chung | Mô tả riêng từng trang |
 
@@ -664,7 +669,7 @@ Kết quả: toast + điều hướng `/admin/don-bi-anh-huong?showtime=…` nơ
 | R-56 | 36 (cấu hình rạp), 28 (Manager) |
 | R-57 | mọi hiển thị giờ (`design-tokens.md` §7 quy tắc 5) |
 | R-59 | `SeatMap`, `SeatLegend`, 06/31 |
-| R-60 | `SeatMap` realtime, 06, 29 |
+| R-60 | `SeatMap` realtime, 06 |
 | R-61 | `CountdownTimer` 06→08→09 |
 | R-62 | 06 (lỗi ghế trùng) |
 | R-63 | B12 `HoldExpiredDialog` |
@@ -700,16 +705,15 @@ Kết quả: toast + điều hướng `/admin/don-bi-anh-huong?showtime=…` nơ
 | R-108 | B20, B19 |
 | R-109 | 24, 34 (trạng thái + gửi lại), B20 bước 2 |
 | R-110 | 24, 34 (+ Xuất CSV) |
-| R-111 | 39 + B24 |
+| ~~R-111~~ | REMOVED (spec 2.0.0) |
 | R-112, R-113, R-116 | 27 |
-| R-120, R-122, R-123, R-126, R-127, R-130 | server (API POS); thể hiện ở 29, 39 nhật ký |
-| R-121, R-124, R-125, R-128, R-129 | 29 |
+| ~~R-120…R-130~~ | REMOVED (spec 2.0.0) — không màn |
 | R-131 | 11, 32 (không có nút huỷ/đổi), 08 |
 | R-132 | 17 "Sai rạp", `QrTicket` |
 | R-133 | (1) B9 · (2) 06 · (3) 08 + `PolicyConfirmDialog` · (4) 08 · (5) email + 32 · (6) server, hiển thị ở B18 |
 | R-134 | 34, 27 Đối soát |
 
-Ngoài ra phần MVP của R-119 (báo cáo suất bị huỷ, quyết định #3) → 27 tab "Suất bị huỷ". GĐ2 không spec màn: R-36, R-58, R-69, R-88, R-89, R-91, R-96, R-100, R-114, R-115, R-117, R-118, R-119 (phần kênh Web/POS).
+Ngoài ra phần MVP của R-119 (báo cáo suất bị huỷ, quyết định #3) → 27 tab "Suất bị huỷ". GĐ2 không spec màn: R-36, R-58, R-69, R-88, R-89, R-91, R-96, R-100, R-114, R-115, R-117, R-118, R-119 (phần kênh Web/POS — REMOVED 2.0.0).
 
 ---
 

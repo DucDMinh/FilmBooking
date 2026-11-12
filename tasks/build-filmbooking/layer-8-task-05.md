@@ -1,4 +1,6 @@
-# Task 05: Playwright e2e: đặt vé → thanh toán (mock) → vé; soát vé; POS ↔ web realtime; rạp mới bán được
+# Task 05: Playwright e2e: đặt vé → thanh toán (mock) → vé; soát vé; realtime 2 phiên web; rạp mới bán được
+
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ AC-20/R-121 (POS giả lập ↔ web) và phụ thuộc layer-7-task-09 (REMOVED); spec `pos-realtime` thay bằng realtime 2 phiên web.
 
 ## Layer
 8
@@ -7,21 +9,20 @@
 build (initial)
 
 ## Requirements
-- R-xx: R-38, R-60, R-121
-- AC-xx: AC-08, AC-19, AC-20
+- R-xx: R-38, R-60
+- AC-xx: AC-08, AC-19
 
 ## Description
-E2E trên web + api + Supabase local (seed): khách đăng ký→xác nhận (Inbucket/Mailpit local)→chọn ghế→xác nhận (AC-08)→thanh toán (PayOS mock webhook)→vé; Staff soát vé; 2 browser context: POS giả lập giữ F7 → web thấy ≤ 2s (AC-20); Admin tạo rạp/phòng/sơ đồ/suất → khách đặt được (AC-19).
+E2E trên web + api + Supabase local (seed): khách đăng ký→xác nhận (Inbucket/Mailpit local)→chọn ghế→xác nhận (AC-08)→thanh toán (PayOS mock webhook)→vé; Staff soát vé; 2 browser context web: khách A giữ F7 → khách B thấy "Đang được giữ" ≤ 2s (R-60, NFR-03); Admin tạo rạp/phòng/sơ đồ/suất → khách đặt được (AC-19).
 
 ## Dependencies
 - layer-7-task-01 (Web admin phim & rạp (danh sách + form, trạng thái rạp, cấu hình rạp))
-- layer-7-task-09 (Web POS giả lập `/pos` (Staff) — giữ/nhả/gia hạn/xác nhận bán qua API )
 - layer-6-task-05 (Web thanh toán + kết quả (đang xác nhận/thất bại/thành công) + Vé của )
 - layer-6-task-06 (Web Staff: chọn rạp làm việc + soát vé QR/nhập mã + kết quả màu)
 
 ## Acceptance Criteria
 - [ ] 4 spec PASS headless trên Chromium + mobile viewport 360px.
-- [ ] AC-20 đo thời gian cập nhật ≤ 2s.
+- [ ] R-60/NFR-03: đo thời gian cập nhật realtime giữa 2 phiên web ≤ 2s.
 - [ ] Script `pnpm e2e` (root) — thêm vào CI job tuỳ chọn (manual/nightly).
 
 ## DoD (Definition of Done)
@@ -35,7 +36,7 @@ E2E trên web + api + Supabase local (seed): khách đăng ký→xác nhận (In
 - `playwright.config.ts`
 - `e2e/booking.spec.ts`
 - `e2e/checkin.spec.ts`
-- `e2e/pos-realtime.spec.ts`
+- `e2e/seat-realtime.spec.ts`
 - `e2e/admin-new-cinema.spec.ts`
 
 ## Notes

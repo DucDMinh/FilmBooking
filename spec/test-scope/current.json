@@ -1,9 +1,9 @@
 {
-  "specVersion": "1.1.0",
-  "scopeVersion": 2,
-  "generatedAt": "2026-11-10T19:00:00+07:00",
-  "trigger": "initial-build",
-  "workItem": "initial-spec-from-brd",
+  "specVersion": "2.0.0",
+  "scopeVersion": 3,
+  "generatedAt": "2026-11-12T12:00:00+07:00",
+  "trigger": "feature-update",
+  "workItem": "feature-remove-pos",
   "specRefs": [
     "R-01",
     "R-02",
@@ -115,7 +115,6 @@
     "R-108",
     "R-109",
     "R-110",
-    "R-111",
     "R-112",
     "R-113",
     "R-114",
@@ -124,17 +123,6 @@
     "R-117",
     "R-118",
     "R-119",
-    "R-120",
-    "R-121",
-    "R-122",
-    "R-123",
-    "R-124",
-    "R-125",
-    "R-126",
-    "R-127",
-    "R-128",
-    "R-129",
-    "R-130",
     "R-131",
     "R-132",
     "R-133",
@@ -156,7 +144,6 @@
       "checkin",
       "admin",
       "report",
-      "pos",
       "policy"
     ]
   },
@@ -175,11 +162,23 @@
       "checkin",
       "admin",
       "report",
-      "pos",
       "policy"
     ],
-    "dependents": [],
-    "regression": []
+    "dependents": [
+      "cinema.seat-lock — R-55: ghế khoá không bán được trên web (bỏ vế POS)",
+      "booking.seat-map — R-59: 5 trạng thái ghế, \"Đang được giữ\" chỉ do khách web khác; \"Đã bán\" không còn nguồn POS",
+      "admin.audit-log — R-107: audit thao tác Admin/Manager/Staff (bỏ actor POS)",
+      "admin.cancel-showtime — R-108 + AC-24: suất huỷ ngừng bán trên web; không còn ràng buộc R-127",
+      "report.cancelled-showtimes — R-119: chỉ báo cáo suất bị huỷ, bỏ tách kênh Web/POS",
+      "booking.concurrency — NFR-02/NFR-04/NFR-17: giữ ghế đồng thời web ↔ web, không bán trùng (bỏ web ↔ POS, bỏ R-123)",
+      "booking.realtime — NFR-03: trạng thái ghế ≤ 2 giây (nguồn R-60, bỏ R-121)",
+      "auth.rbac — NFR-17: phân quyền theo rạp chỉ Staff/Manager (bỏ khoá API POS, bỏ R-120)"
+    ],
+    "regression": [
+      "pos — REMOVED ở spec 2.0.0 (R-111, R-120→R-130, AC-20→AC-23): mọi test POS (API /pos/v1/*, khoá API POS, POS giả lập, đơn kênh POS, đồng bộ web↔POS) chuyển n/a / xoá; KHÔNG viết test mới cho POS",
+      "Lưu ý: DB hiện vẫn còn RPC confirm_pos_sale, bảng khoá/nhật ký API POS, nhánh POS trong hold_seats/cancel_showtimes — chờ task code riêng chặn entry point (scope sau sẽ liệt kê files); không test các đối tượng này",
+      "Retest nhánh web sau khi task code chặn entry POS: booking.hold_seats, admin.cancel_showtimes, payment.confirm_paid (+ expire pending_payment)"
+    ]
   },
   "acceptance": [
     "AC-01: Given khách vừa đăng ký email/mật khẩu When chưa xác nhận mà thử giữ ghế Then bị chặn + banner yêu cầu xác nhận email. [nguồn BR-AUTH-04/05; R-04, R-05; phase MVP]",
@@ -201,11 +200,7 @@
     "AC-17: Given khách A đăng nhập When gọi API/truy vấn đơn của khách B Then không nhận dữ liệu (RLS chặn). [nguồn NFR-05; R-87 (NFR-05); phase MVP]",
     "AC-18: Given voucher chỉ áp dụng HN01 When nhập cho đơn tại HN02 Then báo \"Mã không áp dụng tại rạp này\". [nguồn BR-PRM-01/04; R-91; phase GĐ2]",
     "AC-19: Given Admin tạo rạp mới, phòng, sơ đồ ghế, suất qua quản trị Then rạp mới xuất hiện ở danh sách rạp và bán vé được ngay, không deploy. [nguồn BR-CHN-07; R-38; phase MVP]",
-    "AC-20: Given nhân viên chọn F7 trên POS HN01 When khách đang xem sơ đồ suất đó trên web Then trong ≤ 2 giây F7 \"Đang được giữ\", khách không chọn được. [nguồn BR-POS-02; R-121; phase MVP]",
-    "AC-21: Given khách web đang giữ F8 When nhân viên chọn F8 trên POS Then API trả không khả dụng; web và POS cùng chọn F9 gần đồng thời → chỉ một bên giữ được. [nguồn BR-POS-03/04; R-122, R-123; phase MVP]",
-    "AC-22: Given POS giữ G1 nhưng bỏ dở When quá 5 phút không gia hạn/xác nhận Then G1 tự về Trống trên cả web và POS. [nguồn BR-POS-05; R-124; phase MVP]",
-    "AC-23: Given khoá API rạp HN01 When POS dùng khoá đó giữ ghế suất của HN02 Then bị từ chối (403). [nguồn BR-POS-01; R-120; phase MVP]",
-    "AC-24: Given suất có 10 đơn `paid` When Manager huỷ suất Then suất ngừng bán trên web và POS; 10 đơn `affected`; vé không check-in được; 10 email gửi kèm hướng dẫn đổi suất / hoàn tiền; trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. [nguồn BR-ADM-12/13; R-108, R-109, R-110, R-127; phase MVP]",
+    "AC-24: Given suất có 10 đơn `paid` When Manager huỷ suất Then suất ngừng bán trên web; 10 đơn `affected`; vé không check-in được; 10 email gửi kèm hướng dẫn đổi suất / hoàn tiền; trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. [nguồn BR-ADM-12/13; R-108, R-109, R-110; phase MVP]",
     "AC-25: Given một đơn `affected` When ghi nhận \"Đã hoàn tiền thủ công\" thiếu số tiền hoặc mã giao dịch ngân hàng Then chặn lưu; nhập đủ → đơn `refunded_manual` và xuất hiện trong báo cáo suất bị huỷ. [nguồn BR-ADM-14; R-110, R-119; phase MVP [cần xác nhận]]",
     "AC-26: Given rạp HN03 còn 3 suất tương lai đã bán vé When Admin chuyển rạp sang \"Tạm đóng\" Then hệ thống yêu cầu huỷ hàng loạt 3 suất (kèm email) trước khi cho đổi trạng thái. [nguồn BR-CHN-02; R-33, R-108; phase MVP]"
   ],

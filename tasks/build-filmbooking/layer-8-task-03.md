@@ -15,7 +15,7 @@ Integration với PayOS mock + chữ ký HMAC thật: sai chữ ký, lặp webho
 
 ## Dependencies
 - layer-6-task-07 (Harness integration test API ↔ Supabase local (helpers tạo user/role/r)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 - layer-6-task-02 (Job đối soát PayOS 5' + lịch pg_cron/pg_net gọi Nest /jobs)
 
 ## Acceptance Criteria

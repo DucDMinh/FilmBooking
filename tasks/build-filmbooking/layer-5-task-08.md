@@ -1,5 +1,7 @@
 # Task 08: API huỷ suất / đóng rạp / đơn bị ảnh hưởng (+ CSV, gửi lại email)
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ R-127 (từ chối POS khi suất huỷ — REMOVED).
+
 ## Layer
 5
 
@@ -7,7 +9,7 @@
 build (initial)
 
 ## Requirements
-- R-xx: R-33, R-108, R-109, R-110, R-127, R-134
+- R-xx: R-33, R-108, R-109, R-110, R-134
 - AC-xx: AC-24, AC-25, AC-26
 
 ## Description

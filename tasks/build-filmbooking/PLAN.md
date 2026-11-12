@@ -1,7 +1,9 @@
 # PLAN — build-filmbooking (initial build, phạm vi MVP)
 
 > Sinh bởi agent `graph` (2026-11-11) từ `SPECIFICATIONS.md` 1.1.0 + `docs/specs/2026-11-10-filmbooking-mvp-design.md` + `.context/design-spec.md`.
-> **9 layer · 65 task.** Layer N+1 chỉ mở khi toàn bộ Layer N PASS review **và** user duyệt (human checkpoint).
+> **9 layer · 65 task** (63 task còn hiệu lực — **2 task REMOVED** bởi CR `remove-pos`, spec 2.0.0, 2026-11-12: layer-5-task-05, layer-7-task-09; không đánh số lại).
+> **Scope change 2026-11-12 (CR `remove-pos`, spec 2.0.0, PO duyệt): bỏ toàn bộ POS — chỉ làm thuần web.** R-111, R-120→R-130, AC-20→AC-23 REMOVED. Task đã xong (layer 0–4) giữ nguyên lịch sử (ID gạch `~~R-xx~~`); task chưa làm (layer 5–8) đã cắt phần POS. Phần POS đã build (enum/bảng/RPC) được chặn/gỡ ở CR `remove-pos` phase-2.
+> Layer N+1 chỉ mở khi toàn bộ Layer N PASS review **và** user duyệt (human checkpoint).
 > Số task vượt nhẹ mục tiêu 60 vì giữ task nhỏ (1–7 file) và tách riêng các bất biến rủi ro cao (giữ ghế, thanh toán, RLS, huỷ suất) + 4 task wiring để tránh trùng file khi chạy song song.
 
 layer-plan diagram skipped (archify chưa cài) — dùng sơ đồ Mermaid bên dưới.
@@ -30,9 +32,9 @@ flowchart TD
   L2["Layer 2 (5 task)<br/>Schema catalog + bảo mật/vận hành; guard"]
   L3["Layer 3 (7 task)<br/>Giá 2 cấp"]
   L4["Layer 4 (12 task)<br/>RPC nguyên tử (giữ ghế"]
-  L5["Layer 5 (13 task)<br/>API booking/PayOS/mail/checkin/POS/admin"]
+  L5["Layer 5 (13 task, 1 removed)<br/>API booking/PayOS/mail/checkin/admin"]
   L6["Layer 6 (7 task)<br/>Đặt vé end-to-end trên web (ghế realtime"]
-  L7["Layer 7 (9 task)<br/>Màn quản trị MVP (phim/rạp/phòng/lịch/gi"]
+  L7["Layer 7 (9 task, 1 removed)<br/>Màn quản trị MVP (phim/rạp/phòng/lịch/gi"]
   L8["Layer 8 (7 task)<br/>Polish"]
   L0 --> C0{"⏸ HUMAN CHECKPOINT 0"} --> L1
   L1 --> C1{"⏸ HUMAN CHECKPOINT 1"} --> L2
@@ -71,7 +73,7 @@ flowchart TD
 | Task | Tiêu đề | R-xx | AC | Phụ thuộc |
 |---|---|---|---|---|
 | [layer-2-task-01](layer-2-task-01.md) | Migration catalog: phim, phòng, sơ đồ ghế, suất chiếu (chống chồng giờ), khoá ghế, storage | R-41, R-42, R-45, R-47, R-48, R-49, R-50, R-51, R-54, R-55 | AC-14 | layer-1-task-03 |
-| [layer-2-task-02](layer-2-task-02.md) | Migration bảo mật & vận hành: login attempts, rate limit, email dùng một lần, outbox, khoá API POS, cron xoá tài khoản | R-08, R-09, R-10, R-11, R-86, R-109, R-111, R-130 | AC-03 | layer-1-task-03 |
+| [layer-2-task-02](layer-2-task-02.md) | Migration bảo mật & vận hành: login attempts, rate limit, email dùng một lần, outbox, ~~khoá API POS~~, cron xoá tài khoản | R-08, R-09, R-10, R-11, R-86, R-109, ~~R-111~~, ~~R-130~~ | AC-03 | layer-1-task-03 |
 | [layer-2-task-03](layer-2-task-03.md) | Nest guards: AuthGuard (JWT Supabase), RolesGuard, CinemaScopeGuard, JobSecretGuard, throttler | R-17, R-39 | AC-16 | layer-1-task-02, layer-1-task-03 |
 | [layer-2-task-04](layer-2-task-04.md) | Web data layer: API client REST, map mã lỗi → tiếng Việt, Supabase SSR, middleware phiên | R-15, R-16 | — | layer-1-task-01 |
 | [layer-2-task-05](layer-2-task-05.md) | Web shell công khai + component chung + trang pháp lý | R-03, R-25, R-42, R-133 | — | layer-1-task-01 |
@@ -96,10 +98,10 @@ flowchart TD
 
 | Task | Tiêu đề | R-xx | AC | Phụ thuộc |
 |---|---|---|---|---|
-| [layer-4-task-01](layer-4-task-01.md) | RPC giữ/nhả/gia hạn ghế nguyên tử (web + POS) + dọn hold hết hạn | R-55, R-61, R-62, R-63, R-64, R-65, R-66, R-67, R-72, R-122, R-123, R-124 | AC-06, AC-07, AC-21, AC-22 | layer-3-task-01, layer-3-task-02 |
-| [layer-4-task-02](layer-4-task-02.md) | RPC thanh toán & bán: confirm_paid idempotent, tiền về muộn, huỷ/hết hạn, đơn 0đ, xác nhận bán POS | R-75, R-76, R-77, R-78, R-82, R-85, R-86, R-125, R-128 | AC-10, AC-11 | layer-3-task-02, layer-2-task-02 |
+| [layer-4-task-01](layer-4-task-01.md) | RPC giữ/nhả/gia hạn ghế nguyên tử (web + ~~POS~~) + dọn hold hết hạn | R-55, R-61, R-62, R-63, R-64, R-65, R-66, R-67, R-72, ~~R-122~~, ~~R-123~~, ~~R-124~~ | AC-06, AC-07, ~~AC-21~~, ~~AC-22~~ | layer-3-task-01, layer-3-task-02 |
+| [layer-4-task-02](layer-4-task-02.md) | RPC thanh toán & bán: confirm_paid idempotent, tiền về muộn, huỷ/hết hạn, đơn 0đ, ~~xác nhận bán POS~~ | R-75, R-76, R-77, R-78, R-82, R-85, R-86, ~~R-125~~, ~~R-128~~ | AC-10, AC-11 | layer-3-task-02, layer-2-task-02 |
 | [layer-4-task-03](layer-4-task-03.md) | RPC voucher lõi: áp/giữ lượt, hoàn lượt khi hết hạn/huỷ, mã lỗi | R-90, R-92, R-93, R-94, R-95 | — | layer-3-task-02, layer-2-task-02 |
-| [layer-4-task-04](layer-4-task-04.md) | RPC huỷ suất hàng loạt + chặn đóng rạp còn suất đã bán | R-33, R-108, R-109, R-110, R-127, R-134 | AC-24, AC-26 | layer-3-task-02, layer-2-task-02 |
+| [layer-4-task-04](layer-4-task-04.md) | RPC huỷ suất hàng loạt + chặn đóng rạp còn suất đã bán | R-33, R-108, R-109, R-110, ~~R-127~~, R-134 | AC-24, AC-26 | layer-3-task-02, layer-2-task-02 |
 | [layer-4-task-05](layer-4-task-05.md) | RPC check-in vé + view báo cáo MVP (doanh thu, theo phim/suất/rạp, đối soát PayOS, suất bị huỷ) | R-97, R-98, R-99, R-101, R-102, R-112, R-113, R-116, R-132 | AC-12, AC-13 | layer-3-task-02 |
 | [layer-4-task-06](layer-4-task-06.md) | Identity/social: trigger email liên kết + API liên kết/huỷ liên kết, Facebook không email, chặn tự gộp trùng email | R-19, R-20, R-21, R-22, R-23, R-24 | AC-04, AC-05 | layer-2-task-02, layer-2-task-03 |
 | [layer-4-task-07](layer-4-task-07.md) | Wiring API #2: đăng ký catalog, cinema-ops, auth-ext, profile + sinh lại types | — | — | layer-3-task-01, layer-3-task-02, layer-3-task-03, layer-3-task-04, layer-3-task-05, layer-3-task-06, layer-3-task-07 |
@@ -111,7 +113,7 @@ flowchart TD
 
 ## Layer 5 — 13 task
 
-**Mục tiêu:** API booking/PayOS/mail/checkin/POS/admin/đơn-báo cáo/huỷ suất; web auth, tài khoản, liên kết, admin shell.
+**Mục tiêu:** API booking/PayOS/mail/checkin/admin/đơn-báo cáo/huỷ suất; web auth, tài khoản, liên kết, admin shell.
 
 | Task | Tiêu đề | R-xx | AC | Phụ thuộc |
 |---|---|---|---|---|
@@ -119,10 +121,10 @@ flowchart TD
 | [layer-5-task-02](layer-5-task-02.md) | API thanh toán PayOS: tạo link, webhook (checksum, idempotent, đối chiếu tiền), polling, huỷ, đơn 0đ | R-73, R-74, R-75, R-76, R-77, R-78, R-79, R-81, R-82, R-83, R-84 | AC-09, AC-10, AC-11 | layer-4-task-02, layer-2-task-03 |
 | [layer-5-task-03](layer-5-task-03.md) | Mail (Resend) + worker email_outbox (retry) + job endpoint gửi email | R-11, R-24, R-78, R-86, R-109 | — | layer-2-task-02, layer-2-task-03 |
 | [layer-5-task-04](layer-5-task-04.md) | API soát vé: quét QR/nhập mã theo rạp làm việc | R-97, R-98, R-99, R-101, R-102, R-132 | AC-12, AC-13 | layer-4-task-05, layer-2-task-03 |
-| [layer-5-task-05](layer-5-task-05.md) | API POS `/pos/v1/*` (khoá API theo rạp, idempotent, log + rate limit) + endpoint POS giả lập cho Staff | R-120, R-121, R-122, R-123, R-124, R-125, R-126, R-127, R-128, R-129, R-130 | AC-21, AC-22, AC-23 | layer-4-task-01, layer-4-task-02, layer-2-task-02, layer-2-task-03 |
-| [layer-5-task-06](layer-5-task-06.md) | API quản trị: người dùng & vai trò, gán rạp, cấu hình chuỗi, khoá API POS, audit log, voucher CRUD | R-17, R-39, R-90, R-105, R-106, R-107, R-111 | AC-16 | layer-3-task-03, layer-3-task-02, layer-2-task-02 |
+| [layer-5-task-05](layer-5-task-05.md) | ~~API POS `/pos/v1/*` (khoá API theo rạp, idempotent, log + rate limit) + endpoint POS giả lập cho Staff~~ **[REMOVED — CR remove-pos, spec 2.0.0]** | ~~R-120, R-121, R-122, R-123, R-124, R-125, R-126, R-127, R-128, R-129, R-130~~ | ~~AC-21, AC-22, AC-23~~ | ~~layer-4-task-01, layer-4-task-02, layer-2-task-02, layer-2-task-03~~ |
+| [layer-5-task-06](layer-5-task-06.md) | API quản trị: người dùng & vai trò, gán rạp, cấu hình chuỗi, audit log, voucher CRUD | R-17, R-39, R-90, R-105, R-106, R-107 | AC-16 | layer-3-task-03, layer-3-task-02, layer-2-task-02 |
 | [layer-5-task-07](layer-5-task-07.md) | API đơn hàng & báo cáo: tra cứu đơn, đơn cần xử lý thủ công, báo cáo MVP, Việc cần làm | R-103, R-104, R-112, R-113, R-116, R-134 | AC-11, AC-16 | layer-4-task-05, layer-3-task-03 |
-| [layer-5-task-08](layer-5-task-08.md) | API huỷ suất / đóng rạp / đơn bị ảnh hưởng (+ CSV, gửi lại email) | R-33, R-108, R-109, R-110, R-127, R-134 | AC-24, AC-25, AC-26 | layer-4-task-04, layer-2-task-03 |
+| [layer-5-task-08](layer-5-task-08.md) | API huỷ suất / đóng rạp / đơn bị ảnh hưởng (+ CSV, gửi lại email) | R-33, R-108, R-109, R-110, R-134 | AC-24, AC-25, AC-26 | layer-4-task-04, layer-2-task-03 |
 | [layer-5-task-09](layer-5-task-09.md) | Wiring API #3: đăng ký identity + pricing, sinh lại types | — | — | layer-4-task-01, layer-4-task-02, layer-4-task-03, layer-4-task-04, layer-4-task-05, layer-4-task-06, layer-4-task-07, layer-4-task-08 |
 | [layer-5-task-10](layer-5-task-10.md) | Web đăng nhập/đăng ký/xác nhận email/quên & đặt lại mật khẩu + OAuth | R-01, R-02, R-03, R-04, R-06, R-07, R-11, R-12, R-13, R-15, R-16, R-18 | AC-02, AC-03 | layer-3-task-06, layer-4-task-07, layer-2-task-04, layer-2-task-05 |
 | [layer-5-task-11](layer-5-task-11.md) | Web tài khoản: hồ sơ, đổi email/mật khẩu, avatar, rạp yêu thích, tuỳ chọn email, xoá tài khoản + banner chưa xác nhận | R-05, R-06, R-14, R-26, R-27, R-28, R-29, R-30, R-31 | AC-01 | layer-3-task-07, layer-4-task-07, layer-2-task-04, layer-2-task-05 |
@@ -135,9 +137,9 @@ flowchart TD
 
 | Task | Tiêu đề | R-xx | AC | Phụ thuộc |
 |---|---|---|---|---|
-| [layer-6-task-01](layer-6-task-01.md) | Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admin, orders, report, cancellation | — | — | layer-5-task-01, layer-5-task-02, layer-5-task-03, layer-5-task-04, layer-5-task-05, layer-5-task-06, layer-5-task-07, layer-5-task-08, layer-5-task-09 |
+| [layer-6-task-01](layer-6-task-01.md) | Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, orders, report, cancellation | — | — | layer-5-task-01, layer-5-task-02, layer-5-task-03, layer-5-task-04, layer-5-task-06, layer-5-task-07, layer-5-task-08, layer-5-task-09 |
 | [layer-6-task-02](layer-6-task-02.md) | Job đối soát PayOS 5' + lịch pg_cron/pg_net gọi Nest /jobs | R-78, R-80 | AC-11 | layer-5-task-02, layer-5-task-03 |
-| [layer-6-task-03](layer-6-task-03.md) | Web chọn ghế `/dat-ve/[showtimeId]`: SeatMap a11y + realtime + giữ ghế + đếm ngược | R-16, R-59, R-60, R-61, R-63, R-64, R-65, R-66, R-68, R-121, R-122 | AC-01, AC-06, AC-07, AC-20 | layer-5-task-01, layer-4-task-11 |
+| [layer-6-task-03](layer-6-task-03.md) | Web chọn ghế `/dat-ve/[showtimeId]`: SeatMap a11y + realtime + giữ ghế + đếm ngược | R-16, R-59, R-60, R-61, R-63, R-64, R-65, R-66, R-68 | AC-01, AC-06, AC-07 | layer-5-task-01, layer-4-task-11 |
 | [layer-6-task-04](layer-6-task-04.md) | Web xác nhận đơn: tóm tắt, voucher, cảnh báo không huỷ/không hoàn + checkbox + AlertDialog | R-70, R-71, R-72, R-94, R-131, R-133 | AC-08 | layer-5-task-01, layer-4-task-11 |
 | [layer-6-task-05](layer-6-task-05.md) | Web thanh toán + kết quả (đang xác nhận/thất bại/thành công) + Vé của tôi + chi tiết vé QR | R-73, R-77, R-79, R-82, R-85, R-87, R-132 | AC-17 | layer-5-task-02, layer-5-task-01, layer-4-task-11 |
 | [layer-6-task-06](layer-6-task-06.md) | Web Staff: chọn rạp làm việc + soát vé QR/nhập mã + kết quả màu | R-97, R-98, R-99, R-101, R-102, R-132 | AC-12, AC-13 | layer-5-task-04, layer-5-task-13 |
@@ -145,32 +147,32 @@ flowchart TD
 
 ## Layer 7 — 9 task
 
-**Mục tiêu:** Màn quản trị MVP (phim/rạp/phòng/lịch/giá/voucher/đơn/đơn ảnh hưởng/người dùng/cấu hình/POS/báo cáo) + POS giả lập.
+**Mục tiêu:** Màn quản trị MVP (phim/rạp/phòng/lịch/giá/voucher/đơn/đơn ảnh hưởng/người dùng/cấu hình/báo cáo).
 
 | Task | Tiêu đề | R-xx | AC | Phụ thuộc |
 |---|---|---|---|---|
 | [layer-7-task-01](layer-7-task-01.md) | Web admin phim & rạp (danh sách + form, trạng thái rạp, cấu hình rạp) | R-32, R-33, R-38, R-41, R-42, R-56 | AC-19, AC-26 | layer-5-task-13, layer-6-task-01, layer-3-task-04, layer-3-task-05 |
 | [layer-7-task-02](layer-7-task-02.md) | Web admin phòng chiếu + trình chỉnh sơ đồ ghế + sao chép sơ đồ | R-47, R-48 | — | layer-5-task-13, layer-6-task-01, layer-3-task-05 |
-| [layer-7-task-03](layer-7-task-03.md) | Web admin lịch chiếu: danh sách, tạo đơn lẻ/hàng loạt, chi tiết suất (đóng bán, khoá ghế), dialog huỷ suất | R-49, R-50, R-51, R-54, R-55, R-108, R-127 | AC-14, AC-24 | layer-5-task-13, layer-6-task-01, layer-3-task-05, layer-5-task-08 |
+| [layer-7-task-03](layer-7-task-03.md) | Web admin lịch chiếu: danh sách, tạo đơn lẻ/hàng loạt, chi tiết suất (đóng bán, khoá ghế), dialog huỷ suất | R-49, R-50, R-51, R-54, R-55, R-108 | AC-14, AC-24 | layer-5-task-13, layer-6-task-01, layer-3-task-05, layer-5-task-08 |
 | [layer-7-task-04](layer-7-task-04.md) | Web admin bảng giá, ngày lễ, voucher | R-52, R-53, R-90 | AC-15 | layer-5-task-13, layer-6-task-01, layer-4-task-08, layer-5-task-06 |
 | [layer-7-task-05](layer-7-task-05.md) | Web admin Việc cần làm + đơn hàng + chi tiết đơn + đơn cần xử lý thủ công | R-103, R-104, R-134 | AC-11 | layer-5-task-13, layer-6-task-01, layer-5-task-07 |
 | [layer-7-task-06](layer-7-task-06.md) | Web admin đơn bị ảnh hưởng: danh sách, chi tiết, ghi kết quả xử lý, gửi lại email, CSV | R-109, R-110, R-134 | AC-24, AC-25 | layer-5-task-13, layer-6-task-01, layer-5-task-08 |
-| [layer-7-task-07](layer-7-task-07.md) | Web admin người dùng & phân quyền, cấu hình chuỗi, audit log, tích hợp POS & khoá API | R-17, R-39, R-105, R-106, R-107, R-111, R-130 | — | layer-5-task-13, layer-6-task-01, layer-5-task-06 |
+| [layer-7-task-07](layer-7-task-07.md) | Web admin người dùng & phân quyền, cấu hình chuỗi, audit log | R-17, R-39, R-105, R-106, R-107 | — | layer-5-task-13, layer-6-task-01, layer-5-task-06 |
 | [layer-7-task-08](layer-7-task-08.md) | Web admin báo cáo MVP: doanh thu, theo phim/suất/rạp, đối soát PayOS, suất bị huỷ | R-112, R-113, R-116 | AC-25 | layer-5-task-13, layer-6-task-01, layer-5-task-07 |
-| [layer-7-task-09](layer-7-task-09.md) | Web POS giả lập `/pos` (Staff) — giữ/nhả/gia hạn/xác nhận bán qua API POS | R-121, R-122, R-124, R-125, R-128, R-129 | AC-20, AC-21, AC-22 | layer-5-task-13, layer-6-task-01, layer-5-task-05, layer-6-task-03 |
+| [layer-7-task-09](layer-7-task-09.md) | ~~Web POS giả lập `/pos` (Staff) — giữ/nhả/gia hạn/xác nhận bán qua API POS~~ **[REMOVED — CR remove-pos, spec 2.0.0]** | ~~R-121, R-122, R-124, R-125, R-128, R-129~~ | ~~AC-20, AC-21, AC-22~~ | ~~layer-5-task-13, layer-6-task-01, layer-5-task-05, layer-6-task-03~~ |
 
 ## Layer 8 — 7 task
 
-**Mục tiêu:** Polish: test NFR-17 (đồng thời web↔POS, RLS theo rạp, webhook, huỷ suất + auth), Playwright e2e, Sentry, a11y/perf, docs as-built.
+**Mục tiêu:** Polish: test NFR-17 (đồng thời web↔web, RLS theo rạp, webhook, huỷ suất + auth), Playwright e2e, Sentry, a11y/perf, docs as-built.
 
 | Task | Tiêu đề | R-xx | AC | Phụ thuộc |
 |---|---|---|---|---|
-| [layer-8-task-01](layer-8-task-01.md) | Test đồng thời giữ ghế web↔web↔POS + hết hạn + tải ≥20 hold/giây | R-62, R-63, R-122, R-123, R-124 | AC-06, AC-07, AC-21, AC-22 | layer-6-task-07, layer-6-task-01 |
-| [layer-8-task-02](layer-8-task-02.md) | Test phân quyền theo rạp & dữ liệu khách (RLS + Nest guard + khoá POS) | R-39, R-102, R-103, R-120 | AC-13, AC-16, AC-17, AC-23 | layer-6-task-07, layer-6-task-01 |
+| [layer-8-task-01](layer-8-task-01.md) | Test đồng thời giữ ghế web↔web + hết hạn + tải ≥20 hold/giây | R-62, R-63 | AC-06, AC-07 | layer-6-task-07, layer-6-task-01 |
+| [layer-8-task-02](layer-8-task-02.md) | Test phân quyền theo rạp & dữ liệu khách (RLS + Nest guard) | R-39, R-102, R-103 | AC-13, AC-16, AC-17 | layer-6-task-07, layer-6-task-01 |
 | [layer-8-task-03](layer-8-task-03.md) | Test webhook PayOS: chữ ký, idempotent, tiền về muộn, đối soát | R-74, R-75, R-78, R-80 | AC-09, AC-10, AC-11 | layer-6-task-07, layer-6-task-01, layer-6-task-02 |
 | [layer-8-task-04](layer-8-task-04.md) | Test huỷ suất + email hàng loạt + luồng auth (xác nhận email, khoá, liên kết) | R-04, R-05, R-06, R-11, R-20, R-21, R-108, R-109, R-110 | AC-01, AC-02, AC-03, AC-04, AC-05, AC-24, AC-25, AC-26 | layer-6-task-07, layer-6-task-01 |
-| [layer-8-task-05](layer-8-task-05.md) | Playwright e2e: đặt vé → thanh toán (mock) → vé; soát vé; POS ↔ web realtime; rạp mới bán được | R-38, R-60, R-121 | AC-08, AC-19, AC-20 | layer-7-task-01, layer-7-task-09, layer-6-task-05, layer-6-task-06 |
-| [layer-8-task-06](layer-8-task-06.md) | Giám sát Sentry (gắn cinema_id) + cảnh báo + a11y + hiệu năng (LCP/ISR) | R-60, R-74 | — | layer-7-task-09, layer-6-task-03, layer-6-task-01 |
+| [layer-8-task-05](layer-8-task-05.md) | Playwright e2e: đặt vé → thanh toán (mock) → vé; soát vé; realtime 2 phiên web; rạp mới bán được | R-38, R-60 | AC-08, AC-19 | layer-7-task-01, layer-6-task-05, layer-6-task-06 |
+| [layer-8-task-06](layer-8-task-06.md) | Giám sát Sentry (gắn cinema_id) + cảnh báo + a11y + hiệu năng (LCP/ISR) | R-60, R-74 | — | layer-6-task-03, layer-6-task-01 |
 | [layer-8-task-07](layer-8-task-07.md) | Tài liệu as-built: API_SPEC, ERD, DESIGN current-state, README chạy dự án | — | — | layer-6-task-01, layer-6-task-02 |
 
 ## File dùng chung — 1 chủ/layer (quy ước cho dispatcher)
@@ -195,9 +197,9 @@ flowchart TD
 
 1. **Supabase auto-linking OAuth (AC-04/R-20):** Supabase có thể tự gộp identity Google cùng email đã xác nhận → trái R-20. layer-4-task-06 làm spike đầu tiên + chặn bằng hook/callback; nếu không chặn được cần quyết định của user.
 2. **Lockout R-11/AC-03:** đăng nhập mật khẩu bắt buộc đi qua `POST /auth/login` của Nest (L3-T06), web không gọi `signInWithPassword` trực tiếp.
-3. **Bán trùng ghế (bất biến #1):** chỉ qua RPC `hold_seats` + UNIQUE(showtime_id, seat_id); test đồng thời thật ở L8-T01 (AC-06/21, NFR-02).
+3. **Bán trùng ghế (bất biến #1):** chỉ qua RPC `hold_seats` + UNIQUE(showtime_id, seat_id); test đồng thời thật ở L8-T01 (AC-06, NFR-02; ~~AC-21~~ REMOVED 2.0.0).
 4. **Realtime cho guest lộ dữ liệu:** bảng/view trạng thái ghế phát realtime không được chứa user_id/order_id (L3-T02 AC).
-5. **AC-07/AC-22 ≤ 2s:** không có ghi DB lúc hết hạn → client tự tính trống theo `expires_at` (L6-T03); cron mỗi phút chỉ dọn dẹp.
+5. **AC-07 ≤ 2s** (~~AC-22~~ REMOVED 2.0.0)**:** không có ghi DB lúc hết hạn → client tự tính trống theo `expires_at` (L6-T03); cron mỗi phút chỉ dọn dẹp.
 6. **Render free ngủ 15':** webhook có thể tới lúc cold start → đối soát 5' (L6-T02) bù; LCP lượt đầu có thể vượt NFR-01 (chấp nhận cho demo).
 7. **pg_cron + pg_net cần URL public của Nest + secret:** đọc từ Supabase Vault, không hardcode; test local gọi `/jobs/*` trực tiếp.
 8. **Docker Desktop** bắt buộc cho `supabase start`, pgTAP, integration; CI dùng job DB riêng.
@@ -206,7 +208,7 @@ flowchart TD
 
 ## Kiểm tra phủ R-xx MVP
 
-- Tổng R-xx tag MVP (kể cả `[cần xác nhận]` giữ MVP theo brainstorm #1–5): **121**; đã phủ: **121**; thiếu: **không**.
+- Tổng R-xx tag MVP (kể cả `[cần xác nhận]` giữ MVP theo brainstorm #1–5): **121**; đã phủ: **121**; thiếu: **không**. — **Sau CR remove-pos (spec 2.0.0): 12 R-xx MVP bị REMOVED (R-111, R-120→R-130) → còn 109 R-xx MVP hiệu lực**; AC MVP bỏ AC-20→AC-23.
 - R-119 (GĐ2): chỉ làm **lát MVP 'báo cáo suất bị huỷ'** theo quyết định #3 (cần cho AC-25) trong L4-T05, L5-T07, L7-T08 — không tính vào 121.
 - Không tạo task cho GĐ2: R-36, R-58, R-69, R-88, R-89, R-91, R-96, R-100, R-114, R-115, R-117, R-118, (R-119 phần kênh bán); AC-18 nghiệm thu GĐ2.
 
@@ -314,21 +316,21 @@ flowchart TD
 | R-108 | layer-4-task-04, layer-5-task-08, layer-7-task-03, layer-8-task-04 |
 | R-109 | layer-2-task-02, layer-4-task-04, layer-5-task-03, layer-5-task-08, layer-7-task-06, layer-8-task-04 |
 | R-110 | layer-4-task-04, layer-5-task-08, layer-7-task-06, layer-8-task-04 |
-| R-111 | layer-2-task-02, layer-5-task-06, layer-7-task-07 |
+| ~~R-111~~ | REMOVED (spec 2.0.0) — trước: ~~layer-2-task-02, layer-5-task-06, layer-7-task-07~~ |
 | R-112 | layer-4-task-05, layer-5-task-07, layer-7-task-08 |
 | R-113 | layer-4-task-05, layer-5-task-07, layer-7-task-08 |
 | R-116 | layer-4-task-05, layer-5-task-07, layer-7-task-08 |
-| R-120 | layer-5-task-05, layer-8-task-02 |
-| R-121 | layer-5-task-05, layer-6-task-03, layer-7-task-09, layer-8-task-05 |
-| R-122 | layer-4-task-01, layer-5-task-05, layer-6-task-03, layer-7-task-09, layer-8-task-01 |
-| R-123 | layer-4-task-01, layer-5-task-05, layer-8-task-01 |
-| R-124 | layer-4-task-01, layer-5-task-05, layer-7-task-09, layer-8-task-01 |
-| R-125 | layer-4-task-02, layer-5-task-05, layer-7-task-09 |
-| R-126 | layer-5-task-05 |
-| R-127 | layer-4-task-04, layer-5-task-05, layer-5-task-08, layer-7-task-03 |
-| R-128 | layer-4-task-02, layer-5-task-05, layer-7-task-09 |
-| R-129 | layer-5-task-05, layer-7-task-09 |
-| R-130 | layer-2-task-02, layer-5-task-05, layer-7-task-07 |
+| ~~R-120~~ | REMOVED (spec 2.0.0) — trước: ~~layer-5-task-05, layer-8-task-02~~ |
+| ~~R-121~~ | REMOVED (spec 2.0.0) — trước: ~~layer-5-task-05, layer-6-task-03, layer-7-task-09, layer-8-task-05~~ |
+| ~~R-122~~ | REMOVED (spec 2.0.0) — trước: ~~layer-4-task-01, layer-5-task-05, layer-6-task-03, layer-7-task-09, layer-8-task-01~~ |
+| ~~R-123~~ | REMOVED (spec 2.0.0) — trước: ~~layer-4-task-01, layer-5-task-05, layer-8-task-01~~ |
+| ~~R-124~~ | REMOVED (spec 2.0.0) — trước: ~~layer-4-task-01, layer-5-task-05, layer-7-task-09, layer-8-task-01~~ |
+| ~~R-125~~ | REMOVED (spec 2.0.0) — trước: ~~layer-4-task-02, layer-5-task-05, layer-7-task-09~~ |
+| ~~R-126~~ | REMOVED (spec 2.0.0) — trước: ~~layer-5-task-05~~ |
+| ~~R-127~~ | REMOVED (spec 2.0.0) — trước: ~~layer-4-task-04, layer-5-task-05, layer-5-task-08, layer-7-task-03~~ |
+| ~~R-128~~ | REMOVED (spec 2.0.0) — trước: ~~layer-4-task-02, layer-5-task-05, layer-7-task-09~~ |
+| ~~R-129~~ | REMOVED (spec 2.0.0) — trước: ~~layer-5-task-05, layer-7-task-09~~ |
+| ~~R-130~~ | REMOVED (spec 2.0.0) — trước: ~~layer-2-task-02, layer-5-task-05, layer-7-task-07~~ |
 | R-131 | layer-5-task-01, layer-6-task-04 |
 | R-132 | layer-4-task-05, layer-5-task-04, layer-6-task-05, layer-6-task-06 |
 | R-133 | layer-2-task-05, layer-5-task-01, layer-6-task-04 |
@@ -356,10 +358,10 @@ flowchart TD
 | AC-16 | layer-1-task-03, layer-2-task-03, layer-3-task-02, layer-5-task-06, layer-5-task-07, layer-8-task-02 |
 | AC-17 | layer-3-task-02, layer-6-task-05, layer-8-task-02 |
 | AC-19 | layer-3-task-04, layer-7-task-01, layer-8-task-05 |
-| AC-20 | layer-6-task-03, layer-7-task-09, layer-8-task-05 |
-| AC-21 | layer-4-task-01, layer-5-task-05, layer-7-task-09, layer-8-task-01 |
-| AC-22 | layer-4-task-01, layer-5-task-05, layer-7-task-09, layer-8-task-01 |
-| AC-23 | layer-5-task-05, layer-8-task-02 |
+| ~~AC-20~~ | REMOVED (spec 2.0.0) — trước: ~~layer-6-task-03, layer-7-task-09, layer-8-task-05~~ |
+| ~~AC-21~~ | REMOVED (spec 2.0.0) — trước: ~~layer-4-task-01, layer-5-task-05, layer-7-task-09, layer-8-task-01~~ |
+| ~~AC-22~~ | REMOVED (spec 2.0.0) — trước: ~~layer-4-task-01, layer-5-task-05, layer-7-task-09, layer-8-task-01~~ |
+| ~~AC-23~~ | REMOVED (spec 2.0.0) — trước: ~~layer-5-task-05, layer-8-task-02~~ |
 | AC-24 | layer-4-task-04, layer-5-task-08, layer-7-task-03, layer-7-task-06, layer-8-task-04 |
 | AC-25 | layer-5-task-08, layer-7-task-06, layer-7-task-08, layer-8-task-04 |
 | AC-26 | layer-4-task-04, layer-5-task-08, layer-7-task-01, layer-8-task-04 |
@@ -407,7 +409,7 @@ flowchart TD
 |---|---|---|---|
 | G1 | MED | `ends_at` không tính lại khi đổi thời lượng phim/dọn phòng; trigger bỏ qua `cinema_settings` → migration nhỏ: trigger tính lại trên `movies`/`cinemas` + chốt MỘT nguồn override dọn phòng | layer-3-task-02 (thêm vào scope) |
 | G2 | MED | `showtimes_select` không lọc trạng thái rạp (TEMP_CLOSED/CLOSED đọc được qua PostgREST anon; R-33) → siết RLS hoặc ghi quyết định "chặn ở API" | layer-3-task-01/04 (quyết định + test) |
-| G3 | MED | AC-16 lệch (lịch chiếu công khai) → làm rõ AC-16 qua `/change` sau build: "Manager HN01 không đọc/ghi dữ liệu vận hành của HN02 (đơn, báo cáo, cấu hình, khoá ghế nội bộ, audit, khoá/nhật ký POS); lịch chiếu công khai đọc được như khách" | `/change` (ghi vào `spec/changes/` ở close-out build) |
+| G3 | MED | AC-16 lệch (lịch chiếu công khai) → làm rõ AC-16 qua `/change` sau build: "Manager HN01 không đọc/ghi dữ liệu vận hành của HN02 (đơn, báo cáo, cấu hình, khoá ghế nội bộ, audit; ~~khoá/nhật ký POS~~ — REMOVED 2.0.0); lịch chiếu công khai đọc được như khách" | `/change` (ghi vào `spec/changes/` ở close-out build) |
 | G4 | MED | Phiên bản điều khoản lệch: `apps/web/src/lib/legal.ts` `LEGAL_VERSION="0.1"` vs DB seed `terms_version="1.0"` → chốt MỘT nguồn (R-03) | layer-5-task-10 |
 | G5 | MED | R-13 (reset 1h) vs R-04 (xác nhận 24h) dùng chung `otp_expiry=86400` → **USER CHỌN C (2026-11-11):** giữ 86400; server kiểm `recovery_sent_at` ≤ 1h khi đặt lại mật khẩu (từ chối nếu quá hạn) | layer-3-task-06 (+ layer-5 form đặt lại MK) |
 | G6 | MED | Captcha GoTrue tắt; lockout/rate limit bypass qua `/auth/v1/token` và recover trực tiếp (N1) | **USER CHẤP NHẬN RỦI RO cho demo (2026-11-11)** — ghi rõ trong tài liệu; cân nhắc lại trước khi có khách thật |

@@ -1,5 +1,7 @@
 # Task 13: Web admin shell: layout `/admin`, sidebar theo vai trò, bộ chọn phạm vi rạp
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Sidebar Staff không còn mục POS giả lập.
+
 ## Layer
 5
 
@@ -18,7 +20,7 @@ Shell chung Admin/Manager/Staff (D4): sidebar lọc theo vai trò (nav-config kh
 - layer-2-task-04 (Web data layer: API client REST, map mã lỗi → tiếng Việt, Supabase SSR)
 
 ## Acceptance Criteria
-- [ ] Staff chỉ thấy: Việc cần làm, Đơn hàng, Đơn bị ảnh hưởng, Soát vé, POS; Manager thêm rạp/phòng/lịch/giá/báo cáo/nhân sự; Admin đủ.
+- [ ] Staff chỉ thấy: Việc cần làm, Đơn hàng, Đơn bị ảnh hưởng, Soát vé; Manager thêm rạp/phòng/lịch/giá/báo cáo/nhân sự; Admin đủ.
 - [ ] Customer truy cập /admin → trang 403.
 - [ ] Scope switcher chỉ liệt kê rạp được gán; đổi scope cập nhật query.
 - [ ] Sidebar điều hướng bàn phím được; responsive dạng Sheet trên mobile.

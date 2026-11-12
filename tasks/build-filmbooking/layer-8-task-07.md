@@ -1,5 +1,7 @@
 # Task 07: Tài liệu as-built: API_SPEC, ERD, DESIGN current-state, README chạy dự án
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Không còn POS API v1 để tài liệu hoá; ghi rõ trong ERD/API_SPEC phần POS đã gỡ/chặn (CR remove-pos phase-2).
+
 ## Layer
 8
 
@@ -11,10 +13,10 @@ build (initial)
 - AC-xx: —
 
 ## Description
-Reconcile tài liệu as-built theo code: liệt kê endpoint REST (method, path, guard, mã lỗi), POS API v1, webhook, jobs; ERD bảng/quan hệ/RLS/RPC chính; DESIGN current-state (kiến trúc Next+Nest+Supabase, luồng giữ ghế/thanh toán/huỷ suất); README: yêu cầu (Node, pnpm, Docker), lệnh dev/test/e2e, biến môi trường.
+Reconcile tài liệu as-built theo code: liệt kê endpoint REST (method, path, guard, mã lỗi), webhook, jobs; ERD bảng/quan hệ/RLS/RPC chính; DESIGN current-state (kiến trúc Next+Nest+Supabase, luồng giữ ghế/thanh toán/huỷ suất); README: yêu cầu (Node, pnpm, Docker), lệnh dev/test/e2e, biến môi trường.
 
 ## Dependencies
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 - layer-6-task-02 (Job đối soát PayOS 5' + lịch pg_cron/pg_net gọi Nest /jobs)
 
 ## Acceptance Criteria

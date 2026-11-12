@@ -1,7 +1,7 @@
 ---
-spec_version: 1.1.0
-updated_at: 2026-11-10
-source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
+spec_version: 2.0.0
+updated_at: 2026-11-12
+source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + change remove-pos 2026-11-12 (spec/changes/2026-11-12-remove-pos.md)
 ---
 
 # SPECIFICATIONS.md — Hệ thống Đặt vé Xem phim Online (Chuỗi rạp)
@@ -24,7 +24,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 - **Đặt vé bắt buộc đăng nhập** (email đã xác nhận hoặc Google/Facebook); không có guest checkout (BRD §11.1, Q2).
 - **Thanh toán:** PayOS (VietQR), **một tài khoản PayOS chung** toàn chuỗi, tách doanh thu theo `cinema_id` (BRD Q7, BR-PAY-12).
 - **Chính sách:** không huỷ – không hoàn tiền; ngoại lệ duy nhất là rạp huỷ suất / đóng cửa (BRD §7).
-- **POS tại quầy** là hệ thống riêng, đồng bộ khoá ghế với web qua API; web là **nguồn sự thật duy nhất** về trạng thái ghế; dự án cung cấp **POS giả lập** để demo (BRD §6.14, Q1).
+- **Chỉ kênh web.** Dự án **không** có POS / tích hợp quầy vé (bỏ từ spec 2.0.0, 2026-11-12 — quyết định PO). Web là **nguồn sự thật duy nhất** về trạng thái ghế; quầy vé vật lý (nếu có) nằm ngoài hệ thống, không đồng bộ ghế.
 - **Ngôn ngữ giao diện:** chỉ tiếng Việt (BRD §4.2). **Múi giờ:** Asia/Ho_Chi_Minh; **tiền tệ:** VND không phần thập phân (NFR-15).
 
 ### Vai trò người dùng (BRD §5.2)
@@ -37,7 +37,6 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | Staff | 1 hoặc nhiều rạp được gán | Soát vé, tra cứu vé — chỉ trong rạp được gán |
 | Cinema Manager | 1 hoặc nhiều rạp được gán | Phòng, sơ đồ ghế, suất, giá, khoá ghế, nhân viên, báo cáo của rạp mình |
 | Admin | Toàn chuỗi | Toàn quyền: phim, rạp, voucher, người dùng & vai trò, cấu hình, báo cáo toàn chuỗi |
-| POS (hệ thống ngoài) | 1 rạp (theo khoá API) | Gọi API giữ / nhả / bán ghế các suất của rạp mình |
 
 ### Lộ trình & phase tag (BRD §15)
 
@@ -52,7 +51,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | Hạng mục | Lựa chọn | Nguồn |
 |---|---|---|
 | Frontend | **Next.js** (App Router), **React**, **TypeScript** — chỉ UI; dữ liệu qua REST của Nest; Supabase Auth + Realtime trực tiếp ở client | §10 + brainstorm (đổi kiến trúc) |
-| Backend | **NestJS** (TypeScript) — API nghiệp vụ, webhook PayOS, API POS, job endpoints, email; supabase-js mang JWT user (giữ RLS); service role chỉ cho webhook/job/POS | brainstorm 2026-11-10 (BRD v0.4 §10) |
+| Backend | **NestJS** (TypeScript) — API nghiệp vụ, webhook PayOS, job endpoints, email; supabase-js mang JWT user (giữ RLS); service role chỉ cho webhook/job | brainstorm 2026-11-10 (BRD v0.4 §10) |
 | Repo | **pnpm monorepo**: `apps/web`, `apps/api`, `packages/shared`, `supabase/` | brainstorm |
 | Auth | **Supabase Auth** — email/password + xác nhận email, OAuth Google, OAuth Facebook, identity linking | §10 |
 | Database | **Supabase Postgres** + RLS (theo user và theo rạp được gán) + function/transaction cho giữ ghế | §10, NFR-04, NFR-05 |
@@ -154,7 +153,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | R-52 | Bảng giá hai cấp | Admin đặt **bảng giá mặc định chuỗi** theo **loại ghế × định dạng × loại ngày (thường / cuối tuần / lễ) × khung giờ (trước 17h / sau 17h)**. Cinema Manager (rạp mình) / Admin **ghi đè giá theo rạp** và **theo từng suất**. Giá áp dụng = **ghi đè suất › ghi đè rạp › mặc định chuỗi**. | BR-CIN-05 (M), BR-ADM-05 (M — phần bảng giá), BR-ADM-06 (M — phần ghi đè giá) | M | MVP |
 | R-53 | Ngày lễ | **Admin** quản lý danh sách ngày lễ **chung toàn chuỗi**; ngày lễ áp **giá loại ngày "lễ"** ở mọi rạp. | BR-CIN-06 (S), BR-ADM-05 (M — phần ngày lễ) | S / M | MVP |
 | R-54 | Bảo vệ suất đã bán vé | Suất đã có vé bán ra **không được xoá, không được đổi giờ / phòng / phim**; chỉ được **đóng bán** (ngừng bán tiếp) hoặc **huỷ suất** (R-108). | BR-CIN-07 (M) | M | MVP |
-| R-55 | Khoá ghế theo suất | Cinema Manager **khoá ghế** cho một suất của rạp mình (khách mời / ghế hỏng); ghế khoá hiển thị trạng thái **Khoá**, không bán được trên web và POS. | BR-CIN-08 (S) | S | MVP |
+| R-55 | Khoá ghế theo suất | Cinema Manager **khoá ghế** cho một suất của rạp mình (khách mời / ghế hỏng); ghế khoá hiển thị trạng thái **Khoá**, không bán được trên web. | BR-CIN-08 (S) | S | MVP |
 | R-56 | Cấu hình riêng của rạp | Cinema Manager (rạp mình) / Admin cấu hình cho rạp: **thời gian dọn phòng** và **mốc đóng bán online trước suất**; giá trị mặc định lấy từ cấu hình chuỗi (R-106). | BR-ADM-06 (M — phần cấu hình rạp) | M | MVP |
 | R-57 | Giờ Việt Nam | Mọi thời gian suất chiếu hiển thị theo **Asia/Ho_Chi_Minh** ở mọi rạp (lưu UTC — NFR-15). | BR-CIN-10 (M), NFR-15 | M | MVP |
 | R-58 | Combo bắp nước theo rạp | **Admin** định nghĩa **danh mục combo chung**; **mỗi rạp bật/tắt combo** và có thể **đặt giá riêng** (Cinema Manager rạp mình / Admin). | BR-CIN-09 (S), BR-ADM-05 (M — phần combo), BR-ADM-06 (M — phần combo theo rạp) | S / M | GĐ2 |
@@ -165,7 +164,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 
 | Mã | Tiêu đề | Hành vi mong đợi | Nguồn BRD | Ưu tiên | Phase |
 |---|---|---|---|:-:|:-:|
-| R-59 | Trạng thái ghế trên sơ đồ | Hiển thị 5 trạng thái: **Trống**, **Đang được giữ** (bởi khách web khác **hoặc** POS — khách không phân biệt nguồn), **Đã bán** (web hoặc POS), **Đang chọn** (của tôi), **Khoá**; có chú thích màu và **giá theo loại ghế**. Có dòng nhắc ngắn chính sách không hoàn ở màn này (§7.2). | BR-BKG-01 (M), §7.2 | M | MVP |
+| R-59 | Trạng thái ghế trên sơ đồ | Hiển thị 5 trạng thái: **Trống**, **Đang được giữ** (bởi khách web khác), **Đã bán**, **Đang chọn** (của tôi), **Khoá**; có chú thích màu và **giá theo loại ghế**. Có dòng nhắc ngắn chính sách không hoàn ở màn này (§7.2). | BR-BKG-01 (M), §7.2 | M | MVP |
 | R-60 | Cập nhật realtime | Trạng thái ghế cập nhật **realtime** cho mọi người đang xem cùng suất, **không tải lại trang**, độ trễ **≤ 2 giây**; kênh realtime **tách theo suất**. | BR-BKG-02 (M), NFR-03 | M | MVP |
 | R-61 | Giữ ghế 10 phút | Bấm "Tiếp tục" sau khi chọn ghế → hệ thống **giữ ghế 10 phút**; **đồng hồ đếm ngược** hiển thị trên mọi bước tiếp theo. | BR-BKG-03 (M) | M | MVP |
 | R-62 | Giữ ghế nguyên tử | Giữ ghế là **atomic**: bất kỳ ghế nào trong lựa chọn đã bị giữ/bán → **toàn bộ yêu cầu thất bại**, báo **ghế nào bị trùng**. Hai yêu cầu đồng thời cùng ghế → **chỉ một thành công**. Ràng buộc **ở tầng database** (unique/khoá + transaction). | BR-BKG-04 (M), NFR-04 | M | MVP |
@@ -240,11 +239,11 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | R-104 | Xử lý đơn cần xem xét thủ công | Danh sách đơn `needs_manual_review` (Manager rạp mình / Admin); ghi chú cách xử lý, **đánh dấu đã giải quyết**. | BR-ADM-08 (M), §7.3 | M | MVP |
 | R-105 | Quản lý người dùng & vai trò | Admin: tìm kiếm, **khoá/mở khoá**, gán vai trò **Staff / Cinema Manager / Admin** và **gán rạp**. Cinema Manager **chỉ thêm/bớt Staff cho rạp mình**, không gán vai trò khác. | BR-ADM-09 (M), §5.3 | M | MVP |
 | R-106 | Cấu hình toàn chuỗi | Admin cấu hình: **thời gian giữ ghế**, **nội dung cảnh báo không hoàn tiền**, **điều khoản sử dụng**, giá trị mặc định cho cấu hình rạp. Cinema Manager **không** được cấu hình chính sách khác (§7.1). | BR-ADM-10 (S), §7.1 | S | MVP |
-| R-107 | Audit log | Ghi audit **mọi thao tác thay đổi dữ liệu** của Admin / Manager / Staff / POS: **ai, rạp nào, khi nào, đối tượng, giá trị trước/sau**. | BR-ADM-11 (M) | M | MVP |
-| R-108 | Huỷ suất chiếu | Chọn **một / nhiều suất** (hoặc **tất cả suất tương lai của một rạp** khi đóng cửa), **nhập lý do** → **xem trước số đơn/vé bị ảnh hưởng** → xác nhận. Kết quả: suất `cancelled`, **ngừng bán trên web và POS**, ghế đang giữ bị nhả, mọi đơn `paid` của suất → `affected`, vé **không check-in được**. Manager rạp mình / Admin. | BR-ADM-12 (M), §7.3 | M | MVP |
+| R-107 | Audit log | Ghi audit **mọi thao tác thay đổi dữ liệu** của Admin / Manager / Staff: **ai, rạp nào, khi nào, đối tượng, giá trị trước/sau**. | BR-ADM-11 (M) | M | MVP |
+| R-108 | Huỷ suất chiếu | Chọn **một / nhiều suất** (hoặc **tất cả suất tương lai của một rạp** khi đóng cửa), **nhập lý do** → **xem trước số đơn/vé bị ảnh hưởng** → xác nhận. Kết quả: suất `cancelled`, **ngừng bán trên web**, ghế đang giữ bị nhả, mọi đơn `paid` của suất → `affected`, vé **không check-in được**. Manager rạp mình / Admin. | BR-ADM-12 (M), §7.3 | M | MVP |
 | R-109 | Email thông báo hàng loạt | Tự động gửi email tới **mọi khách có đơn `affected`**: tên rạp, phim, suất bị huỷ, lý do, hướng xử lý (**huỷ suất**: mang mã đặt vé tới quầy để đổi suất, hoặc liên hệ rạp để hoàn tiền nếu đồng ý; **đóng cửa rạp**: rạp sẽ liên hệ hoàn tiền thủ công), hotline rạp. **Theo dõi trạng thái gửi từng email**, cho phép **gửi lại** email lỗi. | BR-ADM-13 (M) | M | MVP |
 | R-110 | Màn Đơn bị ảnh hưởng | Danh sách đơn `affected` theo suất/rạp, lọc theo trạng thái xử lý, hiển thị trạng thái gửi email. Ghi nhận từng đơn: **Đã đổi suất** (suất mới / mã vé mới cấp tại quầy) → `exchanged`; **Đã hoàn tiền thủ công** (**bắt buộc**: số tiền, ngày, phương thức, **mã giao dịch ngân hàng**, người thực hiện — thiếu → chặn lưu) → `refunded_manual`. **Xuất CSV**. Staff/Manager rạp mình, Admin. | BR-ADM-14 (M), §7.3 | M | MVP |
-| R-111 | Khoá API POS | Admin quản lý **khoá API POS cho từng rạp**: tạo, **chỉ xem toàn bộ lần đầu**, thu hồi, xoay khoá; xem **nhật ký gọi API** của POS. | BR-ADM-15 (M) | M | MVP |
+| R-111 | Khoá API POS | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Admin quản lý **khoá API POS cho từng rạp**: tạo, **chỉ xem toàn bộ lần đầu**, thu hồi, xoay khoá; xem **nhật ký gọi API** của POS. | BR-ADM-15 (M) | M | REMOVED |
 
 ### 13. REPORT — Báo cáo (BRD §6.13)
 
@@ -259,25 +258,27 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | R-116 | Đối soát PayOS | Danh sách giao dịch PayOS, **đơn lệch trạng thái/số tiền**, tổng tiền **theo rạp**. | BR-RPT-06 (M), §7.3 | M | MVP `[cần xác nhận]` |
 | R-117 | Xuất báo cáo CSV | Mọi báo cáo xuất được ra **CSV**. | BR-RPT-07 (S) | S | GĐ2 |
 | R-118 | Dashboard tổng quan | Doanh thu hôm nay, số vé hôm nay, suất sắp chiếu, số tài khoản mới — Manager thấy rạp mình; Admin thấy toàn chuỗi + từng rạp. | BR-RPT-08 (C) | C | GĐ2 |
-| R-119 | Báo cáo kênh bán & suất bị huỷ | Tách **kênh Web / POS** (số ghế, theo dữ liệu POS báo về); báo cáo **suất bị huỷ**: số đơn ảnh hưởng, số đã đổi suất, số đã hoàn tiền, **tổng tiền hoàn thủ công**. | BR-RPT-09 (S) | S | GĐ2 `[cần xác nhận]` |
+| R-119 | Báo cáo suất bị huỷ | Báo cáo **suất bị huỷ**: số đơn ảnh hưởng, số đã đổi suất, số đã hoàn tiền, **tổng tiền hoàn thủ công**. | BR-RPT-09 (S) | S | GĐ2 `[cần xác nhận]` |
 
-### 14. POS — Đồng bộ khoá ghế với quầy vé (BRD §6.14)
+### 14. ~~POS — Đồng bộ khoá ghế với quầy vé (BRD §6.14)~~ — REMOVED (spec 2.0.0)
+
+> **Toàn bộ mục 14 (R-120 → R-130) đã bị bỏ khỏi dự án** theo quyết định PO 2026-11-12 ("chỉ làm thuần web"). Giữ các dòng để không đổi số/traceability; **không implement, không test**.
 
 > Web là **nguồn sự thật duy nhất** về trạng thái ghế; ghế đang bị một bên thao tác thì bên còn lại không thao tác được.
 
 | Mã | Tiêu đề | Hành vi mong đợi | Nguồn BRD | Ưu tiên | Phase |
 |---|---|---|---|:-:|:-:|
-| R-120 | API cho POS theo rạp | API xác thực bằng **khoá API riêng của từng rạp**, chỉ truy cập suất của rạp đó: lấy danh sách suất, sơ đồ + trạng thái ghế, **giữ ghế**, **nhả ghế**, **xác nhận bán**, tra cứu / soát vé bằng mã đặt vé. Khoá rạp A gọi suất rạp B → **từ chối (403)**. | BR-POS-01 (M) | M | MVP |
-| R-121 | POS giữ ghế → web thấy ngay | Nhân viên chọn ghế trên POS → POS gọi giữ ghế ngay; ghế chuyển **"Đang được giữ"** trên web trong **≤ 2 giây**, khách web **không chọn được**. | BR-POS-02 (M) | M | MVP |
-| R-122 | Web giữ/bán → POS không khả dụng | Ghế đang được giữ / đã bán trên web → API trả **không khả dụng**; POS không chọn được. | BR-POS-03 (M) | M | MVP |
-| R-123 | Cơ chế nguyên tử chung | Giữ ghế từ POS dùng **cùng cơ chế nguyên tử** với web (R-62); web và POS tranh cùng ghế đồng thời → **chỉ một bên thành công**. | BR-POS-04 (M) | M | MVP |
-| R-124 | Thời hạn giữ ghế POS | Giữ từ POS **5 phút** (cấu hình được), hết hạn **tự nhả** (ghế về Trống trên cả web và POS); POS **gia hạn** được khi nhân viên còn thao tác; nhân viên huỷ thao tác → POS **gọi nhả ngay**. | BR-POS-05 (M) | M | MVP |
-| R-125 | Xác nhận bán từ POS | POS xác nhận bán (sau khi thu tiền tại quầy) → ghế **Đã bán**; hệ thống ghi **đơn kênh `POS`** (mã đặt vé, ghế, tổng tiền POS báo, nhân viên) cho báo cáo và soát vé. Đơn POS **không đi qua PayOS**. | BR-POS-06 (M) | M | MVP |
-| R-126 | API POS idempotent | Mỗi thao tác có **`requestId`**; gọi lặp cùng `requestId` **không tạo giữ/bán trùng**. | BR-POS-07 (M) | M | MVP |
-| R-127 | Từ chối suất huỷ / ngừng bán | Suất bị huỷ / ngừng bán → API **từ chối** giữ/bán mới cho suất đó. | BR-POS-08 (M) | M | MVP |
-| R-128 | Không bán offline | Mất kết nối với web → POS **không được bán** ghế chưa giữ thành công (không có chế độ bán offline). | BR-POS-09 (M) | M | MVP |
-| R-129 | POS giả lập | Trang web nội bộ đơn giản cho vai trò **Staff**: chọn suất, chọn ghế (gọi API giữ), xác nhận bán, in mã đặt vé — dùng demo và kiểm thử đồng bộ hai chiều. | BR-POS-10 (M) | M | MVP |
-| R-130 | Log & rate limit API POS | Ghi log **mọi lời gọi API POS** (rạp, khoá API, thao tác, kết quả, thời điểm); **rate limit theo khoá API**. | BR-POS-11 (M) | M | MVP |
+| R-120 | ~~API cho POS theo rạp~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** API xác thực bằng **khoá API riêng của từng rạp**, chỉ truy cập suất của rạp đó: lấy danh sách suất, sơ đồ + trạng thái ghế, **giữ ghế**, **nhả ghế**, **xác nhận bán**, tra cứu / soát vé bằng mã đặt vé. Khoá rạp A gọi suất rạp B → **từ chối (403)**. | BR-POS-01 (M) | M | REMOVED |
+| R-121 | ~~POS giữ ghế → web thấy ngay~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Nhân viên chọn ghế trên POS → POS gọi giữ ghế ngay; ghế chuyển **"Đang được giữ"** trên web trong **≤ 2 giây**, khách web **không chọn được**. | BR-POS-02 (M) | M | REMOVED |
+| R-122 | ~~Web giữ/bán → POS không khả dụng~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Ghế đang được giữ / đã bán trên web → API trả **không khả dụng**; POS không chọn được. | BR-POS-03 (M) | M | REMOVED |
+| R-123 | ~~Cơ chế nguyên tử chung~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Giữ ghế từ POS dùng **cùng cơ chế nguyên tử** với web (R-62); web và POS tranh cùng ghế đồng thời → **chỉ một bên thành công**. | BR-POS-04 (M) | M | REMOVED |
+| R-124 | ~~Thời hạn giữ ghế POS~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Giữ từ POS **5 phút** (cấu hình được), hết hạn **tự nhả** (ghế về Trống trên cả web và POS); POS **gia hạn** được khi nhân viên còn thao tác; nhân viên huỷ thao tác → POS **gọi nhả ngay**. | BR-POS-05 (M) | M | REMOVED |
+| R-125 | ~~Xác nhận bán từ POS~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** POS xác nhận bán (sau khi thu tiền tại quầy) → ghế **Đã bán**; hệ thống ghi **đơn kênh `POS`** (mã đặt vé, ghế, tổng tiền POS báo, nhân viên) cho báo cáo và soát vé. Đơn POS **không đi qua PayOS**. | BR-POS-06 (M) | M | REMOVED |
+| R-126 | ~~API POS idempotent~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Mỗi thao tác có **`requestId`**; gọi lặp cùng `requestId` **không tạo giữ/bán trùng**. | BR-POS-07 (M) | M | REMOVED |
+| R-127 | ~~Từ chối suất huỷ / ngừng bán~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Suất bị huỷ / ngừng bán → API **từ chối** giữ/bán mới cho suất đó. | BR-POS-08 (M) | M | REMOVED |
+| R-128 | ~~Không bán offline~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Mất kết nối với web → POS **không được bán** ghế chưa giữ thành công (không có chế độ bán offline). | BR-POS-09 (M) | M | REMOVED |
+| R-129 | ~~POS giả lập~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Trang web nội bộ đơn giản cho vai trò **Staff**: chọn suất, chọn ghế (gọi API giữ), xác nhận bán, in mã đặt vé — dùng demo và kiểm thử đồng bộ hai chiều. | BR-POS-10 (M) | M | REMOVED |
+| R-130 | ~~Log & rate limit API POS~~ | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** Ghi log **mọi lời gọi API POS** (rạp, khoá API, thao tác, kết quả, thời điểm); **rate limit theo khoá API**. | BR-POS-11 (M) | M | REMOVED |
 
 ### 15. POLICY — Chính sách Không huỷ – Không hoàn tiền (BRD §7)
 
@@ -313,7 +314,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 - Trạng thái cuối: `checked_in`, `exchanged`, `refunded_manual`, `needs_manual_review` (sau khi giải quyết), `paid` sau suất kết thúc, `cancelled` (BRD chưa định nghĩa luồng tiền về sau khi huỷ — xem § Điểm cần xác nhận #10).
 - `expired` **không phải** trạng thái cuối tuyệt đối: còn có thể sang `paid` / `needs_manual_review` khi tiền về muộn (R-78).
 - **Không có** chuyển trạng thái nào do khách khởi tạo từ `paid` (không huỷ, không hoàn — R-131).
-- Trạng thái ghế liên quan: Trống ↔ Đang được giữ (web/POS) → Đã bán; Khoá (do Manager). Đơn kênh POS: xem § Điểm cần xác nhận.
+- Trạng thái ghế liên quan: Trống ↔ Đang được giữ (web) → Đã bán; Khoá (do Manager).
 
 ### Ngoài phạm vi (không thành R-xx)
 
@@ -321,7 +322,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 - Nhiều thương hiệu / nhiều chuỗi trên cùng hệ thống (multi-tenant).
 - Khách tự huỷ vé, đổi vé, đổi rạp; hoàn tiền **tự động** qua PayOS.
 - Ứng dụng mobile native (iOS/Android).
-- Phần mềm **POS thật** tại quầy (chỉ cung cấp API khoá ghế + POS giả lập).
+- Mọi phần mềm / tích hợp **POS** tại quầy: POS thật, **POS giả lập**, **API POS**, khoá API POS, đơn kênh POS, đồng bộ ghế với quầy (bỏ từ spec 2.0.0, 2026-11-12).
 - Hoá đơn điện tử (VAT) (Q4).
 - Phân loại giá theo đối tượng (HSSV, U22, người cao tuổi…) (Q5).
 - Vận hành production thật (SLA, trực sự cố, khách hàng thật).
@@ -339,9 +340,9 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | Mã | Nhóm | Yêu cầu (kiểm thử được) | R liên quan |
 |---|---|---|---|
 | NFR-01 | Hiệu năng | **LCP ≤ 2,5s** trên 4G cho trang chủ / chi tiết phim / chi tiết rạp; **API p95 ≤ 500ms**; **giữ ghế p95 ≤ 1s**. | R-40, R-44, R-37, R-62 |
-| NFR-02 | Tải | Mục tiêu demo: **≥ 100 người dùng đồng thời** và **≥ 20 thao tác giữ ghế/giây** (web + POS) **không bán trùng ghế** — kiểm chứng bằng test đồng thời. | R-62, R-123 |
-| NFR-03 | Realtime | Thay đổi trạng thái ghế hiển thị cho người khác **≤ 2 giây**; kênh realtime **tách theo suất**. | R-60, R-121 |
-| NFR-04 | Toàn vẹn | Chống double-booking bằng **ràng buộc unique / khoá ở database**; mọi thao tác giữ/bán ghế là **transaction**. | R-62, R-123 |
+| NFR-02 | Tải | Mục tiêu demo: **≥ 100 người dùng đồng thời** và **≥ 20 thao tác giữ ghế/giây** (web) **không bán trùng ghế** — kiểm chứng bằng test đồng thời. | R-62 |
+| NFR-03 | Realtime | Thay đổi trạng thái ghế hiển thị cho người khác **≤ 2 giây**; kênh realtime **tách theo suất**. | R-60 |
+| NFR-04 | Toàn vẹn | Chống double-booking bằng **ràng buộc unique / khoá ở database**; mọi thao tác giữ/bán ghế là **transaction**. | R-62 |
 | NFR-05 | Bảo mật dữ liệu | **RLS bật cho mọi bảng**; khách chỉ đọc đơn/vé của mình; **Staff/Manager chỉ truy cập dữ liệu rạp được gán**; **service role key chỉ dùng phía server**. | R-39, R-102, R-103 |
 | NFR-06 | Bảo mật ứng dụng | **OWASP Top 10**; HTTPS toàn bộ; cookie phiên `HttpOnly`/`Secure`/`SameSite`; chống CSRF/XSS; kiểm tra quyền (vai trò + rạp) **ở server** cho mọi thao tác quản trị. | R-39, R-105 |
 | NFR-07 | Bí mật | Khoá PayOS (client id, api key, checksum key), OAuth secret, SMTP lưu ở **biến môi trường / secret manager**; **không commit vào git**. Nếu sau này PayOS riêng từng rạp → khoá lưu mã hoá, chỉ server đọc. | R-83, R-84 |
@@ -354,7 +355,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | NFR-14 | Giám sát | Log lỗi tập trung (vd Sentry) gắn **`cinema_id`**; cảnh báo khi **webhook PayOS lỗi/sai chữ ký**, khi **tỷ lệ lỗi giữ ghế tăng bất thường**, khi **email gửi thất bại**. | R-74, R-62, R-109 |
 | NFR-15 | Múi giờ & tiền tệ | Hiển thị theo **Asia/Ho_Chi_Minh** (lưu **UTC**); tiền tệ **VND, không phần thập phân**. | R-57 |
 | NFR-16 | Mở rộng | Thêm rạp/phòng/suất **không sửa code**; quy mô demo **~5 rạp**, mỗi rạp **3–5 phòng**; không giới hạn cứng số rạp. | R-38 |
-| NFR-17 | Kiểm thử | Test tự động bắt buộc cho: giữ ghế đồng thời **web ↔ POS**; webhook PayOS (**chữ ký, idempotent, tiền về muộn**); auth (**xác nhận email, liên kết tài khoản**); **phân quyền theo rạp** (Staff/Manager/khoá API POS không truy cập rạp khác); **huỷ suất + email hàng loạt**. | R-62, R-123, R-74, R-75, R-78, R-04, R-20, R-21, R-39, R-120, R-108, R-109 |
+| NFR-17 | Kiểm thử | Test tự động bắt buộc cho: giữ ghế đồng thời **web ↔ web**; webhook PayOS (**chữ ký, idempotent, tiền về muộn**); auth (**xác nhận email, liên kết tài khoản**); **phân quyền theo rạp** (Staff/Manager không truy cập rạp khác); **huỷ suất + email hàng loạt**. | R-62, R-74, R-75, R-78, R-04, R-20, R-21, R-39, R-108, R-109 |
 | NFR-18 | Chi phí | Ưu tiên **gói miễn phí** (Supabase, Vercel, Resend…) đủ cho demo; không phát sinh chi phí cố định bắt buộc. | — |
 
 ## Acceptance Criteria (BRD §13)
@@ -380,11 +381,11 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | AC-17 | NFR-05 | **G** khách A đăng nhập **W** gọi API/truy vấn đơn của khách B **T** không nhận dữ liệu (RLS chặn). | R-87 (NFR-05) | MVP |
 | AC-18 | BR-PRM-01/04 | **G** voucher chỉ áp dụng HN01 **W** nhập cho đơn tại HN02 **T** báo "Mã không áp dụng tại rạp này". | R-91 | GĐ2 |
 | AC-19 | BR-CHN-07 | **G** Admin tạo rạp mới, phòng, sơ đồ ghế, suất qua quản trị **T** rạp mới xuất hiện ở danh sách rạp và bán vé được ngay, không deploy. | R-38 | MVP |
-| AC-20 | BR-POS-02 | **G** nhân viên chọn F7 trên POS HN01 **W** khách đang xem sơ đồ suất đó trên web **T** trong ≤ 2 giây F7 "Đang được giữ", khách không chọn được. | R-121 | MVP |
-| AC-21 | BR-POS-03/04 | **G** khách web đang giữ F8 **W** nhân viên chọn F8 trên POS **T** API trả không khả dụng; web và POS cùng chọn F9 gần đồng thời → chỉ một bên giữ được. | R-122, R-123 | MVP |
-| AC-22 | BR-POS-05 | **G** POS giữ G1 nhưng bỏ dở **W** quá 5 phút không gia hạn/xác nhận **T** G1 tự về Trống trên cả web và POS. | R-124 | MVP |
-| AC-23 | BR-POS-01 | **G** khoá API rạp HN01 **W** POS dùng khoá đó giữ ghế suất của HN02 **T** bị từ chối (403). | R-120 | MVP |
-| AC-24 | BR-ADM-12/13 | **G** suất có 10 đơn `paid` **W** Manager huỷ suất **T** suất ngừng bán trên web và POS; 10 đơn `affected`; vé không check-in được; 10 email gửi kèm hướng dẫn đổi suất / hoàn tiền; trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. | R-108, R-109, R-110, R-127 | MVP |
+| AC-20 | BR-POS-02 | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** **G** nhân viên chọn F7 trên POS HN01 **W** khách đang xem sơ đồ suất đó trên web **T** trong ≤ 2 giây F7 "Đang được giữ", khách không chọn được. | R-121 | REMOVED |
+| AC-21 | BR-POS-03/04 | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** **G** khách web đang giữ F8 **W** nhân viên chọn F8 trên POS **T** API trả không khả dụng; web và POS cùng chọn F9 gần đồng thời → chỉ một bên giữ được. | R-122, R-123 | REMOVED |
+| AC-22 | BR-POS-05 | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** **G** POS giữ G1 nhưng bỏ dở **W** quá 5 phút không gia hạn/xác nhận **T** G1 tự về Trống trên cả web và POS. | R-124 | REMOVED |
+| AC-23 | BR-POS-01 | **[REMOVED — spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án, xem `spec/updates/2026-11-12-remove-pos.md`]** **G** khoá API rạp HN01 **W** POS dùng khoá đó giữ ghế suất của HN02 **T** bị từ chối (403). | R-120 | REMOVED |
+| AC-24 | BR-ADM-12/13 | **G** suất có 10 đơn `paid` **W** Manager huỷ suất **T** suất ngừng bán trên web; 10 đơn `affected`; vé không check-in được; 10 email gửi kèm hướng dẫn đổi suất / hoàn tiền; trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. | R-108, R-109, R-110 | MVP |
 | AC-25 | BR-ADM-14 | **G** một đơn `affected` **W** ghi nhận "Đã hoàn tiền thủ công" thiếu số tiền hoặc mã giao dịch ngân hàng **T** chặn lưu; nhập đủ → đơn `refunded_manual` và xuất hiện trong báo cáo suất bị huỷ. | R-110, R-119 | MVP `[cần xác nhận]` |
 | AC-26 | BR-CHN-02 | **G** rạp HN03 còn 3 suất tương lai đã bán vé **W** Admin chuyển rạp sang "Tạm đóng" **T** hệ thống yêu cầu huỷ hàng loạt 3 suất (kèm email) trước khi cho đổi trạng thái. | R-33, R-108 | MVP |
 
@@ -398,7 +399,6 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | Webhook PayOS | Nhận kết quả thanh toán; kiểm chữ ký checksum; idempotent; đối chiếu số tiền | BR-PAY-03, BR-PAY-04 |
 | Tạo payment link / truy vấn trạng thái PayOS | Gọi ra PayOS từ server (không từ client) | BR-PAY-01, BR-PAY-02, BR-PAY-09 |
 | `returnUrl` / `cancelUrl` | Màn "Đang xác nhận thanh toán" (polling) / xử lý huỷ | BR-PAY-06, BR-PAY-08 |
-| API cho POS | Xác thực khoá API theo rạp; danh sách suất, sơ đồ + trạng thái ghế, giữ / nhả / gia hạn / xác nhận bán, tra cứu / soát vé; idempotent theo `requestId`; log + rate limit theo khoá; sai rạp → 403 | BR-POS-01…11 |
 | Thao tác ứng dụng (Server Actions / Route Handlers) | Giữ ghế, đặt vé, voucher, soát vé, quản trị — mọi thao tác quản trị kiểm tra vai trò + rạp **ở server** | §10, NFR-06 |
 | Realtime | Kênh trạng thái ghế **theo suất chiếu** | BR-BKG-02, NFR-03 |
 | Trang công khai bắt buộc | Điều khoản sử dụng, Chính sách bảo mật, Hướng dẫn xoá dữ liệu (Facebook) | BR-AUTH-03, BR-SOC-12 |
@@ -419,15 +419,15 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 - Suất chiếu (showtimes) — rạp + phòng + phim + thời gian + định dạng + ngôn ngữ; trạng thái (đang bán / đóng bán / huỷ).
 - Bảng giá: mặc định chuỗi (price tables), ghi đè theo rạp và theo suất (price overrides); ngày lễ (holidays).
 - Khoá ghế theo suất (do Manager).
-- Đơn hàng (orders) — kênh Web / POS, `cinema_id`, trạng thái theo §8.5, giá chốt, voucher, mã đặt vé.
-- Ghế của đơn / giữ ghế (order seats / seat holds) — nguồn giữ (web / POS), thời hạn; **ràng buộc unique ghế × suất** chống double-booking.
+- Đơn hàng (orders) — kênh Web, `cinema_id`, trạng thái theo §8.5, giá chốt, voucher, mã đặt vé.
+- Ghế của đơn / giữ ghế (order seats / seat holds) — thời hạn; **ràng buộc unique ghế × suất** chống double-booking.
 - Vé (tickets) — mã QR token ngẫu nhiên.
 - Thanh toán (payments) — `orderCode`, mã giao dịch, số tiền, thời điểm, trạng thái PayOS; `cinema_id`.
 - Voucher (vouchers) + lượt dùng; phạm vi rạp (GĐ2).
 - Combo (combos) — danh mục chung + cấu hình bật/tắt/giá theo rạp (GĐ2).
 - Đơn bị ảnh hưởng (affected orders) — kết quả xử lý (đổi suất / hoàn tiền thủ công), trạng thái gửi email.
 - Cấu hình toàn chuỗi (thời gian giữ ghế, nội dung cảnh báo, điều khoản).
-- Audit log; nhật ký soát vé (check-in logs); khoá API POS (POS API keys) + nhật ký gọi API POS.
+- Audit log; nhật ký soát vé (check-in logs).
 - Danh sách đen domain email disposable.
 
 **Quan hệ chính (chỉ những gì BRD nêu):**
@@ -435,7 +435,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 - Mỗi đơn thuộc **đúng một suất** (do đó một rạp) (BR-BKG-07); đơn chứa danh sách ghế (tối đa 8).
 - Mỗi đơn đã thanh toán có **1 mã đặt vé + 1 mã QR** (BR-TKT-01).
 - Mọi đơn và giao dịch thanh toán gắn `cinema_id` (BR-PAY-12).
-- Khoá API POS cấp **theo từng rạp** (BR-POS-01, BR-ADM-15); Staff / Cinema Manager gán **một hoặc nhiều rạp** (BR-CHN-08).
+- Staff / Cinema Manager gán **một hoặc nhiều rạp** (BR-CHN-08).
 - Mọi dữ liệu vận hành truy được `cinema_id` để RLS theo rạp (NFR-05).
 - Các cardinality khác (vd số giao dịch thanh toán / đơn, phiên bản sơ đồ ghế / phòng) **do implementation quyết định**.
 
@@ -445,7 +445,6 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 - **Cơ chế:** Supabase Auth — email/mật khẩu + xác nhận email; OAuth Google, Facebook; identity linking (R-01…R-25).
 - **Phiên:** cookie `HttpOnly`/`Secure`/`SameSite`; "Ghi nhớ" 30 ngày, ngược lại hết khi đóng trình duyệt (R-15, NFR-06).
 - **Phân quyền:** kiểm tra **vai trò + rạp được gán** ở **server và RLS**, không chỉ ẩn UI (§5.3, NFR-05, NFR-06).
-- **POS:** xác thực bằng **khoá API theo rạp**, không dùng phiên người dùng (R-120).
 
 ### Ma trận phân quyền (BRD §5.3)
 
@@ -510,12 +509,12 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | TICKET | BR-TKT-01→R-85 · 02→R-86 · 03→R-87 · 04→R-88 · 05→R-89 |
 | PROMO | BR-PRM-01→R-90, R-91 · 02→R-92 · 03→R-93 · 04→R-94, R-91 · 05→R-95 · 06→R-96 |
 | CHECKIN | BR-CHK-01→R-97 · 02→R-98 · 03→R-99 · 04→R-100 · 05→R-101 · 06→R-102 |
-| ADMIN | BR-ADM-01→R-41 · 02→R-32 · 03→R-47 · 04→R-51 · 05→R-52, R-53, R-58, R-90 · 06→R-52, R-56, R-58 · 07→R-103 · 08→R-104 · 09→R-105 · 10→R-106 · 11→R-107 · 12→R-108 · 13→R-109 · 14→R-110 · 15→R-111 |
+| ADMIN | BR-ADM-01→R-41 · 02→R-32 · 03→R-47 · 04→R-51 · 05→R-52, R-53, R-58, R-90 · 06→R-52, R-56, R-58 · 07→R-103 · 08→R-104 · 09→R-105 · 10→R-106 · 11→R-107 · 12→R-108 · 13→R-109 · 14→R-110 · 15→R-111 (REMOVED 2.0.0) |
 | REPORT | BR-RPT-01→R-112 · 02→R-113 · 03→R-114 · 04→R-115 · 05→R-96 · 06→R-116 · 07→R-117 · 08→R-118 · 09→R-119 |
-| POS | BR-POS-01→R-120 · 02→R-121 · 03→R-122 · 04→R-123 · 05→R-124 · 06→R-125 · 07→R-126 · 08→R-127 · 09→R-128 · 10→R-129 · 11→R-130 |
+| POS | BR-POS-01…11 → R-120…R-130: **REMOVED** (spec 2.0.0) · BR-ADM-15 → R-111: **REMOVED** |
 | POLICY | §7.1→R-131, R-132, R-134 · §7.2→R-133 · §7.3→R-132, R-134 |
 
-**Tổng:** 134 requirement (R-01…R-134) — **121 MVP** (trong đó 10 gắn phase `[cần xác nhận]`), **13 GĐ2** (trong đó 1 gắn phase `[cần xác nhận]`). Phủ **140/140** mã BR, **18/18** NFR, **26/26** AC.
+**Tổng (spec 2.0.0):** 134 mã requirement (R-01…R-134), trong đó **12 REMOVED** (R-111, R-120…R-130) → **122 còn hiệu lực** — **109 MVP** (trong đó 10 gắn phase `[cần xác nhận]`), **13 GĐ2** (trong đó 1 gắn phase `[cần xác nhận]`). Phủ **128/128** mã BR còn hiệu lực (12 mã BR-POS-01…11, BR-ADM-15 REMOVED), **18/18** NFR, **22/22** AC còn hiệu lực (AC-20…AC-23 REMOVED).
 
 ## Điểm cần xác nhận
 
@@ -527,8 +526,8 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 4. **Xuất CSV** — BR-ADM-14 (MVP) yêu cầu xuất CSV đơn bị ảnh hưởng, trong khi §15 xếp "xuất CSV" vào GĐ2. Spec giả định GĐ2 chỉ áp cho báo cáo (BR-RPT-07), CSV đơn bị ảnh hưởng vẫn MVP (R-110).
 5. **AC-18 thuộc GĐ2** — AC-18 kiểm tra voucher theo phạm vi rạp (GĐ2); không thể nghiệm thu trong MVP.
 6. **Staff ghi nhận đơn bị ảnh hưởng** — §5.3 ghi Staff "Tra cứu đơn hàng: rạp mình (**chỉ đọc**)", nhưng BR-ADM-14 cho Staff ghi nhận kết quả (Đã đổi suất / Đã hoàn tiền thủ công) — tức quyền ghi.
-7. **POS giả lập & quyền Staff** — §5.3 ghi Staff ❌ "Giữ ghế, đặt vé"; BR-POS-10 cho Staff dùng POS giả lập giữ/bán ghế. Cần chốt POS giả lập xác thực bằng **khoá API của rạp** (như POS thật) hay bằng **phiên Staff**.
-8. **Vòng đời đơn kênh POS** — §8.5 chỉ mô tả đơn web. Đơn POS (BR-POS-06) có trạng thái nào? Khi huỷ suất, đơn POS có chuyển `affected` và nhận email hàng loạt không (đơn POS không chắc có email khách)? Đếm vào báo cáo hoàn tiền thế nào?
+7. ~~**POS giả lập & quyền Staff**~~ — không còn áp dụng (POS bỏ, spec 2.0.0). — §5.3 ghi Staff ❌ "Giữ ghế, đặt vé"; BR-POS-10 cho Staff dùng POS giả lập giữ/bán ghế. Cần chốt POS giả lập xác thực bằng **khoá API của rạp** (như POS thật) hay bằng **phiên Staff**.
+8. ~~**Vòng đời đơn kênh POS**~~ — không còn áp dụng (POS bỏ, spec 2.0.0). — §8.5 chỉ mô tả đơn web. Đơn POS (BR-POS-06) có trạng thái nào? Khi huỷ suất, đơn POS có chuyển `affected` và nhận email hàng loạt không (đơn POS không chắc có email khách)? Đếm vào báo cáo hoàn tiền thế nào?
 9. **Tạo đơn mới khi đơn cũ đang `pending_payment`** — BR-BKG-06 "tạo đơn mới sẽ huỷ đơn giữ cũ", nhưng §8.5 chỉ có `holding → cancelled`. Đơn cũ đã có payment link: có huỷ không, và nếu tiền về sau đó thì xử lý như tiền về muộn?
 10. **Tiền về sau khi đơn `cancelled`** — §8.5 chỉ định nghĩa tiền về muộn từ `expired`; khách huỷ trên PayOS rồi vẫn chuyển khoản → chưa có luồng.
 11. **"Giờ kết thúc phim" khi check-in** — BR-CHK-03 cho check-in tới "giờ kết thúc phim"; BR-CIN-03 định nghĩa giờ kết thúc suất **gồm** thời gian dọn phòng. Mốc check-in tính theo giờ bắt đầu + thời lượng phim hay giờ kết thúc suất?
@@ -540,6 +539,8 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 17. **Đơn đang giữ / chờ thanh toán khi suất bị huỷ, và tiền về cho suất không còn bán được** (gộp với #9, #10) — BR-ADM-12 nói "ghế đang giữ bị nhả" nhưng không nói đơn `holding`/`pending_payment` chuyển trạng thái gì (payment link còn hiệu lực?). R-78 (BR-PAY-07) áp nguyên văn "ghế còn trống → tự chốt bán" sẽ **bán vé cho suất đã huỷ / đã đóng bán / đã kết thúc**. Cần chốt: tiền về muộn chỉ tự chốt khi suất chưa bị huỷ/đóng bán và chưa qua mốc đóng bán online; ngược lại → `needs_manual_review`? (Nguồn: BR-PAY-07, BR-ADM-12, §8.5.)
 18. **Facebook không email + email nhập trùng tài khoản đã có** — §8.2 đi thẳng F → H (tạo tài khoản), bỏ qua bước kiểm tra trùng email. Mâu thuẫn tiềm ẩn với BR-AUTH-01 (email duy nhất) và BR-AUTH-12 (không tiết lộ email tồn tại). Cần chốt: chặn + yêu cầu đăng nhập phương thức cũ để liên kết (như R-20), hay thông báo chung kiểu "đã gửi link xác nhận" để không lộ email. Liên quan R-19, R-20.
 19. **Quy tắc giá chi tiết (BR-CIN-05)** — chưa định nghĩa: ghế **Sweetbox** giá theo ghế hay theo cặp; mốc **17h** tính theo giờ bắt đầu suất và biên (17:00 thuộc "sau 17h"?); "**cuối tuần**" là T7–CN hay T6 tối–CN; **ngày lễ trùng cuối tuần** thì áp loại ngày nào. Ảnh hưởng R-72 (chốt giá) và AC-15.
+20. **[MỞ — phát sinh từ việc bỏ POS, spec 2.0.0] Đổi suất khi rạp huỷ suất** — R-109/R-110/R-134 ghi "đổi suất tại quầy / mã vé mới cấp tại quầy", nhưng không còn POS nên **hệ thống không có cơ chế phát hành vé cho suất mới**; vé cấp ngoài hệ thống sẽ không soát được (R-98/R-99). PO cần chọn: (a) thêm chức năng phát hành vé mới khi ghi nhận `exchanged` (change ADDITIVE); (b) đổi suất là quy trình ngoài hệ thống và sửa R-98/R-110 cho khớp; (c) bỏ lựa chọn đổi suất, chỉ hoàn tiền thủ công. Chưa quyết → build **chỉ ghi nhận** `exchanged` như R-110, không phát hành vé.
+21. **[MỞ — phát sinh từ việc bỏ POS, spec 2.0.0] Bán vé tại quầy** — R-67 vẫn hiển thị "vui lòng mua tại quầy" sau mốc đóng bán online, nhưng hệ thống không còn biết/khoá ghế bán tại quầy; "web là nguồn sự thật duy nhất" và NFR-04 chỉ đúng trong phạm vi web. PO cần chọn: (a) quầy chỉ bán ghế Manager đã khoá trên web (R-55); (b) quầy chỉ bán sau mốc đóng bán online; (c) rạp không bán tại quầy → sửa thông điệp R-67. Chưa quyết → giữ nguyên thông điệp R-67, hệ thống không quản lý bán tại quầy.
 
 ### Quyết định brainstorm (2026-11-10) — áp dụng cho build
 > Nguồn: `.context/brainstorm-log.md`. Các mục dưới đây **thay thế** trạng thái "cần xác nhận" của mục tương ứng ở trên.
@@ -547,10 +548,10 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | # | Quyết định |
 |---|---|
 | 1, 2, 4, 5 | Giữ phase như spec đã gán (voucher lõi, đơn 0đ, avatar, RPT-01/02/06, CSV đơn bị ảnh hưởng = MVP; voucher theo phạm vi rạp = GĐ2; AC-18 nghiệm thu ở GĐ2). |
-| 3 | Phần **báo cáo suất bị huỷ** của BR-RPT-09 (cần cho AC-25) làm ở **MVP**; phần kênh Web/POS của BR-RPT-09 vẫn GĐ2. |
+| 3 | Phần **báo cáo suất bị huỷ** của BR-RPT-09 (cần cho AC-25) làm ở **MVP**; phần tách kênh Web/POS của BR-RPT-09 **bỏ** (POS bỏ, spec 2.0.0). |
 | 6 | Staff **được ghi** kết quả xử lý đơn `affected` của rạp mình (BR-ADM-14 thắng §5.3 cho riêng thao tác này); các đơn khác Staff chỉ đọc. |
-| 7 | POS giả lập: Staff đăng nhập → backend dùng **khoá API POS của rạp** gọi cùng service API POS; khoá không ra client. |
-| 8 | Đơn kênh POS dùng cùng vòng đời đơn; huỷ suất → `affected`, không gửi email, đánh dấu "liên hệ tại quầy", tính vào báo cáo hoàn tiền / suất bị huỷ. |
+| 7 | **[REMOVED 2.0.0]** POS giả lập: Staff đăng nhập → backend dùng **khoá API POS của rạp** gọi cùng service API POS; khoá không ra client. |
+| 8 | **[REMOVED 2.0.0]** Đơn kênh POS dùng cùng vòng đời đơn; huỷ suất → `affected`, không gửi email, đánh dấu "liên hệ tại quầy", tính vào báo cáo hoàn tiền / suất bị huỷ. |
 | 9, 10, 17 | Tiền về cho đơn `expired` **hoặc** `cancelled`: tự chốt bán **chỉ khi** suất chưa huỷ/đóng bán, chưa qua mốc đóng bán online **và** mọi ghế còn trống; ngược lại → `needs_manual_review` (như R-78). Tạo đơn mới khi đơn cũ `pending_payment` → đơn cũ `cancelled` + huỷ payment link. Huỷ suất → đơn `holding`/`pending_payment` của suất → `cancelled`. |
 | 11 | Check-in cho phép tới **giờ bắt đầu + thời lượng phim** (không tính thời gian dọn phòng). |
 | 12 | Giữ ghế web **10 phút là mặc định**, Admin cấu hình được (BR-ADM-10). |
@@ -560,7 +561,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md)
 | 18 | Facebook không email + email nhập trùng tài khoản đã có: luôn thông báo chung "kiểm tra email"; email gửi tới chủ tài khoản hướng dẫn đăng nhập phương thức cũ để liên kết; **không** tạo tài khoản trùng, **không** lộ email tồn tại. |
 | 19 | Sweetbox **giá theo cặp**, tính 2 ghế vào giới hạn 8; khung giờ theo **giờ bắt đầu suất**, 17:00 thuộc "sau 17h"; **cuối tuần = Thứ 7 + Chủ nhật**; **ngày lễ ưu tiên** hơn cuối tuần. |
 
-> **Ghi chú tham chiếu chéo (từ spec-validator round 1, ℹ️):** R-17 bị giới hạn bởi R-105 (Manager chỉ thêm/bớt Staff rạp mình, không nâng quyền khác) · R-125 chịu ràng buộc R-128/R-122/R-123 (chỉ xác nhận bán ghế đang được POS giữ hợp lệ) · "ngừng bán" ở R-127 chỉ gồm suất `cancelled` (R-108) và suất bị Manager đóng bán (R-54); mốc đóng bán online R-67 chỉ chặn web, **không** chặn POS (khách vẫn mua tại quầy) · Combo và "rạp gần nhất" là GĐ2 → các nhắc tới combo/gần nhất trong requirement MVP là N/A ở MVP · Script seed 5 rạp (NFR-09) không có R riêng → graph phải lập task riêng · `spec/test-scope/current.json` hiện liệt kê cả R GĐ2 → spec-publisher cắt theo phạm vi thực build ở cuối layer cuối.
+> **Ghi chú tham chiếu chéo (từ spec-validator round 1, ℹ️):** R-17 bị giới hạn bởi R-105 (Manager chỉ thêm/bớt Staff rạp mình, không nâng quyền khác) · mốc đóng bán online R-67 chỉ áp cho web (dự án chỉ có kênh web; R-120→R-130 đã REMOVED ở spec 2.0.0) · Combo và "rạp gần nhất" là GĐ2 → các nhắc tới combo/gần nhất trong requirement MVP là N/A ở MVP · Script seed 5 rạp (NFR-09) không có R riêng → graph phải lập task riêng · `spec/test-scope/current.json` hiện liệt kê cả R GĐ2 → spec-publisher cắt theo phạm vi thực build ở cuối layer cuối.
 
 ---
 *Generated by: /spec-init (derived from docs/BRD.md v0.3 — greenfield, chưa có code)*

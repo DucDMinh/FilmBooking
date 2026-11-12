@@ -1,5 +1,10 @@
 # Task 09: Web POS giả lập `/pos` (Staff) — giữ/nhả/gia hạn/xác nhận bán qua API POS
 
+## Status
+removed (CR remove-pos, spec 2.0.0)
+
+> **REMOVED 2026-11-12 — CR `remove-pos` (spec 2.0.0, Product Owner duyệt: "bỏ toàn bộ POS, chỉ làm thuần web").** Task này **không làm**: loop/dispatcher bỏ qua, không builder/reviewer. Nội dung bên dưới giữ nguyên để truy vết (R/AC tương ứng đã REMOVED trong `SPECIFICATIONS.md` 2.0.0).
+
 ## Layer
 7
 
@@ -15,7 +20,7 @@ Màn 29: Staff chọn suất của rạp làm việc, sơ đồ ghế (dùng l�
 
 ## Dependencies
 - layer-5-task-13 (Web admin shell: layout `/admin`, sidebar theo vai trò, bộ chọn phạm v)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 - layer-5-task-05 (API POS `/pos/v1/*` (khoá API theo rạp, idempotent, log + rate limit) )
 - layer-6-task-03 (Web chọn ghế `/dat-ve/[showtimeId]`: SeatMap a11y + realtime + giữ ghế)
 
@@ -33,10 +38,9 @@ Màn 29: Staff chọn suất của rạp làm việc, sơ đồ ghế (dùng l�
 - [ ] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
-- `apps/web/src/app/pos/layout.tsx`
-- `apps/web/src/app/pos/page.tsx`
-- `apps/web/src/components/pos/pos-seat-board.tsx`
-- `apps/web/src/components/pos/pos-cart.tsx`
+Không còn file nào (task REMOVED).
+
+_Danh sách cũ (tham khảo):_ apps/web/src/app/pos/layout.tsx, apps/web/src/app/pos/page.tsx, apps/web/src/components/pos/pos‑seat‑board.tsx, apps/web/src/components/pos/pos‑cart.tsx
 
 ## Notes
 —

@@ -1,5 +1,7 @@
 # Task 06: Web admin đơn bị ảnh hưởng: danh sách, chi tiết, ghi kết quả xử lý, gửi lại email, CSV
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ badge 'liên hệ tại quầy' cho đơn POS (không còn đơn kênh POS).
+
 ## Layer
 7
 
@@ -11,11 +13,11 @@ build (initial)
 - AC-xx: AC-24, AC-25
 
 ## Description
-Màn 24/34: lọc theo suất/trạng thái xử lý/trạng thái email, badge 'liên hệ tại quầy' cho đơn POS, gửi lại email, form xử lý (đổi suất / hoàn tiền thủ công cần số tiền + mã giao dịch ngân hàng), tải CSV.
+Màn 24/34: lọc theo suất/trạng thái xử lý/trạng thái email, gửi lại email, form xử lý (đổi suất / hoàn tiền thủ công cần số tiền + mã giao dịch ngân hàng), tải CSV.
 
 ## Dependencies
 - layer-5-task-13 (Web admin shell: layout `/admin`, sidebar theo vai trò, bộ chọn phạm v)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 - layer-5-task-08 (API huỷ suất / đóng rạp / đơn bị ảnh hưởng (+ CSV, gửi lại email))
 
 ## Acceptance Criteria

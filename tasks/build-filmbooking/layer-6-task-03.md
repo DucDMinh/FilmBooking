@@ -1,5 +1,7 @@
 # Task 03: Web chọn ghế `/dat-ve/[showtimeId]`: SeatMap a11y + realtime + giữ ghế + đếm ngược
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ R-121, R-122, AC-20, AC-22 (giữ ghế từ POS) — realtime giữa các khách web giữ nguyên (R-60).
+
 ## Layer
 6
 
@@ -7,11 +9,11 @@
 build (initial)
 
 ## Requirements
-- R-xx: R-16, R-59, R-60, R-61, R-63, R-64, R-65, R-66, R-68, R-121, R-122
-- AC-xx: AC-01, AC-06, AC-07, AC-20
+- R-xx: R-16, R-59, R-60, R-61, R-63, R-64, R-65, R-66, R-68
+- AC-xx: AC-01, AC-06, AC-07
 
 ## Description
-Màn 06/31 + B12/B13 (design-spec §5.3): lưới ghế có nhãn cho screen reader, điều hướng phím mũi tên, trạng thái Trống/Đang chọn/Đang giữ/Đã bán/Khoá/Hỏng, sweetbox 2 ô; subscribe Realtime kênh theo suất; **tự tính 'trống' khi expires_at < now ở client** (timer) để AC-07/AC-22 ≤ 2s không cần cron; giới hạn 8, cảnh báo ghế lẻ, xác nhận độ tuổi phim T13+; chưa đăng nhập → LoginRequiredDialog (giữ `next`); chưa xác nhận email → banner + chặn; đếm ngược + HoldExpiredDialog.
+Màn 06/31 + B12/B13 (design-spec §5.3): lưới ghế có nhãn cho screen reader, điều hướng phím mũi tên, trạng thái Trống/Đang chọn/Đang giữ/Đã bán/Khoá/Hỏng, sweetbox 2 ô; subscribe Realtime kênh theo suất; **tự tính 'trống' khi expires_at < now ở client** (timer) để AC-07 ≤ 2s không cần cron; giới hạn 8, cảnh báo ghế lẻ, xác nhận độ tuổi phim T13+; chưa đăng nhập → LoginRequiredDialog (giữ `next`); chưa xác nhận email → banner + chặn; đếm ngược + HoldExpiredDialog.
 
 ## Dependencies
 - layer-5-task-01 (API booking: sơ đồ ghế, giữ/nhả ghế, đơn, tóm tắt, đồng ý điều khoản, )
@@ -19,7 +21,7 @@ Màn 06/31 + B12/B13 (design-spec §5.3): lưới ghế có nhãn cho screen rea
 
 ## Acceptance Criteria
 - [ ] AC-06 (UI): API trả SEAT_TAKEN → toast 'E5 vừa có người chọn', ghế chuyển Đang giữ, bỏ khỏi lựa chọn.
-- [ ] AC-07/AC-20: sự kiện realtime hoặc hết expires_at → cập nhật ô ghế ≤ 2s (test bằng fake timers + mock channel).
+- [ ] AC-07 / R-60: sự kiện realtime hoặc hết expires_at → cập nhật ô ghế ≤ 2s (test bằng fake timers + mock channel).
 - [ ] Mỗi ghế có aria-label 'Hàng E ghế 5, VIP, 120.000 đồng, trống' (NFR-12); dùng được hoàn toàn bằng bàn phím.
 - [ ] Chọn ghế thứ 9 bị chặn với thông báo; chọn tạo ghế lẻ → báo trước khi gọi API.
 - [ ] Hết giờ giữ → HoldExpiredDialog, quay lại sơ đồ.

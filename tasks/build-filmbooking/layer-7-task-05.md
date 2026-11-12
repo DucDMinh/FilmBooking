@@ -15,7 +15,7 @@ D5/B16 + 23 + B17/B18: landing nhân sự (đếm đơn cần xử lý, đơn af
 
 ## Dependencies
 - layer-5-task-13 (Web admin shell: layout `/admin`, sidebar theo vai trò, bộ chọn phạm v)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 - layer-5-task-07 (API đơn hàng & báo cáo: tra cứu đơn, đơn cần xử lý thủ công, báo cáo M)
 
 ## Acceptance Criteria

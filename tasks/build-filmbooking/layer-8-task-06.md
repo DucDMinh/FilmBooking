@@ -1,5 +1,7 @@
 # Task 06: Giám sát Sentry (gắn cinema_id) + cảnh báo + a11y + hiệu năng (LCP/ISR)
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ phụ thuộc layer-7-task-09 (REMOVED).
+
 ## Layer
 8
 
@@ -14,9 +16,8 @@ build (initial)
 Sentry web + api (DSN từ env, tắt khi thiếu), tag `cinema_id`, cảnh báo: webhook sai chữ ký, tỷ lệ lỗi giữ ghế tăng, email FAILED (NFR-14). Hiệu năng: ISR/revalidate cho trang phim/rạp, ảnh next/image, preconnect API; Lighthouse CI budget LCP ≤ 2,5s trang chủ/phim/rạp (NFR-01). a11y: vitest-axe cho SeatMap + form chính, kiểm tương phản (NFR-12).
 
 ## Dependencies
-- layer-7-task-09 (Web POS giả lập `/pos` (Staff) — giữ/nhả/gia hạn/xác nhận bán qua API )
 - layer-6-task-03 (Web chọn ghế `/dat-ve/[showtimeId]`: SeatMap a11y + realtime + giữ ghế)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 
 ## Acceptance Criteria
 - [ ] Lỗi thử ở API/web xuất hiện trong Sentry (hoặc transport mock) kèm tag cinema_id; không gửi PII (email/SĐT bị scrub).

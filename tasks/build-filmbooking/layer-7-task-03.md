@@ -1,5 +1,7 @@
 # Task 03: Web admin lịch chiếu: danh sách, tạo đơn lẻ/hàng loạt, chi tiết suất (đóng bán, khoá ghế), dialog huỷ suất
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ R-127 (REMOVED).
+
 ## Layer
 7
 
@@ -7,7 +9,7 @@
 build (initial)
 
 ## Requirements
-- R-xx: R-49, R-50, R-51, R-54, R-55, R-108, R-127
+- R-xx: R-49, R-50, R-51, R-54, R-55, R-108
 - AC-xx: AC-14, AC-24
 
 ## Description
@@ -15,7 +17,7 @@ Màn 21/38 + B19/B20: lịch theo rạp/phòng/ngày, tạo đơn lẻ + hàng l
 
 ## Dependencies
 - layer-5-task-13 (Web admin shell: layout `/admin`, sidebar theo vai trò, bộ chọn phạm v)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 - layer-3-task-05 (API vận hành rạp: phòng, sơ đồ ghế, suất chiếu (đơn lẻ + hàng loạt), đ)
 - layer-5-task-08 (API huỷ suất / đóng rạp / đơn bị ảnh hưởng (+ CSV, gửi lại email))
 

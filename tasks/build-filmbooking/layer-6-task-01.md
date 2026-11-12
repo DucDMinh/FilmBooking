@@ -1,4 +1,6 @@
-# Task 01: Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admin, orders, report, cancellation
+# Task 01: Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, orders, report, cancellation
+
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Không đăng ký module `pos`, bỏ phụ thuộc layer-5-task-05 (REMOVED) và smoke `/pos/v1/*`.
 
 ## Layer
 6
@@ -18,14 +20,13 @@ Import 9 module layer 5 vào AppModule; mở rộng smoke e2e; regen types nếu
 - layer-5-task-02 (API thanh toán PayOS: tạo link, webhook (checksum, idempotent, đối chi)
 - layer-5-task-03 (Mail (Resend) + worker email_outbox (retry) + job endpoint gửi email)
 - layer-5-task-04 (API soát vé: quét QR/nhập mã theo rạp làm việc)
-- layer-5-task-05 (API POS `/pos/v1/*` (khoá API theo rạp, idempotent, log + rate limit) )
 - layer-5-task-06 (API quản trị: người dùng & vai trò, gán rạp, cấu hình chuỗi, khoá API )
 - layer-5-task-07 (API đơn hàng & báo cáo: tra cứu đơn, đơn cần xử lý thủ công, báo cáo M)
 - layer-5-task-08 (API huỷ suất / đóng rạp / đơn bị ảnh hưởng (+ CSV, gửi lại email))
 - layer-5-task-09 (Wiring API #3: đăng ký identity + pricing, sinh lại types)
 
 ## Acceptance Criteria
-- [ ] App khởi động; smoke: `GET /showtimes/:id/seatmap` 200, `POST /payos/webhook` thiếu chữ ký → bị từ chối, `/pos/v1/showtimes` không key → 401, `/jobs/send-emails` không secret → 401.
+- [ ] App khởi động; smoke: `GET /showtimes/:id/seatmap` 200, `POST /payos/webhook` thiếu chữ ký → bị từ chối, `/jobs/send-emails` không secret → 401.
 - [ ] `pnpm -w lint|typecheck|test|build` PASS.
 
 ## DoD (Definition of Done)

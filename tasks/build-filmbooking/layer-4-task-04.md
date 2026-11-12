@@ -39,3 +39,4 @@ build (initial)
 Migration versioned, KHÔNG sửa migration đã apply; chạy local `pnpm db:migrate` (= `supabase migration up`) + `pnpm db:test` PASS. Cấm `db push`/`db reset` cho staging/prod. Reviewer STRICT (bulk update, email hàng loạt).
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.
+- Ghi chú sau-build: phần POS trong task này bị bỏ ở spec 2.0.0; code gỡ ở CR remove-pos phase-2.

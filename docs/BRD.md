@@ -7,7 +7,7 @@
 | Mục | Giá trị |
 |---|---|
 | Tên dự án | Web đặt vé xem phim cho **chuỗi nhiều rạp** |
-| Phiên bản | 0.4 |
+| Phiên bản | 0.5 |
 | Ngày tạo | 2026-11-10 |
 | Trạng thái | Đã duyệt (Product Owner, 2026-11-10 — checkpoint brainstorm `/start`) |
 | Công nghệ chốt | React + Next.js (frontend) + NestJS (backend API) + Supabase |
@@ -22,6 +22,7 @@
 | 0.2 | 2026-11-10 | AI (Claude) | Change Request: chuyển từ **1 rạp** sang **chuỗi nhiều rạp** — thêm quản lý rạp, chọn rạp/khu vực, vai trò Cinema Manager, phân quyền theo rạp, bảng giá theo rạp, báo cáo theo rạp/toàn chuỗi |
 | 0.3 | 2026-11-10 | AI (Claude) | Chốt câu hỏi mở Q1–Q9: đồng bộ khoá ghế với POS (module POS mới), bắt buộc đăng nhập, quy trình huỷ suất / đóng cửa rạp + email hàng loạt (ngoại lệ của chính sách không hoàn tiền), bỏ hoá đơn điện tử & phân loại giá, PayOS chung, voucher chỉ Admin, thu nhỏ quy mô về dự án demo ~5 rạp |
 | 0.4 | 2026-11-10 | AI (Claude) | Cập nhật §10 công nghệ theo brainstorm (Next.js + NestJS + Supabase, Render, OpenStreetMap) — chỉ ràng buộc kỹ thuật, không đổi nghiệp vụ; Product Owner duyệt BRD |
+| 0.5 | 2026-11-12 | AI (Claude) | Change Request `remove-pos` (Product Owner ra lệnh 2026-11-12: "bỏ toàn bộ POS, chỉ làm thuần web"): **bỏ module POS** — §6.14 (BR-POS-01…11), BR-ADM-15 (khoá API POS), vai trò POS, AC-20→23, rủi ro R10 đánh dấu **REMOVED** (giữ nội dung để truy vết, không đánh số lại); mọi tham chiếu "web và POS / web ↔ POS / kênh POS / POS giả lập" sửa thành chỉ web. Quầy vé vật lý (đổi suất / mua tại quầy / nhận combo) giữ nguyên, nằm ngoài hệ thống. Tương ứng `SPECIFICATIONS.md` spec 2.0.0 |
 
 ### Người duyệt
 
@@ -39,7 +40,7 @@ Dự án xây dựng một website cho phép khách hàng **chọn rạp trong c
 
 Chính sách bán vé áp dụng thống nhất toàn chuỗi: **khách không được huỷ vé, không được hoàn tiền**; hệ thống bắt buộc hiển thị cảnh báo và khách phải xác nhận trước khi thanh toán. Ngoại lệ duy nhất là khi **rạp huỷ suất chiếu hoặc đóng cửa** — khi đó khách được đổi suất tại quầy hoặc hoàn tiền thủ công, và hệ thống gửi email thông báo hàng loạt (xem §7).
 
-Quầy vé (POS) tại rạp là **hệ thống riêng**, nhưng **dùng chung trạng thái khoá ghế** với web qua API: ghế nhân viên đang chọn trên POS bị khoá trên web và ngược lại, đảm bảo không bên nào bán trùng ghế của bên kia.
+Dự án **chỉ có kênh web**: không tích hợp POS / phần mềm quầy vé (bỏ từ BRD v0.5 / spec 2.0.0, 2026-11-12 — quyết định Product Owner). Web là nguồn sự thật duy nhất về trạng thái ghế; quầy vé vật lý (nếu có) nằm ngoài hệ thống, không đồng bộ ghế.
 
 > **Phạm vi thực tế:** đây là dự án thử nghiệm/học tập. Hệ thống được xây đầy đủ nghiệp vụ như mô tả nhưng chỉ deploy để demo với khoảng **5 rạp** dữ liệu mẫu; các KPI và NFR về tải ở tài liệu này mang tính **tham chiếu thiết kế**, không phải cam kết vận hành.
 
@@ -94,14 +95,14 @@ Quầy vé (POS) tại rạp là **hệ thống riêng**, nhưng **dùng chung t
 10. Soát vé bằng quét QR (web trên điện thoại của nhân viên), giới hạn theo rạp của nhân viên.
 11. Trang quản trị phân cấp: **Admin chuỗi** và **Quản lý rạp (Cinema Manager)**.
 12. Báo cáo doanh thu, lấp đầy ghế theo **từng rạp** và **toàn chuỗi**.
-13. **API đồng bộ khoá ghế với hệ thống POS** tại quầy (giữ / nhả / bán ghế) + **POS giả lập** đơn giản để demo và kiểm thử.
+13. ~~**API đồng bộ khoá ghế với hệ thống POS** tại quầy (giữ / nhả / bán ghế) + **POS giả lập** đơn giản để demo và kiểm thử.~~ **[REMOVED — BRD v0.5 / spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án]**
 14. **Huỷ suất chiếu / đóng cửa rạp** bởi quản trị, đánh dấu đơn bị ảnh hưởng, **gửi email thông báo hàng loạt**, ghi nhận xử lý đổi suất / hoàn tiền thủ công.
 
 ### 4.2 Ngoài phạm vi (Out-of-scope) — giai đoạn hiện tại
 - Nhiều thương hiệu / nhiều chuỗi rạp khác nhau trên cùng hệ thống (multi-tenant).
 - Khách tự huỷ vé, đổi vé, đổi rạp; hoàn tiền **tự động** qua PayOS (hoàn tiền chỉ làm thủ công trong trường hợp rạp huỷ suất/đóng cửa — xem §7).
 - Ứng dụng mobile native (iOS/Android).
-- **Phần mềm POS thật** tại quầy (là hệ thống riêng) — dự án chỉ cung cấp API khoá ghế và một POS giả lập để demo.
+- Mọi phần mềm / tích hợp **POS** tại quầy: POS thật, **POS giả lập**, **API POS**, khoá API POS, đơn kênh POS, đồng bộ ghế với quầy (bỏ từ BRD v0.5 / spec 2.0.0, 2026-11-12).
 - **Hoá đơn điện tử (VAT).**
 - **Phân loại giá theo đối tượng** (HSSV, U22, người cao tuổi…).
 - Vận hành production thật (SLA, trực sự cố, khách hàng thật).
@@ -136,7 +137,7 @@ Quầy vé (POS) tại rạp là **hệ thống riêng**, nhưng **dùng chung t
 | **Staff** | **1 hoặc nhiều rạp được gán** | Nhân viên rạp. Soát vé, tra cứu vé — chỉ trong rạp được gán. |
 | **Cinema Manager** | **1 hoặc nhiều rạp được gán** | Quản lý phòng, sơ đồ ghế, suất chiếu, giá, khoá ghế, nhân viên, báo cáo của rạp mình. |
 | **Admin** | Toàn chuỗi | Toàn quyền: phim, rạp, voucher, người dùng & vai trò, cấu hình, báo cáo toàn chuỗi. |
-| **POS (hệ thống ngoài)** | **1 rạp** (theo khoá API) | Phần mềm bán vé tại quầy. Không phải người dùng web; gọi API để giữ / nhả / bán ghế của các suất thuộc rạp mình (xem §6.14). |
+| ~~**POS (hệ thống ngoài)**~~ | ~~**1 rạp** (theo khoá API)~~ | **[REMOVED — BRD v0.5 / spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án]** Phần mềm bán vé tại quầy. Không phải người dùng web; gọi API để giữ / nhả / bán ghế của các suất thuộc rạp mình (xem §6.14). |
 
 ### 5.3 Ma trận phân quyền
 
@@ -262,7 +263,7 @@ Quầy vé (POS) tại rạp là **hệ thống riêng**, nhưng **dùng chung t
 
 | Mã | Yêu cầu | Ưu tiên |
 |---|---|:-:|
-| BR-BKG-01 | Sơ đồ ghế hiển thị trạng thái: **Trống**, **Đang được giữ** (bởi khách khác trên web **hoặc nhân viên trên POS** — khách không phân biệt nguồn), **Đã bán** (web hoặc POS), **Đang chọn** (của tôi), **Khoá**; có chú thích màu và giá theo loại ghế. | M |
+| BR-BKG-01 | Sơ đồ ghế hiển thị trạng thái: **Trống**, **Đang được giữ** (bởi khách khác trên web), **Đã bán**, **Đang chọn** (của tôi), **Khoá**; có chú thích màu và giá theo loại ghế. | M |
 | BR-BKG-02 | Trạng thái ghế cập nhật **realtime** cho tất cả người đang xem cùng suất (không cần tải lại trang). | M |
 | BR-BKG-03 | Khi khách bấm "Tiếp tục" sau khi chọn ghế, hệ thống **giữ ghế 10 phút**; hiển thị **đồng hồ đếm ngược** trên mọi bước tiếp theo. | M |
 | BR-BKG-04 | Việc giữ ghế phải **nguyên tử (atomic)**: nếu bất kỳ ghế nào trong lựa chọn đã bị người khác giữ/bán → toàn bộ yêu cầu giữ thất bại, báo ghế nào bị trùng để khách chọn lại. **Tuyệt đối không bán trùng ghế** (ràng buộc ở tầng database). | M |
@@ -341,11 +342,11 @@ Quầy vé (POS) tại rạp là **hệ thống riêng**, nhưng **dùng chung t
 | BR-ADM-08 | Xử lý đơn `needs_manual_review` (ghi chú cách xử lý, đánh dấu đã giải quyết). | Manager (rạp mình), Admin | M |
 | BR-ADM-09 | Quản lý người dùng: tìm kiếm, khoá/mở khoá tài khoản, gán vai trò Staff/Cinema Manager/Admin và **gán rạp**. Manager chỉ được thêm/bớt **Staff** cho rạp mình. | Admin, Manager (giới hạn) | M |
 | BR-ADM-10 | Cấu hình toàn chuỗi: thời gian giữ ghế, nội dung cảnh báo không hoàn tiền, điều khoản sử dụng, giá trị mặc định cho cấu hình rạp. | Admin | S |
-| BR-ADM-11 | **Audit log** mọi thao tác thay đổi dữ liệu của Admin/Manager/Staff/POS (ai, rạp nào, khi nào, đối tượng, giá trị trước/sau). | Hệ thống | M |
-| BR-ADM-12 | **Huỷ suất chiếu**: chọn một hoặc nhiều suất (hoặc tất cả suất tương lai của một rạp khi **đóng cửa rạp**), nhập lý do → xem trước số đơn/vé bị ảnh hưởng → xác nhận. Suất chuyển `cancelled`, ngừng bán trên web và POS, các ghế đang giữ bị nhả, mọi đơn `paid` của suất chuyển `affected`, vé không còn check-in được. | Manager (rạp mình), Admin | M |
+| BR-ADM-11 | **Audit log** mọi thao tác thay đổi dữ liệu của Admin/Manager/Staff (ai, rạp nào, khi nào, đối tượng, giá trị trước/sau). | Hệ thống | M |
+| BR-ADM-12 | **Huỷ suất chiếu**: chọn một hoặc nhiều suất (hoặc tất cả suất tương lai của một rạp khi **đóng cửa rạp**), nhập lý do → xem trước số đơn/vé bị ảnh hưởng → xác nhận. Suất chuyển `cancelled`, ngừng bán trên web, các ghế đang giữ bị nhả, mọi đơn `paid` của suất chuyển `affected`, vé không còn check-in được. | Manager (rạp mình), Admin | M |
 | BR-ADM-13 | **Email thông báo hàng loạt** tự động gửi tới mọi khách có đơn `affected`: tên rạp, phim, suất bị huỷ, lý do, hướng xử lý (huỷ suất: **mang mã đặt vé tới quầy để đổi suất khác, hoặc liên hệ rạp để hoàn tiền nếu đồng ý**; đóng cửa rạp: **rạp sẽ liên hệ hoàn tiền thủ công**), hotline rạp. Theo dõi trạng thái gửi từng email, cho phép **gửi lại** email lỗi. | Hệ thống | M |
 | BR-ADM-14 | Màn **Đơn bị ảnh hưởng**: danh sách đơn `affected` theo suất/rạp, lọc theo trạng thái xử lý; nhân viên ghi nhận kết quả từng đơn: **Đã đổi suất** (ghi suất mới / mã vé mới cấp tại quầy) hoặc **Đã hoàn tiền thủ công** (số tiền, ngày, phương thức, mã giao dịch ngân hàng, người thực hiện). Xuất CSV. | Staff/Manager (rạp mình), Admin | M |
-| BR-ADM-15 | Quản lý **khoá API POS** cho từng rạp: tạo, xem lần đầu, thu hồi, xoay khoá; xem nhật ký gọi API của POS. | Admin | M |
+| ~~BR-ADM-15~~ | **[REMOVED — BRD v0.5 / spec 2.0.0, 2026-11-12: bỏ POS khỏi dự án]** Quản lý **khoá API POS** cho từng rạp: tạo, xem lần đầu, thu hồi, xoay khoá; xem nhật ký gọi API của POS. | Admin | M |
 
 ### 6.13 Module REPORT — Báo cáo
 
@@ -359,25 +360,27 @@ Quầy vé (POS) tại rạp là **hệ thống riêng**, nhưng **dùng chung t
 | BR-RPT-06 | Báo cáo **đối soát PayOS**: danh sách giao dịch, đơn lệch trạng thái/số tiền, tổng tiền theo rạp. | M |
 | BR-RPT-07 | Xuất báo cáo ra **CSV**. | S |
 | BR-RPT-08 | Dashboard tổng quan: doanh thu hôm nay, số vé hôm nay, suất sắp chiếu, số tài khoản mới — Manager thấy rạp mình, Admin thấy toàn chuỗi + từng rạp. | C |
-| BR-RPT-09 | Báo cáo tách **kênh bán Web / POS** (số ghế, theo dữ liệu POS báo về) và báo cáo **suất bị huỷ**: số đơn ảnh hưởng, số đã đổi suất, số đã hoàn tiền, tổng tiền hoàn thủ công. | S |
+| BR-RPT-09 | Báo cáo **suất bị huỷ** (phần tách kênh bán Web / POS bỏ ở BRD v0.5 / spec 2.0.0): số đơn ảnh hưởng, số đã đổi suất, số đã hoàn tiền, tổng tiền hoàn thủ công. | S |
 
-### 6.14 Module POS — Đồng bộ khoá ghế với quầy vé
+### 6.14 ~~Module POS — Đồng bộ khoá ghế với quầy vé~~ — REMOVED (BRD v0.5 / spec 2.0.0)
+
+> **[REMOVED — 2026-11-12, Change Request `remove-pos`, quyết định Product Owner: "bỏ toàn bộ POS, chỉ làm thuần web"]** Toàn bộ §6.14 (BR-POS-01 → BR-POS-11) **không còn trong phạm vi**: không implement, không test. Giữ nội dung bên dưới để truy vết.
 
 > POS tại quầy là **hệ thống riêng** (tự quản lý thanh toán, in vé tại quầy). Hệ thống web là **nguồn sự thật duy nhất về trạng thái ghế**; POS phải gọi API của web để giữ / bán ghế. Nguyên tắc: **ghế đang bị một bên thao tác thì bên còn lại không thao tác được**.
 
 | Mã | Yêu cầu | Ưu tiên |
 |---|---|:-:|
-| BR-POS-01 | Cung cấp **API cho POS** (xác thực bằng **khoá API riêng của từng rạp**, chỉ truy cập suất của rạp đó): lấy danh sách suất, lấy sơ đồ + trạng thái ghế, **giữ ghế**, **nhả ghế**, **xác nhận bán**, tra cứu / soát vé bằng mã đặt vé. | M |
-| BR-POS-02 | Khi nhân viên **chọn ghế trên POS**, POS gọi API giữ ghế ngay lập tức; ghế chuyển trạng thái **Đang được giữ** trên web (realtime ≤ 2 giây) và khách web **không chọn được**. | M |
-| BR-POS-03 | Ngược lại, ghế đang được giữ / đã bán trên web → API trả về **không khả dụng**, POS **không chọn được**. | M |
-| BR-POS-04 | Giữ ghế từ POS dùng **cùng cơ chế nguyên tử** như web (BR-BKG-04); hai bên tranh cùng ghế cùng lúc → chỉ một bên thành công. | M |
-| BR-POS-05 | Thời gian giữ ghế từ POS: **5 phút** (cấu hình được), hết hạn tự nhả; POS có thể gia hạn khi nhân viên vẫn đang thao tác. Nhân viên huỷ thao tác → POS gọi nhả ghế ngay. | M |
-| BR-POS-06 | POS **xác nhận bán** (sau khi thu tiền tại quầy) → ghế chuyển **Đã bán**; hệ thống ghi đơn kênh `POS` (mã đặt vé, ghế, tổng tiền POS báo, nhân viên) để báo cáo và soát vé. Thanh toán của đơn POS **không đi qua PayOS**. | M |
-| BR-POS-07 | Gọi API idempotent (mỗi thao tác có `requestId`); gọi lặp không tạo giữ/bán trùng. | M |
-| BR-POS-08 | Suất bị huỷ / ngừng bán → API từ chối giữ/bán mới cho suất đó. | M |
-| BR-POS-09 | Mất kết nối với web → POS **không được bán** ghế chưa giữ thành công (không có chế độ bán offline), tránh bán trùng. | M |
-| BR-POS-10 | **POS giả lập** (một trang web nội bộ đơn giản cho vai trò Staff): chọn suất, chọn ghế (gọi API giữ), xác nhận bán, in mã đặt vé — dùng để demo và kiểm thử đồng bộ hai chiều. | M |
-| BR-POS-11 | Mọi lời gọi API POS được ghi log (rạp, khoá API, thao tác, kết quả, thời điểm); rate limit theo khoá API. | M |
+| ~~BR-POS-01~~ | **[REMOVED]** Cung cấp **API cho POS** (xác thực bằng **khoá API riêng của từng rạp**, chỉ truy cập suất của rạp đó): lấy danh sách suất, lấy sơ đồ + trạng thái ghế, **giữ ghế**, **nhả ghế**, **xác nhận bán**, tra cứu / soát vé bằng mã đặt vé. | M |
+| ~~BR-POS-02~~ | **[REMOVED]** Khi nhân viên **chọn ghế trên POS**, POS gọi API giữ ghế ngay lập tức; ghế chuyển trạng thái **Đang được giữ** trên web (realtime ≤ 2 giây) và khách web **không chọn được**. | M |
+| ~~BR-POS-03~~ | **[REMOVED]** Ngược lại, ghế đang được giữ / đã bán trên web → API trả về **không khả dụng**, POS **không chọn được**. | M |
+| ~~BR-POS-04~~ | **[REMOVED]** Giữ ghế từ POS dùng **cùng cơ chế nguyên tử** như web (BR-BKG-04); hai bên tranh cùng ghế cùng lúc → chỉ một bên thành công. | M |
+| ~~BR-POS-05~~ | **[REMOVED]** Thời gian giữ ghế từ POS: **5 phút** (cấu hình được), hết hạn tự nhả; POS có thể gia hạn khi nhân viên vẫn đang thao tác. Nhân viên huỷ thao tác → POS gọi nhả ghế ngay. | M |
+| ~~BR-POS-06~~ | **[REMOVED]** POS **xác nhận bán** (sau khi thu tiền tại quầy) → ghế chuyển **Đã bán**; hệ thống ghi đơn kênh `POS` (mã đặt vé, ghế, tổng tiền POS báo, nhân viên) để báo cáo và soát vé. Thanh toán của đơn POS **không đi qua PayOS**. | M |
+| ~~BR-POS-07~~ | **[REMOVED]** Gọi API idempotent (mỗi thao tác có `requestId`); gọi lặp không tạo giữ/bán trùng. | M |
+| ~~BR-POS-08~~ | **[REMOVED]** Suất bị huỷ / ngừng bán → API từ chối giữ/bán mới cho suất đó. | M |
+| ~~BR-POS-09~~ | **[REMOVED]** Mất kết nối với web → POS **không được bán** ghế chưa giữ thành công (không có chế độ bán offline), tránh bán trùng. | M |
+| ~~BR-POS-10~~ | **[REMOVED]** **POS giả lập** (một trang web nội bộ đơn giản cho vai trò Staff): chọn suất, chọn ghế (gọi API giữ), xác nhận bán, in mã đặt vé — dùng để demo và kiểm thử đồng bộ hai chiều. | M |
+| ~~BR-POS-11~~ | **[REMOVED]** Mọi lời gọi API POS được ghi log (rạp, khoá API, thao tác, kết quả, thời điểm); rate limit theo khoá API. | M |
 
 ---
 
@@ -405,7 +408,7 @@ Quầy vé (POS) tại rạp là **hệ thống riêng**, nhưng **dùng chung t
 
 | Tình huống | Cách xử lý | Hệ thống hỗ trợ |
 |---|---|---|
-| **Rạp buộc phải huỷ suất** (sự cố kỹ thuật, mất điện…) | Khách chọn một trong hai: **(a) đổi sang suất khác tại quầy** (mang mã đặt vé tới quầy, nhân viên cấp vé mới qua POS), hoặc **(b) hoàn tiền** nếu khách đồng ý — rạp chuyển khoản **thủ công**. | Huỷ suất (BR-ADM-12) → **email hàng loạt** (BR-ADM-13) → ghi nhận kết quả từng đơn (BR-ADM-14) |
+| **Rạp buộc phải huỷ suất** (sự cố kỹ thuật, mất điện…) | Khách chọn một trong hai: **(a) đổi sang suất khác tại quầy** (mang mã đặt vé tới quầy, nhân viên cấp vé mới tại quầy — ngoài hệ thống, ghi nhận qua màn Đơn bị ảnh hưởng), hoặc **(b) hoàn tiền** nếu khách đồng ý — rạp chuyển khoản **thủ công**. | Huỷ suất (BR-ADM-12) → **email hàng loạt** (BR-ADM-13) → ghi nhận kết quả từng đơn (BR-ADM-14) |
 | **Rạp đóng cửa** (tạm đóng / ngừng hoạt động khi còn suất đã bán) | **Hoàn tiền thủ công** cho toàn bộ đơn của các suất tương lai. | Huỷ hàng loạt suất của rạp (BR-CHN-02, BR-ADM-12) → email hàng loạt → ghi nhận hoàn tiền |
 | Thanh toán đến muộn, ghế đã bán cho người khác (BR-PAY-07) | Đơn `needs_manual_review`; Cinema Manager liên hệ khách để xử lý (đổi suất hoặc hoàn tiền thủ công). | Danh sách cần xử lý + ghi chú |
 | Khách chuyển khoản sai số tiền | Đơn không được xác nhận; giao dịch xuất hiện trong báo cáo đối soát để xử lý thủ công. | Báo cáo đối soát (BR-RPT-06) |
@@ -523,7 +526,7 @@ stateDiagram-v2
 | Mã | Nhóm | Yêu cầu |
 |---|---|---|
 | NFR-01 | Hiệu năng | LCP ≤ 2,5s trên 4G cho trang chủ/chi tiết phim/chi tiết rạp; API p95 ≤ 500ms; giữ ghế p95 ≤ 1s. |
-| NFR-02 | Tải | Mục tiêu demo: chịu ≥ **100 người dùng đồng thời** và ≥ **20 thao tác giữ ghế/giây** (web + POS) mà không bán trùng ghế — kiểm chứng bằng test đồng thời, không cần load test quy mô lớn. |
+| NFR-02 | Tải | Mục tiêu demo: chịu ≥ **100 người dùng đồng thời** và ≥ **20 thao tác giữ ghế/giây** (web) mà không bán trùng ghế — kiểm chứng bằng test đồng thời, không cần load test quy mô lớn. |
 | NFR-03 | Realtime | Thay đổi trạng thái ghế hiển thị cho người khác trong ≤ **2 giây**; kênh realtime tách theo suất chiếu để không gửi dữ liệu thừa. |
 | NFR-04 | Tính toàn vẹn | Chống double-booking bằng **ràng buộc unique / khoá ở database**; mọi thao tác giữ/bán ghế là transaction. |
 | NFR-05 | Bảo mật dữ liệu | Bật **Row Level Security** cho mọi bảng Supabase; khách chỉ đọc được đơn/vé của mình; **Staff/Manager chỉ truy cập dữ liệu của rạp được gán**; **service role key chỉ dùng phía server**, không bao giờ lộ ra client. |
@@ -538,7 +541,7 @@ stateDiagram-v2
 | NFR-14 | Giám sát | Log lỗi tập trung (vd Sentry) có gắn `cinema_id`; cảnh báo khi webhook PayOS lỗi/sai chữ ký, khi tỷ lệ lỗi giữ ghế tăng bất thường, khi email gửi thất bại. |
 | NFR-15 | Múi giờ & tiền tệ | Mọi thời gian hiển thị theo **Asia/Ho_Chi_Minh** (lưu UTC); tiền tệ **VND**, không phần thập phân. |
 | NFR-16 | Mở rộng | Thêm rạp/phòng/suất không cần sửa code. Quy mô demo: **~5 rạp**, mỗi rạp 3–5 phòng; thiết kế không giới hạn cứng số rạp. |
-| NFR-17 | Kiểm thử | Có test tự động cho luồng giữ ghế đồng thời **web ↔ POS**, webhook PayOS (chữ ký, idempotent, tiền về muộn), auth (xác nhận email, liên kết tài khoản), **phân quyền theo rạp** (Staff/Manager/khoá API POS không truy cập được rạp khác), huỷ suất + email hàng loạt. |
+| NFR-17 | Kiểm thử | Có test tự động cho luồng giữ ghế đồng thời **web ↔ web**, webhook PayOS (chữ ký, idempotent, tiền về muộn), auth (xác nhận email, liên kết tài khoản), **phân quyền theo rạp** (Staff/Manager không truy cập được rạp khác), huỷ suất + email hàng loạt. |
 | NFR-18 | Chi phí | Ưu tiên **gói miễn phí** của các dịch vụ (Supabase, Vercel, Resend…) đủ cho demo; không phát sinh chi phí cố định bắt buộc. |
 
 ---
@@ -548,7 +551,7 @@ stateDiagram-v2
 | Hạng mục | Lựa chọn |
 |---|---|
 | Frontend | **Next.js** (App Router), **React**, TypeScript |
-| Backend | **NestJS** (TypeScript) — API nghiệp vụ, webhook PayOS, API POS, job, email; pnpm monorepo cùng frontend |
+| Backend | **NestJS** (TypeScript) — API nghiệp vụ, webhook PayOS, job, email; pnpm monorepo cùng frontend |
 | Auth | **Supabase Auth** — email/password + xác nhận email, OAuth Google, OAuth Facebook, identity linking |
 | Database | **Supabase Postgres** + RLS (theo user và theo rạp được gán) + function/transaction cho giữ ghế |
 | Realtime | **Supabase Realtime** cho trạng thái ghế (kênh theo suất chiếu) |
@@ -568,7 +571,7 @@ stateDiagram-v2
 - Một **chuỗi rạp duy nhất** (một thương hiệu); không bán nền tảng cho chuỗi khác.
 - **Danh mục phim, chính sách vé, điều khoản, ngày lễ** dùng chung toàn chuỗi; **phòng, suất chiếu, ghi đè giá, combo** quản lý theo rạp.
 - **Một tài khoản PayOS chung** cho toàn chuỗi; tách doanh thu bằng `cinema_id`.
-- POS tại quầy là hệ thống riêng, đồng bộ khoá ghế qua API của web (§6.14); bản demo dùng POS giả lập.
+- **Chỉ kênh web** — không có POS / tích hợp quầy vé (§6.14 REMOVED ở BRD v0.5 / spec 2.0.0).
 - **Bắt buộc đăng nhập** (email đã xác nhận hoặc Google/Facebook) để đặt vé; không có guest checkout.
 - Không xuất hoá đơn điện tử; không phân loại giá theo đối tượng — chỉ kiểm tra tuổi theo nhãn phim.
 - **Design (giao diện, nhận diện) và mẫu email** sẽ được tạo ở bước sau (`/design`); BRD chỉ quy định nội dung bắt buộc của email.
@@ -602,7 +605,7 @@ stateDiagram-v2
 | R7 | Facebook App Review chậm hoặc bị từ chối, ảnh hưởng MVP | Trung bình | Nộp review sớm; chuẩn bị đủ Privacy Policy + Data Deletion; Google vẫn chạy độc lập |
 | R8 | Bot tạo tài khoản ảo / giữ ghế ảo để phá | Trung bình | CAPTCHA, rate limit, bắt buộc xác nhận email, 1 đơn giữ/khách toàn chuỗi, max 8 ghế |
 | R9 | Lộ khoá bí mật (service role, PayOS checksum) | Cao | Chỉ dùng phía server, biến môi trường, review code, không commit |
-| R10 | Lệch trạng thái ghế giữa POS và web; POS giữ ghế rồi bỏ dở | Cao | Web là nguồn sự thật duy nhất; POS bắt buộc giữ qua API, giữ có hạn 5 phút, cấm bán offline (§6.14); test đồng thời web ↔ POS |
+| ~~R10~~ | **[REMOVED — BRD v0.5: POS bỏ, rủi ro không còn]** Lệch trạng thái ghế giữa POS và web; POS giữ ghế rồi bỏ dở | Cao | Web là nguồn sự thật duy nhất; POS bắt buộc giữ qua API, giữ có hạn 5 phút, cấm bán offline (§6.14); test đồng thời web ↔ POS |
 | R13 | Email hàng loạt khi huỷ suất gửi thiếu / vào spam → khách không biết suất bị huỷ | Trung bình | Theo dõi trạng thái gửi từng email, gửi lại email lỗi; danh sách đơn ảnh hưởng xuất CSV để gọi điện bổ sung |
 | R14 | Hoàn tiền thủ công không khớp sổ sách | Thấp | Bắt buộc ghi nhận số tiền, mã giao dịch ngân hàng, người thực hiện (BR-ADM-14); báo cáo suất bị huỷ |
 | R11 | Giới hạn gói Supabase (kết nối realtime, email) khi mở bán phim hot ở nhiều rạp | Thấp (demo) | Kênh realtime theo suất, SMTP riêng; nâng gói chỉ khi cần |
@@ -633,11 +636,11 @@ stateDiagram-v2
 | AC-17 | NFR-05 | **Given** khách A đăng nhập **When** gọi API/truy vấn đơn của khách B **Then** không nhận được dữ liệu (RLS chặn). |
 | AC-18 | BR-PRM-01/04 | **Given** voucher chỉ áp dụng cho rạp HN01 **When** khách nhập voucher cho đơn tại rạp HN02 **Then** hệ thống báo "Mã không áp dụng tại rạp này". |
 | AC-19 | BR-CHN-07 | **Given** Admin tạo rạp mới, phòng, sơ đồ ghế, suất chiếu qua trang quản trị **Then** rạp mới xuất hiện ở trang danh sách rạp và bán vé được ngay, không cần deploy. |
-| AC-20 | BR-POS-02 | **Given** nhân viên chọn ghế F7 trên POS của rạp HN01 **When** khách đang xem sơ đồ suất đó trên web **Then** trong ≤ 2 giây F7 chuyển "Đang được giữ" và khách không chọn được. |
-| AC-21 | BR-POS-03/04 | **Given** khách web đang giữ ghế F8 **When** nhân viên chọn F8 trên POS **Then** API trả về ghế không khả dụng; khi web và POS cùng chọn F9 gần như đồng thời thì chỉ một bên giữ được. |
-| AC-22 | BR-POS-05 | **Given** POS giữ ghế G1 nhưng nhân viên bỏ dở **When** quá 5 phút không gia hạn/xác nhận **Then** G1 tự trở về Trống trên cả web và POS. |
-| AC-23 | BR-POS-01 | **Given** khoá API của rạp HN01 **When** POS dùng khoá đó gọi giữ ghế suất của rạp HN02 **Then** bị từ chối (403). |
-| AC-24 | BR-ADM-12/13 | **Given** suất có 10 đơn `paid` **When** Manager huỷ suất **Then** suất ngừng bán trên web và POS, 10 đơn chuyển `affected`, vé không check-in được, 10 email thông báo được gửi với hướng dẫn đổi suất tại quầy hoặc hoàn tiền, trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. |
+| ~~AC-20~~ | **[REMOVED — BRD v0.5 / spec 2.0.0]** BR-POS-02 | **Given** nhân viên chọn ghế F7 trên POS của rạp HN01 **When** khách đang xem sơ đồ suất đó trên web **Then** trong ≤ 2 giây F7 chuyển "Đang được giữ" và khách không chọn được. |
+| ~~AC-21~~ | **[REMOVED — BRD v0.5 / spec 2.0.0]** BR-POS-03/04 | **Given** khách web đang giữ ghế F8 **When** nhân viên chọn F8 trên POS **Then** API trả về ghế không khả dụng; khi web và POS cùng chọn F9 gần như đồng thời thì chỉ một bên giữ được. |
+| ~~AC-22~~ | **[REMOVED — BRD v0.5 / spec 2.0.0]** BR-POS-05 | **Given** POS giữ ghế G1 nhưng nhân viên bỏ dở **When** quá 5 phút không gia hạn/xác nhận **Then** G1 tự trở về Trống trên cả web và POS. |
+| ~~AC-23~~ | **[REMOVED — BRD v0.5 / spec 2.0.0]** BR-POS-01 | **Given** khoá API của rạp HN01 **When** POS dùng khoá đó gọi giữ ghế suất của rạp HN02 **Then** bị từ chối (403). |
+| AC-24 | BR-ADM-12/13 | **Given** suất có 10 đơn `paid` **When** Manager huỷ suất **Then** suất ngừng bán trên web, 10 đơn chuyển `affected`, vé không check-in được, 10 email thông báo được gửi với hướng dẫn đổi suất tại quầy hoặc hoàn tiền, trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. |
 | AC-25 | BR-ADM-14 | **Given** một đơn `affected` **When** nhân viên ghi nhận "Đã hoàn tiền thủ công" thiếu số tiền hoặc mã giao dịch ngân hàng **Then** hệ thống chặn lưu; nhập đủ thì đơn chuyển `refunded_manual` và xuất hiện trong báo cáo suất bị huỷ. |
 | AC-26 | BR-CHN-02 | **Given** rạp HN03 còn 3 suất tương lai đã bán vé **When** Admin chuyển rạp sang "Tạm đóng" **Then** hệ thống yêu cầu chạy huỷ hàng loạt 3 suất (kèm email) trước khi cho đổi trạng thái. |
 
@@ -647,7 +650,7 @@ stateDiagram-v2
 
 | # | Câu hỏi | Quyết định (2026-11-10) | Phản ánh tại |
 |---|---|---|---|
-| Q1 | Quầy vé dùng chung hệ thống hay riêng? | **POS riêng**, nhưng đồng bộ khoá ghế qua API: ghế một bên đang thao tác thì bên kia không thao tác được | §6.14, BR-BKG-01, R10, AC-20→23 |
+| Q1 | Quầy vé dùng chung hệ thống hay riêng? | ~~**POS riêng**, nhưng đồng bộ khoá ghế qua API: ghế một bên đang thao tác thì bên kia không thao tác được~~ → **Đổi 2026-11-12 (BRD v0.5):** **không tích hợp POS**, chỉ kênh web; quầy vé vật lý nằm ngoài hệ thống | §6.14 (REMOVED), BR-BKG-01, R10 (REMOVED), AC-20→23 (REMOVED) |
 | Q2 | Bắt buộc đăng nhập để đặt vé? | **Bắt buộc đăng nhập** (email đã xác nhận / Google / Facebook) | BR-AUTH-05, §11.1 |
 | Q3 | Rạp huỷ suất / đóng cửa xử lý thế nào? | **Huỷ suất**: đổi suất khác tại quầy, hoặc hoàn tiền nếu khách đồng ý. **Đóng cửa**: hoàn tiền thủ công. **Có gửi email hàng loạt** | §7.3, BR-ADM-12→14, BR-CHN-02, AC-24→26 |
 | Q4 | Hoá đơn điện tử? | **Không cần** | §4.2 |
@@ -665,7 +668,7 @@ Hiện **không còn câu hỏi mở**.
 
 | Giai đoạn | Nội dung | Ghi chú |
 |---|---|---|
-| **MVP** | Auth email/mật khẩu + xác nhận email + chống spam; **đăng nhập & liên kết Google + Facebook**; hồ sơ; **quản lý chuỗi rạp + chọn khu vực/rạp**; danh mục phim; phòng/sơ đồ ghế/suất chiếu/bảng giá hai cấp; đặt vé + giữ ghế realtime; cảnh báo không hoàn tiền; thanh toán **PayOS** (webhook, đối soát, tiền về muộn); vé QR + email; soát vé theo rạp; **API khoá ghế cho POS + POS giả lập**; **huỷ suất / đóng cửa rạp + email hàng loạt + ghi nhận đổi/hoàn thủ công**; Admin + Cinema Manager cơ bản; audit log; script seed 5 rạp | Facebook ở chế độ Development (tester) |
+| **MVP** | Auth email/mật khẩu + xác nhận email + chống spam; **đăng nhập & liên kết Google + Facebook**; hồ sơ; **quản lý chuỗi rạp + chọn khu vực/rạp**; danh mục phim; phòng/sơ đồ ghế/suất chiếu/bảng giá hai cấp; đặt vé + giữ ghế realtime; cảnh báo không hoàn tiền; thanh toán **PayOS** (webhook, đối soát, tiền về muộn); vé QR + email; soát vé theo rạp; ~~API khoá ghế cho POS + POS giả lập~~ (REMOVED v0.5); **huỷ suất / đóng cửa rạp + email hàng loạt + ghi nhận đổi/hoàn thủ công**; Admin + Cinema Manager cơ bản; audit log; script seed 5 rạp | Facebook ở chế độ Development (tester) |
 | **Giai đoạn 2** | Combo bắp nước theo rạp; voucher theo phạm vi rạp; báo cáo đầy đủ + so sánh giữa các rạp + xuất CSV; dashboard; gợi ý rạp gần nhất; email nhắc lịch; file `.ics` | |
 | **Giai đoạn 3** | Tích điểm/thành viên toàn chuỗi; đa ngôn ngữ; đánh giá phim; PWA | Ngoài phạm vi BRD hiện tại |
 

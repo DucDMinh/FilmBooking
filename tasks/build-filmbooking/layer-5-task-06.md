@@ -1,4 +1,6 @@
-# Task 06: API quản trị: người dùng & vai trò, gán rạp, cấu hình chuỗi, khoá API POS, audit log, voucher CRUD
+# Task 06: API quản trị: người dùng & vai trò, gán rạp, cấu hình chuỗi, audit log, voucher CRUD
+
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ quản lý khoá API POS (R-111 REMOVED), AC tạo khoá POS và file `pos-keys.controller.ts`.
 
 ## Layer
 5
@@ -7,11 +9,11 @@
 build (initial)
 
 ## Requirements
-- R-xx: R-17, R-39, R-90, R-105, R-106, R-107, R-111
+- R-xx: R-17, R-39, R-90, R-105, R-106, R-107
 - AC-xx: AC-16
 
 ## Description
-Admin: tìm user, cấp/thu hồi vai trò Manager/Staff + gán rạp, khoá tài khoản; Manager: chỉ thêm/bớt Staff rạp mình (R-17/R-105). Cấu hình chuỗi (thời gian giữ ghế web, nội dung cảnh báo, phiên bản điều khoản). Khoá API POS: tạo (trả secret **một lần**, lưu hash), thu hồi, xem log. Audit log có lọc. Voucher CRUD (Admin; Manager chỉ xem).
+Admin: tìm user, cấp/thu hồi vai trò Manager/Staff + gán rạp, khoá tài khoản; Manager: chỉ thêm/bớt Staff rạp mình (R-17/R-105). Cấu hình chuỗi (thời gian giữ ghế web, nội dung cảnh báo, phiên bản điều khoản). Audit log có lọc. Voucher CRUD (Admin; Manager chỉ xem).
 
 ## Dependencies
 - layer-3-task-03 (Wiring API #1: đăng ký AuthModule global + MeModule, sinh database.typ)
@@ -20,7 +22,6 @@ Admin: tìm user, cấp/thu hồi vai trò Manager/Staff + gán rạp, khoá tà
 
 ## Acceptance Criteria
 - [ ] Manager cấp vai trò MANAGER/ADMIN → 403; thêm Staff cho rạp khác → 403.
-- [ ] Tạo khoá POS trả plaintext 1 lần; GET sau đó chỉ có prefix.
 - [ ] Đổi thời gian giữ ghế → hold mới dùng giá trị mới; ghi audit.
 - [ ] Manager tạo/sửa voucher → 403; xem được.
 
@@ -35,7 +36,6 @@ Admin: tìm user, cấp/thu hồi vai trò Manager/Staff + gán rạp, khoá tà
 - `apps/api/src/modules/admin/admin.module.ts`
 - `apps/api/src/modules/admin/users.controller.ts`
 - `apps/api/src/modules/admin/settings.controller.ts`
-- `apps/api/src/modules/admin/pos-keys.controller.ts`
 - `apps/api/src/modules/admin/audit.controller.ts`
 - `apps/api/src/modules/admin/vouchers.controller.ts`
 - `packages/shared/src/schemas/admin.ts`

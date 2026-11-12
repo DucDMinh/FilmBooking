@@ -1,6 +1,6 @@
 {
   "project": "CINEMO",
-  "source": "BRD v0.4",
+  "source": "BRD v0.5",
   "screen_count": 40,
   "screens": [
     "01-home",
@@ -44,6 +44,10 @@
     "39-admin-pos-api-keys",
     "40-cinema-manager-dashboard"
   ],
+  "removed_screens": {
+    "29-pos-simulator": "removed: spec 2.0.0 (2026-11-12, CR remove-pos — bỏ POS, chỉ làm thuần web); giữ file SVG để truy vết, không build",
+    "39-admin-pos-api-keys": "removed: spec 2.0.0 (2026-11-12, CR remove-pos — bỏ POS, chỉ làm thuần web); giữ file SVG để truy vết, không build"
+  },
   "frame_sizes": {
     "desktop": "1440x1000",
     "mobile": "390x844"

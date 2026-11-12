@@ -1,5 +1,7 @@
 # Task 04: Test huỷ suất + email hàng loạt + luồng auth (xác nhận email, khoá, liên kết)
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Bỏ ca đơn POS khi huỷ suất.
+
 ## Layer
 8
 
@@ -11,17 +13,16 @@ build (initial)
 - AC-xx: AC-01, AC-02, AC-03, AC-04, AC-05, AC-24, AC-25, AC-26
 
 ## Description
-Integration: huỷ suất 10 đơn paid (WEB + POS) → affected, email outbox → job gửi (Resend mock) → trạng thái hiển thị; hoàn thủ công; đóng rạp bị chặn. Auth: chưa xác nhận bị chặn giữ ghế, resend cooldown, lockout 5 lần + email cảnh báo, OAuth trùng email không tự gộp (theo cơ chế chốt ở layer-4-task-06), huỷ liên kết phương thức cuối bị từ chối.
+Integration: huỷ suất 10 đơn paid → affected, email outbox → job gửi (Resend mock) → trạng thái hiển thị; hoàn thủ công; đóng rạp bị chặn. Auth: chưa xác nhận bị chặn giữ ghế, resend cooldown, lockout 5 lần + email cảnh báo, OAuth trùng email không tự gộp (theo cơ chế chốt ở layer-4-task-06), huỷ liên kết phương thức cuối bị từ chối.
 
 ## Dependencies
 - layer-6-task-07 (Harness integration test API ↔ Supabase local (helpers tạo user/role/r)
-- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, pos, admi)
+- layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 
 ## Acceptance Criteria
 - [ ] AC-24, AC-25, AC-26 PASS end-to-end qua API.
 - [ ] AC-01, AC-02, AC-03 PASS.
 - [ ] AC-04, AC-05 PASS (hoặc ghi rõ phần không tự động hoá được do OAuth thật → kiểm tay, có checklist).
-- [ ] Đơn POS bị huỷ suất: không có email, cờ liên hệ tại quầy.
 
 ## DoD (Definition of Done)
 - [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)

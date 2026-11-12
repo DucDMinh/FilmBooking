@@ -1,5 +1,10 @@
 # Task 05: API POS `/pos/v1/*` (khoá API theo rạp, idempotent, log + rate limit) + endpoint POS giả lập cho Staff
 
+## Status
+removed (CR remove-pos, spec 2.0.0)
+
+> **REMOVED 2026-11-12 — CR `remove-pos` (spec 2.0.0, Product Owner duyệt: "bỏ toàn bộ POS, chỉ làm thuần web").** Task này **không làm**: loop/dispatcher bỏ qua, không builder/reviewer. Nội dung bên dưới giữ nguyên để truy vết (R/AC tương ứng đã REMOVED trong `SPECIFICATIONS.md` 2.0.0).
+
 ## Layer
 5
 
@@ -34,13 +39,9 @@ Guard Bearer key → so hash pos_api_keys (chưa revoke) → cinema_id cố đ�
 - [ ] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
-- `apps/api/src/modules/pos/pos.module.ts`
-- `apps/api/src/modules/pos/pos-api-key.guard.ts`
-- `apps/api/src/modules/pos/pos.controller.ts`
-- `apps/api/src/modules/pos/pos.service.ts`
-- `apps/api/src/modules/pos/pos-sim.controller.ts`
-- `packages/shared/src/schemas/pos.ts`
-- `apps/api/test/pos.e2e-spec.ts`
+Không còn file nào (task REMOVED).
+
+_Danh sách cũ (tham khảo):_ apps/api/src/modules/pos/pos.module.ts, apps/api/src/modules/pos/pos‑api‑key.guard.ts, apps/api/src/modules/pos/pos.controller.ts, apps/api/src/modules/pos/pos.service.ts, apps/api/src/modules/pos/pos‑sim.controller.ts, packages/shared/src/schemas/pos.ts, apps/api/test/pos.e2e‑spec.ts
 
 ## Notes
 Reviewer STRICT (khoá API, cô lập rạp).

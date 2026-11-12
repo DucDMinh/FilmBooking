@@ -1,7 +1,32 @@
 {
   "mode": "initial-build",
-  "activeWorkItem": "bug/layer34-review",
-  "features": [],
+  "activeWorkItem": "feature/remove-pos",
+  "features": [
+    {
+      "id": "remove-pos",
+      "title": "Bỏ toàn bộ POS khỏi dự án (spec 2.0.0)",
+      "class": "REMOVE",
+      "status": "in_progress",
+      "phases": [
+        {
+          "phase": 1,
+          "title": "spec + intent docs + plan",
+          "status": "done",
+          "specValidator": {
+            "verdict": "PASS",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/feature-remove-pos-phase-1-round-2-spec.md"
+          }
+        },
+        {
+          "phase": 2,
+          "title": "code/DB: thu hẹp task-03 (confirm_zero_amount), gỡ entry point POS",
+          "status": "pending"
+        }
+      ],
+      "updatedAt": "2026-11-12T08:47:30.564Z"
+    }
+  ],
   "bugs": [
     {
       "id": "layer34-review/phase-1-task-01",
@@ -139,11 +164,25 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-02-round-2-review.md"
       },
       "updatedAt": "2026-11-12T07:25:44.447Z"
+    },
+    {
+      "id": "layer34-review/phase-2-task-03",
+      "title": "confirm_zero_amount + confirm_pos_sale + FK tickets.seat_id",
+      "status": "blocked",
+      "severity": "high",
+      "blocked": "superseded by feature/remove-pos (reviewer round 3 FAIL F11; re-scope ở remove-pos phase-2)",
+      "reviewer": {
+        "verdict": "FAIL",
+        "level": "STRICT",
+        "rounds": 3,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-03-round-3-review.md"
+      },
+      "updatedAt": "2026-11-12T08:47:30.564Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T07:25:44.447Z",
+  "lastUpdated": "2026-11-12T08:47:30.564Z",
   "inProgressTask": null,
   "completedTasks": [
     {

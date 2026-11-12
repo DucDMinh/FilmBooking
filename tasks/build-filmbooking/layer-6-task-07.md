@@ -1,5 +1,7 @@
 # Task 07: Harness integration test API ↔ Supabase local (helpers tạo user/role/rạp, client song song)
 
+> **Scope change: bỏ POS (CR remove-pos, spec 2.0.0, 2026-11-12).** Factory không tạo khoá API POS.
+
 ## Layer
 6
 
@@ -11,7 +13,7 @@ build (initial)
 - AC-xx: —
 
 ## Description
-Cấu hình `pnpm test:int` chạy với Supabase local (`pnpm db:start`): helper tạo user (customer đã/chưa xác nhận, staff/manager gán rạp, admin), lấy JWT, tạo suất/ghế/khoá POS từ factory, mở N kết nối song song, dọn dữ liệu theo prefix.
+Cấu hình `pnpm test:int` chạy với Supabase local (`pnpm db:start`): helper tạo user (customer đã/chưa xác nhận, staff/manager gán rạp, admin), lấy JWT, tạo suất/ghế từ factory, mở N kết nối song song, dọn dữ liệu theo prefix.
 
 ## Dependencies
 - layer-3-task-03 (Wiring API #1: đăng ký AuthModule global + MeModule, sinh database.typ)
