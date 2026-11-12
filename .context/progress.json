@@ -111,11 +111,25 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-04-round-2-review.md"
       },
       "updatedAt": "2026-11-12T04:15:36.501Z"
+    },
+    {
+      "id": "layer34-review/phase-2-task-01",
+      "title": "Vòng đời đơn pending_payment (M1a/b, M2)",
+      "status": "done",
+      "severity": "high",
+      "highRiskMigration": true,
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 4,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-01-round-4-review.md"
+      },
+      "updatedAt": "2026-11-12T06:55:39.174Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T04:15:36.501Z",
+  "lastUpdated": "2026-11-12T06:55:39.174Z",
   "inProgressTask": null,
   "completedTasks": [
     {
@@ -368,7 +382,8 @@
       "task-08 red-before chỉ có trong journal builder, không có output thô; verify lại quyền trên staging sau deploy",
       "P1: confirm_zero_amount :805-811 nhánh elsif dead code (current_user luôn postgres); hold_seats p_request_id trả booking_code trước kiểm quyền; confirm_pos_sale chỉ service_role -> Layer 5 POS gọi qua admin() sau guard",
       "bug-check full-project scan (2026-11-12, session khác): Defect #4 là false positive (wiring theo kế hoạch layer-5-task-09); đề xuất thêm backlog: report doanh thu theo paid_at, extend_pos_hold giới hạn số lần, sitemap lastModified, movie-card releaseDate null",
-      "F-2 HIGH (task-04): guard_identity_insert chặn liên kết thủ công hợp lệ cho user có mật khẩu/identity email (R-20, AC-04, R-21, NFR-17) -> thiết kế link-intent, cần chốt trước layer-5-task-12; N-1 gỡ cờ allow_identity_link thừa trong fixture 045/046"
+      "F-2 HIGH (task-04): guard_identity_insert chặn liên kết thủ công hợp lệ cho user có mật khẩu/identity email (R-20, AC-04, R-21, NFR-17) -> thiết kế link-intent, cần chốt trước layer-5-task-12; N-1 gỡ cờ allow_identity_link thừa trong fixture 045/046",
+      "P1-01 residual: showtimes KEY SHARE sau orders ngược cancel_showtimes (40P01 có thể); hold_seats nhiều ghế vs confirm_paid (seats FOR UPDATE vs FK KEY SHARE); 2 hold_seats cùng user; hold_seats §3.5 đọc status suất không khoá (TOCTOU, task-04); huỷ link PayOS phía provider khi đơn expired/cancelled (API Layer 5)"
     ],
     "newCritical": [
       "K7: SECURITY DEFINER mở cho authenticated (gộp task-08, user duyệt 2026-11-12)"
@@ -381,6 +396,30 @@
       "typecheck": "PASS"
     },
     "p0Status": "done",
-    "p0DoneAt": "2026-11-12T04:15:36.501Z"
+    "p0DoneAt": "2026-11-12T04:15:36.501Z",
+    "p1": {
+      "approvedAt": "2026-11-12T04:25:22.322Z",
+      "order": [
+        "01",
+        "02",
+        "03",
+        "04",
+        "06",
+        "05",
+        "07"
+      ],
+      "mode": "sequential (DB local dùng chung)",
+      "decisions": {
+        "voucherLatePayment": "needs_manual_review",
+        "f2": {
+          "intentTtlMin": 10,
+          "reauthRequired": true,
+          "reauthWindowMin": 5
+        }
+      },
+      "completed": [
+        "01"
+      ]
+    }
   }
 }
