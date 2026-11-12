@@ -178,6 +178,12 @@ select throws_ok($$insert into public.price_rules (scope, seat_type, format, day
 select is((select count(*) from pg_tables where schemaname = 'public' and tablename in ('price_rules', 'holidays') and rowsecurity)::int,
           2, 'RLS bật trên price_rules + holidays');
 
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select public.tap_anon();
 select ok((select count(*) from public.price_rules) > 0 and (select count(*) from public.holidays) = 1, 'anon đọc được bảng giá và ngày lễ');
 select is((select amount from public.price_quote('00000000-0000-0000-0000-00000000a502', array['00000000-0000-0000-0000-00000000b201']::uuid[])),

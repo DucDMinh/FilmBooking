@@ -78,6 +78,12 @@ select ok(
 -- ---------------------------------------------------------------------------
 -- 2. Gọi thật dưới role anon -> permission denied 42501 (5 test)
 -- ---------------------------------------------------------------------------
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select public.tap_anon();
 select throws_ok($$select public.get_user_identities('00000000-0000-0000-0000-00000000a102'::uuid)$$, '42501', null, 'anon gọi get_user_identities bị từ chối');
 select throws_ok($$select public.mark_password_set('00000000-0000-0000-0000-00000000a102'::uuid)$$, '42501', null, 'anon gọi mark_password_set bị từ chối');

@@ -121,6 +121,12 @@ select is((select ends_at - starts_at from public.showtimes where id = '00000000
 -- ---------------------------------------------------------------------------
 -- G2 (R-33): showtimes_select chỉ cho khách thấy suất của rạp OPEN
 -- ---------------------------------------------------------------------------
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select public.tap_anon();
 select is((select count(*) from public.showtimes where id = '00000000-0000-0000-0000-00000000a501')::int, 1, 'rạp OPEN: khách thấy suất');
 

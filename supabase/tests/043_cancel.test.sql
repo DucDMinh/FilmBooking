@@ -189,6 +189,12 @@ insert into public.showtime_seat_states (showtime_id, seat_id, state, source, ex
 -- ---------------------------------------------------------------------------
 -- 2. Test preview_cancel_showtimes (AC-24, R-108)
 -- ---------------------------------------------------------------------------
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select tap_as('00000000-0000-0000-0000-000000000b01'); -- Manager HN01
 
 select is(

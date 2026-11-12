@@ -167,6 +167,12 @@ insert into public.affected_order_actions (order_id, action, note, refund_refere
 -- ---------------------------------------------------------------------------
 -- TEST 1: Quyền truy cập - Khách hàng thường bị chặn gọi checkin_ticket
 -- ---------------------------------------------------------------------------
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select public.tap_as('00000000-0000-0000-0000-000000000d01');
 select throws_ok(
   $$ select public.checkin_ticket('11111111111111111111111111111111', '00000000-0000-0000-0000-0000000000c1') $$,

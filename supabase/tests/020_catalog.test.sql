@@ -159,6 +159,12 @@ select throws_ok($$
 -- ---------------------------------------------------------------------------
 -- 4. RLS Manager / Staff / khách (12)
 -- ---------------------------------------------------------------------------
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select public.tap_as('00000000-0000-0000-0000-000000000b01');
 select lives_ok($$
   insert into public.showtimes (cinema_id, room_id, movie_id, starts_at, format) values

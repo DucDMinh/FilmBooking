@@ -98,6 +98,12 @@ select is(
 -- ---------------------------------------------------------------------------
 -- 3. Khách: chỉ đọc/sửa hồ sơ của mình (8 test)
 -- ---------------------------------------------------------------------------
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select public.tap_as('00000000-0000-0000-0000-000000000d01');
 select is((select count(*)::int from public.profiles), 1, 'khách chỉ thấy 1 profile (của mình)');
 select lives_ok(

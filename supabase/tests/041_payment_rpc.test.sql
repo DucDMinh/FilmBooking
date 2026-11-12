@@ -554,6 +554,12 @@ insert into public.showtime_seat_states (showtime_id, seat_id, state, source, ex
    'HELD', 'WEB', now() + interval '10 minutes', '00000000-0000-0000-0000-500000000012');
 
 -- Đóng vai cust2 (User B) gọi confirm_zero_amount trên đơn của cust1 (User A)
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select public.tap_as('00000000-0000-0000-0000-000000000d02');
 
 select throws_ok(

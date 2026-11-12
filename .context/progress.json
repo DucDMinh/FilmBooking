@@ -85,11 +85,24 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-06-round-2-review.md"
       },
       "updatedAt": "2026-11-12T03:41:19.102Z"
+    },
+    {
+      "id": "layer34-review/phase-1-task-08",
+      "title": "K7 quyền EXECUTE hàm public + test phân quyền",
+      "status": "done",
+      "severity": "blocker",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-08-round-1-review.md"
+      },
+      "updatedAt": "2026-11-12T04:00:42.744Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T03:41:19.102Z",
+  "lastUpdated": "2026-11-12T04:00:42.744Z",
   "inProgressTask": null,
   "completedTasks": [
     {
@@ -323,10 +336,10 @@
       "task-03",
       "task-05",
       "task-07",
-      "task-06"
+      "task-06",
+      "task-08"
     ],
     "pendingP0": [
-      "08+K7",
       "04"
     ],
     "followups": [
@@ -338,7 +351,11 @@
       "parallel-dispatch.mjs: setup đặt branch wt/<scope>__phase-N__task-NN nhưng merge/cleanup tìm wt/<scope>-phase-N__ -> lệch, merge tay",
       "task-06 F2: endpoint voucher qua service_role phải kiểm chủ đơn trước RPC; bucket uid null tính theo đơn (cân nhắc key IP)",
       "task-06 F3: mã lỗi voucher DB (VOUCHER_INVALID, VOUCHER_MIN_NOT_MET...) lệch packages/shared/src/errors.ts + apps/web error-messages.ts",
-      "endpoint voucher tương lai: apply_voucher trả {ok,error_code}, RATE_LIMITED -> HTTP 429"
+      "endpoint voucher tương lai: apply_voucher trả {ok,error_code}, RATE_LIMITED -> HTTP 429",
+      "task-08 m1: 048 test anon hold_seats so khớp message permission denied; m2: test Staff/Manager đúng rạp áp/gỡ voucher đơn POS; m4: like tap_%",
+      "task-08 red-before chỉ có trong journal builder, không có output thô; verify lại quyền trên staging sau deploy",
+      "P1: confirm_zero_amount :805-811 nhánh elsif dead code (current_user luôn postgres); hold_seats p_request_id trả booking_code trước kiểm quyền; confirm_pos_sale chỉ service_role -> Layer 5 POS gọi qua admin() sau guard",
+      "bug-check full-project scan (2026-11-12, session khác): Defect #4 là false positive (wiring theo kế hoạch layer-5-task-09); đề xuất thêm backlog: report doanh thu theo paid_at, extend_pos_hold giới hạn số lần, sitemap lastModified, movie-card releaseDate null"
     ],
     "newCritical": [
       "K7: SECURITY DEFINER mở cho authenticated (gộp task-08, user duyệt 2026-11-12)"

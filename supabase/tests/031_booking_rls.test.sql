@@ -127,6 +127,12 @@ select throws_ok($$
 -- ---------------------------------------------------------------------------
 -- 2. AC-17: khách A không thấy dữ liệu khách B (7)
 -- ---------------------------------------------------------------------------
+-- Scaffolding test (rollback cùng transaction): helper tap_* tạo bởi owner không còn EXECUTE mặc định cho client (P0-08).
+do $tapgrant$ declare r regprocedure; begin
+  for r in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'tap_%' loop
+    execute 'grant execute on function ' || r || ' to anon, authenticated';
+  end loop;
+end $tapgrant$;
 select tap_as('00000000-0000-0000-0000-000000000d01');
 select is(tap_rows($$select 1 from public.orders where id = '00000000-0000-0000-0000-5a0000000001'$$), 1, 'AC-17: khách 1 thấy đơn của mình');
 select is(tap_rows($$select 1 from public.orders where id = '00000000-0000-0000-0000-5a0000000002'$$), 0, 'AC-17: khách 1 không thấy đơn khách 2');
