@@ -17,11 +17,37 @@
       "blocked": null,
       "updatedAt": "2026-11-12T02:20:23.405Z",
       "dbVerify": "PASS 2026-11-12: pgTAP 566/566, seed x2 idempotent, guard chặn khi thiếu cờ"
+    },
+    {
+      "id": "layer34-review/phase-1-task-02",
+      "title": "K1 RPC identity cho anon",
+      "status": "done",
+      "severity": "blocker",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-02-round-1-review.md"
+      },
+      "updatedAt": "2026-11-12T02:40:53.538Z"
+    },
+    {
+      "id": "layer34-review/phase-1-task-03",
+      "title": "K3 oracle dò email công khai",
+      "status": "done",
+      "severity": "blocker",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-02-round-1-review.md"
+      },
+      "updatedAt": "2026-11-12T02:40:53.538Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T02:20:23.405Z",
+  "lastUpdated": "2026-11-12T02:40:53.538Z",
   "inProgressTask": null,
   "completedTasks": [
     {
@@ -250,15 +276,21 @@
     "scope": "P0+P1 trước Layer 5; P2/P3 gộp vào Layer 5–8",
     "summary": ".context/review-reports/independent-review-layer-3-4-SUMMARY.md",
     "completedP0": [
-      "task-01"
+      "task-01",
+      "task-02",
+      "task-03"
     ],
     "pendingP0": [
-      "02+03",
       "05",
       "06",
       "07",
       "04",
       "08"
+    ],
+    "followups": [
+      "P0-08: test 046 thêm quyền helper assert_identity_rpc_caller + case A->B cho unlink/mark_password_set",
+      "Layer 5 web: AC-04 thông báo \"hãy đăng nhập bằng mật khẩu\" trước login (API không còn pre-login check)",
+      "P2: schema identity.ts:63-64 bỏ email bắt buộc; dọn comment spike identity.service.ts:20-23 + nhánh CONFLICT_EMAIL chết :281-285"
     ]
   }
 }

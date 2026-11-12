@@ -66,12 +66,13 @@ export class IdentityController {
     return this.identityService.handleMissingEmail(body, req.ip);
   }
 
-  @Public()
+  // Không @Public (R-12): endpoint chỉ trả thông tin về chính user đang đăng nhập, tránh oracle dò email.
   @Post("auth/oauth/callback-check")
   @HttpCode(200)
   checkOAuthCallback(
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(oauthCallbackVerifyInputSchema)) body: OAuthCallbackVerifyInput,
   ): Promise<{ ok: boolean; action: "PROCEED" }> {
-    return this.identityService.checkOAuthCallback(body);
+    return this.identityService.checkOAuthCallback(user, body);
   }
 }

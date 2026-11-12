@@ -72,6 +72,9 @@ values
 -- Trả cờ liên kết về mặc định
 set local app.allow_identity_link = 'false';
 
+-- Các RPC identity fail-closed (K1): test chạy với tư cách API tin cậy = service_role (không sub)
+do $$ begin perform set_config('request.jwt.claims', '{"role":"service_role"}', true); end $$;
+
 -- ---------------------------------------------------------------------------
 -- 1. Kiểm tra RPC get_user_identities (R-21)
 -- ---------------------------------------------------------------------------

@@ -255,17 +255,19 @@ export class IdentityService {
 
   /**
    * POST /auth/oauth/callback-check (AC-04 Guard)
-   * Kiểm tra va chạm trước khi đăng nhập / hoàn tất OAuth callback.
+   * Kiểm tra va chạm cho user ĐÃ đăng nhập (R-12: không còn public, không dò email người khác).
+   * Luôn dùng id từ JWT; bỏ qua authenticatedUserId/email do client gửi để không bật nhánh dò email.
    */
   async checkOAuthCallback(
+    user: AuthUser,
     input: OAuthCallbackVerifyInput,
   ): Promise<{ ok: boolean; action: "PROCEED" }> {
     const admin = this.supabase.admin();
     const { data, error } = await admin.rpc("check_oauth_collision", {
       p_provider: input.provider,
       p_provider_id: input.providerId,
-      p_email: input.email,
-      p_authenticated_user_id: input.authenticatedUserId ?? null,
+      p_email: user.email ?? "",
+      p_authenticated_user_id: user.id,
     });
 
     if (error) throw error;

@@ -721,24 +721,40 @@ describe("IdentityModule (e2e)", () => {
     });
   });
 
-  describe("POST /auth/oauth/callback-check (AC-04 Guard)", () => {
-    it("AC-04: Google a@x.com lần đầu khi đã có tài khoản mật khẩu a@x.com -> 409 OAUTH_EMAIL_COLLISION_LOGIN_REQUIRED", async () => {
+  describe("POST /auth/oauth/callback-check (R-12, K3)", () => {
+    it("R-12: anon không gọi được (401 UNAUTHENTICATED) - không còn oracle dò email công khai", async () => {
       const res = await request(app.getHttpServer())
         .post("/auth/oauth/callback-check")
         .send({
           provider: "google",
           providerId: "google_alice_first_time",
-          email: "alice@x.com", // đã có tài khoản mật khẩu
+          email: "alice@x.com",
         });
 
-      expect(res.status).toBe(409);
-      expect(res.body.error.details?.code).toBe("OAUTH_EMAIL_COLLISION_LOGIN_REQUIRED");
-      expect(res.body.error.message).toContain("Email này đã có tài khoản");
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe("UNAUTHENTICATED");
+    });
+
+    it("R-12: user đăng nhập không dò được email người khác (email trùng tài khoản khác -> 200 PROCEED, không CONFLICT_EMAIL)", async () => {
+      const token = await signJwt(USER_OAUTH_ONLY, "facebook_user@example.com");
+      const res = await request(app.getHttpServer())
+        .post("/auth/oauth/callback-check")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          provider: "google",
+          providerId: "google_alice_first_time",
+          email: "alice@x.com", // email của user khác
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ok: true, action: "PROCEED" });
     });
 
     it("R-23: MXH đã gắn với user khác -> 409 IDENTITY_ALREADY_LINKED", async () => {
+      const token = await signJwt(USER_OAUTH_ONLY, "facebook_user@example.com");
       const res = await request(app.getHttpServer())
         .post("/auth/oauth/callback-check")
+        .set("Authorization", `Bearer ${token}`)
         .send({
           provider: "google",
           providerId: "google_bob_999", // đã thuộc về USER_OTHER
@@ -749,9 +765,27 @@ describe("IdentityModule (e2e)", () => {
       expect(res.body.error.details?.code).toBe("IDENTITY_ALREADY_LINKED");
     });
 
-    it("Đăng nhập OAuth email mới hoàn toàn -> 200 OK action PROCEED", async () => {
+    it("Bỏ qua authenticatedUserId do client gửi (không giả danh chủ identity)", async () => {
+      const token = await signJwt(USER_OAUTH_ONLY, "facebook_user@example.com");
       const res = await request(app.getHttpServer())
         .post("/auth/oauth/callback-check")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          provider: "google",
+          providerId: "google_bob_999",
+          email: "bob@example.com",
+          authenticatedUserId: USER_OTHER,
+        });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.details?.code).toBe("IDENTITY_ALREADY_LINKED");
+    });
+
+    it("OAuth mới hoàn toàn -> 200 OK action PROCEED", async () => {
+      const token = await signJwt(USER_OAUTH_ONLY, "facebook_user@example.com");
+      const res = await request(app.getHttpServer())
+        .post("/auth/oauth/callback-check")
+        .set("Authorization", `Bearer ${token}`)
         .send({
           provider: "google",
           providerId: "brand_new_google_id_777",
