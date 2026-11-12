@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+import { buildCinemaPopup } from "./cinema-map-popup";
+
 export interface CinemaMapProps {
   latitude: number | null;
   longitude: number | null;
@@ -112,24 +114,7 @@ export function CinemaMap({
           title: cinemaName,
         }).addTo(map);
 
-        const popupContent = `
-          <div style="font-family: inherit; color: #151A24; padding: 4px 2px;">
-            <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${cinemaName}</div>
-            <div style="font-size: 12px; color: #4A505C; margin-bottom: 8px;">${address}</div>
-            <a href="${directionsUrl}" target="_blank" rel="noopener noreferrer" style="
-              display: inline-flex;
-              align-items: center;
-              font-size: 12px;
-              font-weight: 600;
-              color: #F06D5B;
-              text-decoration: underline;
-            ">
-              Chỉ đường trên OpenStreetMap &rarr;
-            </a>
-          </div>
-        `;
-
-        marker.bindPopup(popupContent);
+        marker.bindPopup(buildCinemaPopup(cinemaName, address, directionsUrl));
         setIsLoaded(true);
       } catch (err) {
         console.error("Failed to initialize Leaflet map:", err);
