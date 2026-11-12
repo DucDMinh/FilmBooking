@@ -72,11 +72,24 @@
       },
       "commit": "f4d2e4c",
       "updatedAt": "2026-11-12T03:19:22.296Z"
+    },
+    {
+      "id": "layer34-review/phase-1-task-06",
+      "title": "K5 rate limit voucher R-95",
+      "status": "done",
+      "severity": "blocker",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-1-task-06-round-2-review.md"
+      },
+      "updatedAt": "2026-11-12T03:41:19.102Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T03:19:22.296Z",
+  "lastUpdated": "2026-11-12T03:41:19.102Z",
   "inProgressTask": null,
   "completedTasks": [
     {
@@ -309,10 +322,10 @@
       "task-02",
       "task-03",
       "task-05",
-      "task-07"
+      "task-07",
+      "task-06"
     ],
     "pendingP0": [
-      "06",
       "08+K7",
       "04"
     ],
@@ -322,7 +335,10 @@
       "P2: schema identity.ts:63-64 bỏ email bắt buộc; dọn comment spike identity.service.ts:20-23 + nhánh CONFLICT_EMAIL chết :281-285",
       "task-07 MINOR-1: test link javascript: dùng toBeNull + it.each JavaScript:/data:/vbscript:",
       "task-05: confirm_zero_amount/confirm_pos_sale chuyển sang sell_order_seats (P1); m1 errcode riêng, m2 FK tickets.seat_id, m7 case (d) kiểm seat_state",
-      "parallel-dispatch.mjs: setup đặt branch wt/<scope>__phase-N__task-NN nhưng merge/cleanup tìm wt/<scope>-phase-N__ -> lệch, merge tay"
+      "parallel-dispatch.mjs: setup đặt branch wt/<scope>__phase-N__task-NN nhưng merge/cleanup tìm wt/<scope>-phase-N__ -> lệch, merge tay",
+      "task-06 F2: endpoint voucher qua service_role phải kiểm chủ đơn trước RPC; bucket uid null tính theo đơn (cân nhắc key IP)",
+      "task-06 F3: mã lỗi voucher DB (VOUCHER_INVALID, VOUCHER_MIN_NOT_MET...) lệch packages/shared/src/errors.ts + apps/web error-messages.ts",
+      "endpoint voucher tương lai: apply_voucher trả {ok,error_code}, RATE_LIMITED -> HTTP 429"
     ],
     "newCritical": [
       "K7: SECURITY DEFINER mở cho authenticated (gộp task-08, user duyệt 2026-11-12)"

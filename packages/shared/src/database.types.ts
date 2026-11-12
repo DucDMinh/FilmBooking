@@ -990,6 +990,9 @@ isOneToOne: false
             "apply_voucher":
 { Args: { "p_code": string,"p_order_id": string }; Returns: Json
                            },
+"apply_voucher_core":
+{ Args: { "p_code": string,"p_order_id": string }; Returns: Json
+                           },
 "assert_identity_rpc_caller":
 { Args: { "p_user_id": string }; Returns: undefined
                            },

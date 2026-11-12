@@ -13,10 +13,11 @@
 -- 11. Giới hạn mỗi khách (per_user_limit -> VOUCHER_USER_LIMIT_REACHED).
 -- 12. Bảo mật: khách A không áp/gỡ mã trên đơn khách B (FORBIDDEN).
 -- 13. Trạng thái đơn không hợp lệ (ORDER_NOT_HOLDING / ORDER_EXPIRED).
--- 14. Rate limit: nhập mã > 5 lần trong 10 phút -> RATE_LIMITED.
+-- 14. Rate limit R-95: > 10 lần nhập/phút/khách (đếm cả lần sai) -> RATE_LIMITED.
+-- Lỗi nghiệp vụ trả jsonb {ok:false,error_code}; FORBIDDEN (42501) vẫn là exception.
 
 begin;
-select plan(38);
+select plan(44);
 
 -- ---------------------------------------------------------------------------
 -- TAP helper functions
@@ -108,14 +109,21 @@ insert into public.orders (
 select has_function('public', 'apply_voucher', array['uuid', 'text'], 'apply_voucher exists');
 select has_function('public', 'remove_voucher', array['uuid'], 'remove_voucher exists');
 select has_function('public', 'orders_voucher_status_sync', 'orders_voucher_status_sync exists');
+select ok(
+  not has_function_privilege('anon', 'public.apply_voucher_core(uuid,text)', 'execute')
+  and not has_function_privilege('authenticated', 'public.apply_voucher_core(uuid,text)', 'execute')
+  and not has_function_privilege('service_role', 'public.apply_voucher_core(uuid,text)', 'execute'),
+  'apply_voucher_core không gọi được từ client (chỉ qua wrapper có rate limit)'
+);
 
 -- ---------------------------------------------------------------------------
 -- 2. apply_voucher: PERCENT có trần max_discount (300k * 20% = 60k -> cap 50k)
 -- ---------------------------------------------------------------------------
 select public.tap_as('00000000-0000-0000-0000-000000000d01');
 
-select lives_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000051'::uuid, 'DISCOUNT20')$$,
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000051'::uuid, 'DISCOUNT20')->>'ok'),
+  'true',
   'Cust1 áp mã DISCOUNT20 thành công'
 );
 
@@ -150,9 +158,8 @@ select is(
 -- ---------------------------------------------------------------------------
 select public.tap_as('00000000-0000-0000-0000-000000000d01');
 
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000051'::uuid, 'MINUS30K')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000051'::uuid, 'MINUS30K')->>'error_code'),
   'VOUCHER_ALREADY_APPLIED',
   'Áp voucher thứ 2 cho cùng đơn bị từ chối'
 );
@@ -195,8 +202,9 @@ select is(
 -- ---------------------------------------------------------------------------
 select public.tap_as('00000000-0000-0000-0000-000000000d01');
 
-select lives_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000051'::uuid, 'MINUS30K')$$,
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000051'::uuid, 'MINUS30K')->>'ok'),
+  'true',
   'Áp mã cố định MINUS30K thành công'
 );
 
@@ -227,16 +235,20 @@ insert into public.orders (
 
 select public.tap_as('00000000-0000-0000-0000-000000000d02');
 
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'NOSUCHCODE')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'NOSUCHCODE')->>'error_code'),
   'VOUCHER_INVALID',
   'Mã không tồn tại báo VOUCHER_INVALID'
 );
 
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'OFFVOUCHER')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'NOSUCHCODE')->>'ok'),
+  'false',
+  'Lỗi nghiệp vụ trả ok=false (kèm error_code), không phải exception'
+);
+
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'OFFVOUCHER')->>'error_code'),
   'VOUCHER_INVALID',
   'Mã inactive báo VOUCHER_INVALID'
 );
@@ -244,16 +256,14 @@ select throws_ok(
 -- ---------------------------------------------------------------------------
 -- 7. Voucher hết hạn / chưa tới hạn (VOUCHER_EXPIRED)
 -- ---------------------------------------------------------------------------
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'OLDVOUCHER')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'OLDVOUCHER')->>'error_code'),
   'VOUCHER_EXPIRED',
   'Mã đã hết hạn báo VOUCHER_EXPIRED'
 );
 
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'FUTUREVOUCHER')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'FUTUREVOUCHER')->>'error_code'),
   'VOUCHER_EXPIRED',
   'Mã chưa tới hạn báo VOUCHER_EXPIRED'
 );
@@ -262,9 +272,8 @@ select throws_ok(
 -- 8. Đơn chưa đạt tối thiểu (VOUCHER_MIN_NOT_MET)
 -- ---------------------------------------------------------------------------
 -- Đơn subtotal 150k, mã MIN200K yêu cầu 200k
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'MIN200K')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'MIN200K')->>'error_code'),
   'VOUCHER_MIN_NOT_MET',
   'Đơn chưa đạt tối thiểu báo VOUCHER_MIN_NOT_MET'
 );
@@ -273,9 +282,8 @@ select throws_ok(
 -- 9. Phim không áp dụng (VOUCHER_NOT_APPLICABLE)
 -- ---------------------------------------------------------------------------
 -- Đơn thuộc Phim A, voucher chỉ cho Phim B
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'PHIM_B_ONLY')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'PHIM_B_ONLY')->>'error_code'),
   'VOUCHER_NOT_APPLICABLE',
   'Voucher áp phim khác báo VOUCHER_NOT_APPLICABLE'
 );
@@ -296,16 +304,16 @@ insert into public.orders (
 
 -- Đơn 53 áp mã ONETIME (total_uses_limit = 1) -> thành công
 select public.tap_as('00000000-0000-0000-0000-000000000d03');
-select lives_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000053'::uuid, 'ONETIME')$$,
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000053'::uuid, 'ONETIME')->>'ok'),
+  'true',
   'Đơn 53 giữ lượt ONETIME thành công'
 );
 
 -- Đơn 54 cùng áp mã ONETIME -> báo VOUCHER_EXHAUSTED
 select public.tap_as('00000000-0000-0000-0000-000000000d04');
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000054'::uuid, 'ONETIME')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000054'::uuid, 'ONETIME')->>'error_code'),
   'VOUCHER_EXHAUSTED',
   'Đơn 54 áp mã ONETIME khi đã hết lượt bị báo VOUCHER_EXHAUSTED'
 );
@@ -322,8 +330,9 @@ select is(
 
 -- Bây giờ Đơn 54 áp lại ONETIME -> THÀNH CÔNG!
 select public.tap_as('00000000-0000-0000-0000-000000000d04');
-select lives_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000054'::uuid, 'ONETIME')$$,
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000054'::uuid, 'ONETIME')->>'ok'),
+  'true',
   'Đơn 54 áp lại ONETIME thành công sau khi Đơn 53 hết hạn'
 );
 
@@ -345,9 +354,8 @@ insert into public.orders (
   null, 'holding', 100000, 100000, now() + interval '10 minutes'
 );
 
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000055'::uuid, 'ONETIME')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000055'::uuid, 'ONETIME')->>'error_code'),
   'VOUCHER_EXHAUSTED',
   'Sau khi đơn đã paid chốt lượt thì ONETIME hết lượt hoàn toàn'
 );
@@ -357,8 +365,9 @@ select throws_ok(
 -- ---------------------------------------------------------------------------
 -- Cust2 áp PERUSER1 (limit = 1) vào Đơn 52
 select public.tap_as('00000000-0000-0000-0000-000000000d02');
-select lives_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'PERUSER1')$$,
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'PERUSER1')->>'ok'),
+  'true',
   'Cust2 áp PERUSER1 lần 1 thành công'
 );
 
@@ -376,9 +385,8 @@ insert into public.orders (
 
 -- Cust2 thử áp lại PERUSER1 cho Đơn 56 -> báo VOUCHER_USER_LIMIT_REACHED
 select public.tap_as('00000000-0000-0000-0000-000000000d02');
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000056'::uuid, 'PERUSER1')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000056'::uuid, 'PERUSER1')->>'error_code'),
   'VOUCHER_USER_LIMIT_REACHED',
   'Cust2 vượt giới hạn 1 lượt/khách bị báo VOUCHER_USER_LIMIT_REACHED'
 );
@@ -387,9 +395,17 @@ select throws_ok(
 select public.tap_owner();
 update public.orders set user_id = '00000000-0000-0000-0000-000000000d03' where id = '00000000-0000-0000-0000-000000000055';
 select public.tap_as('00000000-0000-0000-0000-000000000d03');
-select lives_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000055'::uuid, 'PERUSER1')$$,
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000055'::uuid, 'PERUSER1')->>'ok'),
+  'true',
   'Cust3 chưa dùng mã PERUSER1 nên áp thành công'
+);
+
+select public.tap_owner();
+select is(
+  (select voucher_id from public.orders where id = '00000000-0000-0000-0000-000000000055'),
+  '00000000-0000-0000-0000-000000000013'::uuid,
+  'Đơn 55 thực sự được gắn voucher PERUSER1'
 );
 
 -- ---------------------------------------------------------------------------
@@ -413,9 +429,8 @@ select throws_ok(
 
 -- Đơn đã paid (Đơn 52) thử áp mã
 select public.tap_owner();
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'MINUS30K')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000052'::uuid, 'MINUS30K')->>'error_code'),
   'ORDER_NOT_HOLDING',
   'Đơn đã paid không cho áp voucher'
 );
@@ -428,15 +443,14 @@ insert into public.orders (
   null, 'holding', 100000, 100000, now() - interval '5 minutes'
 );
 
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000057'::uuid, 'MINUS30K')$$,
-  'P0001',
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000057'::uuid, 'MINUS30K')->>'error_code'),
   'ORDER_EXPIRED',
   'Đơn đã quá hạn giữ ghế không cho áp voucher'
 );
 
 -- ---------------------------------------------------------------------------
--- 13. Rate limit nhập mã (tối đa 5 lần trong 10 phút -> RATE_LIMITED)
+-- 13. Rate limit nhập mã (tối đa 10 lần / 1 phút / khách -> RATE_LIMITED, K5)
 -- ---------------------------------------------------------------------------
 -- Tạo đơn 58 cho cust5 để test rate limit
 insert into public.orders (
@@ -446,21 +460,55 @@ insert into public.orders (
   '00000000-0000-0000-0000-000000000d05', 'holding', 100000, 100000, now() + interval '10 minutes'
 );
 
--- Đưa 5 hits vào rate limit bucket của cust5
-select public.tap_owner();
-select ok(
-  (select bool_and(public.hit_rate_limit('voucher_apply:00000000-0000-0000-0000-000000000d05', interval '10 minutes', 5))
-     from generate_series(1, 5)),
-  '5 lần thử đã đạt ngưỡng tối đa 5 lượt trong cửa sổ 10 phút'
+-- 10 lần thử mã SAI thật (mỗi lần là 1 lời gọi riêng, KHÔNG bơm sẵn bộ đếm): lỗi nghiệp vụ được trả
+-- dưới dạng jsonb nên bộ đếm được commit cùng lời gọi (trước fix: raise -> rollback bộ đếm -> vô hạn).
+select public.tap_as('00000000-0000-0000-0000-000000000d05');
+select is(
+  (select array_agg(public.apply_voucher('00000000-0000-0000-0000-000000000058'::uuid, 'SAI' || g)->>'error_code' order by g)
+     from generate_series(1, 10) g),
+  array_fill('VOUCHER_INVALID'::text, array[10]),
+  '10 lần nhập mã sai đầu tiên đều trả VOUCHER_INVALID (chưa bị chặn)'
 );
 
--- Lần thứ 6 cust5 gọi apply_voucher -> phải bị ném RATE_LIMITED!
-select public.tap_as('00000000-0000-0000-0000-000000000d05');
-select throws_ok(
-  $$select public.apply_voucher('00000000-0000-0000-0000-000000000058'::uuid, 'TRYRATE')$$,
-  'P0001',
+-- Lần thứ 11 trong 1 phút: chặn kể cả khi mã ĐÚNG (chống dò mã)
+select is(
+  (select public.apply_voucher('00000000-0000-0000-0000-000000000058'::uuid, 'TRYRATE')->>'error_code'),
   'RATE_LIMITED',
-  'Lần thứ 6 vượt ngưỡng 5 lần/10 phút bị RATE_LIMITED'
+  'Lần thứ 11 trong 1 phút bị RATE_LIMITED dù mã đúng'
+);
+
+select public.tap_owner();
+select ok(
+  (select voucher_id is null from public.orders where id = '00000000-0000-0000-0000-000000000058'),
+  'Lần bị chặn không áp voucher vào đơn'
+);
+
+select is(
+  (select hits from public.rate_limit_buckets where key = 'voucher_apply:00000000-0000-0000-0000-000000000d05'),
+  11,
+  'Bộ đếm lưu đủ 11 lượt thử (lượt thất bại không bị rollback)'
+);
+
+-- ---------------------------------------------------------------------------
+-- 14. P0001 có thông điệp KHÔNG phải mã nghiệp vụ (lỗi lạ từ trigger) vẫn là exception, không bị nuốt thành jsonb
+-- ---------------------------------------------------------------------------
+select public.tap_owner();
+insert into public.orders (
+  id, channel, showtime_id, user_id, status, subtotal_amount, total_amount, hold_expires_at
+) values (
+  '00000000-0000-0000-0000-000000000059', 'WEB', '00000000-0000-0000-0000-00000000a501',
+  null, 'holding', 100000, 100000, now() + interval '10 minutes'
+);
+create function public.tap_boom() returns trigger language plpgsql as $f$
+begin raise exception 'loi la khong phai ma nghiep vu' using errcode = 'P0001'; end $f$;
+create trigger tap_boom_trg before update on public.orders for each row
+  when (new.id = '00000000-0000-0000-0000-000000000059') execute function public.tap_boom();
+
+select throws_ok(
+  $$select public.apply_voucher('00000000-0000-0000-0000-000000000059'::uuid, 'MINUS30K')$$,
+  'P0001',
+  'loi la khong phai ma nghiep vu',
+  'P0001 lạ (không khớp mã nghiệp vụ) vẫn raise, không bị chuyển thành jsonb'
 );
 
 -- ---------------------------------------------------------------------------
