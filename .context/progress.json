@@ -194,11 +194,25 @@
       },
       "updatedAt": "2026-11-12T09:11:22.639Z",
       "note": "re-scoped: chỉ confirm_zero_amount, giao qua feature/remove-pos phase-2-task-01 (STRICT PASS); phần POS bỏ; FK tickets.seat_id -> backlog CR-002"
+    },
+    {
+      "id": "layer34-review/phase-2-task-04",
+      "title": "hold_seats: FOR SHARE suất, kiểm rạp OPEN/phim PUBLISHED (R-33)",
+      "status": "done",
+      "severity": "high",
+      "highRiskMigration": false,
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-04-round-1-review.md"
+      },
+      "updatedAt": "2026-11-12T09:42:30.000Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T09:11:22.639Z",
+  "lastUpdated": "2026-11-12T09:42:30.000Z",
   "inProgressTask": null,
   "completedTasks": [
     {
