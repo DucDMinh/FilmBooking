@@ -459,14 +459,14 @@ isOneToOne: false
                   ]
                 },"payments": {
                   Row: {
-                    "amount": number,"cinema_id": string,"created_at": string,"id": string,"order_code": number,"order_id": string,"paid_at": string | null,"payment_link_id": string | null,"status": Database["public"]['Enums']["payment_status"],"transaction_ref": string | null,"updated_at": string
+                    "amount": number,"cinema_id": string,"created_at": string,"id": string,"link_cancelled_at": string | null,"order_code": number,"order_id": string,"paid_at": string | null,"payment_link_id": string | null,"status": Database["public"]['Enums']["payment_status"],"transaction_ref": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"cinema_id": string,"created_at"?: string,"id"?: string,"order_code": number,"order_id": string,"paid_at"?: string | null,"payment_link_id"?: string | null,"status"?: Database["public"]['Enums']["payment_status"],"transaction_ref"?: string | null,"updated_at"?: string
+                    "amount": number,"cinema_id": string,"created_at"?: string,"id"?: string,"link_cancelled_at"?: string | null,"order_code": number,"order_id": string,"paid_at"?: string | null,"payment_link_id"?: string | null,"status"?: Database["public"]['Enums']["payment_status"],"transaction_ref"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "amount"?: number,"cinema_id"?: string,"created_at"?: string,"id"?: string,"order_code"?: number,"order_id"?: string,"paid_at"?: string | null,"payment_link_id"?: string | null,"status"?: Database["public"]['Enums']["payment_status"],"transaction_ref"?: string | null,"updated_at"?: string
+                    "amount"?: number,"cinema_id"?: string,"created_at"?: string,"id"?: string,"link_cancelled_at"?: string | null,"order_code"?: number,"order_id"?: string,"paid_at"?: string | null,"payment_link_id"?: string | null,"status"?: Database["public"]['Enums']["payment_status"],"transaction_ref"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {

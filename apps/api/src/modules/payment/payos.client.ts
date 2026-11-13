@@ -4,7 +4,7 @@ import {
   payosWebhookDataSchema,
   type PayosWebhookData,
 } from "@filmbooking/shared/schemas/payment";
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { ENV, type Env } from "../../config/env";
 
 export interface CreatePaymentLinkParams {
@@ -76,6 +76,10 @@ export class PayosClient {
       };
     }
 
+    if (this.env.NODE_ENV === "production") {
+      throw new Error("PayOS client is not configured in production environment");
+    }
+
     // Fallback cho môi trường dev / test khi chưa cấu hình credentials thật hoặc chạy test (R-84)
     this.logger.warn("PayOS credentials not configured or running in test, returning mock checkout URL");
     return {
@@ -93,7 +97,9 @@ export class PayosClient {
       await this.payOS.paymentRequests.cancel(orderCode, reason);
       return true;
     } catch (err) {
-      this.logger.warn(`Failed to cancel PayOS payment link for orderCode=${orderCode}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Failed to cancel PayOS payment link for orderCode=${orderCode}: ${(err as Error).message}`,
+      );
       return false;
     }
   }
@@ -112,7 +118,13 @@ export class PayosClient {
     }
 
     const expectedSignature = this.computeSignature(envelope.data, checksumKey);
-    if (!expectedSignature || expectedSignature !== envelope.signature) {
+    if (!expectedSignature || !envelope.signature) {
+      return null;
+    }
+
+    const expectedBuf = Buffer.from(expectedSignature, "utf8");
+    const actualBuf = Buffer.from(envelope.signature, "utf8");
+    if (expectedBuf.length !== actualBuf.length || !timingSafeEqual(expectedBuf, actualBuf)) {
       return null;
     }
 

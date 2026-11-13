@@ -9,7 +9,7 @@ import { AuthGuard } from "../src/common/auth/auth.guard";
 import { RolesGuard } from "../src/common/auth/roles.guard";
 import { AllExceptionsFilter } from "../src/common/errors/all-exceptions.filter";
 import { SupabaseService } from "../src/common/supabase/supabase.service";
-import { ENV, type Env } from "../src/config/env";
+import { ENV, type Env, parseEnv, EnvValidationError } from "../src/config/env";
 import { PaymentController } from "../src/modules/payment/payment.controller";
 import { PaymentService } from "../src/modules/payment/payment.service";
 import { PayosClient } from "../src/modules/payment/payos.client";
@@ -23,6 +23,10 @@ const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0
 
 const USER_CUSTOMER = uuid(101);
 const USER_OTHER = uuid(102);
+const USER_NO_CONSENT = uuid(103);
+const USER_ZERO = uuid(104);
+const USER_OLD_PENDING = uuid(105);
+const USER_EXPIRED = uuid(106);
 
 const CINEMA_HN01 = uuid(201);
 const SHOWTIME_01 = uuid(301);
@@ -33,6 +37,7 @@ const ORDER_EXPIRED = uuid(403);
 const ORDER_ZERO_VOUCHER = uuid(404);
 const ORDER_OLD_PENDING = uuid(405);
 const ORDER_LATE_SEATS_SOLD = uuid(406);
+const ORDER_OLD_CANCELLED = uuid(407);
 
 type Row = Record<string, unknown>;
 interface Failure {
@@ -71,11 +76,25 @@ class FakeDb {
           consent_at: new Date().toISOString(),
         },
         {
-          id: ORDER_NO_CONSENT,
+          id: ORDER_OLD_CANCELLED,
           cinema_id: CINEMA_HN01,
           cinema_code: "HN01",
           showtime_id: SHOWTIME_01,
           user_id: USER_CUSTOMER,
+          status: "cancelled",
+          subtotal_amount: 150000,
+          discount_amount: 0,
+          total_amount: 150000,
+          booking_code: "HN01-777777",
+          hold_expires_at: new Date(Date.now() - 5000).toISOString(),
+          consent_at: new Date().toISOString(),
+        },
+        {
+          id: ORDER_NO_CONSENT,
+          cinema_id: CINEMA_HN01,
+          cinema_code: "HN01",
+          showtime_id: SHOWTIME_01,
+          user_id: USER_NO_CONSENT,
           status: "holding",
           subtotal_amount: 150000,
           discount_amount: 0,
@@ -89,7 +108,7 @@ class FakeDb {
           cinema_id: CINEMA_HN01,
           cinema_code: "HN01",
           showtime_id: SHOWTIME_01,
-          user_id: USER_CUSTOMER,
+          user_id: USER_EXPIRED,
           status: "holding",
           subtotal_amount: 150000,
           discount_amount: 0,
@@ -103,7 +122,7 @@ class FakeDb {
           cinema_id: CINEMA_HN01,
           cinema_code: "HN01",
           showtime_id: SHOWTIME_01,
-          user_id: USER_CUSTOMER,
+          user_id: USER_ZERO,
           status: "holding",
           subtotal_amount: 150000,
           discount_amount: 150000,
@@ -117,7 +136,7 @@ class FakeDb {
           cinema_id: CINEMA_HN01,
           cinema_code: "HN01",
           showtime_id: SHOWTIME_01,
-          user_id: USER_CUSTOMER,
+          user_id: USER_OLD_PENDING,
           status: "pending_payment",
           subtotal_amount: 150000,
           discount_amount: 0,
@@ -144,11 +163,23 @@ class FakeDb {
       payments: [
         {
           id: uuid(901),
-          order_id: ORDER_OLD_PENDING,
+          order_id: ORDER_OLD_CANCELLED,
           cinema_id: CINEMA_HN01,
           order_code: 999901,
           amount: 150000,
+          status: "CANCELLED",
+          payment_link_id: "link-payos-999901",
+          link_cancelled_at: null,
+        },
+        {
+          id: uuid(903),
+          order_id: ORDER_OLD_PENDING,
+          cinema_id: CINEMA_HN01,
+          order_code: 999903,
+          amount: 150000,
           status: "PENDING",
+          payment_link_id: "link-payos-999903",
+          link_cancelled_at: null,
         },
         {
           id: uuid(902),
@@ -157,12 +188,20 @@ class FakeDb {
           order_code: 999902,
           amount: 150000,
           status: "PENDING",
+          payment_link_id: "link-payos-999902",
+          link_cancelled_at: null,
         },
       ],
       order_seats: [
         { id: uuid(701), order_id: ORDER_PENDING_01, seat_id: uuid(801) },
       ],
-      user_roles: [{ user_id: USER_CUSTOMER, role: "CUSTOMER" }],
+      user_roles: [
+        { user_id: USER_CUSTOMER, role: "CUSTOMER" },
+        { user_id: USER_NO_CONSENT, role: "CUSTOMER" },
+        { user_id: USER_ZERO, role: "CUSTOMER" },
+        { user_id: USER_OLD_PENDING, role: "CUSTOMER" },
+        { user_id: USER_EXPIRED, role: "CUSTOMER" },
+      ],
       staff_assignments: [],
     };
   }
@@ -203,21 +242,45 @@ class FakeDb {
 
     if (fn === "confirm_paid") {
       const orderId = args.p_order_id as string;
+      const orderCode = args.p_order_code as number | undefined;
       const order = (this.tables.orders ?? []).find((o) => o.id === orderId);
       if (!order) return Promise.resolve({ data: null, error: { code: "P0001", message: "Order not found" } });
 
-      // AC-10 Idempotency: nếu đã paid -> không sinh thêm email, không sinh thêm ticket
+      // AC-10 Idempotency: nếu đã paid -> trả ALREADY_PAID
       if (order.status === "paid") {
         return Promise.resolve({
-          data: { success: true, status: "SUCCESS", order_id: order.id, booking_code: order.booking_code },
+          data: { success: true, status: "ALREADY_PAID", order_id: order.id, booking_code: order.booking_code },
           error: null,
         });
+      }
+
+      // K5-1: Ưu tiên chọn payment theo order_code = p_order_code, fallback theo order_id mới nhất
+      let pay = orderCode
+        ? (this.tables.payments ?? []).find((p) => p.order_id === orderId && p.order_code === orderCode)
+        : null;
+      if (!pay) {
+        pay = (this.tables.payments ?? []).filter((p) => p.order_id === orderId).at(-1);
+      }
+
+      // Mô phỏng lỗi 23505 nếu chọn nhầm payment cũ khác mà cố gán order_code của payment đang tồn tại
+      if (pay && orderCode && pay.order_code !== orderCode) {
+        const conflict = (this.tables.payments ?? []).find(
+          (p) => p.order_code === orderCode && p.id !== pay?.id,
+        );
+        if (conflict) {
+          return Promise.resolve({
+            data: null,
+            error: {
+              code: "23505",
+              message: 'duplicate key value violates unique constraint "payments_order_code_key"',
+            },
+          });
+        }
       }
 
       // AC-11: Nếu là đơn ORDER_LATE_SEATS_SOLD (đơn expired + ghế đã bán) -> chuyển sang needs_manual_review
       if (order.id === ORDER_LATE_SEATS_SOLD) {
         order.status = "needs_manual_review";
-        const pay = (this.tables.payments ?? []).find((p) => p.order_id === orderId);
         if (pay) pay.status = "PAID";
         this.emailOutbox.push({
           kind: "LATE_PAYMENT_MANUAL_REVIEW",
@@ -232,7 +295,6 @@ class FakeDb {
 
       // Thanh toán thành công bình thường
       order.status = "paid";
-      const pay = (this.tables.payments ?? []).find((p) => p.order_id === orderId);
       if (pay) pay.status = "PAID";
 
       this.tickets.push({
@@ -292,6 +354,30 @@ class Query implements PromiseLike<Result> {
   }
   neq(key: string, value: unknown) {
     this.filters.push((row) => row[key] !== value);
+    return this;
+  }
+  in(key: string, values: unknown[]) {
+    this.filters.push((row) => values.includes(row[key]));
+    return this;
+  }
+  is(key: string, value: unknown) {
+    this.filters.push((row) => {
+      const val = row[key];
+      if (value === null) {
+        return val === null || val === undefined;
+      }
+      return val === value;
+    });
+    return this;
+  }
+  not(key: string, operator: string, value: unknown) {
+    if (operator === "is" && value === null) {
+      this.filters.push((row) => row[key] !== null && row[key] !== undefined);
+    } else if (operator === "eq") {
+      this.filters.push((row) => row[key] !== value);
+    } else if (operator === "in" && Array.isArray(value)) {
+      this.filters.push((row) => !value.includes(row[key]));
+    }
     return this;
   }
   single() {
@@ -371,15 +457,23 @@ const sign = (sub: string) =>
     .setExpirationTime("15m")
     .sign(new TextEncoder().encode(JWT_SECRET));
 
-describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)", () => {
+describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11, K5-1, B/M1-M4)", () => {
   let app: INestApplication;
   let customerToken: string;
   let otherToken: string;
+  let noConsentToken: string;
+  let zeroToken: string;
+  let pendingToken: string;
+  let expiredToken: string;
   let payosClient: PayosClient;
 
   beforeAll(async () => {
     customerToken = await sign(USER_CUSTOMER);
     otherToken = await sign(USER_OTHER);
+    noConsentToken = await sign(USER_NO_CONSENT);
+    zeroToken = await sign(USER_ZERO);
+    pendingToken = await sign(USER_OLD_PENDING);
+    expiredToken = await sign(USER_EXPIRED);
 
     const testEnv: Env = {
       NODE_ENV: "test",
@@ -445,7 +539,7 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
     it("AC-08: tạo payment khi chưa có consent -> 409 CONSENT_REQUIRED", async () => {
       const res = await request(app.getHttpServer())
         .post(`/bookings/${ORDER_NO_CONSENT}/payment`)
-        .set("Authorization", `Bearer ${customerToken}`);
+        .set("Authorization", `Bearer ${noConsentToken}`);
       expect(res.status).toBe(409);
       expect(res.body.error?.code).toBe("CONSENT_REQUIRED");
     });
@@ -453,7 +547,7 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
     it("410 khi đơn đã hết hạn giữ ghế", async () => {
       const res = await request(app.getHttpServer())
         .post(`/bookings/${ORDER_EXPIRED}/payment`)
-        .set("Authorization", `Bearer ${customerToken}`);
+        .set("Authorization", `Bearer ${expiredToken}`);
       expect(res.status).toBe(410);
       expect(res.body.error?.code).toBe("HOLD_EXPIRED");
     });
@@ -461,7 +555,7 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
     it("đơn 0đ (voucher 100%): gọi confirm_zero_amount, chốt luôn status PAID, không checkoutUrl", async () => {
       const res = await request(app.getHttpServer())
         .post(`/bookings/${ORDER_ZERO_VOUCHER}/payment`)
-        .set("Authorization", `Bearer ${customerToken}`);
+        .set("Authorization", `Bearer ${zeroToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("PAID");
@@ -472,7 +566,7 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
       expect(order?.status).toBe("paid");
     });
 
-    it("đơn có tiền: tạo payment link, đơn sang pending_payment, huỷ đơn cũ pending (#10)", async () => {
+    it("đơn có tiền: tạo payment link, đơn sang pending_payment, huỷ link PayOS của đơn cũ bị hold_seats huỷ (#10, B/M2)", async () => {
       const cancelSpy = vi.spyOn(payosClient, "cancelPaymentLink");
 
       const res = await request(app.getHttpServer())
@@ -499,10 +593,31 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
       expect(newPayment).toBeDefined();
       expect(newPayment?.amount).toBe(150000);
 
-      // Đơn cũ pending của user bị huỷ (SPEC #10)
-      const oldOrder = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_OLD_PENDING);
-      expect(oldOrder?.status).toBe("cancelled");
-      expect(cancelSpy).toHaveBeenCalledWith(999901, "Tạo đơn mới");
+      // Link của đơn cũ bị hold_seats huỷ (status = CANCELLED, link_cancelled_at = null)
+      // được huỷ trên PayOS và cập nhật link_cancelled_at (B/M2)
+      expect(cancelSpy).toHaveBeenCalledWith(999901, "Huỷ đơn cũ");
+      const oldPayment = (fakeDb.tables.payments ?? []).find((p) => p.order_code === 999901);
+      expect(oldPayment?.status).toBe("CANCELLED");
+      expect(oldPayment?.link_cancelled_at).toBeDefined();
+      expect(typeof oldPayment?.link_cancelled_at).toBe("string");
+    });
+
+    it("B/M2: không gọi cancelPaymentLink lại cho payment đơn cũ đã có link_cancelled_at", async () => {
+      // Đánh dấu payment 999901 đã huỷ link trước đó
+      const oldPayment = (fakeDb.tables.payments ?? []).find((p) => p.order_code === 999901);
+      if (oldPayment) {
+        oldPayment.link_cancelled_at = new Date(Date.now() - 60000).toISOString();
+      }
+
+      const cancelSpy = vi.spyOn(payosClient, "cancelPaymentLink");
+
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_PENDING_01}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`);
+
+      expect(res.status).toBe(200);
+      // cancelPaymentLink KHÔNG được gọi với 999901 vì link_cancelled_at đã có giá trị
+      expect(cancelSpy).not.toHaveBeenCalledWith(999901, expect.anything());
     });
   });
 
@@ -510,7 +625,7 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
     it("trả về trạng thái cho màn 'Đang xác nhận' (polling)", async () => {
       const res = await request(app.getHttpServer())
         .get(`/bookings/${ORDER_OLD_PENDING}/payment-status`)
-        .set("Authorization", `Bearer ${customerToken}`);
+        .set("Authorization", `Bearer ${pendingToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("AWAITING_PAYMENT");
@@ -525,14 +640,14 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
 
       const res = await request(app.getHttpServer())
         .post(`/bookings/${ORDER_OLD_PENDING}/payment/cancel`)
-        .set("Authorization", `Bearer ${customerToken}`);
+        .set("Authorization", `Bearer ${pendingToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("CANCELLED");
 
       const oldOrder = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_OLD_PENDING);
       expect(oldOrder?.status).toBe("cancelled");
-      expect(cancelSpy).toHaveBeenCalledWith(999901, "Khách huỷ thanh toán");
+      expect(cancelSpy).toHaveBeenCalledWith(999903, "Khách huỷ thanh toán");
     });
   });
 
@@ -542,7 +657,7 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
         code: "00",
         desc: "success",
         data: {
-          orderCode: 999901,
+          orderCode: 999903,
           amount: 150000,
           reference: "REF_FAKE_01",
           code: "00",
@@ -563,7 +678,7 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
 
     it("AC-10: cùng webhook hợp lệ 3 lần -> đúng 1 lần paid, đúng 1 email vé trong outbox (idempotent)", async () => {
       const data = {
-        orderCode: 999901,
+        orderCode: 999903,
         amount: 150000,
         reference: "REF_TXN_VALID_01",
         code: "00",
@@ -634,6 +749,231 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)
         (e) => e.kind === "LATE_PAYMENT_MANUAL_REVIEW",
       );
       expect(manualReviewEmail).toBeDefined();
+    });
+  });
+
+  describe("K5-1: Thanh toán lại cùng đơn và tránh lỗi 23505", () => {
+    it("thanh toán lại tạo payment mới, huỷ payment cũ, webhook xác nhận đúng payment mới không lỗi 23505", async () => {
+      // 1. Khách gọi payment lần 1
+      const res1 = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_PENDING_01}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`);
+      expect(res1.status).toBe(200);
+
+      const payments1 = (fakeDb.tables.payments ?? []).filter(
+        (p) => p.order_id === ORDER_PENDING_01,
+      );
+      expect(payments1.length).toBe(1);
+      const payment1 = payments1[0]!;
+      expect(payment1.status).toBe("PENDING");
+      const orderCode1 = payment1.order_code as number;
+
+      // 2. Khách thanh toán lại lần 2 (đơn đang pending_payment)
+      const res2 = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_PENDING_01}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`);
+      expect(res2.status).toBe(200);
+
+      const payments2 = (fakeDb.tables.payments ?? []).filter(
+        (p) => p.order_id === ORDER_PENDING_01,
+      );
+      expect(payments2.length).toBe(2);
+
+      // Payment 1 đã bị CANCELLED và link_cancelled_at được cập nhật
+      const p1Updated = payments2.find((p) => p.order_code === orderCode1);
+      expect(p1Updated?.status).toBe("CANCELLED");
+      expect(p1Updated?.link_cancelled_at).toBeDefined();
+      expect(typeof p1Updated?.link_cancelled_at).toBe("string");
+
+      // Payment 2 là PENDING
+      const p2 = payments2.find((p) => p.order_code !== orderCode1);
+      expect(p2?.status).toBe("PENDING");
+      const orderCode2 = p2!.order_code as number;
+
+      // 3. Webhook PayOS gửi về cho orderCode của lần 2
+      const data = {
+        orderCode: orderCode2,
+        amount: 150000,
+        reference: "REF_TXN_RETRY_02",
+        code: "00",
+        transactionDateTime: new Date().toISOString(),
+      };
+      const validSignature = payosClient.computeSignature(data, CHECKSUM_KEY);
+
+      const webhookRes = await request(app.getHttpServer()).post("/payos/webhook").send({
+        code: "00",
+        desc: "success",
+        data,
+        signature: validSignature,
+      });
+
+      expect(webhookRes.status).toBe(200);
+      expect(webhookRes.body.success).toBe(true);
+
+      // Đơn thành công, payment 2 cập nhật thành PAID, không bị lỗi 23505
+      const orderAfter = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_PENDING_01);
+      expect(orderAfter?.status).toBe("paid");
+      expect(p2?.status).toBe("PAID");
+    });
+  });
+
+  describe("B/M1: Xử lý lỗi hạ tầng / RPC trong Webhook (HTTP 500 cho PayOS retry)", () => {
+    it("webhook trả HTTP 500 khi confirm_paid gặp lỗi hạ tầng/RPC", async () => {
+      const origRpc = fakeDb.rpc.bind(fakeDb);
+      fakeDb.rpc = (fn: string, args: Record<string, unknown>) => {
+        if (fn === "confirm_paid") {
+          return Promise.resolve({
+            data: null,
+            error: { code: "XX000", message: "Database connection failed" },
+          });
+        }
+        return origRpc(fn, args);
+      };
+
+      try {
+        const data = {
+          orderCode: 999903,
+          amount: 150000,
+          reference: "REF_TXN_ERR_01",
+          code: "00",
+          transactionDateTime: new Date().toISOString(),
+        };
+        const validSignature = payosClient.computeSignature(data, CHECKSUM_KEY);
+
+        const res = await request(app.getHttpServer()).post("/payos/webhook").send({
+          code: "00",
+          desc: "success",
+          data,
+          signature: validSignature,
+        });
+
+        expect(res.status).toBe(500);
+      } finally {
+        fakeDb.rpc = origRpc;
+      }
+    });
+
+    it("webhook trả HTTP 500 khi record_payment_event gặp lỗi DB", async () => {
+      const origRpc = fakeDb.rpc.bind(fakeDb);
+      fakeDb.rpc = (fn: string, args: Record<string, unknown>) => {
+        if (fn === "record_payment_event") {
+          return Promise.resolve({
+            data: null,
+            error: { code: "XX000", message: "DB timeout" },
+          });
+        }
+        return origRpc(fn, args);
+      };
+
+      try {
+        const data = {
+          orderCode: 999903,
+          amount: 150000,
+          reference: "REF_TXN_ERR_02",
+          code: "00",
+          transactionDateTime: new Date().toISOString(),
+        };
+        const validSignature = payosClient.computeSignature(data, CHECKSUM_KEY);
+
+        const res = await request(app.getHttpServer()).post("/payos/webhook").send({
+          code: "00",
+          desc: "success",
+          data,
+          signature: validSignature,
+        });
+
+        expect(res.status).toBe(500);
+      } finally {
+        fakeDb.rpc = origRpc;
+      }
+    });
+  });
+
+  describe("B/M3: Validate cấu hình PayOS ở môi trường production", () => {
+    it("parseEnv: thiếu PAYOS_* ném lỗi EnvValidationError khi NODE_ENV=production", () => {
+      const baseEnv = {
+        NODE_ENV: "production",
+        PORT: "3001",
+        WEB_ORIGIN: "https://filmbooking.vn",
+        SUPABASE_URL: "https://test.supabase.co",
+        SUPABASE_ANON_KEY: "anon-key",
+        SUPABASE_SERVICE_ROLE_KEY: "service-role-key-diff",
+        SUPABASE_JWT_SECRET: "jwt-secret-at-least-32-chars-long-1234",
+      };
+
+      expect(() =>
+        parseEnv({
+          ...baseEnv,
+          PAYOS_CLIENT_ID: "",
+          PAYOS_API_KEY: "api-key",
+          PAYOS_CHECKSUM_KEY: "checksum-key",
+        }),
+      ).toThrow(EnvValidationError);
+
+      expect(() =>
+        parseEnv({
+          ...baseEnv,
+          PAYOS_CLIENT_ID: "client-id",
+          PAYOS_API_KEY: undefined,
+          PAYOS_CHECKSUM_KEY: "checksum-key",
+        }),
+      ).toThrow(EnvValidationError);
+
+      expect(() =>
+        parseEnv({
+          ...baseEnv,
+          PAYOS_CLIENT_ID: "client-id",
+          PAYOS_API_KEY: "api-key",
+          PAYOS_CHECKSUM_KEY: "",
+        }),
+      ).toThrow(EnvValidationError);
+    });
+
+    it("PayosClient: ném lỗi rõ ràng nếu thiếu cấu hình ở production", async () => {
+      const prodEnv: Env = {
+        NODE_ENV: "production",
+        PORT: 3001,
+        WEB_ORIGIN: ["https://filmbooking.vn"],
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY: "anon-key",
+        SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+        SUPABASE_JWT_SECRET: JWT_SECRET,
+      } as Env;
+
+      const unconfiguredClient = new PayosClient(prodEnv);
+      await expect(
+        unconfiguredClient.createPaymentLink({
+          orderCode: 123456,
+          amount: 100000,
+          description: "Test",
+          returnUrl: "https://filmbooking.vn/return",
+          cancelUrl: "https://filmbooking.vn/cancel",
+        }),
+      ).rejects.toThrow("PayOS client is not configured in production environment");
+    });
+  });
+
+  describe("B/M4: timingSafeEqual và verifyWebhook an toàn", () => {
+    it("verifyWebhook: trả về null an toàn khi chữ ký có độ dài lệch hoặc sai lệch nội dung", async () => {
+      const data = {
+        orderCode: 999903,
+        amount: 150000,
+      };
+
+      // Độ dài ngắn hơn bình thường
+      const resultShort = await payosClient.verifyWebhook({
+        data,
+        signature: "short-signature",
+      });
+      expect(resultShort).toBeNull();
+
+      // Độ dài giống 64 ký tự hex nhưng sai nội dung
+      const dummy64 = "0".repeat(64);
+      const resultWrong = await payosClient.verifyWebhook({
+        data,
+        signature: dummy64,
+      });
+      expect(resultWrong).toBeNull();
     });
   });
 });

@@ -1,9 +1,9 @@
 {
   "specVersion": "3.0.0",
-  "scopeVersion": 4,
-  "generatedAt": "2026-11-12T15:00:00+07:00",
-  "trigger": "feature-update",
-  "workItem": "feature-remove-showtime-exchange",
+  "scopeVersion": 5,
+  "generatedAt": "2026-11-13T16:13:00+07:00",
+  "trigger": "bug-fix",
+  "workItem": "bug-layer5-review/phase-1-task-01",
   "specRefs": [
     "R-01",
     "R-02",

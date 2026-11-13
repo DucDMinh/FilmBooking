@@ -53,6 +53,19 @@ export const envSchema = z
         message: "must differ from SUPABASE_ANON_KEY",
       });
     }
+
+    if (env.NODE_ENV === "production") {
+      const payosKeys = ["PAYOS_CLIENT_ID", "PAYOS_API_KEY", "PAYOS_CHECKSUM_KEY"] as const;
+      for (const key of payosKeys) {
+        if (!env[key]) {
+          ctx.addIssue({
+            code: "custom",
+            path: [key],
+            message: "required in production",
+          });
+        }
+      }
+    }
   });
 
 export type Env = z.output<typeof envSchema>;

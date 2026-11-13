@@ -21,7 +21,6 @@ import { PayosClient } from "./payos.client";
 export class ConsentRequiredException extends AppException {
   constructor(message = "Cần đồng ý điều khoản không huỷ/không hoàn trước khi thanh toán") {
     super(ERROR_CODES.CONSENT_REQUIRED, message);
-    Object.defineProperty(this, "status", { value: 409 });
   }
 
   override getStatus(): number {
@@ -45,16 +44,19 @@ interface OrderDbRow {
 
 interface PaymentDbRow {
   id: string;
-  cinema_id: string;
+  cinema_id?: string;
   order_id: string;
   order_code: number;
-  amount: number;
+  amount?: number;
   status: string;
+  payment_link_id?: string | null;
+  link_cancelled_at?: string | null;
 }
 
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
+  private readonly inFlightCreatePayment = new Map<string, Promise<CreatePaymentResultDto>>();
 
   constructor(
     @Inject(SupabaseService) private readonly supabase: SupabaseService,
@@ -65,8 +67,29 @@ export class PaymentService {
   /**
    * POST /bookings/:id/payment (R-73, R-82).
    * Cần consent (AC-08); đơn 0đ -> confirm_zero_amount; tạo link PayOS cho đơn có tiền.
+   * Chống race condition khi 2 request gọi đồng thời tạo link cho cùng 1 đơn.
    */
   async createPayment(
+    bookingId: string,
+    user: AuthUser,
+    clientUrls?: CreatePaymentBody,
+  ): Promise<CreatePaymentResultDto> {
+    const existingFlight = this.inFlightCreatePayment.get(bookingId);
+    if (existingFlight) {
+      this.logger.log(`Reusing in-flight createPayment for order ${bookingId}`);
+      return existingFlight;
+    }
+
+    const task = this.executeCreatePayment(bookingId, user, clientUrls);
+    this.inFlightCreatePayment.set(bookingId, task);
+    try {
+      return await task;
+    } finally {
+      this.inFlightCreatePayment.delete(bookingId);
+    }
+  }
+
+  private async executeCreatePayment(
     bookingId: string,
     user: AuthUser,
     clientUrls?: CreatePaymentBody,
@@ -133,48 +156,67 @@ export class PaymentService {
       };
     }
 
-    // SPEC #10: tạo đơn mới khi đơn cũ pending -> cancel link cũ
-    const { data: oldPendingOrders } = await this.supabase
+    // SPEC #10 & B/M2: tạo đơn mới khi đơn cũ pending/cancelled/expired còn link -> cancel link cũ
+    const { data: oldUserOrders } = await this.supabase
       .admin()
       .from("orders")
-      .select("id")
+      .select("id, status")
       .eq("user_id", user.id)
-      .eq("status", "pending_payment")
-      .neq("id", order.id);
+      .neq("id", order.id)
+      .in("status", ["pending_payment", "cancelled", "expired"]);
 
-    for (const old of oldPendingOrders ?? []) {
-      const { data: oldPayments } = await this.supabase
+    const oldOrderIds = (oldUserOrders ?? []).map((o) => o.id);
+    if (oldOrderIds.length > 0) {
+      const { data: orphanedPayments } = await this.supabase
         .admin()
         .from("payments")
-        .select("order_code")
-        .eq("order_id", old.id)
-        .eq("status", "PENDING");
+        .select("id, order_id, order_code, payment_link_id, link_cancelled_at")
+        .in("order_id", oldOrderIds)
+        .in("status", ["PENDING", "CANCELLED"])
+        .not("payment_link_id", "is", null)
+        .is("link_cancelled_at", null);
 
-      for (const op of (oldPayments as PaymentDbRow[]) ?? []) {
-        await this.payosClient.cancelPaymentLink(op.order_code, "Tạo đơn mới");
+      for (const op of (orphanedPayments as PaymentDbRow[]) ?? []) {
+        await this.payosClient.cancelPaymentLink(op.order_code, "Huỷ đơn cũ");
+        await this.supabase
+          .admin()
+          .from("payments")
+          .update({
+            status: "CANCELLED",
+            link_cancelled_at: new Date().toISOString(),
+          })
+          .eq("id", op.id);
       }
 
-      await this.supabase.admin().rpc("mark_payment_cancelled", {
-        p_order_id: old.id,
-        p_reason: "Tạo đơn mới",
-      });
+      for (const old of (oldUserOrders ?? []).filter((o) => o.status === "pending_payment")) {
+        await this.supabase.admin().rpc("mark_payment_cancelled", {
+          p_order_id: old.id,
+          p_reason: "Tạo đơn mới",
+        });
+      }
     }
 
-    // Nếu chính đơn này có payment PENDING trước đó (thanh toán lại khi link chưa hết hạn)
+    // K5-1 & B/M4: Nếu chính đơn này có payment PENDING trước đó (thanh toán lại khi link chưa hết hạn hoặc tạo lại)
     const { data: currentPendingPayments } = await this.supabase
       .admin()
       .from("payments")
-      .select("order_code")
+      .select("id, order_code")
       .eq("order_id", order.id)
       .eq("status", "PENDING");
 
     for (const cp of (currentPendingPayments as PaymentDbRow[]) ?? []) {
-      await this.payosClient.cancelPaymentLink(cp.order_code, "Tạo link mới");
+      const cancelled = await this.payosClient.cancelPaymentLink(cp.order_code, "Tạo link mới");
+      if (!cancelled && this.env.NODE_ENV !== "test") {
+        this.logger.warn(`Could not cancel previous PayOS payment link for orderCode=${cp.order_code}`);
+      }
       await this.supabase
         .admin()
         .from("payments")
-        .update({ status: "CANCELLED" })
-        .eq("order_code", cp.order_code);
+        .update({
+          status: "CANCELLED",
+          link_cancelled_at: new Date().toISOString(),
+        })
+        .eq("id", cp.id);
     }
 
     // Sinh orderCode duy nhất tăng dần (dưới MAX_SAFE_INTEGER)
@@ -309,12 +351,19 @@ export class PaymentService {
     const { data: payments } = await this.supabase
       .admin()
       .from("payments")
-      .select("order_code")
+      .select("id, order_code")
       .eq("order_id", order.id)
       .eq("status", "PENDING");
 
     for (const p of (payments as PaymentDbRow[]) ?? []) {
       await this.payosClient.cancelPaymentLink(p.order_code, "Khách huỷ thanh toán");
+      await this.supabase
+        .admin()
+        .from("payments")
+        .update({
+          link_cancelled_at: new Date().toISOString(),
+        })
+        .eq("id", p.id);
     }
 
     const { error: cancelErr } = await this.supabase.admin().rpc("mark_payment_cancelled", {
@@ -332,28 +381,43 @@ export class PaymentService {
   /**
    * Xử lý webhook PayOS đã kiểm tra chữ ký (R-74, R-75, R-78, AC-10, AC-11).
    */
-  async handleWebhook(data: PayosWebhookData): Promise<{ success: boolean; result?: unknown }> {
+  async handleWebhook(
+    data: PayosWebhookData,
+  ): Promise<{ success: boolean; status?: string; result?: unknown }> {
     const orderCode = data.orderCode;
     const amount = data.amount;
-    const reference = data.reference || `PAYOS_${orderCode}_${Date.now()}`;
+    const reference = data.reference || `PAYOS_${orderCode}`;
     const isSuccess = data.code === PAYOS_SUCCESS_CODE || data.code === "00";
     const eventStatus = isSuccess ? "PAID" : data.code || "FAILED";
     const occurredAt = data.transactionDateTime
       ? new Date(data.transactionDateTime).toISOString()
       : new Date().toISOString();
 
-    // 1. Tìm payment theo order_code
-    const { data: paymentData } = await this.supabase
+    // 1. Tìm payment theo order_code - kiểm tra lỗi đọc DB (B/M1)
+    const { data: paymentData, error: paymentErr } = await this.supabase
       .admin()
       .from("payments")
       .select("id, cinema_id, order_id, amount, status")
       .eq("order_code", orderCode)
       .maybeSingle();
 
+    if (paymentErr) {
+      this.logger.error(
+        `Database error reading payment for orderCode=${orderCode}: ${paymentErr.message}`,
+      );
+      return { success: false, result: paymentErr };
+    }
+
     const payment = paymentData as PaymentDbRow | null;
 
-    // 2. Ghi payment event (idempotent qua transaction_ref)
-    await this.supabase.admin().rpc("record_payment_event", {
+    if (payment?.status === "CANCELLED") {
+      this.logger.warn(
+        `Webhook received for previously CANCELLED payment: orderCode=${orderCode}, orderId=${payment.order_id}`,
+      );
+    }
+
+    // 2. Ghi payment event (idempotent qua transaction_ref) - kiểm tra lỗi DB (B/M1)
+    const { error: eventErr } = await this.supabase.admin().rpc("record_payment_event", {
       p_order_code: orderCode,
       p_transaction_ref: reference,
       p_amount: amount,
@@ -363,6 +427,13 @@ export class PaymentService {
       p_cinema_id: payment?.cinema_id ?? null,
       p_payment_id: payment?.id ?? null,
     });
+
+    if (eventErr) {
+      this.logger.error(
+        `Failed to record payment event for orderCode=${orderCode}: ${eventErr.message}`,
+      );
+      return { success: false, result: eventErr };
+    }
 
     // 3. Nếu thanh toán thành công và tìm thấy order_id -> gọi confirm_paid
     if (isSuccess && payment?.order_id) {
@@ -382,12 +453,33 @@ export class PaymentService {
         return { success: false, result: confirmErr };
       }
 
-      this.logger.log(
-        `confirm_paid success for order ${payment.order_id}: ${JSON.stringify(confirmResult)}`,
-      );
-      return { success: true, result: confirmResult };
+      const res = confirmResult as {
+        success?: boolean;
+        status?: string;
+        order_id?: string;
+        booking_code?: string;
+        [key: string]: unknown;
+      } | null;
+
+      const businessStatus = res?.status;
+      if (businessStatus === "NEEDS_MANUAL_REVIEW" || businessStatus === "AMOUNT_MISMATCH") {
+        this.logger.warn(
+          `confirm_paid business outcome for order ${payment.order_id}: status=${businessStatus}`,
+        );
+      } else {
+        this.logger.log(
+          `confirm_paid success for order ${payment.order_id}: status=${businessStatus ?? "OK"}`,
+        );
+      }
+
+      // Phân biệt rõ kết quả nghiệp vụ (ALREADY_PAID, NEEDS_MANUAL_REVIEW, AMOUNT_MISMATCH -> trả success: true kèm status)
+      return { success: true, status: businessStatus, result: confirmResult };
     }
 
-    return { success: true };
+    if (!payment) {
+      this.logger.warn(`No payment record found for orderCode=${orderCode}`);
+    }
+
+    return { success: true, status: isSuccess ? "NO_ORDER" : "PAYMENT_NOT_SUCCESS" };
   }
 }

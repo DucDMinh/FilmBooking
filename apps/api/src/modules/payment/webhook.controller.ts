@@ -4,6 +4,7 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  InternalServerErrorException,
   Logger,
   Post,
 } from "@nestjs/common";
@@ -50,7 +51,14 @@ export class WebhookController {
       return { success: false, message: "Invalid signature" };
     }
 
-    await this.paymentService.handleWebhook(verifiedData);
+    const webhookResult = await this.paymentService.handleWebhook(verifiedData);
+    if (!webhookResult.success) {
+      this.logger.error(
+        `PayOS webhook processing failed for orderCode=${orderCode}: ${JSON.stringify(webhookResult)}`,
+      );
+      throw new InternalServerErrorException("Lỗi xử lý webhook, vui lòng thử lại sau");
+    }
+
     return { success: true };
   }
 }

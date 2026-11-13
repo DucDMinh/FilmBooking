@@ -1,6 +1,6 @@
 {
   "mode": "initial-build",
-  "activeWorkItem": "build/build-filmbooking",
+  "activeWorkItem": "bug/layer5-review",
   "features": [
     {
       "id": "remove-pos",
@@ -43,6 +43,19 @@
     }
   ],
   "bugs": [
+    {
+      "id": "layer5-review/phase-1-task-01",
+      "title": "K5-1 PayOS Webhook Race & Duplicate Payment Handling",
+      "status": "done",
+      "severity": "blocker",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-layer5-review-phase-1-task-01-round-2-review.md"
+      },
+      "updatedAt": "2026-11-13T09:13:30.000Z"
+    },
     {
       "id": "layer34-review/phase-1-task-01",
       "title": "P0-01 seed fix + .env.example",
