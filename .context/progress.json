@@ -44,6 +44,19 @@
   ],
   "bugs": [
     {
+      "id": "layer5-review/phase-2-task-07",
+      "title": "D/M7, D/M8 Refactor AI-readable Codebase & DI Hardening",
+      "status": "done",
+      "severity": "medium",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "NORMAL",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer5-review-phase-2-task-07-round-1-review.md"
+      },
+      "updatedAt": "2026-11-13T12:56:40.000Z"
+    },
+    {
       "id": "layer5-review/phase-3-task-08",
       "title": "F-01..F-05 Web Auth, OAuth Callback Error Mapping & IP Forwarding",
       "status": "done",
