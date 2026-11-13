@@ -816,6 +816,20 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
 
       expect(res.body.error.code).toBe("FORBIDDEN_CINEMA");
     });
+
+    it("Staff gọi /orders/needs-manual-review hoặc /admin/orders/needs-manual-review -> 403 Forbidden (D/M5)", async () => {
+      const res1 = await request(app.getHttpServer())
+        .get("/orders/needs-manual-review")
+        .set("Authorization", `Bearer ${staffHn01Token}`)
+        .expect(403);
+      expect(res1.body.error.code).toBe("FORBIDDEN");
+
+      const res2 = await request(app.getHttpServer())
+        .get("/admin/orders/needs-manual-review")
+        .set("Authorization", `Bearer ${staffHn01Token}`)
+        .expect(403);
+      expect(res2.body.error.code).toBe("FORBIDDEN");
+    });
   });
 
   // ── AC-16: Phân quyền rạp (Manager rạp A gọi rạp B -> 403 hoặc rỗng) ────────
@@ -1035,6 +1049,57 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
       expect(statuses).toContain("holding");
       expect(statuses).toContain("paid");
     });
+
+    it("GET /orders/:id truy vấn lịch sử trạng thái từ audit_logs table_name = 'orders' (D/M6)", async () => {
+      fakeDb.tables.audit_logs = [
+        {
+          id: 101,
+          occurred_at: "2026-11-13T08:00:00Z",
+          actor_id: CUSTOMER,
+          cinema_id: HN01,
+          table_name: "orders",
+          record_id: ORDER_PAID_HN01,
+          action: "INSERT",
+          before_data: null,
+          after_data: { status: "holding" },
+        },
+        {
+          id: 102,
+          occurred_at: "2026-11-13T08:02:00Z",
+          actor_id: CUSTOMER,
+          cinema_id: HN01,
+          table_name: "orders",
+          record_id: ORDER_PAID_HN01,
+          action: "UPDATE",
+          before_data: { status: "holding" },
+          after_data: { status: "pending_payment" },
+        },
+        {
+          id: 103,
+          occurred_at: "2026-11-13T08:05:00Z",
+          actor_id: null,
+          cinema_id: HN01,
+          table_name: "orders",
+          record_id: ORDER_PAID_HN01,
+          action: "UPDATE",
+          before_data: { status: "pending_payment" },
+          after_data: { status: "paid" },
+        },
+      ];
+
+      const res = await request(app.getHttpServer())
+        .get(`/orders/${ORDER_PAID_HN01}`)
+        .set("Authorization", `Bearer ${staffHn01Token}`)
+        .expect(200);
+
+      expect(res.body.statusHistory).toHaveLength(3);
+      expect(res.body.statusHistory[0].status).toBe("holding");
+      expect(res.body.statusHistory[0].timestamp).toBe("2026-11-13T08:00:00Z");
+      expect(res.body.statusHistory[1].status).toBe("pending_payment");
+      expect(res.body.statusHistory[1].timestamp).toBe("2026-11-13T08:02:00Z");
+      expect(res.body.statusHistory[2].status).toBe("paid");
+      expect(res.body.statusHistory[2].timestamp).toBe("2026-11-13T08:05:00Z");
+    });
   });
 
   // ── GET /admin/todo (D5) ──────────────────────────────────────────────────
@@ -1065,6 +1130,23 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
       expect(upcoming.cinemaName).toBe("FilmBooking Hà Nội 01");
       expect(upcoming.roomName).toBe("Phòng 1");
       expect(upcoming.movieTitle).toBe("Phim Sắp Chiếu");
+    });
+
+    it("Staff gọi /admin/todo -> ẩn needs_manual_review và failedEmails (D/M5)", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/admin/todo")
+        .set("Authorization", `Bearer ${staffHn01Token}`)
+        .expect(200);
+
+      // Staff không thấy needs_manual_review và failedEmails
+      expect(res.body.needsManualReviewCount).toBe(0);
+      expect(res.body.needsManualReviewOrders).toEqual([]);
+      expect(res.body.failedEmailCount).toBe(0);
+      expect(res.body.failedEmails).toEqual([]);
+
+      // Staff vẫn thấy affected orders và upcoming showtimes của rạp mình
+      expect(res.body.affectedCount).toBeGreaterThanOrEqual(1);
+      expect(res.body.upcomingShowtimesCount).toBeGreaterThanOrEqual(1);
     });
 
     it("Admin gọi /admin/todo -> trả về thống kê toàn chuỗi", async () => {

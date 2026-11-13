@@ -118,6 +118,7 @@ export class UsersController {
   @Roles("ADMIN")
   @Patch("admin/users/:userId/lock")
   async lockUser(
+    @CurrentUser() user: AuthUser,
     @Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string,
     @Body(new ZodValidationPipe(updateUserLockSchema)) body: UpdateUserLockInput,
   ): Promise<{ success: boolean; locked: boolean }> {
@@ -133,28 +134,44 @@ export class UsersController {
 
     if (error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
 
+    const { error: auditErr } = await adminClient.from("audit_logs").insert({
+      action: "UPDATE",
+      actor_id: user.id,
+      table_name: "users",
+      record_id: userId,
+      after_data: { locked: body.locked },
+    });
+    if (auditErr) throw new AppException(ERROR_CODES.INTERNAL_ERROR, auditErr.message);
+
     return { success: true, locked: body.locked };
   }
 
   @Roles("ADMIN")
   @Patch("admin/users/:userId/admin-role")
   async setAdminRole(
+    @CurrentUser() user: AuthUser,
     @Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string,
     @Body(new ZodValidationPipe(updateUserAdminRoleSchema)) body: UpdateUserAdminRoleInput,
   ): Promise<{ success: boolean; isAdmin: boolean }> {
-    return this.applyAdminRole(userId, body.isAdmin);
+    return this.applyAdminRole(userId, body.isAdmin, user.jwt);
   }
 
   @Roles("ADMIN")
   @Put("admin/users/:userId/roles/admin")
-  async grantAdminRole(@Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string): Promise<{ success: boolean; isAdmin: boolean }> {
-    return this.applyAdminRole(userId, true);
+  async grantAdminRole(
+    @CurrentUser() user: AuthUser,
+    @Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string,
+  ): Promise<{ success: boolean; isAdmin: boolean }> {
+    return this.applyAdminRole(userId, true, user.jwt);
   }
 
   @Roles("ADMIN")
   @Delete("admin/users/:userId/roles/admin")
-  async revokeAdminRole(@Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string): Promise<{ success: boolean; isAdmin: boolean }> {
-    return this.applyAdminRole(userId, false);
+  async revokeAdminRole(
+    @CurrentUser() user: AuthUser,
+    @Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string,
+  ): Promise<{ success: boolean; isAdmin: boolean }> {
+    return this.applyAdminRole(userId, false, user.jwt);
   }
 
   // ── Gán nhân sự rạp (R-17, R-105, AC-16) ───────────────────────────────────
@@ -295,18 +312,20 @@ export class UsersController {
 
   // ── Helper methods ────────────────────────────────────────────────────────
 
-  private async applyAdminRole(userId: string, isAdmin: boolean): Promise<{ success: boolean; isAdmin: boolean }> {
+  private async applyAdminRole(userId: string, isAdmin: boolean, jwt: string): Promise<{ success: boolean; isAdmin: boolean }> {
     const adminClient = this.supabase.admin();
     const { data: profile } = await adminClient.from("profiles").select("id").eq("id", userId).maybeSingle();
     if (!profile) throw new AppException(ERROR_CODES.NOT_FOUND, "User not found");
 
+    const userDb = this.supabase.forUser(jwt);
+
     if (isAdmin) {
-      const { error } = await adminClient
+      const { error } = await userDb
         .from("user_roles")
         .insert({ user_id: userId, role: "ADMIN" as never });
       if (error && error.code !== "23505") throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
     } else {
-      const { error } = await adminClient
+      const { error } = await userDb
         .from("user_roles")
         .delete()
         .eq("user_id", userId)

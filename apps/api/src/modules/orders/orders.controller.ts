@@ -39,7 +39,7 @@ export class OrdersController {
     return this.ordersService.searchOrders(user, query);
   }
 
-  @Roles("STAFF", "MANAGER")
+  @Roles("MANAGER")
   @Get("needs-manual-review")
   listNeedsManualReview(
     @CurrentUser() user: AuthUser,
@@ -87,7 +87,7 @@ export class AdminOrdersController {
     return this.ordersService.searchOrders(user, query);
   }
 
-  @Roles("STAFF", "MANAGER")
+  @Roles("MANAGER")
   @Get("orders/needs-manual-review")
   listNeedsManualReview(
     @CurrentUser() user: AuthUser,

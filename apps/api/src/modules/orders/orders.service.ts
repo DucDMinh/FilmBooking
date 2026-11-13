@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ERROR_CODES } from "@filmbooking/shared";
+import type { OrderStatus } from "@filmbooking/shared/enums";
 import type {
   AdminTodoDto,
   OrderDetailDto,
@@ -203,12 +204,19 @@ export class OrdersService {
   async getOrderDetail(user: AuthUser, orderId: string): Promise<OrderDetailDto> {
     const access = await this.access.loadForRequest({ user });
 
-    const [orderRes, seatsRes, ticketsRes, paymentsRes, actionsRes] = await Promise.all([
+    const [orderRes, seatsRes, ticketsRes, paymentsRes, actionsRes, auditRes] = await Promise.all([
       this.supabase.admin().from("orders").select("*").eq("id", orderId).maybeSingle(),
       this.supabase.admin().from("order_seats").select("*").eq("order_id", orderId),
       this.supabase.admin().from("tickets").select("*").eq("order_id", orderId),
       this.supabase.admin().from("payments").select("*").eq("order_id", orderId),
       this.supabase.admin().from("affected_order_actions").select("*").eq("order_id", orderId),
+      this.supabase
+        .admin()
+        .from("audit_logs")
+        .select("*")
+        .eq("table_name", "orders")
+        .eq("record_id", orderId)
+        .order("occurred_at", { ascending: true }),
     ]);
 
     if (orderRes.error) throw orderRes.error;
@@ -277,54 +285,61 @@ export class OrdersService {
       createdAt: p.created_at,
     }));
 
-    // Build status history
-    const statusHistory: OrderStatusHistoryItemDto[] = [
-      { status: "holding", timestamp: row.created_at },
-    ];
+    // Lịch sử trạng thái từ audit_logs (D/M6, R-103, R-107)
+    interface AuditDbRow {
+      occurred_at: string;
+      action: string;
+      before_data?: Record<string, unknown> | null;
+      after_data?: Record<string, unknown> | null;
+    }
+    const auditRows = (auditRes.data ?? []) as AuditDbRow[];
+    const statusHistory: OrderStatusHistoryItemDto[] = [];
 
-    if (payments.length > 0) {
-      const firstPayment = payments[0];
-      if (firstPayment) {
-        statusHistory.push({ status: "pending_payment", timestamp: firstPayment.createdAt });
+    for (const audit of auditRows) {
+      const after = audit.after_data as Record<string, unknown> | null | undefined;
+      const before = audit.before_data as Record<string, unknown> | null | undefined;
+
+      if (audit.action === "INSERT" && after?.status) {
+        statusHistory.push({
+          status: after.status as OrderStatus,
+          timestamp: audit.occurred_at,
+          note: after.cancel_reason ? String(after.cancel_reason) : undefined,
+        });
+      } else if (audit.action === "UPDATE") {
+        if (after?.status && (!before || before.status !== after.status)) {
+          let note: string | undefined;
+          if (after.cancel_reason) note = String(after.cancel_reason);
+          else if (after.mismatch) note = "Lệch số tiền thanh toán";
+          statusHistory.push({
+            status: after.status as OrderStatus,
+            timestamp: audit.occurred_at,
+            note,
+          });
+        } else if (after?.action_detail === "RESOLVE_MANUAL_REVIEW") {
+          statusHistory.push({
+            status: "needs_manual_review",
+            timestamp: audit.occurred_at,
+            note: after.note ? String(after.note) : `Đã giải quyết (${after.action ?? ""})`.trim(),
+          });
+        }
       }
+    }
 
-      const paidPayment = payments.find((p) => p.status === "PAID");
-      if (paidPayment && paidPayment.paidAt) {
-        statusHistory.push({ status: "paid", timestamp: paidPayment.paidAt });
+    if (statusHistory.length === 0) {
+      statusHistory.push({
+        status: "holding",
+        timestamp: row.created_at,
+      });
+      if (row.status !== "holding") {
+        statusHistory.push({
+          status: row.status as OrderStatus,
+          timestamp: row.updated_at,
+          note: row.cancel_reason ?? undefined,
+        });
       }
     }
 
-    if (row.status === "paid" && !statusHistory.some((s) => s.status === "paid")) {
-      statusHistory.push({ status: "paid", timestamp: row.updated_at });
-    }
-
-    const checkedInTicket = tickets.find((t) => t.checkedInAt !== null);
-    if (checkedInTicket?.checkedInAt) {
-      statusHistory.push({ status: "checked_in", timestamp: checkedInTicket.checkedInAt });
-    }
-
-    if (row.status === "needs_manual_review") {
-      statusHistory.push({ status: "needs_manual_review", timestamp: row.updated_at });
-    }
-    if (row.manual_review_resolved_at) {
-      statusHistory.push({
-        status: "needs_manual_review",
-        timestamp: row.manual_review_resolved_at,
-        note: "Đã xử lý thủ công",
-      });
-    }
-
-    if (row.cancelled_at || row.status === "cancelled") {
-      statusHistory.push({
-        status: "cancelled",
-        timestamp: row.cancelled_at ?? row.updated_at,
-        note: row.cancel_reason ?? undefined,
-      });
-    }
-
-    if (row.status === "affected") {
-      statusHistory.push({ status: "affected", timestamp: row.updated_at });
-    }
+    statusHistory.sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1));
 
     interface AffectedActionDbRow {
       action: string;
@@ -335,15 +350,6 @@ export class OrdersService {
     }
     const affectedActions = (actionsRes.data ?? []) as AffectedActionDbRow[];
     const affectedAction = affectedActions[0];
-    if (affectedAction) {
-      statusHistory.push({
-        status: "refunded_manual",
-        timestamp: affectedAction.created_at,
-        note: affectedAction.refund_reference ?? undefined,
-      });
-    }
-
-    statusHistory.sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1));
 
     const summary = mapSummaryDto(row);
     return {
@@ -373,13 +379,17 @@ export class OrdersService {
     query: ListNeedsManualReviewQuery,
   ): Promise<{ items: OrderSummaryDto[]; total: number; page: number; limit: number }> {
     const access = await this.access.loadForRequest({ user });
-    const allowedCinemas = Array.from(access.cinemaRoles.keys());
+    const managerCinemas = access.isAdmin
+      ? []
+      : Array.from(access.cinemaRoles.entries())
+          .filter(([, r]) => r === "MANAGER")
+          .map(([c]) => c);
 
     if (!access.isAdmin) {
-      if (allowedCinemas.length === 0) {
+      if (managerCinemas.length === 0) {
         throw new AppException(ERROR_CODES.FORBIDDEN, "Không có quyền");
       }
-      if (query.cinemaId && !allowedCinemas.includes(query.cinemaId)) {
+      if (query.cinemaId && !managerCinemas.includes(query.cinemaId)) {
         throw new AppException(ERROR_CODES.FORBIDDEN_CINEMA, "Không có quyền truy cập rạp này");
       }
     }
@@ -398,7 +408,7 @@ export class OrdersService {
     if (query.cinemaId) {
       qb = qb.eq("cinema_id", query.cinemaId);
     } else if (!access.isAdmin) {
-      qb = qb.in("cinema_id", allowedCinemas);
+      qb = qb.in("cinema_id", managerCinemas);
     }
 
     const { data, count, error } = await qb
@@ -507,20 +517,31 @@ export class OrdersService {
       throw new AppException(ERROR_CODES.FORBIDDEN, "Không có quyền truy cập todo");
     }
 
+    const managerCinemas = access.isAdmin
+      ? []
+      : Array.from(access.cinemaRoles.entries())
+          .filter(([, r]) => r === "MANAGER")
+          .map(([c]) => c);
+    const isManagerOrAdmin = access.isAdmin || managerCinemas.length > 0;
+
     const now = new Date();
     const in30m = new Date(now.getTime() + 30 * 60 * 1000);
 
-    // 1. needs_manual_review
-    let nmrQuery = this.supabase
-      .admin()
-      .from("orders")
-      .select("*, tickets(id)", { count: "exact" })
-      .eq("status", "needs_manual_review")
-      .is("manual_review_resolved_at", null);
-    if (!access.isAdmin) {
-      nmrQuery = nmrQuery.in("cinema_id", allowedCinemas);
-    }
-    const nmrPromise = nmrQuery.order("created_at", { ascending: false }).limit(10);
+    // 1. needs_manual_review (D/M5: chỉ Manager hoặc Admin mới thấy)
+    const nmrPromise = isManagerOrAdmin
+      ? (() => {
+          let nmrQuery = this.supabase
+            .admin()
+            .from("orders")
+            .select("*, tickets(id)", { count: "exact" })
+            .eq("status", "needs_manual_review")
+            .is("manual_review_resolved_at", null);
+          if (!access.isAdmin) {
+            nmrQuery = nmrQuery.in("cinema_id", managerCinemas);
+          }
+          return nmrQuery.order("created_at", { ascending: false }).limit(10);
+        })()
+      : Promise.resolve({ data: [] as OrderDbRow[], count: 0, error: null });
 
     // 2. affected orders
     let affQuery = this.supabase
@@ -533,16 +554,29 @@ export class OrdersService {
     }
     const affPromise = affQuery.order("created_at", { ascending: false }).limit(10);
 
-    // 3. failed emails
-    let emailQuery = this.supabase
-      .admin()
-      .from("email_outbox")
-      .select("*", { count: "exact" })
-      .eq("status", "FAILED");
-    if (!access.isAdmin) {
-      emailQuery = emailQuery.in("cinema_id", allowedCinemas);
+    // 3. failed emails (D/M5: chỉ Manager hoặc Admin mới thấy)
+    interface EmailOutboxRow {
+      id: string;
+      to_email: string;
+      kind: string;
+      last_error: string | null;
+      attempts: number;
+      created_at: string;
     }
-    const emailPromise = emailQuery.order("created_at", { ascending: false }).limit(10);
+
+    const emailPromise = isManagerOrAdmin
+      ? (() => {
+          let emailQuery = this.supabase
+            .admin()
+            .from("email_outbox")
+            .select("*", { count: "exact" })
+            .eq("status", "FAILED");
+          if (!access.isAdmin) {
+            emailQuery = emailQuery.in("cinema_id", managerCinemas);
+          }
+          return emailQuery.order("created_at", { ascending: false }).limit(10);
+        })()
+      : Promise.resolve({ data: [] as EmailOutboxRow[], count: 0, error: null });
 
     // 4. upcoming showtimes in 30 minutes (không embedding cinemas/rooms trực tiếp vì schema showtimes không có FK direct tới cinemas)
     let stQuery = this.supabase
@@ -567,14 +601,6 @@ export class OrdersService {
     const nmrRows = ((nmrRes.data ?? []) as OrderDbRow[]).map(mapSummaryDto);
     const affRows = ((affRes.data ?? []) as OrderDbRow[]).map(mapSummaryDto);
 
-    interface EmailOutboxRow {
-      id: string;
-      to_email: string;
-      kind: string;
-      last_error: string | null;
-      attempts: number;
-      created_at: string;
-    }
     const failedEmails = ((emailRes.data ?? []) as EmailOutboxRow[]).map((e) => ({
       id: e.id,
       toEmail: e.to_email,

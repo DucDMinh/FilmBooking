@@ -129,6 +129,12 @@ export class VouchersController {
       if (error.code === "23505") {
         throw new AppException(ERROR_CODES.CONFLICT, "Mã voucher đã tồn tại", { field: "code" });
       }
+      if (error.code === "23514") {
+        throw new AppException(ERROR_CODES.VALIDATION_ERROR, "Ràng buộc dữ liệu voucher không hợp lệ: " + error.message);
+      }
+      if (error.code === "23503") {
+        throw new AppException(ERROR_CODES.VALIDATION_ERROR, "Phim liên kết không tồn tại", { field: "movieId" });
+      }
       throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
     }
 
@@ -162,6 +168,24 @@ export class VouchersController {
     @Param("id", new ZodValidationPipe(voucherIdParamSchema)) id: string,
   ): Promise<{ success: boolean }> {
     const db = this.supabase.forUser(user.jwt);
+
+    const { data: existing, error: existErr } = await db.from("vouchers").select("id").eq("id", id).maybeSingle();
+    if (existErr) throw new AppException(ERROR_CODES.INTERNAL_ERROR, existErr.message);
+    if (!existing) throw new AppException(ERROR_CODES.NOT_FOUND, "Voucher not found");
+
+    const { count, error: countErr } = await db
+      .from("voucher_redemptions")
+      .select("id", { count: "exact", head: true })
+      .eq("voucher_id", id);
+
+    if (countErr) throw new AppException(ERROR_CODES.INTERNAL_ERROR, countErr.message);
+    if (count && count > 0) {
+      throw new AppException(
+        ERROR_CODES.CONFLICT,
+        "Không thể xoá voucher đã có lượt áp dụng/sử dụng. Vui lòng chuyển trạng thái active = false để ngừng sử dụng.",
+      );
+    }
+
     const { data, error } = await db.from("vouchers").delete().eq("id", id).select("id").maybeSingle();
 
     if (error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
@@ -172,6 +196,33 @@ export class VouchersController {
 
   private async saveUpdate(jwt: string, id: string, body: UpdateVoucherInput): Promise<VoucherDto> {
     const db = this.supabase.forUser(jwt);
+
+    const { data: existing, error: getErr } = await db
+      .from("vouchers")
+      .select(VOUCHER_COLUMNS)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (getErr) throw new AppException(ERROR_CODES.INTERNAL_ERROR, getErr.message);
+    if (!existing) throw new AppException(ERROR_CODES.NOT_FOUND, "Voucher not found");
+
+    const current = existing as VoucherRow;
+    const mergedDiscountType = body.discountType ?? current.discount_type;
+    const mergedDiscountValue = body.discountValue ?? current.discount_value;
+    const mergedValidFrom = body.validFrom !== undefined ? body.validFrom : current.valid_from;
+    const mergedValidTo = body.validTo !== undefined ? body.validTo : current.valid_to;
+
+    if (mergedDiscountType === "PERCENT" && mergedDiscountValue > 100) {
+      throw new AppException(ERROR_CODES.VALIDATION_ERROR, "Percent discount value must be <= 100", {
+        field: "discountValue",
+      });
+    }
+    if (mergedValidFrom && mergedValidTo && Date.parse(mergedValidTo) <= Date.parse(mergedValidFrom)) {
+      throw new AppException(ERROR_CODES.VALIDATION_ERROR, "validTo must be after validFrom", {
+        field: "validTo",
+      });
+    }
+
     const updatePayload: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
@@ -199,6 +250,12 @@ export class VouchersController {
     if (error) {
       if (error.code === "23505") {
         throw new AppException(ERROR_CODES.CONFLICT, "Mã voucher đã tồn tại", { field: "code" });
+      }
+      if (error.code === "23514") {
+        throw new AppException(ERROR_CODES.VALIDATION_ERROR, "Ràng buộc dữ liệu voucher không hợp lệ: " + error.message);
+      }
+      if (error.code === "23503") {
+        throw new AppException(ERROR_CODES.VALIDATION_ERROR, "Phim liên kết không tồn tại", { field: "movieId" });
       }
       throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
     }

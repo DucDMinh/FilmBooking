@@ -33,7 +33,7 @@ export class AuditController {
     @Inject(AccessService) private readonly access: AccessService,
   ) {}
 
-  @Roles("ADMIN", "MANAGER")
+  @Roles("ADMIN")
   @Get("admin/audit-logs")
   async listLogs(
     @Req() req: AuthenticatedRequest,
@@ -42,7 +42,7 @@ export class AuditController {
     return this.queryAudit(req, query);
   }
 
-  @Roles("ADMIN", "MANAGER")
+  @Roles("ADMIN")
   @Get("admin/audit")
   async listAudit(
     @Req() req: AuthenticatedRequest,

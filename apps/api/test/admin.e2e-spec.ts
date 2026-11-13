@@ -41,6 +41,7 @@ interface Result {
 class FakeDb {
   tables: Record<string, Row[]> = {};
   usersAuth: Record<string, { banned_until: string | null; app_metadata: Record<string, unknown> }> = {};
+  currentJwt: string | null = null;
   private nextId = 1000;
 
   reset() {
@@ -125,6 +126,7 @@ class FakeDb {
           updated_at: "2026-01-01T00:00:00Z",
         },
       ],
+      voucher_redemptions: [],
     };
   }
 
@@ -340,6 +342,32 @@ class Query implements PromiseLike<Result> {
             after_data: { ...newRow },
           });
         }
+        if (this.table === "user_roles") {
+          const auditStore = (this.db.tables.audit_logs ??= []);
+          let actorId: string | null = null;
+          if (this.db.currentJwt) {
+            try {
+              const part = this.db.currentJwt.split(".")[1];
+              if (part) {
+                const payload = JSON.parse(Buffer.from(part, "base64").toString());
+                actorId = payload.sub ?? null;
+              }
+            } catch {
+              actorId = null;
+            }
+          }
+          auditStore.push({
+            id: auditStore.length + 1,
+            occurred_at: new Date().toISOString(),
+            actor_id: actorId,
+            cinema_id: null,
+            table_name: "user_roles",
+            record_id: `${newRow.user_id}:${newRow.role}`,
+            action: "INSERT",
+            before_data: null,
+            after_data: { ...newRow },
+          });
+        }
       }
 
       return { data: this.mode === "one" ? inserted[0] : inserted, error: null };
@@ -377,6 +405,35 @@ class Query implements PromiseLike<Result> {
       const toDelete = store.filter((r) => this.filters.every((f) => f(r)));
       if (toDelete.length === 0) return { data: null, error: null };
 
+      if (this.table === "user_roles") {
+        const auditStore = (this.db.tables.audit_logs ??= []);
+        let actorId: string | null = null;
+        if (this.db.currentJwt) {
+          try {
+            const part = this.db.currentJwt.split(".")[1];
+            if (part) {
+              const payload = JSON.parse(Buffer.from(part, "base64").toString());
+              actorId = payload.sub ?? null;
+            }
+          } catch {
+            actorId = null;
+          }
+        }
+        for (const del of toDelete) {
+          auditStore.push({
+            id: auditStore.length + 1,
+            occurred_at: new Date().toISOString(),
+            actor_id: actorId,
+            cinema_id: null,
+            table_name: "user_roles",
+            record_id: `${del.user_id}:${del.role}`,
+            action: "DELETE",
+            before_data: { ...del },
+            after_data: null,
+          });
+        }
+      }
+
       this.db.tables[this.table] = store.filter((r) => !toDelete.includes(r));
       return { data: toDelete[0] ?? null, error: null };
     }
@@ -388,11 +445,17 @@ class Query implements PromiseLike<Result> {
 // ── Test Setup ──────────────────────────────────────────────────────────────
 const fakeDb = new FakeDb();
 const fakeSupabase = {
-  forUser: () => fakeDb,
-  admin: () => ({
-    from: (table: string) => fakeDb.from(table),
-    auth: { admin: fakeDb.authAdmin() },
-  }),
+  forUser: (jwt?: string) => {
+    fakeDb.currentJwt = jwt ?? null;
+    return fakeDb;
+  },
+  admin: () => {
+    fakeDb.currentJwt = null;
+    return {
+      from: (table: string) => fakeDb.from(table),
+      auth: { admin: fakeDb.authAdmin() },
+    };
+  },
 };
 
 @Global()
@@ -489,7 +552,7 @@ describe("Admin Module E2E", () => {
       expect(resMgr.status).toBe(403);
     });
 
-    it("Admin khoá và mở khoá tài khoản", async () => {
+    it("Admin khoá và mở khoá tài khoản (D/M1)", async () => {
       // Khoá tài khoản
       const lockRes = await request(app.getHttpServer())
         .patch(`/admin/users/${USER_BOB}/lock`)
@@ -499,6 +562,13 @@ describe("Admin Module E2E", () => {
       expect(lockRes.body.locked).toBe(true);
 
       expect(fakeDb.usersAuth[USER_BOB]?.banned_until).toBeTruthy();
+
+      const lockAudit = fakeDb.tables.audit_logs?.find(
+        (a) => a.table_name === "users" && a.record_id === USER_BOB && a.action === "UPDATE",
+      );
+      expect(lockAudit).toBeDefined();
+      expect(lockAudit?.actor_id).toBe(ADMIN);
+      expect((lockAudit?.after_data as Record<string, unknown>)?.locked).toBe(true);
 
       // Mở khoá tài khoản
       const unlockRes = await request(app.getHttpServer())
@@ -510,7 +580,7 @@ describe("Admin Module E2E", () => {
       expect(fakeDb.usersAuth[USER_BOB]?.banned_until).toBeNull();
     });
 
-    it("Admin cấp và thu hồi quyền ADMIN", async () => {
+    it("Admin cấp và thu hồi quyền ADMIN (D/M1)", async () => {
       // Cấp ADMIN
       const grantRes = await request(app.getHttpServer())
         .patch(`/admin/users/${USER_BOB}/admin-role`)
@@ -522,6 +592,15 @@ describe("Admin Module E2E", () => {
       const roles = fakeDb.tables.user_roles ?? [];
       expect(roles.some((r) => r.user_id === USER_BOB && r.role === "ADMIN")).toBe(true);
 
+      const grantAudit = fakeDb.tables.audit_logs?.find(
+        (a) =>
+          a.table_name === "user_roles" &&
+          a.action === "INSERT" &&
+          (a.after_data as Record<string, unknown>)?.user_id === USER_BOB,
+      );
+      expect(grantAudit).toBeDefined();
+      expect(grantAudit?.actor_id).toBe(ADMIN);
+
       // Thu hồi ADMIN
       const revokeRes = await request(app.getHttpServer())
         .patch(`/admin/users/${USER_BOB}/admin-role`)
@@ -530,6 +609,15 @@ describe("Admin Module E2E", () => {
       expect(revokeRes.status).toBe(200);
       expect(revokeRes.body.isAdmin).toBe(false);
       expect(fakeDb.tables.user_roles?.some((r) => r.user_id === USER_BOB && r.role === "ADMIN")).toBe(false);
+
+      const revokeAudit = fakeDb.tables.audit_logs?.find(
+        (a) =>
+          a.table_name === "user_roles" &&
+          a.action === "DELETE" &&
+          (a.before_data as Record<string, unknown>)?.user_id === USER_BOB,
+      );
+      expect(revokeAudit).toBeDefined();
+      expect(revokeAudit?.actor_id).toBe(ADMIN);
     });
 
     // ── AC-16 & R-105: Phân quyền gán nhân sự ──
@@ -685,23 +773,20 @@ describe("Admin Module E2E", () => {
       expect(res.body.items[0].action).toBe("UPDATE");
     });
 
-    it("Manager chỉ xem được audit log của rạp mình", async () => {
+    it("Manager không có quyền đọc audit log -> 403 Forbidden (D/M2)", async () => {
       const res = await request(app.getHttpServer())
         .get("/admin/audit-logs?page=1&pageSize=10")
         .set("Authorization", `Bearer ${managerHn01Token}`);
 
-      expect(res.status).toBe(200);
-      // Chỉ nhận log của HN01 (id = 2)
-      expect(res.body.items.every((item: { cinemaId: string | null }) => item.cinemaId === HN01)).toBe(true);
+      expect(res.status).toBe(403);
     });
 
-    it("Manager tra cứu audit log của rạp khác -> 403 (FORBIDDEN_CINEMA)", async () => {
+    it("Customer không có quyền đọc audit log -> 403 Forbidden (D/M2)", async () => {
       const res = await request(app.getHttpServer())
-        .get(`/admin/audit-logs?cinemaId=${HN02}`)
-        .set("Authorization", `Bearer ${managerHn01Token}`);
+        .get("/admin/audit-logs?page=1&pageSize=10")
+        .set("Authorization", `Bearer ${customerToken}`);
 
       expect(res.status).toBe(403);
-      expect(res.body.error.code).toBe("FORBIDDEN_CINEMA");
     });
   });
 
@@ -808,7 +893,46 @@ describe("Admin Module E2E", () => {
       expect(res.body.discountValue).toBe(40);
     });
 
+    it("Admin PATCH voucher kết hợp vi phạm ràng buộc chéo (PERCENT với discountValue > 100) -> 400 (D/M4)", async () => {
+      // Tạo voucher FIXED với value 50000
+      const createRes = await request(app.getHttpServer())
+        .post("/admin/vouchers")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          code: "FIXED50K",
+          discountType: "FIXED",
+          discountValue: 50000,
+        });
+      expect(createRes.status).toBe(201);
+      const fixedVoucherId = createRes.body.id;
+
+      // PATCH chỉ discountType: "PERCENT" (không gửi discountValue) -> merge với 50000 -> 400
+      const patchRes = await request(app.getHttpServer())
+        .patch(`/admin/vouchers/${fixedVoucherId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ discountType: "PERCENT" });
+
+      expect(patchRes.status).toBe(400);
+      expect(patchRes.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("Admin xoá voucher đã có lượt áp dụng -> 409 Conflict (D/M3)", async () => {
+      fakeDb.tables.voucher_redemptions = [
+        { id: uuid(999), voucher_id: VOUCHER_1, order_id: uuid(888) },
+      ];
+
+      const res = await request(app.getHttpServer())
+        .delete(`/admin/vouchers/${VOUCHER_1}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe("CONFLICT");
+      expect(fakeDb.tables.vouchers?.find((v) => v.id === VOUCHER_1)).toBeDefined();
+    });
+
     it("Admin xoá voucher -> 200 OK", async () => {
+      fakeDb.tables.voucher_redemptions = [];
+
       const res = await request(app.getHttpServer())
         .delete(`/admin/vouchers/${VOUCHER_1}`)
         .set("Authorization", `Bearer ${adminToken}`);
