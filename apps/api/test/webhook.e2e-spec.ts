@@ -1,0 +1,639 @@
+import type { INestApplication } from "@nestjs/common";
+import { APP_FILTER, APP_GUARD } from "@nestjs/core";
+import { Test } from "@nestjs/testing";
+import { SignJWT } from "jose";
+import request from "supertest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { AccessService } from "../src/common/auth/access.service";
+import { AuthGuard } from "../src/common/auth/auth.guard";
+import { RolesGuard } from "../src/common/auth/roles.guard";
+import { AllExceptionsFilter } from "../src/common/errors/all-exceptions.filter";
+import { SupabaseService } from "../src/common/supabase/supabase.service";
+import { ENV, type Env } from "../src/config/env";
+import { PaymentController } from "../src/modules/payment/payment.controller";
+import { PaymentService } from "../src/modules/payment/payment.service";
+import { PayosClient } from "../src/modules/payment/payos.client";
+import { WebhookController } from "../src/modules/payment/webhook.controller";
+
+const JWT_SECRET = "test-jwt-secret-test-jwt-secret-1234";
+const SUPABASE_URL = "https://test.supabase.co";
+const CHECKSUM_KEY = "test-payos-checksum-key-123456789";
+
+const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+
+const USER_CUSTOMER = uuid(101);
+const USER_OTHER = uuid(102);
+
+const CINEMA_HN01 = uuid(201);
+const SHOWTIME_01 = uuid(301);
+
+const ORDER_PENDING_01 = uuid(401);
+const ORDER_NO_CONSENT = uuid(402);
+const ORDER_EXPIRED = uuid(403);
+const ORDER_ZERO_VOUCHER = uuid(404);
+const ORDER_OLD_PENDING = uuid(405);
+const ORDER_LATE_SEATS_SOLD = uuid(406);
+
+type Row = Record<string, unknown>;
+interface Failure {
+  code: string;
+  message: string;
+}
+interface Result {
+  data: unknown;
+  error: Failure | null;
+}
+
+class FakeDb {
+  tables: Record<string, Row[]> = {};
+  emailOutbox: Row[] = [];
+  tickets: Row[] = [];
+  paymentEvents: Row[] = [];
+
+  reset() {
+    this.emailOutbox = [];
+    this.tickets = [];
+    this.paymentEvents = [];
+    this.tables = {
+      orders: [
+        {
+          id: ORDER_PENDING_01,
+          cinema_id: CINEMA_HN01,
+          cinema_code: "HN01",
+          showtime_id: SHOWTIME_01,
+          user_id: USER_CUSTOMER,
+          status: "holding",
+          subtotal_amount: 150000,
+          discount_amount: 0,
+          total_amount: 150000,
+          booking_code: "HN01-123456",
+          hold_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+          consent_at: new Date().toISOString(),
+        },
+        {
+          id: ORDER_NO_CONSENT,
+          cinema_id: CINEMA_HN01,
+          cinema_code: "HN01",
+          showtime_id: SHOWTIME_01,
+          user_id: USER_CUSTOMER,
+          status: "holding",
+          subtotal_amount: 150000,
+          discount_amount: 0,
+          total_amount: 150000,
+          booking_code: "HN01-222222",
+          hold_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+          consent_at: null,
+        },
+        {
+          id: ORDER_EXPIRED,
+          cinema_id: CINEMA_HN01,
+          cinema_code: "HN01",
+          showtime_id: SHOWTIME_01,
+          user_id: USER_CUSTOMER,
+          status: "holding",
+          subtotal_amount: 150000,
+          discount_amount: 0,
+          total_amount: 150000,
+          booking_code: "HN01-333333",
+          hold_expires_at: new Date(Date.now() - 1000).toISOString(), // đã hết hạn
+          consent_at: new Date().toISOString(),
+        },
+        {
+          id: ORDER_ZERO_VOUCHER,
+          cinema_id: CINEMA_HN01,
+          cinema_code: "HN01",
+          showtime_id: SHOWTIME_01,
+          user_id: USER_CUSTOMER,
+          status: "holding",
+          subtotal_amount: 150000,
+          discount_amount: 150000,
+          total_amount: 0,
+          booking_code: "HN01-000000",
+          hold_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+          consent_at: new Date().toISOString(),
+        },
+        {
+          id: ORDER_OLD_PENDING,
+          cinema_id: CINEMA_HN01,
+          cinema_code: "HN01",
+          showtime_id: SHOWTIME_01,
+          user_id: USER_CUSTOMER,
+          status: "pending_payment",
+          subtotal_amount: 150000,
+          discount_amount: 0,
+          total_amount: 150000,
+          booking_code: "HN01-555555",
+          hold_expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          consent_at: new Date().toISOString(),
+        },
+        {
+          id: ORDER_LATE_SEATS_SOLD,
+          cinema_id: CINEMA_HN01,
+          cinema_code: "HN01",
+          showtime_id: SHOWTIME_01,
+          user_id: USER_CUSTOMER,
+          status: "expired",
+          subtotal_amount: 150000,
+          discount_amount: 0,
+          total_amount: 150000,
+          booking_code: "HN01-666666",
+          hold_expires_at: new Date(Date.now() - 60000).toISOString(),
+          consent_at: new Date().toISOString(),
+        },
+      ],
+      payments: [
+        {
+          id: uuid(901),
+          order_id: ORDER_OLD_PENDING,
+          cinema_id: CINEMA_HN01,
+          order_code: 999901,
+          amount: 150000,
+          status: "PENDING",
+        },
+        {
+          id: uuid(902),
+          order_id: ORDER_LATE_SEATS_SOLD,
+          cinema_id: CINEMA_HN01,
+          order_code: 999902,
+          amount: 150000,
+          status: "PENDING",
+        },
+      ],
+      order_seats: [
+        { id: uuid(701), order_id: ORDER_PENDING_01, seat_id: uuid(801) },
+      ],
+      user_roles: [{ user_id: USER_CUSTOMER, role: "CUSTOMER" }],
+      staff_assignments: [],
+    };
+  }
+
+  from(table: string) {
+    return new Query(this, table);
+  }
+
+  rpc(fn: string, args: Record<string, unknown>): Promise<Result> {
+    if (fn === "confirm_zero_amount") {
+      const orderId = args.p_order_id as string;
+      const order = (this.tables.orders ?? []).find((o) => o.id === orderId);
+      if (!order) return Promise.resolve({ data: null, error: { code: "P0001", message: "Order not found" } });
+      order.status = "paid";
+      return Promise.resolve({
+        data: { success: true, status: "SUCCESS", order_id: orderId, booking_code: order.booking_code },
+        error: null,
+      });
+    }
+
+    if (fn === "mark_payment_cancelled") {
+      const orderId = args.p_order_id as string;
+      const order = (this.tables.orders ?? []).find((o) => o.id === orderId);
+      if (order) order.status = "cancelled";
+      const pay = (this.tables.payments ?? []).find((p) => p.order_id === orderId && p.status === "PENDING");
+      if (pay) pay.status = "CANCELLED";
+      return Promise.resolve({ data: { success: true, status: "cancelled", order_id: orderId }, error: null });
+    }
+
+    if (fn === "record_payment_event") {
+      const ref = args.p_transaction_ref as string;
+      const existing = this.paymentEvents.find((e) => e.transaction_ref === ref);
+      if (!existing) {
+        this.paymentEvents.push({ ...args });
+      }
+      return Promise.resolve({ data: { id: uuid(501) }, error: null });
+    }
+
+    if (fn === "confirm_paid") {
+      const orderId = args.p_order_id as string;
+      const order = (this.tables.orders ?? []).find((o) => o.id === orderId);
+      if (!order) return Promise.resolve({ data: null, error: { code: "P0001", message: "Order not found" } });
+
+      // AC-10 Idempotency: nếu đã paid -> không sinh thêm email, không sinh thêm ticket
+      if (order.status === "paid") {
+        return Promise.resolve({
+          data: { success: true, status: "SUCCESS", order_id: order.id, booking_code: order.booking_code },
+          error: null,
+        });
+      }
+
+      // AC-11: Nếu là đơn ORDER_LATE_SEATS_SOLD (đơn expired + ghế đã bán) -> chuyển sang needs_manual_review
+      if (order.id === ORDER_LATE_SEATS_SOLD) {
+        order.status = "needs_manual_review";
+        const pay = (this.tables.payments ?? []).find((p) => p.order_id === orderId);
+        if (pay) pay.status = "PAID";
+        this.emailOutbox.push({
+          kind: "LATE_PAYMENT_MANUAL_REVIEW",
+          order_id: order.id,
+          status: "PENDING",
+        });
+        return Promise.resolve({
+          data: { success: false, status: "NEEDS_MANUAL_REVIEW", order_id: order.id },
+          error: null,
+        });
+      }
+
+      // Thanh toán thành công bình thường
+      order.status = "paid";
+      const pay = (this.tables.payments ?? []).find((p) => p.order_id === orderId);
+      if (pay) pay.status = "PAID";
+
+      this.tickets.push({
+        id: uuid(999),
+        order_id: order.id,
+        qr_token: "token-123456",
+      });
+
+      this.emailOutbox.push({
+        kind: "TICKET_ISSUED",
+        order_id: order.id,
+        booking_code: order.booking_code,
+        status: "PENDING",
+      });
+
+      return Promise.resolve({
+        data: { success: true, status: "SUCCESS", order_id: order.id, booking_code: order.booking_code },
+        error: null,
+      });
+    }
+
+    return Promise.resolve({ data: null, error: { code: "PGRST202", message: "function not found" } });
+  }
+}
+
+class Query implements PromiseLike<Result> {
+  private op: "select" | "insert" | "update" | "delete" = "select";
+  private payload: Row | Row[] = {};
+  private filters: ((row: Row) => boolean)[] = [];
+  private mode: "many" | "one" | "maybe" = "many";
+
+  constructor(
+    private readonly db: FakeDb,
+    private readonly table: string,
+  ) {}
+
+  select() {
+    return this;
+  }
+  insert(payload: Row | Row[]) {
+    this.op = "insert";
+    this.payload = payload;
+    return this;
+  }
+  update(payload: Row) {
+    this.op = "update";
+    this.payload = payload;
+    return this;
+  }
+  delete() {
+    this.op = "delete";
+    return this;
+  }
+  eq(key: string, value: unknown) {
+    this.filters.push((row) => row[key] === value);
+    return this;
+  }
+  neq(key: string, value: unknown) {
+    this.filters.push((row) => row[key] !== value);
+    return this;
+  }
+  single() {
+    this.mode = "one";
+    return this;
+  }
+  maybeSingle() {
+    this.mode = "maybe";
+    return this;
+  }
+
+  then<A, B>(
+    onFulfilled?: (value: Result) => A | PromiseLike<A>,
+    onRejected?: (reason: unknown) => B | PromiseLike<B>,
+  ) {
+    return Promise.resolve(this.execute()).then(onFulfilled, onRejected);
+  }
+
+  private matching(): Row[] {
+    return (this.db.tables[this.table] ?? []).filter((row) => this.filters.every((f) => f(row)));
+  }
+
+  private shape(rows: Row[]): Result {
+    if (this.mode === "many") return { data: rows.map((r) => ({ ...r })), error: null };
+    if (this.mode === "one") {
+      if (rows.length !== 1) return { data: null, error: { code: "PGRST116", message: "no rows or multiple rows" } };
+      return { data: { ...rows[0] }, error: null };
+    }
+    return { data: rows[0] ? { ...rows[0] } : null, error: null };
+  }
+
+  private execute(): Result {
+    const store = (this.db.tables[this.table] ??= []);
+    if (this.op === "select") return this.shape(this.matching());
+
+    if (this.op === "insert") {
+      const incoming = (Array.isArray(this.payload) ? this.payload : [this.payload]).map((row) => ({
+        id: uuid(Math.floor(Math.random() * 100000)),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...row,
+      }));
+      store.push(...incoming);
+      return this.shape(incoming);
+    }
+
+    const targets = this.matching();
+    if (this.op === "update") {
+      for (const row of targets) {
+        Object.assign(row, this.payload);
+      }
+      return this.shape(targets);
+    }
+
+    if (this.op === "delete") {
+      this.db.tables[this.table] = store.filter((row) => !targets.includes(row));
+      return { data: targets, error: null };
+    }
+
+    return { data: null, error: null };
+  }
+}
+
+const fakeDb = new FakeDb();
+const fakeSupabase = {
+  forUser: () => fakeDb,
+  admin: () => fakeDb,
+};
+
+const sign = (sub: string) =>
+  new SignJWT({ email: `${sub}@filmbooking.vn` })
+    .setProtectedHeader({ alg: "HS256" })
+    .setAudience("authenticated")
+    .setIssuer(`${SUPABASE_URL}/auth/v1`)
+    .setSubject(sub)
+    .setIssuedAt()
+    .setExpirationTime("15m")
+    .sign(new TextEncoder().encode(JWT_SECRET));
+
+describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11)", () => {
+  let app: INestApplication;
+  let customerToken: string;
+  let otherToken: string;
+  let payosClient: PayosClient;
+
+  beforeAll(async () => {
+    customerToken = await sign(USER_CUSTOMER);
+    otherToken = await sign(USER_OTHER);
+
+    const testEnv: Env = {
+      NODE_ENV: "test",
+      PORT: 3001,
+      WEB_ORIGIN: ["http://localhost:3000"],
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY: "anon-key",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      SUPABASE_JWT_SECRET: JWT_SECRET,
+      PAYOS_CHECKSUM_KEY: CHECKSUM_KEY,
+      PAYOS_CLIENT_ID: "mock-client-id",
+      PAYOS_API_KEY: "mock-api-key",
+    } as Env;
+
+    const moduleRef = await Test.createTestingModule({
+      controllers: [PaymentController, WebhookController],
+      providers: [
+        { provide: ENV, useValue: testEnv },
+        { provide: SupabaseService, useValue: fakeSupabase },
+        AccessService,
+        PaymentService,
+        PayosClient,
+        { provide: APP_GUARD, useClass: AuthGuard },
+        { provide: APP_GUARD, useClass: RolesGuard },
+        { provide: APP_FILTER, useClass: AllExceptionsFilter },
+      ],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+
+    payosClient = moduleRef.get(PayosClient);
+  });
+
+  beforeEach(() => {
+    fakeDb.reset();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe("POST /bookings/:id/payment", () => {
+    it("yêu cầu xác thực (401 khi không có token)", async () => {
+      const res = await request(app.getHttpServer()).post(`/bookings/${ORDER_PENDING_01}/payment`);
+      expect(res.status).toBe(401);
+    });
+
+    it("404 khi đơn không tồn tại", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${uuid(99999)}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`);
+      expect(res.status).toBe(404);
+    });
+
+    it("403 khi đơn không thuộc về user", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_PENDING_01}/payment`)
+        .set("Authorization", `Bearer ${otherToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it("AC-08: tạo payment khi chưa có consent -> 409 CONSENT_REQUIRED", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_NO_CONSENT}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`);
+      expect(res.status).toBe(409);
+      expect(res.body.error?.code).toBe("CONSENT_REQUIRED");
+    });
+
+    it("410 khi đơn đã hết hạn giữ ghế", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_EXPIRED}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`);
+      expect(res.status).toBe(410);
+      expect(res.body.error?.code).toBe("HOLD_EXPIRED");
+    });
+
+    it("đơn 0đ (voucher 100%): gọi confirm_zero_amount, chốt luôn status PAID, không checkoutUrl", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_ZERO_VOUCHER}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("PAID");
+      expect(res.body.checkoutUrl).toBeNull();
+      expect(res.body.bookingCode).toBe("HN01-000000");
+
+      const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_ZERO_VOUCHER);
+      expect(order?.status).toBe("paid");
+    });
+
+    it("đơn có tiền: tạo payment link, đơn sang pending_payment, huỷ đơn cũ pending (#10)", async () => {
+      const cancelSpy = vi.spyOn(payosClient, "cancelPaymentLink");
+
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_PENDING_01}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`)
+        .send({
+          returnUrl: "http://localhost:3000/dat-ve/xac-nhan",
+          cancelUrl: "http://localhost:3000/dat-ve/huy",
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("AWAITING_PAYMENT");
+      expect(res.body.checkoutUrl).toContain("payos.vn");
+      expect(res.body.bookingCode).toBe("HN01-123456");
+
+      // Đơn hiện tại chuyển sang pending_payment
+      const currentOrder = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_PENDING_01);
+      expect(currentOrder?.status).toBe("pending_payment");
+
+      // Bản ghi payment mới được lưu
+      const newPayment = (fakeDb.tables.payments ?? []).find(
+        (p) => p.order_id === ORDER_PENDING_01 && p.status === "PENDING",
+      );
+      expect(newPayment).toBeDefined();
+      expect(newPayment?.amount).toBe(150000);
+
+      // Đơn cũ pending của user bị huỷ (SPEC #10)
+      const oldOrder = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_OLD_PENDING);
+      expect(oldOrder?.status).toBe("cancelled");
+      expect(cancelSpy).toHaveBeenCalledWith(999901, "Tạo đơn mới");
+    });
+  });
+
+  describe("GET /bookings/:id/payment-status", () => {
+    it("trả về trạng thái cho màn 'Đang xác nhận' (polling)", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/bookings/${ORDER_OLD_PENDING}/payment-status`)
+        .set("Authorization", `Bearer ${customerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("AWAITING_PAYMENT");
+      expect(res.body.orderStatus).toBe("pending_payment");
+      expect(res.body.bookingCode).toBe("HN01-555555");
+    });
+  });
+
+  describe("POST /bookings/:id/payment/cancel", () => {
+    it("huỷ payment link và chuyển đơn sang cancelled", async () => {
+      const cancelSpy = vi.spyOn(payosClient, "cancelPaymentLink");
+
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${ORDER_OLD_PENDING}/payment/cancel`)
+        .set("Authorization", `Bearer ${customerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("CANCELLED");
+
+      const oldOrder = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_OLD_PENDING);
+      expect(oldOrder?.status).toBe("cancelled");
+      expect(cancelSpy).toHaveBeenCalledWith(999901, "Khách huỷ thanh toán");
+    });
+  });
+
+  describe("POST /payos/webhook (@Public)", () => {
+    it("AC-09: webhook chữ ký sai -> 200/400 theo chuẩn PayOS, đơn không đổi, log cảnh báo có orderCode", async () => {
+      const payload = {
+        code: "00",
+        desc: "success",
+        data: {
+          orderCode: 999901,
+          amount: 150000,
+          reference: "REF_FAKE_01",
+          code: "00",
+        },
+        signature: "invalid-signature-12345",
+      };
+
+      const res = await request(app.getHttpServer()).post("/payos/webhook").send(payload);
+
+      // Theo AC-09: status 200 hoặc 400
+      expect([200, 400]).toContain(res.status);
+      expect(res.body.success).toBe(false);
+
+      // Đơn không bị đổi trạng thái
+      const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_OLD_PENDING);
+      expect(order?.status).toBe("pending_payment");
+    });
+
+    it("AC-10: cùng webhook hợp lệ 3 lần -> đúng 1 lần paid, đúng 1 email vé trong outbox (idempotent)", async () => {
+      const data = {
+        orderCode: 999901,
+        amount: 150000,
+        reference: "REF_TXN_VALID_01",
+        code: "00",
+        transactionDateTime: new Date().toISOString(),
+      };
+      const validSignature = payosClient.computeSignature(data, CHECKSUM_KEY);
+
+      const payload = {
+        code: "00",
+        desc: "success",
+        data,
+        signature: validSignature,
+      };
+
+      // Gửi lần 1
+      const res1 = await request(app.getHttpServer()).post("/payos/webhook").send(payload);
+      expect(res1.status).toBe(200);
+      expect(res1.body.success).toBe(true);
+
+      const orderAfter1 = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_OLD_PENDING);
+      expect(orderAfter1?.status).toBe("paid");
+      expect(fakeDb.tickets.length).toBe(1);
+      expect(fakeDb.emailOutbox.length).toBe(1);
+
+      // Gửi lần 2
+      const res2 = await request(app.getHttpServer()).post("/payos/webhook").send(payload);
+      expect(res2.status).toBe(200);
+      expect(res2.body.success).toBe(true);
+
+      // Gửi lần 3
+      const res3 = await request(app.getHttpServer()).post("/payos/webhook").send(payload);
+      expect(res3.status).toBe(200);
+      expect(res3.body.success).toBe(true);
+
+      // Idempotency: Vẫn chỉ đúng 1 vé và đúng 1 email outbox!
+      expect(fakeDb.tickets.length).toBe(1);
+      expect(fakeDb.emailOutbox.length).toBe(1);
+    });
+
+    it("AC-11: webhook cho đơn expired + ghế đã bán -> needs_manual_review và email hướng dẫn liên hệ", async () => {
+      const data = {
+        orderCode: 999902, // tương ứng ORDER_LATE_SEATS_SOLD
+        amount: 150000,
+        reference: "REF_TXN_LATE_02",
+        code: "00",
+        transactionDateTime: new Date().toISOString(),
+      };
+      const validSignature = payosClient.computeSignature(data, CHECKSUM_KEY);
+
+      const payload = {
+        code: "00",
+        desc: "success",
+        data,
+        signature: validSignature,
+      };
+
+      const res = await request(app.getHttpServer()).post("/payos/webhook").send(payload);
+      expect(res.status).toBe(200);
+
+      const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_LATE_SEATS_SOLD);
+      expect(order?.status).toBe("needs_manual_review");
+
+      const payment = (fakeDb.tables.payments ?? []).find((p) => p.order_code === 999902);
+      expect(payment?.status).toBe("PAID");
+
+      // Email thông báo hướng dẫn liên hệ rạp được tạo trong outbox
+      const manualReviewEmail = fakeDb.emailOutbox.find(
+        (e) => e.kind === "LATE_PAYMENT_MANUAL_REVIEW",
+      );
+      expect(manualReviewEmail).toBeDefined();
+    });
+  });
+});
