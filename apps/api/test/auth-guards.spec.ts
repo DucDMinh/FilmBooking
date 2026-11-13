@@ -69,11 +69,12 @@ interface SignOptions {
   iss?: string;
   alg?: string;
   withSub?: boolean;
+  amr?: unknown;
 }
 
 const sign = (sub: string, options: SignOptions = {}) => {
   // Claim user_metadata do user tự đặt: cố tình luôn "đã xác nhận" để chứng minh server không tin nó.
-  const jwt = new SignJWT({ email: `${sub}@x.vn`, user_metadata: { email_verified: true } })
+  const jwt = new SignJWT({ email: `${sub}@x.vn`, user_metadata: { email_verified: true }, ...(options.amr === undefined ? {} : { amr: options.amr }) })
     .setProtectedHeader({ alg: options.alg ?? "HS256" })
     .setAudience(options.aud ?? "authenticated")
     .setIssuer(options.iss ?? `${SUPABASE_URL}/auth/v1`)
@@ -99,7 +100,7 @@ class ProbeController {
 
   @Get("me")
   me(@CurrentUser() user: AuthUser) {
-    return { id: user.id, email: user.email, hasJwt: Boolean(user.jwt), keys: Object.keys(user).sort() };
+    return { id: user.id, email: user.email, hasJwt: Boolean(user.jwt), authTime: user.authTime, keys: Object.keys(user).sort() };
   }
 
   @Get("email")
@@ -221,8 +222,28 @@ describe("auth guards", () => {
         id: CUSTOMER,
         email: `${CUSTOMER}@x.vn`,
         hasJwt: true,
+        authTime: null,
         keys: ["authTime", "email", "id", "jwt"],
       });
+    });
+
+    it("authTime = max(amr[].timestamp); never derived from iat", async () => {
+      const amr = [{ method: "password", timestamp: 1_700_000_000 }, { method: "oauth", timestamp: 1_700_000_500 }];
+      const res = await request(app.getHttpServer())
+        .get("/probe/me")
+        .set("Authorization", `Bearer ${await sign(CUSTOMER, { amr })}`);
+      expect(res.status).toBe(200);
+      expect(res.body.authTime).toBe(1_700_000_500);
+    });
+
+    it("authTime null (route still authenticates) for empty, string[] or malformed amr", async () => {
+      for (const amr of [[], ["password"], [{ method: "password" }], [{ timestamp: "1700000000" }], "password"]) {
+        const res = await request(app.getHttpServer())
+          .get("/probe/me")
+          .set("Authorization", `Bearer ${await sign(CUSTOMER, { amr })}`);
+        expect(res.status).toBe(200);
+        expect(res.body.authTime).toBeNull();
+      }
     });
 
     it("401 for wrong signature, expiry, audience, issuer, alg none, HS384, missing sub and garbage", async () => {

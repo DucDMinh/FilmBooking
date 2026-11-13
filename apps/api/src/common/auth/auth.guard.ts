@@ -9,8 +9,7 @@ import { IS_PUBLIC_KEY, type AuthUser } from "./decorators";
 interface SupabaseClaims {
   sub?: string;
   email?: string;
-  auth_time?: number;
-  iat?: number;
+  amr?: unknown;
 }
 
 interface AuthRequest {
@@ -19,6 +18,23 @@ interface AuthRequest {
 }
 
 const ASYMMETRIC_ALGORITHMS = ["RS256", "ES256"];
+
+/**
+ * Thời điểm đăng nhập THẬT của phiên = max(amr[].timestamp). GoTrue giữ nguyên `amr` qua refresh token
+ * (đã xác minh với GoTrue local) còn `iat` thì đổi theo mỗi lần refresh nên KHÔNG dùng `iat`.
+ * `amr` thiếu / rỗng / dạng string[] -> null (endpoint nhạy cảm sẽ fail-closed).
+ */
+function latestLoginTimestamp(amr: unknown): number | null {
+  if (!Array.isArray(amr)) return null;
+  let latest: number | null = null;
+  for (const entry of amr) {
+    const timestamp = (entry as { timestamp?: unknown } | null)?.timestamp;
+    if (typeof timestamp === "number" && Number.isFinite(timestamp) && (latest === null || timestamp > latest)) {
+      latest = timestamp;
+    }
+  }
+  return latest;
+}
 
 /**
  * Xác thực JWT Supabase (aud=authenticated, iss=SUPABASE_JWT_ISSUER hoặc <SUPABASE_URL>/auth/v1)
@@ -71,12 +87,7 @@ export class AuthGuard implements CanActivate {
       }
       const claims = payload as SupabaseClaims;
       if (!claims.sub) throw new Error("missing sub");
-      const authTime =
-        typeof claims.auth_time === "number"
-          ? claims.auth_time
-          : typeof claims.iat === "number"
-            ? claims.iat
-            : 0;
+      const authTime = latestLoginTimestamp(claims.amr);
       return {
         id: claims.sub,
         email: claims.email ?? null,

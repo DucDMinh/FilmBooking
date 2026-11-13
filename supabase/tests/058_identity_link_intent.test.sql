@@ -5,7 +5,7 @@
 -- ============================================================================
 
 begin;
-select plan(12);
+select plan(16);
 
 -- ---------------------------------------------------------------------------
 -- 0. Thiết lập dữ liệu mẫu trong auth.users và auth.identities
@@ -59,8 +59,8 @@ select throws_ok(
   $$insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at)
     values (gen_random_uuid(), 'google', 'g_7701_unauth', '00000000-0000-0000-0000-000000007701', '{"sub":"g_7701_unauth"}'::jsonb, now(), now())$$,
   '23514',
-  null,
-  'AC-04: Chặn chèn identity OAuth vào user mật khẩu khi không có link intent'
+  'OAUTH_AUTO_MERGE_BLOCKED: Khong the tu dong gop tai khoan - can yeu cau lien ket tu phien da dang nhap.',
+  'AC-04: Chặn chèn identity OAuth vào user mật khẩu khi không có link intent (thông điệp trung tính, M-2)'
 );
 
 -- M-05: User OAuth-only cố chèn thêm identity khác không có intent -> chặn auto-merge
@@ -173,6 +173,42 @@ select lives_ok(
 );
 
 -- ---------------------------------------------------------------------------
+-- 7b. M-1: user có encrypted_password nhưng 0 identity (updateUserById xong, mark_password_set lỗi)
+--     vẫn là "user đã tồn tại" -> không có intent thì chặn auto-merge
+-- ---------------------------------------------------------------------------
+insert into auth.users (id, email, encrypted_password, created_at, email_confirmed_at)
+values (
+  '00000000-0000-0000-0000-000000007704',
+  'user_7704_pw_no_identity@test.local',
+  '$2a$10$abcdefghijklmnopqrstuvwxyzABCDEF',
+  now(),
+  now()
+);
+
+select throws_ok(
+  $$insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at)
+    values (gen_random_uuid(), 'google', 'g_7704_unauth', '00000000-0000-0000-0000-000000007704', '{"sub":"g_7704_unauth","email":"user_7704_pw_no_identity@test.local"}'::jsonb, now(), now())$$,
+  '23514',
+  null,
+  'M-1: User có mật khẩu, 0 identity, không intent -> chặn auto-merge'
+);
+
+-- ---------------------------------------------------------------------------
+-- 7c. M-3: CHECK provider của identity_link_intents chỉ nhận google | facebook
+-- ---------------------------------------------------------------------------
+select throws_ok(
+  $$insert into public.identity_link_intents (user_id, provider) values ('00000000-0000-0000-0000-000000007701', 'twitter')$$,
+  '23514',
+  null,
+  'M-3: provider ngoài (google, facebook) bị CHECK chặn'
+);
+
+select lives_ok(
+  $$insert into public.identity_link_intents (user_id, provider) values ('00000000-0000-0000-0000-000000007701', 'facebook')$$,
+  'M-3: provider facebook hợp lệ'
+);
+
+-- ---------------------------------------------------------------------------
 -- 8. Bảo mật bảng identity_link_intents: RLS chặn anon / authenticated
 -- ---------------------------------------------------------------------------
 do $$ begin perform set_config('request.jwt.claims', '{"role":"authenticated","sub":"00000000-0000-0000-0000-000000007701"}', true); end $$;
@@ -190,6 +226,17 @@ select throws_ok(
   '42501',
   null,
   'RLS/Privilege: authenticated không được phép chèn identity_link_intents'
+);
+
+reset role;
+do $$ begin perform set_config('request.jwt.claims', '{"role":"anon"}', true); end $$;
+set local role anon;
+
+select throws_ok(
+  $$select * from public.identity_link_intents$$,
+  '42501',
+  null,
+  'RLS/Privilege: anon không được phép đọc identity_link_intents'
 );
 
 select * from finish();

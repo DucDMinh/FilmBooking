@@ -7,6 +7,11 @@ import { AppException } from "../../common/errors/app-exception";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 
+/** Re-auth gần đây để tạo link-intent: phiên phải đăng nhập thật trong vòng 5 phút (quyết định user). */
+const REAUTH_MAX_AGE_SECONDS = 5 * 60;
+/** Thời hạn link-intent: 10 phút (quyết định user; trùng default `expires_at` của bảng). */
+const LINK_INTENT_TTL_MS = 10 * 60 * 1000;
+
 @Controller("me")
 export class MeController {
   constructor(
@@ -32,7 +37,7 @@ export class MeController {
 
   /**
    * Tạo link-intent cho liên kết MXH thủ công (R-20, AC-04, M-05).
-   * Bắt buộc người dùng đã re-auth gần đây (≤ 5 phút / 300s).
+   * Bắt buộc người dùng đã re-auth gần đây (≤ REAUTH_MAX_AGE_SECONDS, tính từ amr của phiên).
    * TTL của intent là 10 phút.
    */
   @Post("identities/link-intent")
@@ -43,12 +48,12 @@ export class MeController {
   ): Promise<void> {
     const user = request.user;
     const nowSec = Math.floor(Date.now() / 1000);
-    // Yêu cầu re-auth gần đây: ≤ 5 phút (300 giây)
-    if (!user.authTime || nowSec - user.authTime > 300) {
+    // authTime null (JWT không có amr hợp lệ) -> fail-closed.
+    if (user.authTime === null || nowSec - user.authTime > REAUTH_MAX_AGE_SECONDS) {
       throw new AppException(ERROR_CODES.REAUTH_REQUIRED, "Vui lòng đăng nhập lại để liên kết tài khoản");
     }
 
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + LINK_INTENT_TTL_MS).toISOString();
     const { error } = await this.supabase.admin().from("identity_link_intents").insert({
       user_id: user.id,
       provider: body.provider,

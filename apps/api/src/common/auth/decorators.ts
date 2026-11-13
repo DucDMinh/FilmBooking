@@ -12,8 +12,12 @@ export interface AuthUser {
   email: string | null;
   /** JWT thô của user. TUYỆT ĐỐI không log/serialize cả `req.user`. */
   jwt: string;
-  /** Thời điểm đăng nhập thực (unix timestamp in seconds) từ claim auth_time / iat. */
-  authTime: number;
+  /**
+   * Thời điểm đăng nhập thật của phiên (unix giây) = max(amr[].timestamp), giữ nguyên qua refresh token.
+   * null khi JWT không có amr dạng object có timestamp: route cần re-auth phải fail-closed.
+   * Không suy ra từ `iat` (iat đổi theo mỗi lần refresh).
+   */
+  authTime: number | null;
 }
 
 export interface CinemaScopeOptions {

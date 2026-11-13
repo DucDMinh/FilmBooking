@@ -25,6 +25,7 @@ const testEnv = parseEnv({
 const roles = [{ user_id: ADMIN, role: "ADMIN" }];
 const assignments = [{ user_id: MANAGER, cinema_id: HN01, role: "MANAGER" }];
 const insertedIntents: Array<{ user_id: string; provider: string; expires_at: string }> = [];
+let failNextIntentInsert = false;
 
 const fakeSupabase = {
   admin: () => ({
@@ -36,6 +37,10 @@ const fakeSupabase = {
         }),
       }),
       insert: (payload: { user_id: string; provider: string; expires_at: string }) => {
+        if (failNextIntentInsert) {
+          failNextIntentInsert = false;
+          return Promise.resolve({ error: { message: "insert failed" } });
+        }
         if (table === "identity_link_intents") {
           insertedIntents.push(payload);
         }
@@ -143,30 +148,58 @@ describe("GET /me (e2e)", () => {
       expect(res.status).toBe(400);
     });
 
-    it("401 REAUTH_REQUIRED when token authTime is older than 5 minutes", async () => {
-      const staleAuthTime = Math.floor(Date.now() / 1000) - 400; // 400s > 300s
-      const staleToken = await token(MANAGER, { auth_time: staleAuthTime });
-      const res = await request(app.getHttpServer())
+    const postLinkIntent = (bearer: string) =>
+      request(app.getHttpServer())
         .post("/me/identities/link-intent")
-        .set("Authorization", `Bearer ${staleToken}`)
+        .set("Authorization", `Bearer ${bearer}`)
         .send({ provider: "google" });
+    const nowSec = () => Math.floor(Date.now() / 1000);
+    const passwordAmr = (secondsAgo: number) => [{ method: "password", timestamp: nowSec() - secondsAgo }];
+
+    it("401 REAUTH_REQUIRED when iat is fresh (refreshed token) but amr login time is older than 5 minutes", async () => {
+      const res = await postLinkIntent(await token(MANAGER, { amr: passwordAmr(400) }));
       expect(res.status).toBe(401);
       expect(res.body.error?.code).toBe("REAUTH_REQUIRED");
     });
 
-    it("204 No Content when token is recent and valid provider", async () => {
+    it("401 REAUTH_REQUIRED when amr is missing (fail-closed, iat is not a fallback)", async () => {
+      const res = await postLinkIntent(await token(MANAGER));
+      expect(res.status).toBe(401);
+      expect(res.body.error?.code).toBe("REAUTH_REQUIRED");
+    });
+
+    it("401 REAUTH_REQUIRED when amr is an empty array", async () => {
+      const res = await postLinkIntent(await token(MANAGER, { amr: [] }));
+      expect(res.status).toBe(401);
+      expect(res.body.error?.code).toBe("REAUTH_REQUIRED");
+    });
+
+    it("401 REAUTH_REQUIRED when amr is string[] (no timestamps)", async () => {
+      const res = await postLinkIntent(await token(MANAGER, { amr: ["password"] }));
+      expect(res.status).toBe(401);
+      expect(res.body.error?.code).toBe("REAUTH_REQUIRED");
+    });
+
+    it("204 No Content when amr login time is recent and valid provider", async () => {
       insertedIntents.length = 0;
-      const recentAuthTime = Math.floor(Date.now() / 1000) - 60; // 60s < 300s
-      const freshToken = await token(MANAGER, { auth_time: recentAuthTime });
-      const res = await request(app.getHttpServer())
-        .post("/me/identities/link-intent")
-        .set("Authorization", `Bearer ${freshToken}`)
-        .send({ provider: "google" });
+      const res = await postLinkIntent(await token(MANAGER, { amr: passwordAmr(60) }));
       expect(res.status).toBe(204);
       expect(insertedIntents).toHaveLength(1);
       expect(insertedIntents[0]?.user_id).toBe(MANAGER);
       expect(insertedIntents[0]?.provider).toBe("google");
       expect(insertedIntents[0]?.expires_at).toBeDefined();
+    });
+
+    it("204 uses the newest amr entry (max timestamp) for the login time", async () => {
+      const amr = [...passwordAmr(4000), { method: "oauth", timestamp: nowSec() - 30 }];
+      expect((await postLinkIntent(await token(MANAGER, { amr }))).status).toBe(204);
+    });
+
+    it("500 INTERNAL_ERROR when inserting the intent fails", async () => {
+      failNextIntentInsert = true;
+      const res = await postLinkIntent(await token(MANAGER, { amr: passwordAmr(10) }));
+      expect(res.status).toBe(500);
+      expect(res.body.error?.code).toBe("INTERNAL_ERROR");
     });
   });
 });
