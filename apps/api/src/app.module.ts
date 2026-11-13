@@ -12,7 +12,9 @@ import { HealthController } from "./health/health.controller";
 import { AuthExtModule } from "./modules/auth-ext/auth-ext.module";
 import { CatalogModule } from "./modules/catalog/catalog.module";
 import { CinemaOpsModule } from "./modules/cinema-ops/cinema-ops.module";
+import { IdentityModule } from "./modules/identity/identity.module";
 import { MeModule } from "./modules/me/me.module";
+import { PricingModule } from "./modules/pricing/pricing.module";
 import { ProfileModule } from "./modules/profile/profile.module";
 
 /**
@@ -29,6 +31,8 @@ import { ProfileModule } from "./modules/profile/profile.module";
     CinemaOpsModule,
     AuthExtModule,
     ProfileModule,
+    IdentityModule,
+    PricingModule,
   ],
   controllers: [HealthController],
   providers: [
