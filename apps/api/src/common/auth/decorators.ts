@@ -12,6 +12,8 @@ export interface AuthUser {
   email: string | null;
   /** JWT thô của user. TUYỆT ĐỐI không log/serialize cả `req.user`. */
   jwt: string;
+  /** Thời điểm đăng nhập thực (unix timestamp in seconds) từ claim auth_time / iat. */
+  authTime: number;
 }
 
 export interface CinemaScopeOptions {

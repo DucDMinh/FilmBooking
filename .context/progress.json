@@ -1,6 +1,6 @@
 {
   "mode": "initial-build",
-  "activeWorkItem": "bug/layer34-review",
+  "activeWorkItem": "build/build-filmbooking",
   "features": [
     {
       "id": "remove-pos",
@@ -236,11 +236,25 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-05-round-1-review.md"
       },
       "updatedAt": "2026-11-12T10:36:20.000Z"
+    },
+    {
+      "id": "layer34-review/phase-2-task-07",
+      "title": "F-2: link-intent cho liên kết MXH thủ công (đóng M-05 & N-1)",
+      "status": "done",
+      "severity": "high",
+      "highRiskMigration": false,
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-07-round-1-review.md"
+      },
+      "updatedAt": "2026-11-13T02:22:00.000Z"
     }
   ],
   "currentLayer": 4,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-12T10:36:20.000Z",
+  "lastUpdated": "2026-11-13T02:22:00.000Z",
   "inProgressTask": null,
   "completedTasks": [
     {

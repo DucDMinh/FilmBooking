@@ -9,6 +9,8 @@ import { IS_PUBLIC_KEY, type AuthUser } from "./decorators";
 interface SupabaseClaims {
   sub?: string;
   email?: string;
+  auth_time?: number;
+  iat?: number;
 }
 
 interface AuthRequest {
@@ -69,10 +71,17 @@ export class AuthGuard implements CanActivate {
       }
       const claims = payload as SupabaseClaims;
       if (!claims.sub) throw new Error("missing sub");
+      const authTime =
+        typeof claims.auth_time === "number"
+          ? claims.auth_time
+          : typeof claims.iat === "number"
+            ? claims.iat
+            : 0;
       return {
         id: claims.sub,
         email: claims.email ?? null,
         jwt: token,
+        authTime,
       };
     } catch {
       // Không lộ lý do cụ thể (hết hạn / sai chữ ký) cho client.

@@ -57,3 +57,11 @@ export const oauthCallbackVerifyInputSchema = z.object({
   authenticatedUserId: z.string().uuid().optional(),
 });
 export type OAuthCallbackVerifyInput = z.infer<typeof oauthCallbackVerifyInputSchema>;
+
+export const linkIntentProviderSchema = z.enum(["google", "facebook"]);
+export type LinkIntentProvider = z.infer<typeof linkIntentProviderSchema>;
+
+export const createLinkIntentInputSchema = z.object({
+  provider: linkIntentProviderSchema,
+});
+export type CreateLinkIntentInput = z.infer<typeof createLinkIntentInputSchema>;

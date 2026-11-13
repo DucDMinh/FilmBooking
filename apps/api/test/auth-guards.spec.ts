@@ -216,12 +216,12 @@ describe("auth guards", () => {
     it("attaches req.user from a valid token", async () => {
       const res = await get("/probe/me", CUSTOMER);
       expect(res.status).toBe(200);
-      // Không có emailConfirmed trên req.user: chỉ id/email/jwt.
+      // Không có emailConfirmed trên req.user: chỉ id/email/jwt/authTime.
       expect(res.body).toEqual({
         id: CUSTOMER,
         email: `${CUSTOMER}@x.vn`,
         hasJwt: true,
-        keys: ["email", "id", "jwt"],
+        keys: ["authTime", "email", "id", "jwt"],
       });
     });
 

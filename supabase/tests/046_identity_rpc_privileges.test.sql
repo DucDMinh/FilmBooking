@@ -39,7 +39,6 @@ end;
 $$;
 
 -- Fixture (owner)
-set local app.allow_identity_link = 'true';
 insert into auth.users (id, email, encrypted_password, created_at, email_confirmed_at) values
   ('00000000-0000-0000-0000-00000000a101', 'priv_a@test.local', '$2a$10$abcdefghijklmnopqrstuvwxyzABCDEF', now(), now()),
   ('00000000-0000-0000-0000-00000000a102', 'priv_b@test.local', null, now(), now());
@@ -47,10 +46,12 @@ insert into auth.identities (id, provider, provider_id, user_id, identity_data, 
   (gen_random_uuid(), 'email', '00000000-0000-0000-0000-00000000a101', '00000000-0000-0000-0000-00000000a101',
    '{"sub":"00000000-0000-0000-0000-00000000a101","email":"priv_a@test.local"}'::jsonb, now(), now()),
   (gen_random_uuid(), 'google', 'g_priv_b_1', '00000000-0000-0000-0000-00000000a102',
-   '{"sub":"g_priv_b_1","email":"priv_b@test.local"}'::jsonb, now(), now()),
+   '{"sub":"g_priv_b_1","email":"priv_b@test.local"}'::jsonb, now(), now());
+insert into public.identity_link_intents (user_id, provider, expires_at)
+values ('00000000-0000-0000-0000-00000000a102', 'facebook', now() + interval '10 minutes');
+insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at) values
   (gen_random_uuid(), 'facebook', 'fb_priv_b_1', '00000000-0000-0000-0000-00000000a102',
    '{"sub":"fb_priv_b_1"}'::jsonb, now(), now());
-set local app.allow_identity_link = 'false';
 
 -- ---------------------------------------------------------------------------
 -- 1. Grant: anon / authenticated KHÔNG có EXECUTE (8 test)

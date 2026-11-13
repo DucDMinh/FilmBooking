@@ -299,6 +299,20 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"identity_link_intents": {
+                  Row: {
+                    "consumed_at": string | null,"created_at": string,"expires_at": string,"id": string,"provider": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consumed_at"?: string | null,"created_at"?: string,"expires_at"?: string,"id"?: string,"provider": string,"user_id": string
+                  }
+                  Update: {
+                    "consumed_at"?: string | null,"created_at"?: string,"expires_at"?: string,"id"?: string,"provider"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"login_attempts": {
                   Row: {
                     "email": string,"failed_count": number,"last_failed_at": string | null,"locked_until": string | null

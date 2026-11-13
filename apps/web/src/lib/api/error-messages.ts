@@ -18,6 +18,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     "Đăng nhập bằng mật khẩu tạm khoá 15 phút do nhập sai nhiều lần. Bạn có thể đặt lại mật khẩu hoặc dùng Google/Facebook.",
   DISPOSABLE_EMAIL: "Vui lòng dùng email thật, không dùng email tạm thời.",
   CAPTCHA_FAILED: "Xác minh không thành công. Vui lòng thử lại.",
+  REAUTH_REQUIRED: "Vui lòng đăng nhập lại để liên kết tài khoản.",
   SEAT_TAKEN: "Ghế vừa có người giữ. Vui lòng chọn ghế khác.",
   ORPHAN_SEAT: "Lựa chọn để lại ghế trống lẻ loi. Vui lòng chọn lại ghế.",
   SALES_CLOSED: "Suất chiếu này đã đóng bán vé.",

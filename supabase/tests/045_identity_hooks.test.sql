@@ -10,8 +10,6 @@ select plan(18);
 -- ---------------------------------------------------------------------------
 -- 0. Thiết lập dữ liệu mẫu trong auth.users và auth.identities
 -- ---------------------------------------------------------------------------
-set local app.allow_identity_link = 'true';
-
 -- User a001: Có email + mật khẩu (hasPassword = true)
 insert into auth.users (id, email, encrypted_password, created_at, email_confirmed_at)
 values (
@@ -64,13 +62,16 @@ values (
   now()
 );
 
+-- Chèn Google identity đầu tiên cho a003
 insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at)
-values
-  (gen_random_uuid(), 'google', 'g_multi_333', '00000000-0000-0000-0000-00000000a003', '{"sub":"g_multi_333"}'::jsonb, now(), now()),
-  (gen_random_uuid(), 'facebook', 'fb_multi_333', '00000000-0000-0000-0000-00000000a003', '{"sub":"fb_multi_333"}'::jsonb, now(), now());
+values (gen_random_uuid(), 'google', 'g_multi_333', '00000000-0000-0000-0000-00000000a003', '{"sub":"g_multi_333"}'::jsonb, now(), now());
 
--- Trả cờ liên kết về mặc định
-set local app.allow_identity_link = 'false';
+-- Chèn link-intent hợp lệ để liên kết thêm Facebook cho a003
+insert into public.identity_link_intents (user_id, provider, expires_at)
+values ('00000000-0000-0000-0000-00000000a003', 'facebook', now() + interval '10 minutes');
+
+insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at)
+values (gen_random_uuid(), 'facebook', 'fb_multi_333', '00000000-0000-0000-0000-00000000a003', '{"sub":"fb_multi_333"}'::jsonb, now(), now());
 
 -- Các RPC identity fail-closed (K1): test chạy với tư cách API tin cậy = service_role (không sub)
 do $$ begin perform set_config('request.jwt.claims', '{"role":"service_role"}', true); end $$;
@@ -162,12 +163,15 @@ select throws_ok(
   'AC-04: Trigger trg_guard_identity_insert chặn auto-merge vào tài khoản mật khẩu'
 );
 
--- Liên kết hợp lệ (đường GoTrue linkIdentity): user CHỈ OAuth, không mật khẩu, KHÔNG có cờ phiên.
--- K2 đã gỡ RPC link_user_identity nên không còn code nào đặt app.allow_identity_link.
+-- Liên kết hợp lệ (đường GoTrue linkIdentity có link-intent - đóng F-2 & M-05):
+-- User a002 có intent liên kết provider 'facebook'.
+insert into public.identity_link_intents (user_id, provider, expires_at)
+values ('00000000-0000-0000-0000-00000000a002', 'facebook', now() + interval '10 minutes');
+
 select lives_ok(
   $$insert into auth.identities (id, provider, provider_id, user_id, identity_data, created_at, updated_at)
     values (gen_random_uuid(), 'facebook', 'fb_new_444', '00000000-0000-0000-0000-00000000a002', '{"sub":"fb_new_444"}'::jsonb, now(), now())$$,
-  'GoTrue linkIdentity hợp lệ cho user OAuth-only (không mật khẩu, không cờ) thành công'
+  'GoTrue linkIdentity hợp lệ cho user a002 có link-intent thành công'
 );
 
 -- R-24: Trigger tự động enqueue email identity_linked

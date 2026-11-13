@@ -24,6 +24,8 @@ const testEnv = parseEnv({
 
 const roles = [{ user_id: ADMIN, role: "ADMIN" }];
 const assignments = [{ user_id: MANAGER, cinema_id: HN01, role: "MANAGER" }];
+const insertedIntents: Array<{ user_id: string; provider: string; expires_at: string }> = [];
+
 const fakeSupabase = {
   admin: () => ({
     from: (table: string) => ({
@@ -33,6 +35,12 @@ const fakeSupabase = {
           error: null,
         }),
       }),
+      insert: (payload: { user_id: string; provider: string; expires_at: string }) => {
+        if (table === "identity_link_intents") {
+          insertedIntents.push(payload);
+        }
+        return Promise.resolve({ error: null });
+      },
     }),
     auth: {
       admin: {
@@ -46,14 +54,18 @@ const fakeSupabase = {
   }),
 };
 
-const token = (sub: string) =>
-  new SignJWT({ email: `${sub}@x.vn`, user_metadata: { email_verified: true } })
+const token = (sub: string, customClaims: Record<string, unknown> = {}) => {
+  const jwt = new SignJWT({ email: `${sub}@x.vn`, user_metadata: { email_verified: true }, ...customClaims })
     .setProtectedHeader({ alg: "HS256" })
     .setAudience("authenticated")
     .setIssuer(`${URL_BASE}/auth/v1`)
     .setSubject(sub)
-    .setExpirationTime("5m")
-    .sign(new TextEncoder().encode(SECRET));
+    .setExpirationTime("5m");
+  if (!customClaims.iat) {
+    jwt.setIssuedAt();
+  }
+  return jwt.sign(new TextEncoder().encode(SECRET));
+};
 
 /** Route giả không gắn @Public: chứng minh mặc định phải đăng nhập. */
 @Controller("unmarked")
@@ -113,5 +125,48 @@ describe("GET /me (e2e)", () => {
 
   it("/health stays public", async () => {
     expect((await request(app.getHttpServer()).get("/health")).status).toBe(200);
+  });
+
+  describe("POST /me/identities/link-intent", () => {
+    it("401 without token", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/me/identities/link-intent")
+        .send({ provider: "google" });
+      expect(res.status).toBe(401);
+    });
+
+    it("400 with invalid provider", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/me/identities/link-intent")
+        .set("Authorization", `Bearer ${await token(MANAGER)}`)
+        .send({ provider: "twitter" });
+      expect(res.status).toBe(400);
+    });
+
+    it("401 REAUTH_REQUIRED when token authTime is older than 5 minutes", async () => {
+      const staleAuthTime = Math.floor(Date.now() / 1000) - 400; // 400s > 300s
+      const staleToken = await token(MANAGER, { auth_time: staleAuthTime });
+      const res = await request(app.getHttpServer())
+        .post("/me/identities/link-intent")
+        .set("Authorization", `Bearer ${staleToken}`)
+        .send({ provider: "google" });
+      expect(res.status).toBe(401);
+      expect(res.body.error?.code).toBe("REAUTH_REQUIRED");
+    });
+
+    it("204 No Content when token is recent and valid provider", async () => {
+      insertedIntents.length = 0;
+      const recentAuthTime = Math.floor(Date.now() / 1000) - 60; // 60s < 300s
+      const freshToken = await token(MANAGER, { auth_time: recentAuthTime });
+      const res = await request(app.getHttpServer())
+        .post("/me/identities/link-intent")
+        .set("Authorization", `Bearer ${freshToken}`)
+        .send({ provider: "google" });
+      expect(res.status).toBe(204);
+      expect(insertedIntents).toHaveLength(1);
+      expect(insertedIntents[0]?.user_id).toBe(MANAGER);
+      expect(insertedIntents[0]?.provider).toBe("google");
+      expect(insertedIntents[0]?.expires_at).toBeDefined();
+    });
   });
 });
