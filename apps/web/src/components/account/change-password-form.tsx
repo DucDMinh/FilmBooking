@@ -1,50 +1,101 @@
 "use client";
 
+import { checkPasswordPolicy, PASSWORD_ISSUE_MESSAGES } from "@filmbooking/shared/password-policy";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { changePasswordAction } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export interface ChangePasswordFormProps {
-  userEmail: string;
+  userEmail?: string;
+}
+
+interface PasswordInputProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  error?: string;
+  autoComplete?: string;
+  disabled?: boolean;
+}
+
+function PasswordInputField({
+  id,
+  label,
+  value,
+  onChange,
+  error,
+  autoComplete,
+  disabled,
+}: Readonly<PasswordInputProps>) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          aria-invalid={Boolean(error)}
+          autoComplete={autoComplete}
+          className="pr-10"
+        />
+        <button
+          type="button"
+          onClick={() => setShow((prev) => !prev)}
+          className="absolute top-1/2 right-3 -translate-y-1/2 text-fg-muted hover:text-fg"
+          aria-label={show ? `Ẩn ${label.toLowerCase()}` : `Hiện ${label.toLowerCase()}`}
+        >
+          {show ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+        </button>
+      </div>
+      {error ? (
+        <p role="alert" className="text-small text-danger">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 /**
- * Form đổi mật khẩu (design-spec §16, R-14).
- * Yêu cầu xác thực mật khẩu hiện tại trước khi cập nhật mật khẩu mới qua Supabase updateUser.
+ * Form đổi mật khẩu (design-spec §16, R-02, R-14).
+ * Sử dụng Server Action để xác thực mật khẩu cũ qua POST /auth/login (chống bypass lockout/rate-limit)
+ * và kiểm tra chính sách mật khẩu checkPasswordPolicy.
  */
-export function ChangePasswordForm({ userEmail }: Readonly<ChangePasswordFormProps>) {
+export function ChangePasswordForm(props: Readonly<ChangePasswordFormProps>) {
+  void props;
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
-
-    if (!currentPassword) {
-      errors.currentPassword = "Vui lòng nhập mật khẩu hiện tại";
-    }
+    if (!currentPassword) errors.currentPassword = "Vui lòng nhập mật khẩu hiện tại";
 
     if (!newPassword) {
       errors.newPassword = "Vui lòng nhập mật khẩu mới";
-    } else if (newPassword.length < 8) {
-      errors.newPassword = "Mật khẩu mới phải có tối thiểu 8 ký tự";
-    }
-
-    if (newPassword && currentPassword && newPassword === currentPassword) {
-      errors.newPassword = "Mật khẩu mới không được trùng với mật khẩu hiện tại";
+    } else {
+      const issues = checkPasswordPolicy(newPassword);
+      const firstIssue = issues[0];
+      if (firstIssue) {
+        errors.newPassword = PASSWORD_ISSUE_MESSAGES[firstIssue];
+      } else if (newPassword === currentPassword) {
+        errors.newPassword = "Mật khẩu mới không được trùng với mật khẩu hiện tại";
+      }
     }
 
     if (!confirmPassword) {
@@ -60,45 +111,26 @@ export function ChangePasswordForm({ userEmail }: Readonly<ChangePasswordFormPro
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMessage(null);
-
     if (!validate()) return;
     setIsSubmitting(true);
 
     try {
-      const supabase = createBrowserSupabase();
-
-      // 1. Kiểm tra mật khẩu cũ bằng cách thử xác thực
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: userEmail,
-        password: currentPassword,
-      });
-
-      if (signInError || !signInData.session) {
-        setFieldErrors((prev) => ({
-          ...prev,
-          currentPassword: "Mật khẩu hiện tại không chính xác",
-        }));
-        setErrorMessage("Mật khẩu hiện tại không chính xác. Vui lòng kiểm tra lại.");
+      const result = await changePasswordAction(currentPassword, newPassword);
+      if (result.error) {
+        setErrorMessage(result.error);
+        if (result.error.toLowerCase().includes("mật khẩu hiện tại")) {
+          setFieldErrors((prev) => ({ ...prev, currentPassword: result.error! }));
+        }
         return;
       }
 
-      // 2. Cập nhật mật khẩu mới
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (updateError) {
-        setErrorMessage(updateError.message || "Không thể cập nhật mật khẩu mới.");
-        return;
-      }
-
-      toast.success("Đổi mật khẩu thành công. Chúng tôi đã gửi email thông báo.");
+      toast.success("Đổi mật khẩu thành công.");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setFieldErrors({});
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Đã xảy ra lỗi khi đổi mật khẩu";
+      const msg = error instanceof Error ? error.message : "Đã có lỗi xảy ra khi đổi mật khẩu.";
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -125,107 +157,44 @@ export function ChangePasswordForm({ userEmail }: Readonly<ChangePasswordFormPro
             </div>
           ) : null}
 
-          {/* Mật khẩu hiện tại */}
-          <div className="space-y-1.5">
-            <Label htmlFor="current-password">Mật khẩu hiện tại</Label>
-            <div className="relative">
-              <Input
-                id="current-password"
-                type={showCurrentPassword ? "text" : "password"}
-                value={currentPassword}
-                onChange={(e) => {
-                  setCurrentPassword(e.target.value);
-                  if (fieldErrors.currentPassword) {
-                    setFieldErrors((prev) => ({ ...prev, currentPassword: "" }));
-                  }
-                }}
-                disabled={isSubmitting}
-                aria-invalid={Boolean(fieldErrors.currentPassword)}
-                autoComplete="current-password"
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword((prev) => !prev)}
-                className="absolute top-1/2 right-3 -translate-y-1/2 text-fg-muted hover:text-fg"
-                aria-label={showCurrentPassword ? "Ẩn mật khẩu hiện tại" : "Hiện mật khẩu hiện tại"}
-              >
-                {showCurrentPassword ? (
-                  <EyeOff className="size-4" aria-hidden="true" />
-                ) : (
-                  <Eye className="size-4" aria-hidden="true" />
-                )}
-              </button>
-            </div>
-            {fieldErrors.currentPassword ? (
-              <p role="alert" className="text-small text-danger">
-                {fieldErrors.currentPassword}
-              </p>
-            ) : null}
-          </div>
+          <PasswordInputField
+            id="current-password"
+            label="Mật khẩu hiện tại"
+            value={currentPassword}
+            onChange={(val) => {
+              setCurrentPassword(val);
+              if (fieldErrors.currentPassword) setFieldErrors((prev) => ({ ...prev, currentPassword: "" }));
+            }}
+            error={fieldErrors.currentPassword}
+            autoComplete="current-password"
+            disabled={isSubmitting}
+          />
 
-          {/* Mật khẩu mới */}
-          <div className="space-y-1.5">
-            <Label htmlFor="new-password">Mật khẩu mới</Label>
-            <div className="relative">
-              <Input
-                id="new-password"
-                type={showNewPassword ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => {
-                  setNewPassword(e.target.value);
-                  if (fieldErrors.newPassword) {
-                    setFieldErrors((prev) => ({ ...prev, newPassword: "" }));
-                  }
-                }}
-                disabled={isSubmitting}
-                aria-invalid={Boolean(fieldErrors.newPassword)}
-                autoComplete="new-password"
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword((prev) => !prev)}
-                className="absolute top-1/2 right-3 -translate-y-1/2 text-fg-muted hover:text-fg"
-                aria-label={showNewPassword ? "Ẩn mật khẩu mới" : "Hiện mật khẩu mới"}
-              >
-                {showNewPassword ? (
-                  <EyeOff className="size-4" aria-hidden="true" />
-                ) : (
-                  <Eye className="size-4" aria-hidden="true" />
-                )}
-              </button>
-            </div>
-            {fieldErrors.newPassword ? (
-              <p role="alert" className="text-small text-danger">
-                {fieldErrors.newPassword}
-              </p>
-            ) : null}
-          </div>
+          <PasswordInputField
+            id="new-password"
+            label="Mật khẩu mới"
+            value={newPassword}
+            onChange={(val) => {
+              setNewPassword(val);
+              if (fieldErrors.newPassword) setFieldErrors((prev) => ({ ...prev, newPassword: "" }));
+            }}
+            error={fieldErrors.newPassword}
+            autoComplete="new-password"
+            disabled={isSubmitting}
+          />
 
-          {/* Xác nhận mật khẩu mới */}
-          <div className="space-y-1.5">
-            <Label htmlFor="confirm-password">Xác nhận mật khẩu mới</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (fieldErrors.confirmPassword) {
-                  setFieldErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                }
-              }}
-              disabled={isSubmitting}
-              aria-invalid={Boolean(fieldErrors.confirmPassword)}
-              autoComplete="new-password"
-            />
-            {fieldErrors.confirmPassword ? (
-              <p role="alert" className="text-small text-danger">
-                {fieldErrors.confirmPassword}
-              </p>
-            ) : null}
-          </div>
+          <PasswordInputField
+            id="confirm-password"
+            label="Xác nhận mật khẩu mới"
+            value={confirmPassword}
+            onChange={(val) => {
+              setConfirmPassword(val);
+              if (fieldErrors.confirmPassword) setFieldErrors((prev) => ({ ...prev, confirmPassword: "" }));
+            }}
+            error={fieldErrors.confirmPassword}
+            autoComplete="new-password"
+            disabled={isSubmitting}
+          />
 
           <div className="pt-2">
             <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">

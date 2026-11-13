@@ -1,9 +1,9 @@
 {
   "specVersion": "3.0.0",
-  "scopeVersion": 9,
-  "generatedAt": "2026-11-13T19:31:00+07:00",
+  "scopeVersion": 10,
+  "generatedAt": "2026-11-13T19:31:30+07:00",
   "trigger": "bug-fix",
-  "workItem": "bug-layer5-review/phase-3-task-10",
+  "workItem": "bug-layer5-review/phase-3-task-09",
   "specRefs": [
     "R-01",
     "R-02",

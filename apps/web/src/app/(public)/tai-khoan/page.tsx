@@ -1,5 +1,6 @@
 "use client";
 
+import type { IdentityListResponse } from "@filmbooking/shared/schemas/identity";
 import { useEffect, useState } from "react";
 
 import { ChangePasswordForm } from "@/components/account/change-password-form";
@@ -7,11 +8,32 @@ import { ProfileForm, type ProfileData } from "@/components/account/profile-form
 import { ErrorState } from "@/components/common/states";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api/client";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
+
+function ProfileLoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4 rounded-lg border border-border-subtle bg-surface p-6">
+        <Skeleton className="h-6 w-44" />
+        <div className="flex items-center gap-4">
+          <Skeleton className="size-20 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-48" />
+          </div>
+        </div>
+        <div className="space-y-3 pt-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AccountProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [hasPassword, setHasPassword] = useState(true);
+  const [hasPassword, setHasPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,21 +41,14 @@ export default function AccountProfilePage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch<ProfileData>("/me/profile");
-      setProfile(data);
+      const [profileData, identitiesData] = await Promise.all([
+        apiFetch<ProfileData>("/me/profile"),
+        apiFetch<IdentityListResponse>("/me/identities").catch(() => null),
+      ]);
+      setProfile(profileData);
 
-      // Kiểm tra xem tài khoản có phương thức email/mật khẩu không
-      try {
-        const supabase = createBrowserSupabase();
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user?.identities) {
-          const hasEmailProvider = userData.user.identities.some(
-            (id) => id.provider === "email",
-          );
-          setHasPassword(hasEmailProvider);
-        }
-      } catch {
-        // Mặc định cho phép đổi mật khẩu
+      if (identitiesData) {
+        setHasPassword(Boolean(identitiesData.hasPassword));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải thông tin hồ sơ.");
@@ -46,27 +61,7 @@ export default function AccountProfilePage() {
     fetchProfileData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="rounded-lg border border-border-subtle bg-surface p-6 space-y-4">
-          <Skeleton className="h-6 w-44" />
-          <div className="flex items-center gap-4">
-            <Skeleton className="size-20 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-48" />
-            </div>
-          </div>
-          <div className="space-y-3 pt-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <ProfileLoadingSkeleton />;
 
   if (error || !profile) {
     return (
@@ -83,7 +78,7 @@ export default function AccountProfilePage() {
       {/* Form thông tin cá nhân & vùng nguy hiểm */}
       <ProfileForm initialProfile={profile} hasPassword={hasPassword} />
 
-      {/* Đổi mật khẩu (nếu tài khoản có liên kết email/mật khẩu) */}
+      {/* Đổi mật khẩu (chỉ hiển thị nếu tài khoản có mật khẩu) */}
       {hasPassword && profile.email ? (
         <ChangePasswordForm userEmail={profile.email} />
       ) : null}
