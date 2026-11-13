@@ -4,7 +4,8 @@ import { sanitizeNext } from "@/lib/auth/safe-next";
 import { sessionCookieOptions, REMEMBER_COOKIE_NAME } from "@/lib/supabase/cookie-options";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
-const PROTECTED_PREFIXES = ["/tai-khoan", "/ve", "/admin", "/staff"];
+// /dat-ve/[showtimeId] (chọn ghế) mở cho khách xem sơ đồ; chỉ các màn đơn hàng cần đăng nhập.
+const PROTECTED_PREFIXES = ["/tai-khoan", "/ve", "/dat-ve/don", "/admin", "/staff"];
 
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
