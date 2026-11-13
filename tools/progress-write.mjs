@@ -165,7 +165,7 @@ function normalizeCompleted(list) {
     if (!id || seen.has(id)) continue;
     seen.add(id);
     if (typeof x === 'string') { out.push({ task: id }); continue; }
-    const e = { task: id };
+    const e = { ...x, task: id };
     if (typeof x.review === 'string') e.review = x.review;
     if (x.round != null && Number.isFinite(Number(x.round))) e.round = Number(x.round);
     if (typeof x.report === 'string') e.report = x.report;
