@@ -1,0 +1,177 @@
+import { Controller, HttpCode, HttpStatus, Inject, Injectable, Logger, Post, Query, UseGuards } from "@nestjs/common";
+import { Public } from "../../common/auth/decorators";
+import { JobSecretGuard } from "../../common/auth/job-secret.guard";
+import { SupabaseService } from "../../common/supabase/supabase.service";
+import { MailService } from "../mail/mail.service";
+
+export interface SendEmailsJobResult {
+  processed: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+}
+
+export const MAX_EMAIL_ATTEMPTS = 3;
+
+interface OutboxCandidate {
+  id: string;
+  kind: string;
+  to_email: string;
+  payload: Record<string, unknown>;
+  attempts: number;
+  next_attempt_at: string;
+}
+
+@Injectable()
+export class JobsService {
+  private readonly logger = new Logger(JobsService.name);
+  /** Khóa in-process chống trùng lặp cục bộ giữa các luồng đồng thời trong cùng process */
+  private readonly inFlightIds = new Set<string>();
+
+  constructor(
+    @Inject(SupabaseService) private readonly supabase: SupabaseService,
+    @Inject(MailService) private readonly mailService: MailService,
+  ) {}
+
+  /**
+   * Lấy batch PENDING từ email_outbox (SKIP LOCKED concurrency via RPC hoặc atomic claim),
+   * gửi email qua Resend, cập nhật trạng thái SENT hoặc FAILED kèm retry backoff và last_error.
+   */
+  async processEmailOutbox(batchSize: number = 20): Promise<SendEmailsJobResult> {
+    const admin = this.supabase.admin();
+    const now = new Date().toISOString();
+
+    // 1. Thử gọi RPC claim_email_outbox_batch nếu có
+    const rpcResult = await admin.rpc("claim_email_outbox_batch", {
+      p_batch_size: batchSize,
+    });
+
+    let candidates: OutboxCandidate[];
+
+    if (!rpcResult.error && Array.isArray(rpcResult.data)) {
+      candidates = rpcResult.data as OutboxCandidate[];
+    } else {
+      // 2. Fallback: Lấy batch PENDING có next_attempt_at <= now
+      const { data, error } = await admin
+        .from("email_outbox")
+        .select("id, kind, to_email, payload, attempts, next_attempt_at")
+        .eq("status", "PENDING")
+        .lte("next_attempt_at", now)
+        .order("next_attempt_at", { ascending: true })
+        .limit(batchSize);
+
+      if (error) {
+        this.logger.error(`Failed to fetch pending emails: ${error.message}`);
+        throw error;
+      }
+
+      candidates = (data ?? []) as unknown as OutboxCandidate[];
+    }
+
+    let sent = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const item of candidates) {
+      // Kiểm tra in-flight lock trong process
+      if (this.inFlightIds.has(item.id)) {
+        skipped++;
+        continue;
+      }
+
+      // Atomic lock / claim: nếu chưa dùng RPC khoá, dời next_attempt_at và kiểm tra điều kiện PENDING
+      this.inFlightIds.add(item.id);
+      try {
+        const lockExpiry = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+        const { data: claimed, error: claimErr } = await admin
+          .from("email_outbox")
+          .update({
+            next_attempt_at: lockExpiry,
+          })
+          .eq("id", item.id)
+          .eq("status", "PENDING")
+          .lte("next_attempt_at", now)
+          .select("id, kind, to_email, payload, attempts");
+
+        if (claimErr || !claimed || claimed.length === 0) {
+          // Bị worker khác claim trước (SKIP LOCKED)
+          skipped++;
+          continue;
+        }
+
+        const currentAttempts = item.attempts ?? 0;
+
+        try {
+          await this.mailService.sendOutboxEmail(
+            item.to_email,
+            item.kind,
+            (item.payload ?? {}) as Record<string, unknown>,
+          );
+
+          // Cập nhật SENT thành công
+          await admin
+            .from("email_outbox")
+            .update({
+              status: "SENT",
+              sent_at: new Date().toISOString(),
+              attempts: currentAttempts + 1,
+              last_error: null,
+            })
+            .eq("id", item.id);
+
+          sent++;
+        } catch (sendErr) {
+          const errorMsg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+          const nextAttempts = currentAttempts + 1;
+          const isFinalFailure = nextAttempts >= MAX_EMAIL_ATTEMPTS;
+
+          // Exponential backoff: 2^attempts phút (1 -> 2m, 2 -> 4m)
+          const backoffMinutes = Math.pow(2, nextAttempts);
+          const nextAttemptAt = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
+
+          await admin
+            .from("email_outbox")
+            .update({
+              status: isFinalFailure ? "FAILED" : "PENDING",
+              attempts: nextAttempts,
+              next_attempt_at: isFinalFailure ? item.next_attempt_at : nextAttemptAt,
+              last_error: errorMsg,
+            })
+            .eq("id", item.id);
+
+          if (isFinalFailure) {
+            failed++;
+          }
+          this.logger.warn(
+            `Email outbox id=${item.id} attempt=${nextAttempts}/${MAX_EMAIL_ATTEMPTS} failed: ${errorMsg}`,
+          );
+        }
+      } finally {
+        this.inFlightIds.delete(item.id);
+      }
+    }
+
+    return {
+      processed: candidates.length,
+      sent,
+      failed,
+      skipped,
+    };
+  }
+}
+
+@Controller("jobs")
+@Public()
+@UseGuards(JobSecretGuard)
+export class JobsController {
+  constructor(private readonly jobsService: JobsService) {}
+
+  @Post("send-emails")
+  @HttpCode(HttpStatus.OK)
+  async sendEmails(
+    @Query("batchSize") batchSize?: string,
+  ): Promise<SendEmailsJobResult> {
+    const limit = batchSize ? Number.parseInt(batchSize, 10) : 20;
+    return this.jobsService.processEmailOutbox(Number.isNaN(limit) ? 20 : limit);
+  }
+}
