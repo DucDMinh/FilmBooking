@@ -251,6 +251,20 @@
       },
       "updatedAt": "2026-11-13T03:30:00.000Z",
       "note": "c675fdb close-out bằng report PASS của session khác; reviewer độc lập round 1 FAIL (C-1 re-auth dựa iat, C-2 thiếu Repro Verification) -> user duyệt mở lại 2026-11-13 -> fix (authTime = max(amr[].timestamp), migration 20261113090000) -> round 2 STRICT PASS, commit fix riêng"
+    },
+    {
+      "id": "layer34-review/phase-2-task-08",
+      "title": "Xoá tài khoản OAuth-only: re-auth theo amr thay iat; helper isRecentLogin dùng chung",
+      "status": "done",
+      "severity": "high",
+      "highRiskMigration": false,
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-08-round-1-review.md"
+      },
+      "updatedAt": "2026-11-13T04:45:00.000Z"
     }
   ],
   "currentLayer": 4,
@@ -495,8 +509,9 @@
     ],
     "pendingP0": [],
     "followups": [
-      "task-07 FU-A (MAJOR, nên mở bug riêng): profile.service.ts:219-222 kiểm đăng nhập gần đây trước khi xoá tài khoản OAuth-only bằng iat (cùng lớp lỗi C-1) -> dùng authTime (amr); FU-B: profile.service.ts:209 xác định có mật khẩu chỉ theo identity email; FU-C: comment identity.service.ts:15 còn nhắc app.allow_identity_link",
-      "task-07 minor: từ chối authTime ở tương lai (> now+60s); 058 thêm case signup OAuth với encrypted_password = ''; job dọn identity_link_intents hết hạn; test đồng thời consume intent; smoke GoTrue login->refresh->link-intent và kiểm amr luồng OAuth; Layer 5 web gọi link-intent trước linkIdentity",
+      "task-07 FU-B: profile.service.ts (assertReauthenticated) xác định có mật khẩu chỉ theo identity email (FU-A, FU-C đã sửa ở phase-2-task-08)",
+      "task-07/08 minor: 058 thêm case signup OAuth với encrypted_password = ''; job dọn identity_link_intents hết hạn; test đồng thời consume intent; Layer 5 web gọi link-intent trước linkIdentity; isRecentLogin nhận object options thay 2 tham số number; e2e link-intent với authTime tương lai",
+      "RỦI RO re-auth (task-07/08): authTime = max(amr[].timestamp) chỉ đúng nếu GoTrue không thêm entry amr khi refresh; mới có builder kiểm luồng mật khẩu trên GoTrue local, chưa ai kiểm độc lập và chưa kiểm luồng OAuth -> thêm test tích hợp GoTrue local (login -> refresh -> so amr) + smoke qua API",
       "P0-08: test 046 thêm quyền helper assert_identity_rpc_caller + case A->B cho unlink/mark_password_set",
       "Layer 5 web: AC-04 thông báo \"hãy đăng nhập bằng mật khẩu\" trước login (API không còn pre-login check)",
       "P2: schema identity.ts:63-64 bỏ email bắt buộc; dọn comment spike identity.service.ts:20-23 + nhánh CONFLICT_EMAIL chết :281-285",

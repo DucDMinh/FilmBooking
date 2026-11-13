@@ -2,17 +2,15 @@ import { HttpException, Inject, Injectable } from "@nestjs/common";
 import { ERROR_CODES } from "@filmbooking/shared";
 import type { AvatarUploadInput, DeleteAccountInput, UpdateProfileInput } from "@filmbooking/shared/schemas/profile";
 import { randomUUID } from "node:crypto";
-import { decodeJwt } from "jose";
 import { AppException } from "../../common/errors/app-exception";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 import type { AuthUser } from "../../common/auth/decorators";
+import { isRecentLogin } from "../../common/auth/recent-login";
 import { ENV, type Env } from "../../config/env";
 
 const PROFILE_COLUMNS =
   "id, email, full_name, phone, date_of_birth, gender, avatar_url, marketing_opt_in, province_id, created_at, updated_at";
 const AVATAR_EXTENSIONS: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
-/** Tài khoản chỉ OAuth: token phải được cấp trong ngần này giây mới coi là "vừa đăng nhập lại". */
-const RECENT_LOGIN_SECONDS = 5 * 60;
 const FK_VIOLATION = "23503";
 
 /** 422 theo acceptance criteria (ZodValidationPipe mặc định trả 400); filter map về VALIDATION_ERROR. */
@@ -215,9 +213,9 @@ export class ProfileService {
       }
       return;
     }
-    // OAuth-only: không có mật khẩu để hỏi -> yêu cầu token vừa cấp (đăng nhập lại qua nhà cung cấp).
-    const issuedAt = decodeJwt(user.jwt).iat ?? 0;
-    if (Date.now() / 1000 - issuedAt > RECENT_LOGIN_SECONDS) {
+    // OAuth-only: không có mật khẩu để hỏi -> yêu cầu lần đăng nhập thật (amr) gần đây. Không dùng `iat`:
+    // nó đổi mỗi lần refresh token nên phiên cũ vẫn qua. `authTime` null (amr thiếu/sai dạng) -> fail-closed.
+    if (!isRecentLogin(user.authTime)) {
       throw new AppException(ERROR_CODES.FORBIDDEN, "Please sign in again before deleting your account");
     }
   }

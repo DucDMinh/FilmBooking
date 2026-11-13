@@ -109,8 +109,8 @@ const fakeSupabase = {
   }),
 };
 
-const sign = (sub: string, issuedAtSecondsAgo = 0) =>
-  new SignJWT({ email: `${sub}@x.vn` })
+const sign = (sub: string, issuedAtSecondsAgo = 0, amr?: unknown) =>
+  new SignJWT({ email: `${sub}@x.vn`, ...(amr === undefined ? {} : { amr }) })
     .setProtectedHeader({ alg: "HS256" })
     .setAudience("authenticated")
     .setIssuer(`${SUPABASE_URL}/auth/v1`)
@@ -370,17 +370,46 @@ describe("profile API (mock Supabase)", () => {
       expect(ops.some((op) => /order|ticket/.test(op.table) && op.method === "delete")).toBe(false);
     });
 
-    it("OAuth-only account: needs a freshly issued token", async () => {
-      identities = [{ provider: "google" }];
-      const stale = await sign(OAUTH_USER, 3600);
-      const rejected = await request(app.getHttpServer()).delete("/me").set(as(stale)).send({ acknowledgeTicketLoss: true });
-      expect(rejected.status).toBe(403);
-      expect(softDeleted).toHaveLength(0);
+    describe("OAuth-only account: re-auth is judged by amr login time, not iat", () => {
+      const nowSec = () => Math.floor(Date.now() / 1000);
+      const oauthAmr = (secondsAgo: number) => [{ method: "oauth", timestamp: nowSec() - secondsAgo }];
+      const deleteWith = (bearer: string) =>
+        request(app.getHttpServer()).delete("/me").set(as(bearer)).send({ acknowledgeTicketLoss: true });
 
-      const fresh = await sign(OAUTH_USER, 10);
-      const accepted = await request(app.getHttpServer()).delete("/me").set(as(fresh)).send({ acknowledgeTicketLoss: true });
-      expect(accepted.status).toBe(200);
-      expect(softDeleted).toEqual([[OAUTH_USER, true]]);
+      it("rejects a refreshed token (fresh iat) whose amr login is older than 5 minutes", async () => {
+        identities = [{ provider: "google" }];
+        const res = await deleteWith(await sign(OAUTH_USER, 10, oauthAmr(3600)));
+        expect(res.status).toBe(403);
+        expect(softDeleted).toHaveLength(0);
+      });
+
+      it("rejects when amr is stale and iat is also stale", async () => {
+        identities = [{ provider: "google" }];
+        const res = await deleteWith(await sign(OAUTH_USER, 3600, oauthAmr(3600)));
+        expect(res.status).toBe(403);
+        expect(softDeleted).toHaveLength(0);
+      });
+
+      it("deletes when amr login is recent, even if the token iat is older", async () => {
+        identities = [{ provider: "google" }];
+        const res = await deleteWith(await sign(OAUTH_USER, 1800, oauthAmr(30)));
+        expect(res.status).toBe(200);
+        expect(softDeleted).toEqual([[OAUTH_USER, true]]);
+      });
+
+      it("rejects when amr is missing (iat is not a fallback)", async () => {
+        identities = [{ provider: "google" }];
+        const res = await deleteWith(await sign(OAUTH_USER, 10));
+        expect(res.status).toBe(403);
+        expect(softDeleted).toHaveLength(0);
+      });
+
+      it("rejects when amr is string[] (no timestamps)", async () => {
+        identities = [{ provider: "google" }];
+        const res = await deleteWith(await sign(OAUTH_USER, 10, ["oauth"]));
+        expect(res.status).toBe(403);
+        expect(softDeleted).toHaveLength(0);
+      });
     });
   });
 });

@@ -3,12 +3,11 @@ import { ERROR_CODES } from "@filmbooking/shared";
 import { createLinkIntentInputSchema, type CreateLinkIntentInput } from "@filmbooking/shared/schemas/identity";
 import type { MeResponse } from "@filmbooking/shared/schemas/me";
 import { AccessService, type AuthenticatedRequest } from "../../common/auth/access.service";
+import { isRecentLogin } from "../../common/auth/recent-login";
 import { AppException } from "../../common/errors/app-exception";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 
-/** Re-auth gần đây để tạo link-intent: phiên phải đăng nhập thật trong vòng 5 phút (quyết định user). */
-const REAUTH_MAX_AGE_SECONDS = 5 * 60;
 /** Thời hạn link-intent: 10 phút (quyết định user; trùng default `expires_at` của bảng). */
 const LINK_INTENT_TTL_MS = 10 * 60 * 1000;
 
@@ -37,7 +36,7 @@ export class MeController {
 
   /**
    * Tạo link-intent cho liên kết MXH thủ công (R-20, AC-04, M-05).
-   * Bắt buộc người dùng đã re-auth gần đây (≤ REAUTH_MAX_AGE_SECONDS, tính từ amr của phiên).
+   * Bắt buộc người dùng đã re-auth gần đây (≤ RECENT_LOGIN_MAX_AGE_SECONDS, tính từ amr của phiên).
    * TTL của intent là 10 phút.
    */
   @Post("identities/link-intent")
@@ -47,9 +46,8 @@ export class MeController {
     @Body(new ZodValidationPipe(createLinkIntentInputSchema)) body: CreateLinkIntentInput,
   ): Promise<void> {
     const user = request.user;
-    const nowSec = Math.floor(Date.now() / 1000);
-    // authTime null (JWT không có amr hợp lệ) -> fail-closed.
-    if (user.authTime === null || nowSec - user.authTime > REAUTH_MAX_AGE_SECONDS) {
+    // authTime null (JWT không có amr hợp lệ) hoặc ở tương lai quá độ lệch -> fail-closed.
+    if (!isRecentLogin(user.authTime)) {
       throw new AppException(ERROR_CODES.REAUTH_REQUIRED, "Vui lòng đăng nhập lại để liên kết tài khoản");
     }
 

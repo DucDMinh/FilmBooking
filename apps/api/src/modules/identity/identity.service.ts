@@ -11,8 +11,9 @@
  * 2. Giải pháp 2 lớp (Two-Layer Defense):
  *    - Lớp 1 (Database Trigger Guard - trg_guard_identity_insert):
  *      Hook BEFORE INSERT ON auth.identities chặn GoTrue tự động insert identity mới nếu:
- *      (a) User đích đã có mật khẩu hoặc identity 'email' và không có cờ phiên
- *          `app.allow_identity_link = 'true'` -> ném ngoại lệ OAUTH_AUTO_MERGE_BLOCKED (23514).
+ *      (a) User đích đã có mật khẩu hoặc identity 'email' và không có link-intent còn hạn
+ *          (bảng `identity_link_intents`, tạo qua POST /me/identities/link-intent; trigger `guard_identity_insert`
+ *          tiêu thụ intent) -> ném ngoại lệ OAUTH_AUTO_MERGE_BLOCKED (23514).
  *      (b) Email OAuth trùng với tài khoản khác đã có -> ném OAUTH_EMAIL_COLLISION_LOGIN_REQUIRED (23514).
  *      (c) Provider + provider_id đã thuộc user khác (R-23) -> ném OAUTH_IDENTITY_ALREADY_LINKED (23505).
  *      Liên kết MXH chỉ qua luồng OAuth của GoTrue (client gọi supabase.auth.linkIdentity); server KHÔNG nhận
