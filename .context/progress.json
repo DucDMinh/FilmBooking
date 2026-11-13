@@ -44,6 +44,19 @@
   ],
   "bugs": [
     {
+      "id": "layer5-review/phase-1-task-04",
+      "title": "B/M5, B/M6 Transactional Mail Templates & Payload Completion",
+      "status": "done",
+      "severity": "high",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 3,
+        "reportPath": ".context/review-reports/bug-layer5-review-phase-1-task-04-round-3-review.md"
+      },
+      "updatedAt": "2026-11-13T12:37:00.000Z"
+    },
+    {
       "id": "layer5-review/phase-3-task-09",
       "title": "G/M11-1..4 Web Account Session, Password Change & Deletion",
       "status": "done",

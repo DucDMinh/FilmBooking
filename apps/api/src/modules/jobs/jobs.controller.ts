@@ -1,7 +1,8 @@
-import { Controller, HttpCode, HttpStatus, Inject, Injectable, Logger, Post, Query, UseGuards } from "@nestjs/common";
+import { Controller, HttpCode, HttpStatus, Inject, Injectable, Logger, Optional, Post, Query, UseGuards } from "@nestjs/common";
 import { Public } from "../../common/auth/decorators";
 import { JobSecretGuard } from "../../common/auth/job-secret.guard";
 import { SupabaseService } from "../../common/supabase/supabase.service";
+import { ENV, type Env } from "../../config/env";
 import { MailService } from "../mail/mail.service";
 
 export interface SendEmailsJobResult {
@@ -18,6 +19,7 @@ interface OutboxCandidate {
   kind: string;
   to_email: string;
   payload: Record<string, unknown>;
+  cinema_id?: string | null;
   attempts: number;
   next_attempt_at: string;
 }
@@ -31,7 +33,93 @@ export class JobsService {
   constructor(
     @Inject(SupabaseService) private readonly supabase: SupabaseService,
     @Inject(MailService) private readonly mailService: MailService,
+    @Optional() @Inject(ENV) private readonly env?: Env,
   ) {}
+
+  /**
+   * B/M5: Tự động truy vấn bổ sung thông tin qr_token, cinema_address, và seats
+   * nếu payload vé từ DB thiếu các trường này trước khi render email gửi cho khách.
+   */
+  private async enrichTicketPayload(
+    payload: Record<string, unknown>,
+    fallbackCinemaId?: string | null,
+  ): Promise<Record<string, unknown>> {
+    const enriched = { ...payload };
+    const orderId = (enriched.order_id ?? enriched.orderId) as string | undefined;
+    const cinemaId = (enriched.cinema_id ?? enriched.cinemaId ?? fallbackCinemaId) as string | undefined;
+    const admin = this.supabase.admin();
+
+    const hasQr = Boolean(enriched.qr_token ?? enriched.qrToken);
+    const hasAddress = Boolean(enriched.cinema_address ?? enriched.cinemaAddress);
+    const hasSeats = Array.isArray(enriched.seats)
+      ? enriched.seats.length > 0
+      : Boolean(enriched.seats);
+
+    const tasks: Promise<void>[] = [];
+
+    if (!hasQr && orderId) {
+      tasks.push(
+        (async () => {
+          try {
+            const { data, error } = await admin
+              .from("tickets")
+              .select("qr_token")
+              .eq("order_id", orderId)
+              .limit(1)
+              .maybeSingle();
+            if (!error && data?.qr_token) {
+              enriched.qr_token = data.qr_token;
+            }
+          } catch (err) {
+            this.logger.warn(`Failed to enrich qr_token for order ${orderId}: ${err}`);
+          }
+        })(),
+      );
+    }
+
+    if (!hasAddress && cinemaId) {
+      tasks.push(
+        (async () => {
+          try {
+            const { data, error } = await admin
+              .from("cinemas")
+              .select("address")
+              .eq("id", cinemaId)
+              .maybeSingle();
+            if (!error && data?.address) {
+              enriched.cinema_address = data.address;
+            }
+          } catch (err) {
+            this.logger.warn(`Failed to enrich cinema_address for cinema ${cinemaId}: ${err}`);
+          }
+        })(),
+      );
+    }
+
+    if (!hasSeats && orderId) {
+      tasks.push(
+        (async () => {
+          try {
+            const { data, error } = await admin
+              .from("order_seats")
+              .select("seat_label")
+              .eq("order_id", orderId);
+            if (!error && Array.isArray(data) && data.length > 0) {
+              enriched.seats = data.map((s: { seat_label: string }) => s.seat_label);
+            }
+          } catch (err) {
+            this.logger.warn(`Failed to enrich seats for order ${orderId}: ${err}`);
+          }
+        })(),
+      );
+    }
+
+    if (tasks.length > 0) {
+      await Promise.all(tasks);
+    }
+
+    return enriched;
+  }
 
   /**
    * Lấy batch PENDING từ email_outbox (SKIP LOCKED concurrency via RPC hoặc atomic claim),
@@ -54,7 +142,7 @@ export class JobsService {
       // 2. Fallback: Lấy batch PENDING có next_attempt_at <= now
       const { data, error } = await admin
         .from("email_outbox")
-        .select("id, kind, to_email, payload, attempts, next_attempt_at")
+        .select("id, kind, to_email, payload, attempts, next_attempt_at, cinema_id")
         .eq("status", "PENDING")
         .lte("next_attempt_at", now)
         .order("next_attempt_at", { ascending: true })
@@ -91,7 +179,7 @@ export class JobsService {
           .eq("id", item.id)
           .eq("status", "PENDING")
           .lte("next_attempt_at", now)
-          .select("id, kind, to_email, payload, attempts");
+          .select("id, kind, to_email, payload, attempts, cinema_id");
 
         if (claimErr || !claimed || claimed.length === 0) {
           // Bị worker khác claim trước (SKIP LOCKED)
@@ -102,14 +190,24 @@ export class JobsService {
         const currentAttempts = item.attempts ?? 0;
 
         try {
+          let payload = (item.payload ?? {}) as Record<string, unknown>;
+          if (this.env?.WEB_ORIGIN?.[0] && !payload.web_origin && !payload.webOrigin) {
+            payload.web_origin = this.env.WEB_ORIGIN[0];
+          }
+
+          const normalizedKind = item.kind ? item.kind.toUpperCase().trim() : "";
+          if (normalizedKind === "TICKET_ISSUED" || normalizedKind === "TICKET") {
+            payload = await this.enrichTicketPayload(payload, item.cinema_id);
+          }
+
           await this.mailService.sendOutboxEmail(
             item.to_email,
             item.kind,
-            (item.payload ?? {}) as Record<string, unknown>,
+            payload,
           );
 
           // Cập nhật SENT thành công
-          await admin
+          const { error: sentErr } = await admin
             .from("email_outbox")
             .update({
               status: "SENT",
@@ -119,25 +217,34 @@ export class JobsService {
             })
             .eq("id", item.id);
 
+          if (sentErr) {
+            this.logger.error(`Failed to update outbox id=${item.id} to SENT: ${sentErr.message}`);
+          }
+
           sent++;
         } catch (sendErr) {
           const errorMsg = sendErr instanceof Error ? sendErr.message : String(sendErr);
           const nextAttempts = currentAttempts + 1;
-          const isFinalFailure = nextAttempts >= MAX_EMAIL_ATTEMPTS;
+          const isUnknownKind = errorMsg.includes("UNKNOWN_KIND");
+          const isFinalFailure = nextAttempts >= MAX_EMAIL_ATTEMPTS || isUnknownKind;
 
           // Exponential backoff: 2^attempts phút (1 -> 2m, 2 -> 4m)
           const backoffMinutes = Math.pow(2, nextAttempts);
           const nextAttemptAt = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
 
-          await admin
+          const { error: failErr } = await admin
             .from("email_outbox")
             .update({
               status: isFinalFailure ? "FAILED" : "PENDING",
-              attempts: nextAttempts,
+              attempts: isUnknownKind ? MAX_EMAIL_ATTEMPTS : nextAttempts,
               next_attempt_at: isFinalFailure ? item.next_attempt_at : nextAttemptAt,
               last_error: errorMsg,
             })
             .eq("id", item.id);
+
+          if (failErr) {
+            this.logger.error(`Failed to update outbox id=${item.id} error state: ${failErr.message}`);
+          }
 
           if (isFinalFailure) {
             failed++;
@@ -171,7 +278,8 @@ export class JobsController {
   async sendEmails(
     @Query("batchSize") batchSize?: string,
   ): Promise<SendEmailsJobResult> {
-    const limit = batchSize ? Number.parseInt(batchSize, 10) : 20;
-    return this.jobsService.processEmailOutbox(Number.isNaN(limit) ? 20 : limit);
+    const rawLimit = batchSize ? Number.parseInt(batchSize, 10) : 20;
+    const limit = Number.isNaN(rawLimit) ? 20 : Math.max(1, Math.min(100, rawLimit));
+    return this.jobsService.processEmailOutbox(limit);
   }
 }

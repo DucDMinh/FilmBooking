@@ -16,6 +16,22 @@ export interface RenderedEmail {
 }
 
 export const DEFAULT_HOTLINE = "1900 0000";
+export const DEFAULT_WEB_ORIGIN = "https://filmbooking.vn";
+
+/** Giải quyết Web Origin an toàn cho các liên kết hành động trong email */
+export function resolveOrigin(payload: Record<string, unknown>): string {
+  if (typeof payload.web_origin === "string" && payload.web_origin.trim()) {
+    return payload.web_origin.trim().replace(/\/+$/, "");
+  }
+  if (typeof payload.webOrigin === "string" && payload.webOrigin.trim()) {
+    return payload.webOrigin.trim().replace(/\/+$/, "");
+  }
+  if (typeof process !== "undefined" && process.env?.WEB_ORIGIN) {
+    const first = process.env.WEB_ORIGIN.split(",")[0]?.trim();
+    if (first) return first.replace(/\/+$/, "");
+  }
+  return DEFAULT_WEB_ORIGIN;
+}
 
 /** Format tiền tệ VND không có phần thập phân theo NFR-15. */
 export function formatCurrencyVND(amount: unknown): string {
@@ -332,6 +348,168 @@ Quý khách vui lòng liên hệ CSKH qua hotline: ${hotline} (hoặc quầy vé
   return { subject, html, text };
 }
 
+/** 6. Thiết lập mật khẩu tài khoản (password_set) - R-22 */
+export function renderPasswordSetEmail(payload: Record<string, unknown>): RenderedEmail {
+  const origin = resolveOrigin(payload);
+  const token = payload.token ? String(payload.token) : "";
+  const setPasswordUrl = payload.url
+    ? String(payload.url)
+    : token
+      ? `${origin}/auth/set-password?token=${encodeURIComponent(token)}`
+      : `${origin}/auth/set-password`;
+  const message = payload.message ? String(payload.message) : "";
+
+  const subject = "[FilmBooking] Thiết lập mật khẩu tài khoản";
+
+  const html = wrapLayout(
+    subject,
+    `
+    <h2 style="margin-top:0; color:#111827;">Thiết lập mật khẩu tài khoản</h2>
+    <p>Chào bạn,</p>
+    <p>${escapeHtml(message || "Hệ thống FilmBooking nhận được yêu cầu thiết lập mật khẩu cho tài khoản của bạn. Vui lòng bấm vào nút bên dưới để tạo mật khẩu mới:")}</p>
+
+    <div style="text-align:center; margin: 28px 0;">
+      <a href="${escapeHtml(setPasswordUrl)}" class="btn">Thiết lập mật khẩu</a>
+    </div>
+
+    <div class="alert-box">
+      <strong>Lưu ý bảo mật:</strong>
+      <ul style="margin:8px 0 0 0; padding-left:20px;">
+        <li>Liên kết thiết lập mật khẩu chỉ có hiệu lực trong thời gian quy định và chỉ dùng được một lần.</li>
+        <li>Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email và kiểm tra lại bảo mật tài khoản.</li>
+        <li>Tuyệt đối không chia sẻ liên kết này cho bất kỳ ai khác.</li>
+      </ul>
+    </div>
+
+    <p style="word-break: break-all; font-size: 13px; color: #6b7280; margin-top:20px;">
+      Nếu nút bấm phía trên không hoạt động, bạn có thể sao chép liên kết sau vào trình duyệt:<br>
+      <a href="${escapeHtml(setPasswordUrl)}" style="color:#2563eb;">${escapeHtml(setPasswordUrl)}</a>
+    </p>
+    `,
+  );
+
+  const text = `THIẾT LẬP MẬT KHẨU TÀI KHOẢN - FILMBOOKING
+
+Chào bạn,
+${message || "Hệ thống FilmBooking nhận được yêu cầu thiết lập mật khẩu cho tài khoản của bạn."}
+
+Vui lòng truy cập liên kết sau để thiết lập mật khẩu:
+${setPasswordUrl}
+
+Lưu ý:
+- Liên kết chỉ sử dụng được một lần và có thời hạn.
+- Tuyệt đối không chia sẻ liên kết này cho bất kỳ ai khác.
+- Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.`;
+
+  return { subject, html, text };
+}
+
+/** 7. Phát hiện liên kết tài khoản trùng email (oauth_missing_email_collision) - R-21 */
+export function renderOAuthMissingEmailCollisionEmail(payload: Record<string, unknown>): RenderedEmail {
+  const origin = resolveOrigin(payload);
+  const provider = String(payload.provider ?? "mạng xã hội").toUpperCase();
+  const loginUrl = payload.url ? String(payload.url) : `${origin}/auth/login?redirect=/me/profile`;
+  const profileUrl = `${origin}/me/profile`;
+
+  const subject = "[FilmBooking] Phát hiện liên kết tài khoản trùng email";
+
+  const html = wrapLayout(
+    subject,
+    `
+    <h2 style="margin-top:0; color:#d97706;">Phát hiện liên kết tài khoản trùng email</h2>
+    <p>Chào bạn,</p>
+    <p>Hệ thống FilmBooking phát hiện bạn vừa sử dụng phương thức đăng nhập <strong>${escapeHtml(provider)}</strong> với địa chỉ email đã được đăng ký cho một tài khoản trước đó trên FilmBooking.</p>
+
+    <div class="alert-box">
+      <strong>Hướng dẫn liên kết an toàn:</strong><br>
+      Để bảo vệ an toàn cho tài khoản và tránh trùng lặp dữ liệu:
+      <ol style="margin:8px 0 0 0; padding-left:20px;">
+        <li>Vui lòng đăng nhập vào FilmBooking bằng phương thức cũ (email/mật khẩu hoặc nhà cung cấp đã liên kết trước đó).</li>
+        <li>Sau khi đăng nhập thành công, truy cập vào mục <strong>Hồ sơ / Cài đặt tài khoản</strong>.</li>
+        <li>Tại phần <em>Phương thức đăng nhập</em>, bấm chọn <strong>Liên kết ${escapeHtml(provider)}</strong> để hoàn tất đồng bộ.</li>
+      </ol>
+    </div>
+
+    <div style="text-align:center; margin: 28px 0;">
+      <a href="${escapeHtml(loginUrl)}" class="btn">Đăng nhập để liên kết tài khoản</a>
+    </div>
+
+    <p style="word-break: break-all; font-size: 13px; color: #6b7280; margin-top:20px;">
+      Bạn cũng có thể vào trực tiếp trang quản lý hồ sơ tại:<br>
+      <a href="${escapeHtml(profileUrl)}" style="color:#2563eb;">${escapeHtml(profileUrl)}</a>
+    </p>
+    `,
+  );
+
+  const text = `PHÁT HIỆN LIÊN KẾT TÀI KHOẢN TRÙNG EMAIL - FILMBOOKING
+
+Chào bạn,
+Hệ thống phát hiện bạn vừa đăng nhập bằng ${provider} với email đã tồn tại trên FilmBooking.
+
+Hướng dẫn liên kết an toàn:
+1. Đăng nhập bằng phương thức cũ (mật khẩu hoặc mạng xã hội đã đăng ký ban đầu).
+2. Vào mục Hồ sơ / Cài đặt tài khoản (${profileUrl}).
+3. Chọn "Liên kết ${provider}" để đồng bộ tài khoản.
+
+Đăng nhập ngay tại: ${loginUrl}`;
+
+  return { subject, html, text };
+}
+
+/** 8. Xác thực email bổ sung (oauth_missing_email_verify) - R-21, #18 */
+export function renderOAuthMissingEmailVerifyEmail(payload: Record<string, unknown>): RenderedEmail {
+  const origin = resolveOrigin(payload);
+  const provider = String(payload.provider ?? "mạng xã hội").toUpperCase();
+  const token = payload.token ? String(payload.token) : "";
+  const verifyUrl = payload.url
+    ? String(payload.url)
+    : `${origin}/auth/oauth/verify-email?token=${encodeURIComponent(token)}`;
+  const message = payload.message ? String(payload.message) : "";
+
+  const subject = "[FilmBooking] Xác thực email bổ sung";
+
+  const html = wrapLayout(
+    subject,
+    `
+    <h2 style="margin-top:0; color:#111827;">Xác thực email bổ sung</h2>
+    <p>Chào bạn,</p>
+    <p>${escapeHtml(message || `Bạn vừa đăng nhập FilmBooking bằng ${provider}. Để hoàn tất đăng ký tài khoản, vui lòng xác thực địa chỉ email này bằng cách nhấn vào nút bên dưới:`)}</p>
+
+    <div style="text-align:center; margin: 28px 0;">
+      <a href="${escapeHtml(verifyUrl)}" class="btn">Xác thực email</a>
+    </div>
+
+    <div class="alert-box">
+      <strong>Lưu ý quan trọng:</strong>
+      <ul style="margin:8px 0 0 0; padding-left:20px;">
+        <li>Liên kết xác thực chỉ có hiệu lực một lần trong vòng 15 phút.</li>
+        <li>Sau khi xác thực, tài khoản ${escapeHtml(provider)} sẽ được liên kết chính thức với email này.</li>
+        <li>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.</li>
+      </ul>
+    </div>
+
+    <p style="word-break: break-all; font-size: 13px; color: #6b7280; margin-top:20px;">
+      Nếu nút bấm phía trên không hoạt động, bạn có thể sao chép liên kết sau vào trình duyệt:<br>
+      <a href="${escapeHtml(verifyUrl)}" style="color:#2563eb;">${escapeHtml(verifyUrl)}</a>
+    </p>
+    `,
+  );
+
+  const text = `XÁC THỰC EMAIL BỔ SUNG - FILMBOOKING
+
+Chào bạn,
+${message || `Bạn vừa đăng nhập FilmBooking bằng ${provider}.`}
+
+Vui lòng truy cập liên kết sau để xác thực địa chỉ email:
+${verifyUrl}
+
+Lưu ý:
+- Liên kết xác thực chỉ có hiệu lực trong 15 phút.
+- Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.`;
+
+  return { subject, html, text };
+}
+
 /** Router chọn template theo kind của outbox */
 export function renderTemplate(kind: string, payload: Record<string, unknown>): RenderedEmail {
   const normalizedKind = kind.toUpperCase().trim();
@@ -359,14 +537,16 @@ export function renderTemplate(kind: string, payload: Record<string, unknown>): 
     case "SHOWTIME_CANCELLED":
       return renderShowtimeCancelledEmail(payload);
 
-    default: {
-      const subject = `[FilmBooking] Thông báo từ hệ thống FilmBooking (${kind})`;
-      const jsonStr = JSON.stringify(payload, null, 2);
-      return {
-        subject,
-        html: wrapLayout(subject, `<p>Thông báo từ FilmBooking về tác vụ <strong>${escapeHtml(kind)}</strong>:</p><pre>${escapeHtml(jsonStr)}</pre>`),
-        text: `Thông báo từ FilmBooking (${kind}):\n${jsonStr}`,
-      };
-    }
+    case "PASSWORD_SET":
+      return renderPasswordSetEmail(payload);
+
+    case "OAUTH_MISSING_EMAIL_COLLISION":
+      return renderOAuthMissingEmailCollisionEmail(payload);
+
+    case "OAUTH_MISSING_EMAIL_VERIFY":
+      return renderOAuthMissingEmailVerifyEmail(payload);
+
+    default:
+      throw new Error(`UNKNOWN_KIND: Không hỗ trợ template cho kind '${kind}'`);
   }
 }
