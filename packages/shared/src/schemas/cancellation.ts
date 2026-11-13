@@ -59,7 +59,7 @@ export type ExportAffectedOrdersQuery = z.infer<typeof exportAffectedOrdersQuery
 
 /** AC-25: số tiền + mã giao dịch ngân hàng bắt buộc; thiếu -> 422. Người thực hiện lấy từ JWT, ngày từ server. */
 export const recordRefundSchema = z.object({
-  refundedAmount: z.number().int().min(0).max(MAX_AMOUNT_VND),
+  refundedAmount: z.number().int().min(1).max(MAX_AMOUNT_VND),
   refundReference: z.string().trim().min(1).max(MAX_REFUND_REFERENCE_LENGTH),
   note: z.string().trim().max(MAX_NOTE_LENGTH).optional(),
 });

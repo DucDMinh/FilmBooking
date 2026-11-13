@@ -282,6 +282,18 @@ class FakeDb {
   }
 }
 
+function getFieldVal(row: Row, key: string): unknown {
+  if (key.includes("->>")) {
+    const parts = key.split("->>");
+    const col = parts[0] ?? "";
+    const prop = parts[1] ?? "";
+    const obj = row[col];
+    const parsed = typeof obj === "string" ? JSON.parse(obj) : obj;
+    return (parsed as Record<string, unknown> | null | undefined)?.[prop];
+  }
+  return row[key];
+}
+
 class Query implements PromiseLike<Result> {
   private op: "select" | "insert" | "update" | "delete" = "select";
   private payload: Row | Row[] = {};
@@ -314,19 +326,25 @@ class Query implements PromiseLike<Result> {
     return this;
   }
   eq(key: string, value: unknown) {
-    this.filters.push((row) => row[key] === value);
+    this.filters.push((row) => getFieldVal(row, key) === value);
+    return this;
+  }
+  filter(key: string, op: string, value: unknown) {
+    if (op === "eq") {
+      this.filters.push((row) => getFieldVal(row, key) === value);
+    }
     return this;
   }
   neq(key: string, value: unknown) {
-    this.filters.push((row) => row[key] !== value);
+    this.filters.push((row) => getFieldVal(row, key) !== value);
     return this;
   }
   gt(key: string, value: unknown) {
-    this.filters.push((row) => String(row[key]) > String(value));
+    this.filters.push((row) => String(getFieldVal(row, key)) > String(value));
     return this;
   }
   in(key: string, values: unknown[]) {
-    this.filters.push((row) => values.includes(row[key]));
+    this.filters.push((row) => values.includes(getFieldVal(row, key)));
     return this;
   }
   order(key: string, options?: { ascending?: boolean }) {
@@ -668,6 +686,56 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
       expect(res.body.error.code).toBe("VALIDATION_ERROR");
     });
 
+    it("Số tiền bằng 0 -> 422", async () => {
+      const res = await call(
+        "post",
+        `/admin/affected-orders/${affectedOrderId}/refund`,
+        staffHn01Token,
+        {
+          refundedAmount: 0,
+          refundReference: "REF123",
+        },
+      );
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("Số tiền hoàn vượt quá tổng tiền đơn hàng (total_amount) -> 422", async () => {
+      const res = await call(
+        "post",
+        `/admin/affected-orders/${affectedOrderId}/refund`,
+        staffHn01Token,
+        {
+          refundedAmount: 200000, // total_amount là 150000
+          refundReference: "REF123",
+        },
+      );
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("Đơn không ở trạng thái affected (vd: paid) -> 409 CONFLICT", async () => {
+      const paidOrderId = uuid(602);
+      fakeDb.tables.orders.push({
+        id: paidOrderId,
+        cinema_id: HN01,
+        status: "paid",
+        total_amount: 150000,
+        booking_code: "HN01-PAID",
+      });
+      const res = await call(
+        "post",
+        `/admin/affected-orders/${paidOrderId}/refund`,
+        staffHn01Token,
+        {
+          refundedAmount: 150000,
+          refundReference: "REF123",
+        },
+      );
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe("CONFLICT");
+    });
+
     it("Staff HN02 ghi kết quả cho đơn HN01 -> 403", async () => {
       const res = await call(
         "post",
@@ -825,6 +893,72 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
       );
       expect(res.status).toBe(403);
     });
+
+    it("Email đang PENDING -> 409 CONFLICT chặn gửi trùng", async () => {
+      const outbox = fakeDb.tables.email_outbox.find((e) => e.id === uuid(901));
+      if (outbox) outbox.status = "PENDING";
+
+      const res = await call(
+        "post",
+        `/admin/affected-orders/${orderId}/resend-email`,
+        staffHn01Token,
+      );
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe("CONFLICT");
+    });
+
+    it("Email đã SENT -> 409 CONFLICT chặn gửi trùng", async () => {
+      const outbox = fakeDb.tables.email_outbox.find((e) => e.id === uuid(901));
+      if (outbox) outbox.status = "SENT";
+
+      const res = await call(
+        "post",
+        `/admin/affected-orders/${orderId}/resend-email`,
+        staffHn01Token,
+      );
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe("CONFLICT");
+    });
+
+    it("Đơn chưa có email outbox -> tạo mới bản ghi với đầy đủ thông tin rạp/phim", async () => {
+      const newOrderId = uuid(802);
+      fakeDb.tables.orders.push({
+        id: newOrderId,
+        cinema_id: HN01,
+        cinema_name: "FilmBooking Hà Nội 01",
+        movie_title: "Avatar 2",
+        room_name: "Phòng 1",
+        showtime_starts_at: "2026-12-05T19:00:00Z",
+        status: "affected",
+        contact_email: "khachmoi@example.com",
+        booking_code: "HN01-NEW",
+        cancel_reason: "Bảo trì khẩn cấp",
+      });
+
+      const res = await call(
+        "post",
+        `/admin/affected-orders/${newOrderId}/resend-email`,
+        staffHn01Token,
+      );
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+
+      const created = fakeDb.tables.email_outbox.find(
+        (e) => (e.payload as Record<string, unknown>)?.order_id === newOrderId,
+      );
+      expect(created).toBeDefined();
+      expect(created?.status).toBe("PENDING");
+      expect(created?.payload).toMatchObject({
+        order_id: newOrderId,
+        booking_code: "HN01-NEW",
+        cinema_id: HN01,
+        cinema_name: "FilmBooking Hà Nội 01",
+        movie_title: "Avatar 2",
+        room_name: "Phòng 1",
+        showtime_starts_at: "2026-12-05T19:00:00Z",
+        reason: "Bảo trì khẩn cấp",
+      });
+    });
   });
 
   // ==========================================================================
@@ -906,6 +1040,38 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
       const text = res.text;
       expect(text).toContain("HN01-CSV01");
       expect(text).toContain("HN02-CSV02");
+    });
+
+    it("CSV escape ký tự formula injection (=, +, -, @, \\t, \\r) với tiền tố '", async () => {
+      fakeDb.tables.orders.push({
+        id: uuid(913),
+        cinema_id: HN01,
+        cinema_name: "FilmBooking Hà Nội 01",
+        cinema_code: "HN01",
+        showtime_id: SHOWTIME_HN01,
+        movie_title: "=cmd|'/c calc'!A0",
+        room_name: "+Phòng 1",
+        showtime_starts_at: "2026-12-05T19:00:00Z",
+        booking_code: "HN01-INJECT",
+        status: "affected",
+        total_amount: 150000,
+        contact_name: "@CustomerEvil",
+        contact_phone: "-\t0912345678",
+        contact_email: "\rtest@example.com",
+        created_at: new Date().toISOString(),
+      });
+
+      const res = await call("get", "/admin/affected-orders/export", staffHn01Token);
+      expect(res.status).toBe(200);
+      const text = res.text;
+
+      // Ký tự formula injection phải có tiền tố '
+      expect(text).toContain("HN01-INJECT");
+      expect(text).toContain("'=cmd|'/c calc'!A0");
+      expect(text).toContain("'+Phòng 1");
+      expect(text).toContain("'@CustomerEvil");
+      expect(text).toContain("'-\t0912345678");
+      expect(text).toContain("'\rtest@example.com");
     });
   });
 });

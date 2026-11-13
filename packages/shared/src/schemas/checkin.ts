@@ -28,8 +28,8 @@ export type ScanColor = "green" | "yellow" | "red";
 
 export const SCAN_RESULT_COLOR: Record<ScanResult, ScanColor> = {
   OK: "green",
-  USED: "yellow",
-  TOO_EARLY: "yellow",
+  USED: "red",
+  TOO_EARLY: "red",
   WRONG_CINEMA: "red",
   CANCELLED: "red",
   EXPIRED: "red",

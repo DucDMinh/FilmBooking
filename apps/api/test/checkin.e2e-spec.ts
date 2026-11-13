@@ -194,7 +194,7 @@ describe("checkin API", () => {
       expect(JSON.stringify(res.body)).not.toMatch(/Nguyen|a@x\.vn|customer/);
     });
 
-    it("USED (vàng): quét lần hai báo giờ và nhân viên đã soát lần đầu (AC-12)", async () => {
+    it("USED (đỏ): quét lần hai báo giờ và nhân viên đã soát lần đầu (AC-12)", async () => {
       rpcPayload = {
         status: "USED",
         message: "Vé đã được sử dụng",
@@ -205,8 +205,24 @@ describe("checkin API", () => {
       const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
       expect(parsed(res)).toMatchObject({
         result: "USED",
-        color: "yellow",
+        color: "red",
         used: { checkedInAt: "2026-12-01T11:50:00Z", staffName: "Lan" },
+      });
+      expect(JSON.stringify(res.body)).not.toMatch(PII_PATTERN);
+    });
+
+    it("TOO_EARLY (đỏ): chưa đến giờ vào phòng chiếu báo đỏ và kèm giờ chiếu (AC-12)", async () => {
+      rpcPayload = {
+        status: "TOO_EARLY",
+        message: "Chưa đến giờ vào phòng chiếu",
+        starts_at: "2026-12-01T12:00:00Z",
+        ...PII,
+      };
+      const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
+      expect(parsed(res)).toMatchObject({
+        result: "TOO_EARLY",
+        color: "red",
+        startsAt: "2026-12-01T12:00:00Z",
       });
       expect(JSON.stringify(res.body)).not.toMatch(PII_PATTERN);
     });

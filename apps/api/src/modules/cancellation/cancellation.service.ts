@@ -353,13 +353,13 @@ export class CancellationService {
       input.refundedAmount === undefined ||
       input.refundedAmount === null ||
       typeof input.refundedAmount !== "number" ||
-      input.refundedAmount < 0
+      input.refundedAmount <= 0
     ) {
       throw new HttpException(
         {
           error: {
             code: ERROR_CODES.VALIDATION_ERROR,
-            message: "refundedAmount is required and must be non-negative",
+            message: "refundedAmount is required and must be greater than 0",
           },
         },
         HttpStatus.UNPROCESSABLE_ENTITY,
@@ -382,7 +382,7 @@ export class CancellationService {
     const { data: order, error } = await this.supabase
       .admin()
       .from("orders")
-      .select("id, cinema_id, status")
+      .select("id, cinema_id, status, total_amount")
       .eq("id", orderId)
       .maybeSingle();
 
@@ -415,6 +415,39 @@ export class CancellationService {
       );
     }
 
+    // Kiểm tra đơn đã có dòng REFUNDED_MANUAL trong affected_order_actions chưa (chống race/hoàn trùng)
+    const { data: existingAction, error: actionCheckError } = await this.supabase
+      .admin()
+      .from("affected_order_actions")
+      .select("id")
+      .eq("order_id", orderId)
+      .eq("action", "REFUNDED_MANUAL")
+      .maybeSingle();
+
+    if (actionCheckError) {
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, actionCheckError.message);
+    }
+    if (existingAction) {
+      throw new AppException(
+        ERROR_CODES.CONFLICT,
+        "Order has already been refunded",
+      );
+    }
+
+    // Kiểm tra ràng buộc số tiền hoàn: 0 < refundedAmount <= orders.total_amount
+    const totalAmount = Number(order.total_amount ?? 0);
+    if (input.refundedAmount > totalAmount) {
+      throw new HttpException(
+        {
+          error: {
+            code: ERROR_CODES.VALIDATION_ERROR,
+            message: `refundedAmount (${input.refundedAmount}) cannot exceed order total amount (${totalAmount})`,
+          },
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
     // Ghi vào affected_order_actions
     const { error: insertError } = await this.supabase
       .admin()
@@ -434,7 +467,7 @@ export class CancellationService {
     }
 
     // Cập nhật orders.status sang refunded_manual
-    await this.supabase
+    const { error: updateError } = await this.supabase
       .admin()
       .from("orders")
       .update({
@@ -442,6 +475,10 @@ export class CancellationService {
         updated_at: new Date().toISOString(),
       })
       .eq("id", orderId);
+
+    if (updateError) {
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, updateError.message);
+    }
 
     return {
       success: true,
@@ -454,7 +491,8 @@ export class CancellationService {
 
   /**
    * Gửi lại email thông báo đơn bị ảnh hưởng (R-109).
-   * Đặt outbox về PENDING hoặc tạo mới nếu chưa có.
+   * Chỉ cho phép resend khi email thất bại (status = 'FAILED') hoặc chưa có email.
+   * Chặn 409 nếu email đang PENDING hoặc SENT để tránh gửi trùng.
    */
   async resendEmail(
     access: UserAccess,
@@ -463,7 +501,7 @@ export class CancellationService {
     const { data: order, error } = await this.supabase
       .admin()
       .from("orders")
-      .select("id, cinema_id, status, contact_email, booking_code, cancel_reason")
+      .select("id, cinema_id, cinema_name, movie_title, room_name, showtime_starts_at, status, contact_email, booking_code, cancel_reason")
       .eq("id", orderId)
       .maybeSingle();
 
@@ -489,19 +527,31 @@ export class CancellationService {
       );
     }
 
-    const { data: emails } = await this.supabase
+    // Truy vấn trực tiếp DB theo order_id thay vì load toàn bảng
+    const { data: emails, error: outboxError } = await this.supabase
       .admin()
       .from("email_outbox")
-      .select("id, payload")
-      .eq("kind", "showtime_cancelled");
+      .select("id, status, payload")
+      .eq("kind", "showtime_cancelled")
+      .filter("payload->>order_id", "eq", orderId)
+      .order("created_at", { ascending: false });
 
-    const existing = (emails ?? []).find((e) => {
-      const payload = typeof e.payload === "string" ? JSON.parse(e.payload) : e.payload;
-      return payload?.order_id === orderId;
-    });
+    if (outboxError) {
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, outboxError.message);
+    }
+
+    const existing = emails && emails.length > 0 ? emails[0] : null;
 
     if (existing) {
-      await this.supabase
+      // Chỉ cho phép resend khi status là FAILED. PENDING và SENT ném 409 CONFLICT để chống gửi trùng
+      if (existing.status === "PENDING" || existing.status === "SENT") {
+        throw new AppException(
+          ERROR_CODES.CONFLICT,
+          `Cannot resend email with status ${String(existing.status)}`,
+        );
+      }
+
+      const { error: updateError } = await this.supabase
         .admin()
         .from("email_outbox")
         .update({
@@ -510,8 +560,13 @@ export class CancellationService {
           last_error: null,
         })
         .eq("id", existing.id);
+
+      if (updateError) {
+        throw new AppException(ERROR_CODES.INTERNAL_ERROR, updateError.message);
+      }
     } else {
-      await this.supabase
+      // Insert bản ghi mới với đầy đủ thông tin rạp/phim/phòng/suất chiếu
+      const { error: insertError } = await this.supabase
         .admin()
         .from("email_outbox")
         .insert({
@@ -521,6 +576,10 @@ export class CancellationService {
             order_id: order.id,
             booking_code: order.booking_code,
             cinema_id: order.cinema_id,
+            cinema_name: order.cinema_name,
+            movie_title: order.movie_title,
+            room_name: order.room_name,
+            showtime_starts_at: order.showtime_starts_at,
             reason: order.cancel_reason,
             template: "showtime_cancelled",
           },
@@ -528,6 +587,10 @@ export class CancellationService {
           status: "PENDING",
           next_attempt_at: new Date().toISOString(),
         });
+
+      if (insertError) {
+        throw new AppException(ERROR_CODES.INTERNAL_ERROR, insertError.message);
+      }
     }
 
     return {
