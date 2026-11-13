@@ -9,13 +9,22 @@ import { AllExceptionsFilter } from "./common/errors/all-exceptions.filter";
 import { SupabaseModule } from "./common/supabase/supabase.module";
 import { AppConfigModule, ENV, type Env } from "./config/env";
 import { HealthController } from "./health/health.controller";
+import { AdminModule } from "./modules/admin/admin.module";
 import { AuthExtModule } from "./modules/auth-ext/auth-ext.module";
+import { BookingModule } from "./modules/booking/booking.module";
+import { CancellationModule } from "./modules/cancellation/cancellation.module";
 import { CatalogModule } from "./modules/catalog/catalog.module";
+import { CheckinModule } from "./modules/checkin/checkin.module";
 import { CinemaOpsModule } from "./modules/cinema-ops/cinema-ops.module";
 import { IdentityModule } from "./modules/identity/identity.module";
+import { JobsModule } from "./modules/jobs/jobs.module";
+import { MailModule } from "./modules/mail/mail.module";
 import { MeModule } from "./modules/me/me.module";
+import { OrdersModule } from "./modules/orders/orders.module";
+import { PaymentModule } from "./modules/payment/payment.module";
 import { PricingModule } from "./modules/pricing/pricing.module";
 import { ProfileModule } from "./modules/profile/profile.module";
+import { ReportModule } from "./modules/report/report.module";
 
 /**
  * Chỉ task "wiring" được sửa file này; module tính năng tự test bằng TestingModule riêng.
@@ -33,6 +42,15 @@ import { ProfileModule } from "./modules/profile/profile.module";
     ProfileModule,
     IdentityModule,
     PricingModule,
+    BookingModule,
+    PaymentModule,
+    MailModule,
+    JobsModule,
+    CheckinModule,
+    AdminModule,
+    OrdersModule,
+    ReportModule,
+    CancellationModule,
   ],
   controllers: [HealthController],
   providers: [

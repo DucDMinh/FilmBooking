@@ -177,15 +177,7 @@ export class PaymentService {
         .is("link_cancelled_at", null);
 
       for (const op of (orphanedPayments as PaymentDbRow[]) ?? []) {
-        await this.payosClient.cancelPaymentLink(op.order_code, "Huỷ đơn cũ");
-        await this.supabase
-          .admin()
-          .from("payments")
-          .update({
-            status: "CANCELLED",
-            link_cancelled_at: new Date().toISOString(),
-          })
-          .eq("id", op.id);
+        await this.cancelPaymentRecordThenLink(op, "Huỷ đơn cũ");
       }
 
       for (const old of (oldUserOrders ?? []).filter((o) => o.status === "pending_payment")) {
@@ -202,30 +194,25 @@ export class PaymentService {
       .from("payments")
       .select("id, order_code")
       .eq("order_id", order.id)
-      .eq("status", "PENDING");
+      .in("status", ["PENDING", "CANCELLED"])
+      .not("payment_link_id", "is", null)
+      .is("link_cancelled_at", null);
 
     for (const cp of (currentPendingPayments as PaymentDbRow[]) ?? []) {
-      const cancelled = await this.payosClient.cancelPaymentLink(cp.order_code, "Tạo link mới");
-      if (!cancelled && this.env.NODE_ENV !== "test") {
-        this.logger.warn(`Could not cancel previous PayOS payment link for orderCode=${cp.order_code}`);
-      }
-      await this.supabase
-        .admin()
-        .from("payments")
-        .update({
-          status: "CANCELLED",
-          link_cancelled_at: new Date().toISOString(),
-        })
-        .eq("id", cp.id);
+      await this.cancelPaymentRecordThenLink(cp, "Tạo link mới");
     }
 
     // Sinh orderCode duy nhất tăng dần (dưới MAX_SAFE_INTEGER)
     const orderCode = Number(`${Date.now()}${Math.floor(Math.random() * 90 + 10)}`);
     const description = `${order.cinema_code} ${order.booking_code ?? ""}`.trim().slice(0, 25);
-    const baseOrigin = this.env.WEB_ORIGIN[0];
-    const returnUrl =
-      clientUrls?.returnUrl || `${baseOrigin}/dat-ve/${order.id}/thanh-toan/xac-nhan`;
-    const cancelUrl = clientUrls?.cancelUrl || `${baseOrigin}/dat-ve/${order.id}/thanh-toan/huy`;
+    const returnUrl = this.resolveRedirectUrl(
+      clientUrls?.returnUrl,
+      `/dat-ve/don/${order.id}/ket-qua`,
+    );
+    const cancelUrl = this.resolveRedirectUrl(
+      clientUrls?.cancelUrl,
+      `/dat-ve/don/${order.id}/xac-nhan`,
+    );
     const expiredAt = Math.floor(new Date(order.hold_expires_at).getTime() / 1000);
 
     const link = await this.payosClient.createPaymentLink({
@@ -237,7 +224,7 @@ export class PaymentService {
       expiredAt,
     });
 
-    const { error: insertPayErr } = await this.supabase
+    const { data: insertedPayment, error: insertPayErr } = await this.supabase
       .admin()
       .from("payments")
       .insert({
@@ -247,17 +234,31 @@ export class PaymentService {
         amount: order.total_amount,
         status: "PENDING",
         payment_link_id: link.paymentLinkId ?? null,
-      });
+      })
+      .select("id")
+      .single();
 
-    if (insertPayErr) {
-      throw insertPayErr;
+    if (insertPayErr || !insertedPayment) {
+      throw insertPayErr ?? new AppException(ERROR_CODES.INTERNAL_ERROR, "Không lưu được payment");
     }
 
-    await this.supabase
+    // Chỉ chuyển khi đơn còn holding/pending_payment: tránh ghi đè đơn vừa paid/cancelled trong lúc gọi PayOS.
+    const { data: updatedOrders } = await this.supabase
       .admin()
       .from("orders")
       .update({ status: "pending_payment" })
-      .eq("id", order.id);
+      .eq("id", order.id)
+      .in("status", ["holding", "pending_payment"])
+      .select("id");
+
+    if (!updatedOrders?.length) {
+      // Đơn đã đổi trạng thái (paid/cancelled/expired) trong lúc gọi PayOS: không đưa khách sang link mới.
+      await this.cancelPaymentRecordThenLink(
+        { id: insertedPayment.id, order_id: order.id, order_code: orderCode, status: "PENDING" },
+        "Đơn đã đổi trạng thái",
+      );
+      throw new AppException(ERROR_CODES.CONFLICT, "Đơn không còn ở trạng thái chờ thanh toán");
+    }
 
     return {
       status: "AWAITING_PAYMENT",
@@ -265,6 +266,47 @@ export class PaymentService {
       expiresAt: order.hold_expires_at,
       bookingCode: order.booking_code,
     };
+  }
+
+  /**
+   * Chốt CANCELLED trong DB TRƯỚC khi huỷ link trên PayOS, để không còn payment PENDING trỏ tới link sắp chết.
+   * Webhook đến trên link cũ vẫn được xử lý (handleWebhook chỉ log cảnh báo rồi confirm_paid), tiền không mất.
+   * Huỷ link lỗi thì `link_cancelled_at` để null; lần createPayment kế tiếp sẽ thử huỷ lại.
+   */
+  private async cancelPaymentRecordThenLink(payment: PaymentDbRow, reason: string): Promise<void> {
+    await this.supabase.admin().from("payments").update({ status: "CANCELLED" }).eq("id", payment.id);
+    const cancelled = await this.payosClient.cancelPaymentLink(payment.order_code, reason);
+    if (!cancelled) {
+      if (this.env.NODE_ENV !== "test") {
+        this.logger.warn(`Could not cancel PayOS payment link for orderCode=${payment.order_code}`);
+      }
+      return;
+    }
+    await this.supabase
+      .admin()
+      .from("payments")
+      .update({ link_cancelled_at: new Date().toISOString() })
+      .eq("id", payment.id);
+  }
+
+  /** returnUrl/cancelUrl chỉ được trỏ về origin web cấu hình (hoặc path tương đối) để không thành open redirect. */
+  private resolveRedirectUrl(candidate: string | undefined, defaultPath: string): string {
+    const allowedOrigins = this.env.WEB_ORIGIN.map((o) => new URL(o).origin);
+    const baseOrigin = allowedOrigins[0];
+    if (!candidate) return `${baseOrigin}${defaultPath}`;
+    if (candidate.startsWith("/") && !candidate.startsWith("//") && !candidate.includes("\\")) {
+      return `${baseOrigin}${candidate}`;
+    }
+    try {
+      const parsed = new URL(candidate);
+      if (allowedOrigins.includes(parsed.origin)) return candidate;
+    } catch {
+      // rơi xuống lỗi 400 bên dưới
+    }
+    throw new AppException(
+      ERROR_CODES.VALIDATION_ERROR,
+      "returnUrl/cancelUrl phải cùng origin với web hoặc là đường dẫn tương đối",
+    );
   }
 
   /**
