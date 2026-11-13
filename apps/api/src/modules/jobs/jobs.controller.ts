@@ -4,6 +4,7 @@ import { JobSecretGuard } from "../../common/auth/job-secret.guard";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 import { ENV, type Env } from "../../config/env";
 import { MailService } from "../mail/mail.service";
+import { ReconcileService, type ReconcileJobResult } from "./reconcile.service";
 
 export interface SendEmailsJobResult {
   processed: number;
@@ -281,5 +282,20 @@ export class JobsController {
     const rawLimit = batchSize ? Number.parseInt(batchSize, 10) : 20;
     const limit = Number.isNaN(rawLimit) ? 20 : Math.max(1, Math.min(100, rawLimit));
     return this.jobsService.processEmailOutbox(limit);
+  }
+}
+
+/** Controller riêng để JobsController (email outbox) không phụ thuộc module thanh toán. */
+@Controller("jobs")
+@Public()
+@UseGuards(JobSecretGuard)
+export class ReconcileController {
+  constructor(@Inject(ReconcileService) private readonly reconcileService: ReconcileService) {}
+
+  /** Đối soát PayOS (R-78): pg_cron gọi mỗi 5 phút. */
+  @Post("reconcile")
+  @HttpCode(HttpStatus.OK)
+  async reconcile(): Promise<ReconcileJobResult> {
+    return this.reconcileService.reconcilePendingPayments();
   }
 }
