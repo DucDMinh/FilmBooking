@@ -944,11 +944,17 @@ isOneToOne: false
 "assert_identity_rpc_caller":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
+"call_nest_job":
+{ Args: { "p_path": string }; Returns: number
+                           },
 "can_view_order":
 { Args: { "p_order_id": string }; Returns: boolean
                            },
 "cancel_showtimes":
 { Args: { "p_actor_id"?: string,"p_reason": string,"p_showtime_ids": (string)[] }; Returns: Json
+                           },
+"cancel_stale_payment":
+{ Args: { "p_payment_id": string,"p_reason"?: string }; Returns: Json
                            },
 "check_oauth_collision":
 { Args: { "p_authenticated_user_id"?: string,"p_email": string,"p_provider": string,"p_provider_id": string }; Returns: Json
@@ -985,6 +991,9 @@ isOneToOne: false
                            },
 "has_cinema_scope":
 { Args: { "p_cinema_id": string }; Returns: boolean
+                           },
+"has_role":
+{ Args: { "p_role": string }; Returns: boolean
                            },
 "hit_rate_limit":
 { Args: { "p_key": string,"p_max": number,"p_window": string }; Returns: boolean
@@ -1078,11 +1087,11 @@ isOneToOne: false
               "channel": Database["public"]['Enums']["order_channel"],"cinema_code": string,"cinema_id": string,"cinema_name": string,"gross_revenue": number,"net_revenue": number,"report_date": string,"total_discount": number,"total_orders": number,"total_tickets": number
             }[]
                            },
+"resolve_manual_review":
+{ Args: { "p_action": string,"p_note"?: string,"p_order_id": string,"p_refund_reference"?: string,"p_refunded_amount"?: number }; Returns: Json
+                           },
 "sell_order_seats":
 { Args: { "p_order_id": string }; Returns: boolean
-                           },
-"resolve_manual_review":
-{ Args: { "p_action": string,"p_note"?: string | null,"p_order_id": string,"p_refund_reference"?: string | null,"p_refunded_amount"?: number | null }; Returns: Json
                            },
 "set_cinema_status":
 { Args: { "p_cinema_id": string,"p_status": Database["public"]['Enums']["cinema_status"] }; Returns: Json
