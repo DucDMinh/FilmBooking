@@ -3,9 +3,9 @@
 ```yaml
 workItem: build/build-filmbooking
 phaseTask: layer-6 (7 task, 2 wave)
-step: builder
+step: done
 agent: builder x4 (wave 1)
-status: running            # cancel sẽ redo bước này (builder wave 1)
+status: done
 attempt: 1
 interrupted: false
 updatedAt: 2026-11-13T14:00:00.000Z
@@ -67,3 +67,5 @@ approvals:
 - 2026-11-14 reviewer task-05 round 2 STRICT PASS; commit trên wt/layer-6__task-05. Follow-up: ket-qua đơn affected tiêu đề sai, tabs /ve, focus trap + wake lock re-acquire, role=alert danh sách, fetchMyOrders không limit.
 - 2026-11-14 reviewer task-07 round 2 STRICT PASS; dispatcher sửa N1 (userIds.add trước signIn), test:int 5/5, sót 0|0|0|0; commit trên wt/layer-6__task-07. Task-05 round 2 STRICT PASS, commit e83537b.
 - 2026-11-14 merge wave 2 -> layer-6-integration (b4c6d0f..e1fa16e). Verify tổng Layer 6: typecheck/lint PASS, test api 468 / web 270 / shared 14 PASS, db:test 810/810 PASS, test:int 5/5 PASS, build PASS. progress: 7 task complete, currentLayer 7. NEXT: commit progress -> merge staging -> spec-validator layer 6 -> tag layer-6-done -> cleanup worktree.
+- 2026-11-14 merge layer-6-integration -> staging (41d717d). ▶ spec-validator layer 6 running.
+- 2026-11-14 spec-validator layer 6: GAPS FOUND, không BLOCKER (report .context/review-reports/build-filmbooking-layer-6-phase-review.md). Tạo gap register docs/changes/TECHNICAL_REQUIREMENT_GAPS.md (GAP-001..007 + follow-up). Sửa tên migration trong task-02. Tag layer-6-done. Layer 6 DONE. NEXT: Layer 7 (task-09 POS phải đánh dấu REMOVED theo spec 2.0.0).

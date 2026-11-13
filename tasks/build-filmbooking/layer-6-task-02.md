@@ -35,7 +35,7 @@ build (initial)
 - `apps/api/src/modules/jobs/reconcile.service.ts`
 - `apps/api/src/modules/jobs/jobs.controller.ts`
 - `apps/api/src/modules/jobs/jobs.module.ts`
-- `supabase/migrations/20261111060000_cron_http_jobs.sql`
+- `supabase/migrations/20261113180000_cron_http_jobs.sql`
 - `apps/api/test/reconcile.e2e-spec.ts`
 
 ## Notes
