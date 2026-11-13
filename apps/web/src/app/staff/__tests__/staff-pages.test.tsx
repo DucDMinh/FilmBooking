@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import type { ScanTicketResponse } from "@filmbooking/shared/schemas/checkin";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -161,8 +161,8 @@ describe("ScanTicketPage", () => {
     render(<ScanTicketPage />);
     const input = await screen.findByLabelText("Nhập mã vé");
     for (let i = 1; i <= 7; i++) {
-      await userEvent.clear(input);
-      await userEvent.type(input, `CODE${i}`);
+      // fireEvent.change thay userEvent.type (gõ từng ký tự ×7 vòng làm test chậm >5s khi máy tải).
+      fireEvent.change(input, { target: { value: `CODE${i}` } });
       await userEvent.click(screen.getByRole("button", { name: "Tra cứu vé" }));
       await userEvent.click(await screen.findByRole("button", { name: "Quét vé khác" }));
     }
