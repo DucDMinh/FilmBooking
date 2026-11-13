@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import AdminLayout from "@/app/admin/layout";
 import { AdminMobileNav, AdminSidebar } from "../admin-sidebar";
-import { CinemaScopeSwitcher } from "../cinema-scope-switcher";
+import { CinemaSelector, CinemaScopeSwitcher } from "../cinema-selector";
 import {
   ADMIN_NAV_ITEMS,
   isNavItemActive,
@@ -32,6 +32,18 @@ vi.mock("next/navigation", () => ({
   usePathname: () => currentPathname,
   useSearchParams: () => currentSearchParams,
   redirect: (url: string) => mockRedirect(url),
+}));
+
+// ── Mock Supabase browser client ─────────────────────────────────
+const mockSupabaseFrom = vi.fn(() => ({
+  select: vi.fn(() => ({
+    order: vi.fn().mockResolvedValue({ data: [], error: null }),
+  })),
+}));
+vi.mock("@/lib/supabase/browser", () => ({
+  createBrowserSupabase: () => ({
+    from: () => mockSupabaseFrom(),
+  }),
 }));
 
 // ── Mock Supabase server session ─────────────────────────────────
@@ -116,6 +128,7 @@ describe("nav-config: navItemsForRole và phạm vi vai trò (R-39, D4)", () => 
     // Không thấy các mục quản trị hệ thống
     expect(staffHrefs).not.toContain("/admin/phim");
     expect(staffHrefs).not.toContain("/admin/rap");
+    expect(staffHrefs).not.toContain("/admin/phong");
     expect(staffHrefs).not.toContain("/admin/lich-chieu");
     expect(staffHrefs).not.toContain("/admin/gia");
     expect(staffHrefs).not.toContain("/admin/voucher");
@@ -125,7 +138,7 @@ describe("nav-config: navItemsForRole và phạm vi vai trò (R-39, D4)", () => 
     expect(staffHrefs).not.toContain("/admin/cau-hinh");
   });
 
-  it("Manager thêm: Rạp/phòng, Lịch chiếu, Bảng giá & ngày lễ, Báo cáo, Quản lý nhân sự", () => {
+  it("Manager thêm: Rạp/phòng, Lịch chiếu, Bảng giá & ngày lễ, Báo cáo, Quản lý nhân sự, Voucher (xem), Cấu hình", () => {
     const managerItems = navItemsForRole("MANAGER");
     const managerHrefs = managerItems.map((item) => item.href);
 
@@ -135,18 +148,19 @@ describe("nav-config: navItemsForRole và phạm vi vai trò (R-39, D4)", () => 
     expect(managerHrefs).toContain("/admin/don-bi-anh-huong");
     expect(managerHrefs).toContain("/staff/soat-ve");
 
-    // Thêm các mục của Manager
+    // Thêm các mục của Manager (SPEC §5.3, design-spec §3)
     expect(managerHrefs).toContain("/admin/rap");
+    expect(managerHrefs).toContain("/admin/phong");
     expect(managerHrefs).toContain("/admin/lich-chieu");
     expect(managerHrefs).toContain("/admin/gia");
+    expect(managerHrefs).toContain("/admin/voucher");
+    expect(managerHrefs).toContain("/admin/cau-hinh");
     expect(managerHrefs).toContain("/admin/bao-cao");
     expect(managerHrefs).toContain("/admin/nguoi-dung");
 
     // Manager KHÔNG thấy mục toàn chuỗi của Admin
     expect(managerHrefs).not.toContain("/admin/phim");
-    expect(managerHrefs).not.toContain("/admin/voucher");
     expect(managerHrefs).not.toContain("/admin/audit-log");
-    expect(managerHrefs).not.toContain("/admin/cau-hinh");
   });
 
   it("Admin thấy toàn bộ mục hệ thống (thêm Phim, Voucher CRUD, Audit log, Cấu hình chuỗi)", () => {
@@ -278,6 +292,53 @@ describe("CinemaScopeSwitcher component", () => {
     expect(trigger).toBeDisabled();
     expect(trigger).toHaveTextContent("CINEMO Long Biên");
   });
+
+  it("G/M13-2: Admin thấy đầy đủ các rạp ở trạng thái TEMP_CLOSED, COMING_SOON, CLOSED với nhãn trạng thái", () => {
+    const mixedCinemas = [
+      { id: "c1", name: "CINEMO Long Biên", status: "OPEN" },
+      { id: "c2", name: "CINEMO Cầu Giấy", status: "TEMP_CLOSED" },
+      { id: "c3", name: "CINEMO Hoàng Mai", status: "COMING_SOON" },
+      { id: "c4", name: "CINEMO Ba Đình", status: "CLOSED" },
+    ];
+    render(
+      <CinemaSelector
+        cinemas={mixedCinemas}
+        canSeeAll={true}
+        scope="c2"
+        onScopeChange={vi.fn()}
+      />,
+    );
+
+    const trigger = screen.getByRole("combobox", { name: "Phạm vi rạp" });
+    expect(trigger).toHaveTextContent("CINEMO Cầu Giấy");
+    expect(trigger).toHaveTextContent("Tạm đóng");
+  });
+
+  it("G/M13-2: Nhân sự rạp chưa OPEN hiển thị đúng tên rạp thay vì fallback ID thô", async () => {
+    mockSupabaseFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockResolvedValue({
+          data: [
+            { id: "c-temp", name: "CINEMO Cầu Giấy", code: "HN02", status: "TEMP_CLOSED" },
+          ],
+          error: null,
+        }),
+      }),
+    });
+
+    const initialAssigned = [{ id: "c-temp", name: "Rạp c-temp1234" }];
+    render(
+      <CinemaSelector
+        cinemas={initialAssigned}
+        canSeeAll={false}
+        scope="c-temp"
+        onScopeChange={vi.fn()}
+      />,
+    );
+
+    // Khi load từ Supabase xong, tên rạp được cập nhật thành tên thật
+    expect(await screen.findByText(/CINEMO Cầu Giấy/)).toBeInTheDocument();
+  });
 });
 
 describe("AdminSidebar và AdminMobileNav (Keyboard nav & Responsive Sheet)", () => {
@@ -298,6 +359,31 @@ describe("AdminSidebar và AdminMobileNav (Keyboard nav & Responsive Sheet)", ()
     // Focus link bằng bàn phím
     ordersLink.focus();
     expect(ordersLink).toHaveFocus();
+  });
+
+  it("G/M13-1: giữ nguyên query ?cinema= khi chuyển đổi giữa các route con /admin/*", () => {
+    currentSearchParams = new URLSearchParams("cinema=cinema-hn-01");
+    const items = navItemsForRole("STAFF");
+    render(<AdminSidebar items={items} />);
+
+    const ordersLink = screen.getByRole("link", { name: "Đơn hàng" });
+    expect(ordersLink).toHaveAttribute("href", "/admin/don-hang?cinema=cinema-hn-01");
+
+    const affectedLink = screen.getByRole("link", { name: "Đơn bị ảnh hưởng" });
+    expect(affectedLink).toHaveAttribute("href", "/admin/don-bi-anh-huong?cinema=cinema-hn-01");
+
+    // Link external không bị gắn ?cinema=
+    const checkinLink = screen.getByRole("link", { name: /Soát vé/ });
+    expect(checkinLink).toHaveAttribute("href", "/staff/soat-ve");
+  });
+
+  it("G/M13-1: không thêm query string khi không có param ?cinema=", () => {
+    currentSearchParams = new URLSearchParams();
+    const items = navItemsForRole("STAFF");
+    render(<AdminSidebar items={items} />);
+
+    const ordersLink = screen.getByRole("link", { name: "Đơn hàng" });
+    expect(ordersLink).toHaveAttribute("href", "/admin/don-hang");
   });
 
   it("AdminMobileNav: mở Sheet trên mobile và đóng khi chọn mục", async () => {

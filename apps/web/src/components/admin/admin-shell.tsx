@@ -1,9 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { AdminMobileNav, AdminSidebar } from "./admin-sidebar";
-import { CinemaScopeSwitcher } from "./cinema-scope-switcher";
+import { CinemaSelector, type ScopeCinemaWithStatus } from "./cinema-selector";
 import { navItemsForRole, type AdminRole } from "./nav-config";
 import { useAdminScope, type ScopeCinema } from "./use-admin-scope";
 
@@ -14,10 +15,40 @@ interface AdminShellProps {
   children: ReactNode;
 }
 
+function resolveInitialCinemas(
+  initialCinemas: readonly ScopeCinema[],
+  canSeeAll: boolean,
+  cinemaParam: string | null,
+): readonly ScopeCinemaWithStatus[] {
+  if (
+    canSeeAll &&
+    cinemaParam &&
+    cinemaParam !== "all" &&
+    !initialCinemas.some((c) => c.id === cinemaParam)
+  ) {
+    return [...initialCinemas, { id: cinemaParam, name: `Rạp ${cinemaParam.slice(0, 8)}` }];
+  }
+  return initialCinemas;
+}
+
 /** Khung /admin: sidebar 250 + topbar 72 với bộ chọn phạm vi rạp (design-spec D4). */
-export function AdminShell({ role, cinemas, children }: Readonly<AdminShellProps>) {
+export function AdminShell({ role, cinemas: initialCinemas, children }: Readonly<AdminShellProps>) {
   const canSeeAll = role === "ADMIN";
   const items = navItemsForRole(role);
+  const searchParams = useSearchParams();
+  const cinemaParam = searchParams.get("cinema");
+
+  const initialList = useMemo(
+    () => resolveInitialCinemas(initialCinemas, canSeeAll, cinemaParam),
+    [initialCinemas, canSeeAll, cinemaParam],
+  );
+
+  const [cinemas, setCinemas] = useState<readonly ScopeCinemaWithStatus[]>(initialList);
+
+  useEffect(() => {
+    setCinemas(initialList);
+  }, [initialList]);
+
   const { scope, setScope } = useAdminScope(cinemas, canSeeAll);
 
   return (
@@ -28,11 +59,12 @@ export function AdminShell({ role, cinemas, children }: Readonly<AdminShellProps
           <AdminMobileNav items={items} />
           <span className="text-h3 font-heavy tracking-wide text-brand">CINEMO</span>
           <div className="ml-auto">
-            <CinemaScopeSwitcher
+            <CinemaSelector
               cinemas={cinemas}
               canSeeAll={canSeeAll}
               scope={scope}
               onScopeChange={setScope}
+              onCinemasLoaded={setCinemas}
             />
           </div>
         </header>

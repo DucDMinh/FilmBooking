@@ -2,7 +2,7 @@
 
 import { Menu } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,17 +17,29 @@ import { cn } from "@/lib/utils";
 
 import { isNavItemActive, type AdminNavItem } from "./nav-config";
 
+export function formatNavHref(href: string, cinemaParam: string | null, isExternal?: boolean): string {
+  if (isExternal || !cinemaParam || !href.startsWith("/admin")) {
+    return href;
+  }
+  const separator = href.includes("?") ? "&" : "?";
+  return `${href}${separator}cinema=${encodeURIComponent(cinemaParam)}`;
+}
+
 function NavList({ items, onNavigate }: Readonly<{ items: readonly AdminNavItem[]; onNavigate?: () => void }>) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const cinemaParam = searchParams.get("cinema");
+
   return (
     <nav aria-label="Điều hướng quản trị">
       <ul className="flex flex-col gap-1">
         {items.map((item) => {
           const active = !item.external && isNavItemActive(item.href, pathname);
+          const targetHref = formatNavHref(item.href, cinemaParam, item.external);
           return (
             <li key={item.href}>
               <Link
-                href={item.href}
+                href={targetHref}
                 aria-current={active ? "page" : undefined}
                 onClick={onNavigate}
                 className={cn(

@@ -16,22 +16,23 @@ const ADMIN_MANAGER: readonly AdminRole[] = ["ADMIN", "MANAGER"];
 
 // Thứ tự theo design-spec §3 (ma trận sidebar). Mục GĐ2 (dashboard, tích hợp POS) không có.
 // Staff (SPEC §5.3): Việc cần làm, Đơn hàng, Đơn bị ảnh hưởng, Soát vé.
-// Manager thêm: Rạp/phòng, Lịch chiếu, Bảng giá & ngày lễ, Báo cáo doanh thu/suất, Quản lý nhân sự.
+// Manager thêm: Rạp chiếu, Phòng & sơ đồ ghế, Lịch chiếu, Bảng giá & ngày lễ, Voucher (xem), Quản lý nhân sự, Báo cáo, Cấu hình rạp.
 // Admin: Toàn bộ mục hệ thống (Thêm Cấu hình chuỗi, Audit log, Voucher CRUD, Phim).
 export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   { href: "/admin", label: "Việc cần làm", roles: ALL },
   { href: "/admin/phim", label: "Phim", roles: ["ADMIN"] },
   { href: "/admin/rap", label: "Rạp chiếu", roles: ADMIN_MANAGER },
+  { href: "/admin/phong", label: "Phòng & sơ đồ ghế", roles: ADMIN_MANAGER },
   { href: "/admin/lich-chieu", label: "Lịch chiếu", roles: ADMIN_MANAGER },
   { href: "/admin/don-hang", label: "Đơn hàng", roles: ALL },
   { href: "/admin/don-can-xu-ly", label: "Đơn cần xử lý", roles: ADMIN_MANAGER },
   { href: "/admin/don-bi-anh-huong", label: "Đơn bị ảnh hưởng", roles: ALL },
   { href: "/admin/gia", label: "Giá & ngày lễ", roles: ADMIN_MANAGER },
-  { href: "/admin/voucher", label: "Voucher", roles: ["ADMIN"] },
+  { href: "/admin/voucher", label: "Voucher", roles: ADMIN_MANAGER },
   { href: "/admin/nguoi-dung", label: "Người dùng", roles: ADMIN_MANAGER },
   { href: "/admin/bao-cao", label: "Báo cáo", roles: ADMIN_MANAGER },
   { href: "/admin/audit-log", label: "Audit log", roles: ["ADMIN"] },
-  { href: "/admin/cau-hinh", label: "Cấu hình", roles: ["ADMIN"] },
+  { href: "/admin/cau-hinh", label: "Cấu hình", roles: ADMIN_MANAGER },
   { href: "/staff/soat-ve", label: "Soát vé", roles: ALL, external: true },
 ];
 
