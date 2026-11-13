@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { sessionCookieOptions } from "./cookie-options";
+import { sessionCookieOptions, REMEMBER_COOKIE_NAME } from "./cookie-options";
 import { getSupabaseEnv } from "./env";
 
 /** Client Supabase cho Server Component / Route Handler (anon key, đọc cookie HttpOnly). */
@@ -12,8 +12,9 @@ export async function createServerSupabase() {
       getAll: () => cookieStore.getAll(),
       setAll(items) {
         try {
+          const rememberVal = cookieStore.get(REMEMBER_COOKIE_NAME)?.value;
           for (const { name, value, options } of items) {
-            cookieStore.set(name, value, sessionCookieOptions(options));
+            cookieStore.set(name, value, sessionCookieOptions(options, rememberVal));
           }
         } catch {
           // Gọi từ Server Component (cookie read-only): proxy.ts đã refresh phiên.

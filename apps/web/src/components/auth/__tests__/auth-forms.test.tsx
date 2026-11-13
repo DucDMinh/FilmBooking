@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 import { LoginForm } from "../login-form";
 import { RegisterForm } from "../register-form";
@@ -10,6 +11,16 @@ import { ResendConfirmButton } from "../resend-confirm-button";
 import { OAuthButtons } from "../oauth-buttons";
 import { apiFetch } from "@/lib/api/client";
 import { sanitizeNext } from "@/lib/auth/safe-next";
+import {
+  sessionCookieOptions,
+  REMEMBER_COOKIE_NAME,
+  REMEMBER_MAX_AGE,
+  DEFAULT_SUPABASE_MAX_AGE,
+} from "@/lib/supabase/cookie-options";
+import {
+  classifyOAuthError,
+  buildRedirectForError,
+} from "@/app/auth/callback/route";
 
 beforeAll(() => {
   global.ResizeObserver = class ResizeObserver {
@@ -62,6 +73,12 @@ describe("sanitizeNext", () => {
     expect(sanitizeNext("javascript:alert(1)")).toBeNull();
     expect(sanitizeNext(null)).toBeNull();
     expect(sanitizeNext("")).toBeNull();
+    expect(sanitizeNext("/\n/evil.com")).toBeNull();
+  });
+
+  it("M-03: xử lý mảng tham số query (?next=a&next=b) bằng cách lấy phần tử đầu tiên", () => {
+    expect(sanitizeNext(["/ve", "/dat-ve"])).toBe("/ve");
+    expect(sanitizeNext(["//evil.com", "/ve"])).toBeNull();
   });
 });
 
@@ -195,6 +212,40 @@ describe("LoginForm", () => {
       value: originalLocation,
     });
   });
+
+  it("R-20: initialError='email_exists' hiển thị thông báo hướng dẫn đăng nhập bằng phương thức cũ", () => {
+    render(<LoginForm initialError="email_exists" />);
+    expect(
+      screen.getByText("Email này đã có tài khoản — hãy đăng nhập bằng phương thức cũ để liên kết."),
+    ).toBeInTheDocument();
+  });
+
+  it("F-01: initialError='identity_taken' hiển thị thông báo tài khoản MXH đã liên kết với tài khoản khác", () => {
+    render(<LoginForm initialError="identity_taken" />);
+    expect(
+      screen.getByText("Tài khoản mạng xã hội này đã được liên kết với một tài khoản khác."),
+    ).toBeInTheDocument();
+  });
+
+  it("F-05: reset Turnstile widget sau khi submit đăng nhập thất bại", async () => {
+    const user = userEvent.setup();
+    const mockReset = vi.fn();
+    const mockRef = { current: { reset: mockReset } } as unknown as React.RefObject<TurnstileInstance>;
+    const mockLogin = vi.fn().mockResolvedValue({
+      success: false,
+      error: { code: "UNAUTHENTICATED", message: "Sai mật khẩu" },
+    });
+
+    render(<LoginForm onLogin={mockLogin} turnstileRef={mockRef} />);
+
+    await user.type(screen.getByLabelText("Email"), "user@test.vn");
+    await user.type(screen.getByLabelText("Mật khẩu"), "WrongPass123");
+    await user.click(screen.getByRole("button", { name: "Đăng nhập" }));
+
+    await waitFor(() => {
+      expect(mockReset).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
 describe("RegisterForm", () => {
@@ -296,6 +347,32 @@ describe("RegisterForm", () => {
       expect(screen.getByRole("alert")).toHaveTextContent("email tạm thời");
     });
   });
+
+  it("F-05: reset Turnstile widget sau khi submit đăng ký thất bại", async () => {
+    const user = userEvent.setup();
+    const mockReset = vi.fn();
+    const mockRef = { current: { reset: mockReset } } as unknown as React.RefObject<TurnstileInstance>;
+    const mockRegister = vi.fn().mockResolvedValue({
+      success: false,
+      error: { code: "RATE_LIMITED", message: "Quá số lần đăng ký" },
+    });
+
+    render(<RegisterForm onRegister={mockRegister} turnstileRef={mockRef} />);
+
+    await user.type(screen.getByLabelText("Họ và tên"), "Test User");
+    await user.type(screen.getByLabelText("Email"), "test@example.com");
+    await user.type(screen.getByLabelText("Mật khẩu"), "StrongPass123");
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: /Tôi đồng ý với Điều khoản sử dụng và Chính sách bảo mật/i,
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Tạo tài khoản" }));
+
+    await waitFor(() => {
+      expect(mockReset).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
 describe("ResendConfirmButton", () => {
@@ -358,5 +435,99 @@ describe("OAuthButtons", () => {
     expect(screen.getByRole("button", { name: /Tiếp tục với Google/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Tiếp tục với Facebook/ })).toBeInTheDocument();
     expect(screen.getByRole("separator", { name: "hoặc" })).toBeInTheDocument();
+  });
+});
+
+describe("sessionCookieOptions (F-04)", () => {
+  it("không ghi nhớ (remember=false|'0') -> không đặt maxAge (phiên trình duyệt)", () => {
+    const opts1 = sessionCookieOptions({ maxAge: 1000 }, false);
+    expect(opts1.maxAge).toBeUndefined();
+    expect(opts1.httpOnly).toBe(true);
+
+    const opts2 = sessionCookieOptions({ maxAge: 1000 }, "0");
+    expect(opts2.maxAge).toBeUndefined();
+  });
+
+  it("ghi nhớ đăng nhập (remember=true|'1') -> đặt maxAge tối đa 30 ngày (REMEMBER_MAX_AGE)", () => {
+    const opts1 = sessionCookieOptions({}, true);
+    expect(opts1.maxAge).toBe(REMEMBER_MAX_AGE);
+
+    const opts2 = sessionCookieOptions({}, "1");
+    expect(opts2.maxAge).toBe(REMEMBER_MAX_AGE);
+  });
+
+  it("refresh token với maxAge 400 ngày mặc định của @supabase/ssr -> xóa maxAge để không biến session cookie thành bền", () => {
+    const opts = sessionCookieOptions({ maxAge: DEFAULT_SUPABASE_MAX_AGE });
+    expect(opts.maxAge).toBeUndefined();
+  });
+
+  it("hằng số REMEMBER_COOKIE_NAME là 'fb-remember'", () => {
+    expect(REMEMBER_COOKIE_NAME).toBe("fb-remember");
+  });
+});
+
+describe("OAuth Callback Error Mapping (F-01)", () => {
+  const reqUrl = "http://localhost:3000/auth/callback";
+
+  it("phân loại đúng mã lỗi đã liên kết (R-23, 23505) -> identity_taken", () => {
+    expect(
+      classifyOAuthError(null, "identity_already_exists", null),
+    ).toBe("identity_taken");
+    expect(
+      classifyOAuthError(null, null, "OAUTH_IDENTITY_ALREADY_LINKED: Tai khoan mang xa hoi da duoc lien ket"),
+    ).toBe("identity_taken");
+  });
+
+  it("phân loại đúng mã lỗi trùng email / auto-merge (AC-04 / R-20, 23514) -> email_exists", () => {
+    expect(
+      classifyOAuthError(null, null, "OAUTH_AUTO_MERGE_BLOCKED: Khong the tu dong gop"),
+    ).toBe("email_exists");
+    expect(
+      classifyOAuthError(null, null, "OAUTH_EMAIL_COLLISION_LOGIN_REQUIRED: Email nay da co tai khoan"),
+    ).toBe("email_exists");
+  });
+
+  it("phân loại lỗi Facebook thiếu email (R-19) -> missing_email", () => {
+    expect(
+      classifyOAuthError(null, null, "missing_email from provider"),
+    ).toBe("missing_email");
+  });
+
+  it("buildRedirectForError: identity_taken khi đang ở luồng liên kết (/tai-khoan) -> điều hướng về next?error=identity_taken", () => {
+    const res = buildRedirectForError("identity_taken", "/tai-khoan/bao-mat", reqUrl);
+    expect(res.headers.get("location")).toBe("http://localhost:3000/tai-khoan/bao-mat?error=identity_taken");
+  });
+
+  it("buildRedirectForError: identity_taken khi bấm từ bên ngoài -> điều hướng về /dang-nhap?error=identity_taken và giữ next", () => {
+    const res = buildRedirectForError("identity_taken", "/dat-ve/123", reqUrl);
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/dang-nhap?error=identity_taken&next=%2Fdat-ve%2F123",
+    );
+  });
+
+  it("buildRedirectForError: email_exists khi đang ở luồng liên kết -> quay về next?error=email_exists", () => {
+    const res = buildRedirectForError("email_exists", "/tai-khoan/bao-mat", reqUrl);
+    expect(res.headers.get("location")).toBe("http://localhost:3000/tai-khoan/bao-mat?error=email_exists");
+  });
+
+  it("buildRedirectForError: email_exists khi đăng nhập bên ngoài -> dẫn về /dang-nhap?error=email_exists và giữ next", () => {
+    const res = buildRedirectForError("email_exists", "/dat-ve/showtime-1", reqUrl);
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/dang-nhap?error=email_exists&next=%2Fdat-ve%2Fshowtime-1",
+    );
+  });
+
+  it("buildRedirectForError: missing_email -> dẫn về /bo-sung-email và giữ next", () => {
+    const res = buildRedirectForError("missing_email", "/dat-ve/2", reqUrl);
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/bo-sung-email?next=%2Fdat-ve%2F2",
+    );
+  });
+
+  it("buildRedirectForError: lỗi oauth không thuộc allowlist -> fallback /dang-nhap?error=oauth", () => {
+    const res = buildRedirectForError("oauth", "/ve", reqUrl);
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/dang-nhap?error=oauth&next=%2Fve",
+    );
   });
 });

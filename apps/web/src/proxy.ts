@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { sanitizeNext } from "@/lib/auth/safe-next";
-import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
+import { sessionCookieOptions, REMEMBER_COOKIE_NAME } from "@/lib/supabase/cookie-options";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 const PROTECTED_PREFIXES = ["/tai-khoan", "/ve", "/admin", "/staff"];
@@ -20,8 +20,9 @@ export async function proxy(request: NextRequest) {
       setAll(items) {
         for (const { name, value } of items) request.cookies.set(name, value);
         response = NextResponse.next({ request });
+        const rememberVal = request.cookies.get(REMEMBER_COOKIE_NAME)?.value;
         for (const { name, value, options } of items) {
-          response.cookies.set(name, value, sessionCookieOptions(options));
+          response.cookies.set(name, value, sessionCookieOptions(options, rememberVal));
         }
       },
     },

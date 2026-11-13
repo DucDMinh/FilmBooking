@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { checkPasswordPolicy, PASSWORD_ISSUE_MESSAGES } from "@filmbooking/shared/password-policy";
 
 import { ApiError, apiFetch } from "@/lib/api/client";
+import { REMEMBER_COOKIE_NAME } from "@/lib/supabase/cookie-options";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export interface ActionResult {
@@ -26,6 +27,7 @@ export async function signOutAction(): Promise<ActionResult> {
         cookieStore.delete(cookie.name);
       }
     }
+    cookieStore.delete(REMEMBER_COOKIE_NAME);
     return { success: true };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Đăng xuất thất bại" };

@@ -52,7 +52,11 @@ export type LinkIdentityAction = (
 /** Mã lỗi callback -> thông báo (R-23, AC-04). Không lộ thông tin tài khoản khác. */
 function callbackErrorMessage(code: string | null | undefined): string | null {
   if (!code) return null;
-  if (code === "identity_already_exists" || code === "OAUTH_IDENTITY_TAKEN") {
+  if (
+    code === "identity_already_exists" ||
+    code === "OAUTH_IDENTITY_TAKEN" ||
+    code === "identity_taken"
+  ) {
     return "Tài khoản mạng xã hội này đã liên kết với một tài khoản CINEMO khác.";
   }
   return "Không thể liên kết tài khoản. Nếu email này đã có tài khoản đăng nhập bằng mật khẩu, hãy đăng nhập bằng mật khẩu rồi liên kết tại đây.";

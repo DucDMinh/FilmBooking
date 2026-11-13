@@ -44,6 +44,19 @@
   ],
   "bugs": [
     {
+      "id": "layer5-review/phase-3-task-08",
+      "title": "F-01..F-05 Web Auth, OAuth Callback Error Mapping & IP Forwarding",
+      "status": "done",
+      "severity": "high",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-layer5-review-phase-3-task-08-round-2-review.md"
+      },
+      "updatedAt": "2026-11-13T12:54:30.000Z"
+    },
+    {
       "id": "layer5-review/phase-2-task-06",
       "title": "D/M1..M6 Admin Audit Actor, Voucher Deletion & Scoping",
       "status": "done",

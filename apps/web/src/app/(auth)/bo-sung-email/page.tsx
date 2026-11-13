@@ -23,7 +23,7 @@ function MissingEmailForm() {
   const [done, setDone] = useState(false);
 
   // AC-04: callback báo trùng email -> hướng dẫn đăng nhập bằng mật khẩu rồi liên kết, không tạo tài khoản mới.
-  if (params.get("status") === "email_exists") {
+  if (params.get("status") === "email_exists" || params.get("error") === "email_exists") {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="text-h2 font-bold">Email này đã có tài khoản</h1>

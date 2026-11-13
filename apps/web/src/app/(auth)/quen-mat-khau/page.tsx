@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { AuthField, FormAlert } from "@/components/auth/auth-ui";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { apiFetch, ApiError } from "@/lib/api/client";
 function ForgotPasswordContent() {
   const searchParams = useSearchParams();
   const initialEmail = searchParams.get("email") ?? "";
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   const [email, setEmail] = useState(initialEmail);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -42,6 +44,9 @@ function ForgotPasswordContent() {
       // R-12: Luôn hiển thị thông báo trung tính thành công
       setSubmitted(true);
     } catch (err: unknown) {
+      // F-05: Reset Turnstile widget và xóa token khi submit lỗi
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
       if (err instanceof ApiError) {
         if (err.code === "RATE_LIMITED") {
           setErrorMessage("Bạn thử quá nhiều lần, vui lòng đợi một lúc rồi thử lại.");
@@ -114,7 +119,7 @@ function ForgotPasswordContent() {
         />
 
         <div className="pt-1">
-          <TurnstileField onToken={setCaptchaToken} />
+          <TurnstileField onToken={setCaptchaToken} turnstileRef={turnstileRef} />
         </div>
 
         <Button

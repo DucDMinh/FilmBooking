@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -32,10 +33,14 @@ export interface RegisterFormProps {
     acceptTerms: boolean;
     captchaToken?: string;
   }) => Promise<RegisterResult>;
+  turnstileRef?: React.RefObject<TurnstileInstance | null | undefined>;
 }
 
-export function RegisterForm({ next, onRegister }: Readonly<RegisterFormProps>) {
+export function RegisterForm({ next, onRegister, turnstileRef }: Readonly<RegisterFormProps>) {
   const router = useRouter();
+  const internalTurnstileRef = useRef<TurnstileInstance | null>(null);
+  const activeTurnstileRef = turnstileRef ?? internalTurnstileRef;
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -132,6 +137,10 @@ export function RegisterForm({ next, onRegister }: Readonly<RegisterFormProps>) 
         return;
       }
 
+      // F-05: Reset Turnstile widget và xóa token khi submit lỗi
+      activeTurnstileRef.current?.reset();
+      setCaptchaToken(null);
+
       const err = res.error;
       if (err?.code === "DISPOSABLE_EMAIL") {
         setErrorMessage(ERROR_MESSAGES.DISPOSABLE_EMAIL);
@@ -143,6 +152,9 @@ export function RegisterForm({ next, onRegister }: Readonly<RegisterFormProps>) 
         setErrorMessage(err?.message ?? "Đã có lỗi xảy ra. Vui lòng thử lại sau.");
       }
     } catch {
+      // F-05: Reset Turnstile widget và xóa token khi submit lỗi
+      activeTurnstileRef.current?.reset();
+      setCaptchaToken(null);
       setErrorMessage("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
@@ -256,7 +268,7 @@ export function RegisterForm({ next, onRegister }: Readonly<RegisterFormProps>) 
         </div>
 
         <div className="pt-1">
-          <TurnstileField onToken={setCaptchaToken} />
+          <TurnstileField onToken={setCaptchaToken} turnstileRef={activeTurnstileRef} />
         </div>
 
         <Button

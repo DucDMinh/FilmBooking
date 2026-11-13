@@ -25,6 +25,7 @@ import type {
   ResetPasswordInput,
 } from "@filmbooking/shared/schemas/auth";
 import { PASSWORD_ISSUE_MESSAGES, checkPasswordPolicy } from "@filmbooking/shared/password-policy";
+import { ENV, type Env } from "../../config/env";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 import { AppException } from "../../common/errors/app-exception";
 import { TurnstileService } from "./turnstile.service";
@@ -67,6 +68,7 @@ export class AuthExtService {
     @Inject(SupabaseService) private readonly supabase: SupabaseService,
     @Inject(TurnstileService) private readonly turnstile: TurnstileService,
     @Inject(SUPABASE_ANON_CLIENT) private readonly anon: SupabaseClient,
+    @Inject(ENV) private readonly env: Env,
   ) {}
 
   async register(input: RegisterInput, ip: string | undefined): Promise<AuthNeutralResponse> {
@@ -148,7 +150,10 @@ export class AuthExtService {
     await this.rateLimit(`forgot:ip:${ip ?? "unknown"}`, HOUR, 10);
     await this.requireCaptcha(input.captchaToken, ip);
     await this.rateLimit(`forgot:email:${emailKey(input.email)}`, HOUR, 5);
-    const { error } = await this.anon.auth.resetPasswordForEmail(input.email);
+    const webOrigin = this.env.WEB_ORIGIN[0];
+    const { error } = await this.anon.auth.resetPasswordForEmail(input.email, {
+      redirectTo: `${webOrigin}/dat-lai-mat-khau`,
+    });
     // R-12: lỗi từ GoTrue (email không tồn tại, SMTP...) không được lộ ra client.
     if (error) this.logger.warn(`resetPasswordForEmail failed: ${error.message}`);
     return NEUTRAL;
@@ -290,7 +295,14 @@ export class AuthExtService {
 
   /** Gửi (lại) email xác nhận. Lỗi GoTrue chỉ log để không lộ email tồn tại (R-12). */
   private async sendConfirmation(email: string): Promise<void> {
-    const { error } = await this.anon.auth.resend({ type: "signup", email });
+    const webOrigin = this.env.WEB_ORIGIN[0];
+    const { error } = await this.anon.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${webOrigin}/auth/callback?next=/tai-khoan`,
+      },
+    });
     if (error) this.logger.warn(`confirmation email failed: ${error.message}`);
   }
 

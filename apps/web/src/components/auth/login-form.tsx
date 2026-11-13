@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -31,9 +32,13 @@ export interface LoginFormProps {
     rememberMe: boolean;
     captchaToken?: string;
   }) => Promise<LoginResult>;
+  turnstileRef?: React.RefObject<TurnstileInstance | null | undefined>;
 }
 
-export function LoginForm({ next, initialError, onLogin }: Readonly<LoginFormProps>) {
+export function LoginForm({ next, initialError, onLogin, turnstileRef }: Readonly<LoginFormProps>) {
+  const internalTurnstileRef = useRef<TurnstileInstance | null>(null);
+  const activeTurnstileRef = turnstileRef ?? internalTurnstileRef;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -43,7 +48,13 @@ export function LoginForm({ next, initialError, onLogin }: Readonly<LoginFormPro
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(
-    initialError === "oauth" ? "Đăng nhập với Google/Facebook không thành công. Vui lòng thử lại." : null,
+    initialError === "oauth"
+      ? "Đăng nhập với Google/Facebook không thành công. Vui lòng thử lại."
+      : initialError === "email_exists"
+        ? "Email này đã có tài khoản — hãy đăng nhập bằng phương thức cũ để liên kết."
+        : initialError === "identity_taken"
+          ? "Tài khoản mạng xã hội này đã được liên kết với một tài khoản khác."
+          : null,
   );
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
@@ -115,6 +126,10 @@ export function LoginForm({ next, initialError, onLogin }: Readonly<LoginFormPro
         return;
       }
 
+      // F-05: Reset Turnstile widget và xóa token khi submit lỗi
+      activeTurnstileRef.current?.reset();
+      setCaptchaToken(null);
+
       const err = res.error;
       const newFailures = failedAttempts + 1;
       setFailedAttempts(newFailures);
@@ -134,6 +149,9 @@ export function LoginForm({ next, initialError, onLogin }: Readonly<LoginFormPro
         setErrorMessage(err?.message ?? "Đã có lỗi xảy ra. Vui lòng thử lại sau.");
       }
     } catch {
+      // F-05: Reset Turnstile widget và xóa token khi submit lỗi
+      activeTurnstileRef.current?.reset();
+      setCaptchaToken(null);
       setErrorMessage("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
@@ -205,7 +223,7 @@ export function LoginForm({ next, initialError, onLogin }: Readonly<LoginFormPro
 
         {showCaptcha ? (
           <div className="pt-1">
-            <TurnstileField onToken={setCaptchaToken} />
+            <TurnstileField onToken={setCaptchaToken} turnstileRef={activeTurnstileRef} />
           </div>
         ) : null}
 

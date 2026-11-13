@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { LoginForm, type LoginResult } from "@/components/auth/login-form";
 import { apiFetch, ApiError } from "@/lib/api/client";
-import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
+import {
+  REMEMBER_COOKIE_NAME,
+  REMEMBER_MAX_AGE,
+  sessionCookieOptions,
+} from "@/lib/supabase/cookie-options";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { AuthSessionResponse } from "@filmbooking/shared/schemas/auth";
 
@@ -26,8 +30,12 @@ export default async function LoginPage({ searchParams }: PageProps) {
   }): Promise<LoginResult> {
     "use server";
     try {
+      const headerList = await headers();
+      const clientIp = headerList.get("x-forwarded-for") ?? headerList.get("x-real-ip");
+
       const res = await apiFetch<AuthSessionResponse>("/auth/login", {
         method: "POST",
+        headers: clientIp ? { "x-forwarded-for": clientIp } : undefined,
         json: {
           email: data.email,
           password: data.password,
@@ -42,15 +50,26 @@ export default async function LoginPage({ searchParams }: PageProps) {
         refresh_token: res.refreshToken,
       });
 
+      // F-04: Lưu cờ fb-remember=0|1 vào cookie HttpOnly
+      cookieStore.set(
+        REMEMBER_COOKIE_NAME,
+        data.rememberMe ? "1" : "0",
+        sessionCookieOptions(
+          { maxAge: data.rememberMe ? REMEMBER_MAX_AGE : undefined },
+          data.rememberMe,
+        ),
+      );
+
       const allCookies = cookieStore.getAll();
       for (const c of allCookies) {
         if (c.name.includes("-auth-token")) {
           cookieStore.set(
             c.name,
             c.value,
-            sessionCookieOptions({
-              maxAge: data.rememberMe ? 30 * 24 * 3600 : undefined,
-            }),
+            sessionCookieOptions(
+              { maxAge: data.rememberMe ? REMEMBER_MAX_AGE : undefined },
+              data.rememberMe,
+            ),
           );
         }
       }

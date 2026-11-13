@@ -9,7 +9,14 @@ import { getServerAccessToken } from "@/lib/supabase/server";
  * handler này gắn `Authorization: Bearer` rồi chuyển tiếp; KHÔNG chuyển cookie sang Nest.
  */
 const MAX_BODY_BYTES = 1024 * 1024;
-const FORWARD_REQUEST_HEADERS = ["content-type", "accept", "accept-language", "idempotency-key"];
+const FORWARD_REQUEST_HEADERS = [
+  "content-type",
+  "accept",
+  "accept-language",
+  "idempotency-key",
+  "x-forwarded-for",
+  "x-real-ip",
+];
 const FORWARD_RESPONSE_HEADERS = ["content-type", "retry-after"];
 const SAFE_SEGMENT = /^[A-Za-z0-9_~-]+(\.[A-Za-z0-9_~-]+)*$/; // không "..", không "/", không "%"
 
@@ -49,6 +56,13 @@ async function forward(request: NextRequest, { params }: RouteContext): Promise<
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
+
+  // F-03: Đảm bảo IP khách được chuyển tiếp tới Nest (X-Forwarded-For)
+  if (!headers.has("x-forwarded-for")) {
+    const clientIp = request.headers.get("x-real-ip");
+    if (clientIp) headers.set("x-forwarded-for", clientIp);
+  }
+
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   let upstream: Response;
