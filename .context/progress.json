@@ -1,6 +1,6 @@
 {
   "mode": "initial-build",
-  "activeWorkItem": "bug/layer5-review",
+  "activeWorkItem": "build/build-filmbooking",
   "features": [
     {
       "id": "remove-pos",
@@ -423,9 +423,9 @@
       "updatedAt": "2026-11-13T04:45:00.000Z"
     }
   ],
-  "currentLayer": 5,
+  "currentLayer": 7,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-13T07:22:16.127Z",
+  "lastUpdated": "2026-11-13T18:13:05.525Z",
   "inProgressTask": null,
   "completedTasks": [
     {
@@ -728,6 +728,55 @@
       "round": 1,
       "report": ".context/review-reports/build-filmbooking-layer-5-task-13-round-1-review.md",
       "completedAt": "2026-11-13T07:22:15.914Z"
+    },
+    {
+      "task": "layer-6/task-01",
+      "review": "STRICT PASS",
+      "round": 2,
+      "report": ".context/review-reports/build-filmbooking-layer-6-task-01-round-2-review.md",
+      "completedAt": "2026-11-13T18:13:04.633Z"
+    },
+    {
+      "task": "layer-6/task-02",
+      "review": "STRICT PASS",
+      "round": 2,
+      "report": ".context/review-reports/build-filmbooking-layer-6-task-02-round-2-review.md",
+      "completedAt": "2026-11-13T18:13:04.762Z"
+    },
+    {
+      "task": "layer-6/task-03",
+      "review": "STRICT PASS",
+      "round": 2,
+      "report": ".context/review-reports/build-filmbooking-layer-6-task-03-round-2-review.md",
+      "completedAt": "2026-11-13T18:13:04.886Z"
+    },
+    {
+      "task": "layer-6/task-04",
+      "review": "STRICT PASS",
+      "round": 2,
+      "report": ".context/review-reports/build-filmbooking-layer-6-task-04-round-2-review.md",
+      "completedAt": "2026-11-13T18:13:05.012Z"
+    },
+    {
+      "task": "layer-6/task-05",
+      "review": "STRICT PASS",
+      "round": 2,
+      "report": ".context/review-reports/build-filmbooking-layer-6-task-05-round-2-review.md",
+      "completedAt": "2026-11-13T18:13:05.149Z"
+    },
+    {
+      "task": "layer-6/task-06",
+      "review": "STRICT PASS",
+      "round": 2,
+      "report": ".context/review-reports/build-filmbooking-layer-6-task-06-round-2-review.md",
+      "completedAt": "2026-11-13T18:13:05.277Z"
+    },
+    {
+      "task": "layer-6/task-07",
+      "review": "STRICT PASS",
+      "round": 2,
+      "report": ".context/review-reports/build-filmbooking-layer-6-task-07-round-2-review.md",
+      "completedAt": "2026-11-13T18:13:05.398Z"
     }
   ],
   "blockedTasks": [],
