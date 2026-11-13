@@ -37,6 +37,9 @@ Màn 17 + B14/B15: chọn rạp làm việc (lưu phiên), camera quét QR (html
 - `apps/web/src/components/staff/qr-scanner.tsx`
 - `apps/web/src/components/staff/checkin-result.tsx`
 - `apps/web/src/components/staff/__tests__/checkin-result.test.tsx`
+- `apps/web/src/components/staff/staff-cinema.ts` (bổ sung khi build: helper dùng chung 2 page)
+- `apps/web/src/components/staff/__tests__/staff-cinema.test.ts`
+- `apps/web/src/app/staff/__tests__/staff-pages.test.tsx`
 
 ## Notes
 —
