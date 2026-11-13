@@ -42,6 +42,7 @@ select set_eq(
     ('has_cinema_manager_scope(uuid)'),
     ('has_cinema_role(uuid,staff_role[])'),
     ('has_cinema_scope(uuid)'),
+    ('has_role(text)'),
     ('hold_seats(uuid,uuid[],text,uuid,text)'),
     ('is_admin()'),
     ('preview_cancel_showtimes(uuid[])'),
@@ -52,6 +53,7 @@ select set_eq(
     ('report_cancelled_showtimes(uuid,date,date)'),
     ('report_payos_reconciliation(uuid)'),
     ('report_revenue(uuid,date,date,order_channel)'),
+    ('resolve_manual_review(uuid,text,text,text,integer)'),
     ('set_cinema_status(uuid,cinema_status)')$$,
   'authenticated chỉ EXECUTE được các hàm trong allowlist'
 );

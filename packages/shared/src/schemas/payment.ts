@@ -17,8 +17,9 @@ export const bookingIdParamSchema = z.string().uuid("Invalid booking id");
 
 export const createPaymentBodySchema = z
   .object({
-    returnUrl: z.string().url().optional(),
-    cancelUrl: z.string().url().optional(),
+    // URL tuyệt đối hoặc path tương đối; service kiểm cùng origin web.
+    returnUrl: z.string().min(1).max(2048).optional(),
+    cancelUrl: z.string().min(1).max(2048).optional(),
   })
   .optional();
 export type CreatePaymentBody = z.infer<typeof createPaymentBodySchema>;

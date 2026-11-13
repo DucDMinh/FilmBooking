@@ -102,7 +102,7 @@ const createToken = (sub: string) =>
     .setExpirationTime("5m")
     .sign(new TextEncoder().encode(JWT_SECRET));
 
-describe("AppModule Smoke E2E (Wiring #2)", () => {
+describe("AppModule Smoke E2E (Wiring #4)", () => {
   let app: INestApplication;
   const fakeSupabase = createFakeSupabase();
 
@@ -196,6 +196,82 @@ describe("AppModule Smoke E2E (Wiring #2)", () => {
       const response = await request(app.getHttpServer()).get(`/cinemas/${CINEMA_ID}/rooms`);
       expect(response.status).toBe(401);
       expect(response.body.error?.code).toBe("UNAUTHENTICATED");
+    });
+  });
+
+  describe("Layer 5/6 modules (Wiring #4)", () => {
+    const SHOWTIME_ID = "2b6f1c3e-4d5a-4b7c-8e9f-0a1b2c3d4e5f";
+    const ORDER_ID = "3c7a2d4f-5e6b-4c8d-9fa0-1b2c3d4e5f60";
+
+    it("GET /showtimes/:id/seatmap -> 200 (@Public, không cần token)", async () => {
+      fakeSupabase.handlers.set("showtimes:select", () => ({
+        data: {
+          id: SHOWTIME_ID,
+          cinema_id: CINEMA_ID,
+          room_id: "4d8b3e5a-6f7c-4d9e-8ab1-2c3d4e5f6071",
+          movie_id: "5e9c4f6b-7a8d-4eaf-9bc2-3d4e5f607182",
+          starts_at: "2099-01-01T10:00:00Z",
+          ends_at: "2099-01-01T12:00:00Z",
+          format: "2D",
+          status: "SCHEDULED",
+          movies: { status: "PUBLISHED" },
+        },
+      }));
+      fakeSupabase.handlers.set("rooms:select", () => ({
+        data: { id: "4d8b3e5a-6f7c-4d9e-8ab1-2c3d4e5f6071", name: "P1", grid_rows: 1, grid_cols: 1 },
+      }));
+      fakeSupabase.handlers.set("cinemas:select", () => ({ data: { status: "OPEN" } }));
+      const response = await request(app.getHttpServer()).get(`/showtimes/${SHOWTIME_ID}/seatmap`);
+      expect(response.status).toBe(200);
+      expect(response.body.room.name).toBe("P1");
+    });
+
+    it("POST /payos/webhook là @Public: thiếu chữ ký bị từ chối, không bị 401", async () => {
+      const response = await request(app.getHttpServer()).post("/payos/webhook").send({});
+      expect(response.status).not.toBe(401);
+      expect(response.status).not.toBe(404);
+      expect(response.body.success).toBe(false);
+    });
+
+    it.each(["/jobs/send-emails", "/jobs/reconcile"])(
+      "POST %s không có secret -> 401 (route @Public nhưng có JobSecretGuard)",
+      async (path) => {
+        const response = await request(app.getHttpServer()).post(path);
+        expect(response.status).toBe(401);
+      },
+    );
+
+    const protectedRoutes: Array<[method: "get" | "post" | "patch" | "put", path: string]> = [
+      ["post", "/bookings/holds"],
+      ["get", `/bookings/${ORDER_ID}`],
+      ["post", `/bookings/${ORDER_ID}/payment`],
+      ["get", `/bookings/${ORDER_ID}/payment-status`],
+      ["post", "/checkin/scan"],
+      ["get", "/admin/users"],
+      ["get", "/admin/settings"],
+      ["get", "/admin/vouchers"],
+      ["get", "/admin/audit"],
+      ["get", "/orders"],
+      ["get", `/orders/${ORDER_ID}`],
+      ["get", "/admin/todo"],
+      ["get", "/reports/revenue"],
+      ["get", "/admin/reports/revenue"],
+      ["get", "/reports/cancelled-showtimes"],
+      ["patch", `/admin/cinemas/${CINEMA_ID}/status`],
+    ];
+
+    it.each(protectedRoutes)("%s %s -> 401 UNAUTHENTICATED khi không có token (route đã mount)", async (method, path) => {
+      const response = await request(app.getHttpServer())[method](path);
+      expect(response.status).toBe(401);
+      expect(response.body.error?.code).toBe("UNAUTHENTICATED");
+    });
+
+    it("token CUSTOMER không vào được route quản trị/báo cáo -> 403", async () => {
+      const token = await createToken(USER_ID);
+      for (const path of ["/admin/users", "/reports/revenue", "/orders"]) {
+        const response = await request(app.getHttpServer()).get(path).set("Authorization", `Bearer ${token}`);
+        expect(response.status).toBe(403);
+      }
     });
   });
 });

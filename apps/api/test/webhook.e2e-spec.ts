@@ -647,6 +647,125 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11,
     });
   });
 
+  describe("POST /bookings/:id/payment: hardening returnUrl/cancelUrl + thứ tự huỷ link", () => {
+    const pay = (body?: Record<string, string>) => {
+      const req = request(app.getHttpServer())
+        .post(`/bookings/${ORDER_PENDING_01}/payment`)
+        .set("Authorization", `Bearer ${customerToken}`);
+      return body ? req.send(body) : req;
+    };
+
+    it("mặc định trỏ về trang kết quả/xác nhận của web", async () => {
+      const createSpy = vi.spyOn(payosClient, "createPaymentLink");
+      const res = await pay();
+      expect(res.status).toBe(200);
+      expect(createSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          returnUrl: `http://localhost:3000/dat-ve/don/${ORDER_PENDING_01}/ket-qua`,
+          cancelUrl: `http://localhost:3000/dat-ve/don/${ORDER_PENDING_01}/xac-nhan`,
+        }),
+      );
+    });
+
+    it("path tương đối được ghép vào origin web cấu hình", async () => {
+      const createSpy = vi.spyOn(payosClient, "createPaymentLink");
+      const res = await pay({ returnUrl: "/dat-ve/don/x/ket-qua", cancelUrl: "/dat-ve/don/x/xac-nhan" });
+      expect(res.status).toBe(200);
+      expect(createSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          returnUrl: "http://localhost:3000/dat-ve/don/x/ket-qua",
+          cancelUrl: "http://localhost:3000/dat-ve/don/x/xac-nhan",
+        }),
+      );
+    });
+
+    it.each(["https://evil.example.com/x", "//evil.example.com/x", "http://localhost:3000.evil.com/x", "javascript:alert(1)"])(
+      "returnUrl ngoài origin web (%s) -> 400, không tạo link PayOS",
+      async (bad) => {
+        const createSpy = vi.spyOn(payosClient, "createPaymentLink");
+        createSpy.mockClear();
+        const res = await pay({ returnUrl: bad });
+        expect(res.status).toBe(400);
+        expect(res.body.error?.code).toBe("VALIDATION_ERROR");
+        expect(createSpy).not.toHaveBeenCalled();
+      },
+    );
+
+    it("payment cũ đã CANCELLED trong DB tại thời điểm huỷ link trên PayOS", async () => {
+      const statusesAtCancel: string[] = [];
+      vi.spyOn(payosClient, "cancelPaymentLink").mockImplementation((orderCode: number) => {
+        const row = (fakeDb.tables.payments ?? []).find((p) => p.order_code === orderCode);
+        statusesAtCancel.push(String(row?.status));
+        return Promise.resolve(true);
+      });
+      const res = await pay();
+      expect(res.status).toBe(200);
+      expect(statusesAtCancel.length).toBeGreaterThan(0);
+      expect(statusesAtCancel.every((st) => st === "CANCELLED")).toBe(true);
+    });
+
+    it("không ghi đè đơn đã paid sang pending_payment nếu trạng thái đổi trong lúc gọi PayOS", async () => {
+      vi.spyOn(payosClient, "createPaymentLink").mockImplementationOnce(async (params) => {
+        const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_PENDING_01);
+        if (order) order.status = "paid";
+        return { checkoutUrl: "https://pay.payos.vn/web/x", paymentLinkId: "pl-race", orderCode: params.orderCode } as never;
+      });
+      const res = await pay();
+      expect(res.status).toBe(409);
+      const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_PENDING_01);
+      expect(order?.status).toBe("paid");
+    });
+
+    it("đơn đổi sang cancelled trong lúc gọi PayOS -> 409, không trả checkoutUrl, huỷ payment vừa tạo", async () => {
+      const cancelSpy = vi.spyOn(payosClient, "cancelPaymentLink");
+      vi.spyOn(payosClient, "createPaymentLink").mockImplementationOnce(async (params) => {
+        const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_PENDING_01);
+        if (order) order.status = "cancelled";
+        return { checkoutUrl: "https://pay.payos.vn/web/x", paymentLinkId: "pl-race", orderCode: params.orderCode } as never;
+      });
+      const res = await pay();
+      expect(res.status).toBe(409);
+      expect(res.body.checkoutUrl).toBeUndefined();
+      const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_PENDING_01);
+      expect(order?.status).toBe("cancelled");
+      const raced = (fakeDb.tables.payments ?? []).find((p) => p.payment_link_id === "pl-race");
+      expect(raced?.status).toBe("CANCELLED");
+      expect(cancelSpy).toHaveBeenCalledWith(Number(raced?.order_code), expect.any(String));
+    });
+
+    it("payment CANCELLED của chính đơn mà huỷ link PayOS lỗi lần trước -> lần tạo sau thử huỷ lại", async () => {
+      fakeDb.tables.payments = [
+        ...(fakeDb.tables.payments ?? []),
+        {
+          id: "00000000-0000-4000-8000-0000000009aa",
+          order_id: ORDER_PENDING_01,
+          cinema_id: (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_PENDING_01)?.cinema_id,
+          order_code: 999777,
+          amount: 150000,
+          status: "CANCELLED",
+          payment_link_id: "pl-stuck",
+          link_cancelled_at: null,
+        },
+      ];
+      const cancelSpy = vi.spyOn(payosClient, "cancelPaymentLink");
+      cancelSpy.mockClear();
+      const res = await pay();
+      expect(res.status).toBe(200);
+      expect(cancelSpy).toHaveBeenCalledWith(999777, expect.any(String));
+      const stuck = (fakeDb.tables.payments ?? []).find((p) => p.order_code === 999777);
+      expect(typeof stuck?.link_cancelled_at).toBe("string");
+    });
+
+    it("WEB_ORIGIN được chuẩn hoá khi so sánh (host hoa/thường)", async () => {
+      const createSpy = vi.spyOn(payosClient, "createPaymentLink");
+      const res = await pay({ returnUrl: "http://LOCALHOST:3000/dat-ve/don/x/ket-qua" });
+      expect(res.status).toBe(200);
+      expect(createSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({ returnUrl: "http://LOCALHOST:3000/dat-ve/don/x/ket-qua" }),
+      );
+    });
+  });
+
   describe("GET /bookings/:id/payment-status", () => {
     it("trả về trạng thái cho màn 'Đang xác nhận' (polling)", async () => {
       const res = await request(app.getHttpServer())
