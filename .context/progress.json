@@ -44,6 +44,19 @@
   ],
   "bugs": [
     {
+      "id": "layer5-review/phase-4-task-11",
+      "title": "A/MAJOR-1, B/M2, C8-4, D/C1, G/M11-5 Test Suite Hardening & False Confidence Elimination",
+      "status": "done",
+      "severity": "medium",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer5-review-phase-4-task-11-round-1-review.md"
+      },
+      "updatedAt": "2026-11-13T13:16:00.000Z"
+    },
+    {
       "id": "layer5-review/phase-2-task-07",
       "title": "D/M7, D/M8 Refactor AI-readable Codebase & DI Hardening",
       "status": "done",

@@ -79,10 +79,10 @@ class FakeDb {
           actor_id: ADMIN,
           cinema_id: null,
           table_name: "app_settings",
-          record_id: "seat_hold_minutes_web",
+          record_id: "default_cleaning_minutes",
           action: "UPDATE",
-          before_data: { value: 10 },
-          after_data: { value: 10 },
+          before_data: { value: 15 },
+          after_data: { value: 15 },
         },
         {
           id: 2,
@@ -732,11 +732,13 @@ describe("Admin Module E2E", () => {
       const setting = fakeDb.tables.app_settings?.find((s) => s.key === "seat_hold_minutes_web");
       expect(setting?.value).toBe(15);
 
-      // Kiểm tra audit log đã ghi
+      // Kiểm tra audit log mới đã ghi đúng giá trị và actor (D/m12 không xanh giả do seed)
       const logs = fakeDb.tables.audit_logs ?? [];
       const audit = logs.find((l) => l.table_name === "app_settings" && l.record_id === "seat_hold_minutes_web");
       expect(audit).toBeTruthy();
       expect(audit?.action).toBe("UPDATE");
+      expect(audit?.actor_id).toBe(ADMIN);
+      expect((audit?.after_data as Record<string, unknown>)?.value).toBe(15);
     });
 
     it("Giá trị cấu hình không hợp lệ -> 400 Validation Error", async () => {

@@ -262,6 +262,32 @@ class FakeDb {
         pay = (this.tables.payments ?? []).filter((p) => p.order_id === orderId).at(-1);
       }
 
+      // R-104, R-134: Số tiền không khớp (AMOUNT_MISMATCH) -> chuyển đơn sang needs_manual_review
+      const pAmount = args.p_amount as number | undefined;
+      if (typeof pAmount === "number" && pAmount !== order.total_amount) {
+        order.status = "needs_manual_review";
+        if (pay) {
+          pay.amount = pAmount;
+          pay.status = "PAID";
+        }
+        this.emailOutbox.push({
+          kind: "LATE_PAYMENT_MANUAL_REVIEW",
+          order_id: order.id,
+          status: "PENDING",
+        });
+        return Promise.resolve({
+          data: {
+            success: false,
+            status: "AMOUNT_MISMATCH",
+            order_id: order.id,
+            expected_amount: order.total_amount,
+            received_amount: pAmount,
+            message: "Số tiền thanh toán không khớp với tổng tiền đơn hàng",
+          },
+          error: null,
+        });
+      }
+
       // Mô phỏng lỗi 23505 nếu chọn nhầm payment cũ khác mà cố gán order_code của payment đang tồn tại
       if (pay && orderCode && pay.order_code !== orderCode) {
         const conflict = (this.tables.payments ?? []).find(
@@ -887,6 +913,45 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11,
         fakeDb.rpc = origRpc;
       }
     });
+
+    it("webhook nhận số tiền không khớp (AMOUNT_MISMATCH) -> chuyển needs_manual_review và trả HTTP 200 cho PayOS", async () => {
+      const data = {
+        orderCode: 999903,
+        amount: 100000, // Đơn ORDER_OLD_PENDING có total_amount là 150000
+        description: "Thanh toan thieu tien",
+        accountNumber: "123456789",
+        reference: "REF_TXN_MISMATCH_01",
+        transactionDateTime: new Date().toISOString(),
+        currency: "VND",
+        paymentLinkId: "LINK_01",
+        code: "00",
+        desc: "Thanh toan thanh cong",
+      };
+      const validSignature = payosClient.computeSignature(data, CHECKSUM_KEY);
+
+      const res = await request(app.getHttpServer()).post("/payos/webhook").send({
+        code: "00",
+        desc: "success",
+        data,
+        signature: validSignature,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ success: true });
+
+      // Đơn hàng chuyển sang needs_manual_review
+      const order = fakeDb.tables.orders?.find((o) => o.id === ORDER_OLD_PENDING);
+      expect(order?.status).toBe("needs_manual_review");
+
+      // Payment cập nhật amount thực tế
+      const payment = fakeDb.tables.payments?.find((p) => p.order_code === 999903);
+      expect(payment?.amount).toBe(100000);
+      expect(payment?.status).toBe("PAID");
+
+      // Có email outbox cho CSKH
+      const email = fakeDb.emailOutbox.find((e) => e.order_id === ORDER_OLD_PENDING);
+      expect(email?.kind).toBe("LATE_PAYMENT_MANUAL_REVIEW");
+    });
   });
 
   describe("B/M3: Validate cấu hình PayOS ở môi trường production", () => {
@@ -974,6 +1039,24 @@ describe("Payment & PayOS Webhook API (Task 02: R-73..R-84, AC-09, AC-10, AC-11,
         signature: dummy64,
       });
       expect(resultWrong).toBeNull();
+    });
+
+    it("verifyWebhook: trả về null an toàn khi thiếu PAYOS_CHECKSUM_KEY", async () => {
+      const clientWithoutKey = new PayosClient({
+        NODE_ENV: "test",
+        PORT: 3001,
+        WEB_ORIGIN: ["http://localhost:3000"],
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY: "anon-key",
+        SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+        SUPABASE_JWT_SECRET: JWT_SECRET,
+      } as unknown as Env);
+
+      const res = await clientWithoutKey.verifyWebhook({
+        data: { orderCode: 999903 },
+        signature: "sig",
+      });
+      expect(res).toBeNull();
     });
   });
 });
