@@ -55,6 +55,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:start
       - run: pnpm db:test
+      # Integration API <-> Supabase local (đọc URL/key từ `supabase status`).
+      - run: pnpm test:int
       - name: Stop Supabase
         if: always()
         run: pnpm db:stop

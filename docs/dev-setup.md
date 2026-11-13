@@ -14,6 +14,7 @@
 | `pnpm db:seed:demo` | nạp `supabase/seed.sql` vào DB local (chặn host không phải loopback) |
 | `pnpm db:stop` | `supabase stop` — tắt stack local |
 | `pnpm db:migrate` | `supabase migration up --local` — apply migration mới lên DB local |
+| `pnpm test:int` | integration test API (app Nest thật) <-> Supabase local; tự bỏ qua + cảnh báo nếu stack chưa chạy. Không nằm trong `pnpm test` |
 | `pnpm db:test` | `supabase test db` — chạy pgTAP trong `supabase/tests/*.test.sql` |
 | `pnpm db:types` | sinh `packages/shared/src/database.types.ts` |
 
@@ -74,3 +75,13 @@ Ghi chú vận hành:
 ### Rủi ro đã chấp nhận
 
 Quyết định G6 (bản demo): client vẫn gọi thẳng GoTrue bằng anon key được (`signInWithPassword`, `resetPasswordForEmail`/recover), nên đường đó **bỏ qua** lockout, rate limit và Turnstile của Nest. Không thêm biện pháp chặn ở bản demo. Signup trực tiếp đã bị hook `before_user_created` từ chối. Đường chuẩn qua Nest vẫn áp dụng đủ R-07 / R-08 / R-11. Cần xem lại trước khi chạy production thật.
+
+## Integration test (`pnpm test:int`)
+
+- Cần `pnpm db:start` đang chạy. Không chạy thì suite skip kèm cảnh báo `[test:int] Supabase local không chạy`, không fail.
+- URL/key lấy từ biến `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` nếu có, không thì từ `pnpm exec supabase status -o env`.
+- Harness ở `apps/api/test/integration/`: `helpers/supabase-test.ts` (env, client, chạy N client song song, `cleanupScope`) và `helpers/factories.ts` (user customer/admin/staff qua GoTrue admin API, rạp, phòng+ghế, phim, suất). Không phụ thuộc seed, không reset DB.
+- Mỗi lần chạy có prefix riêng (`it_<runId>_`, code rạp `IT<RUNID>`, slug `it-<runId>-`) và tự dọn trong `afterAll`. Nếu test tạo đơn/thanh toán, xoá chúng trước `cleanupScope` (FK không cascade).
+- GoTrue local ký token ES256, nên app test cấu hình `SUPABASE_JWKS_URL=<url>/auth/v1/.well-known/jwks.json`.
+- Guard: `SUPABASE_URL` phải là loopback (127.0.0.1/localhost/::1), ngoài ra harness throw (không skip) để không ghi nhầm staging/prod. Khi `CI` được đặt, stack không chạy cũng throw thay vì skip.
+- `cleanupScope` xoá user theo id factory đã ghi, xoá cả đơn/thanh toán của rạp test, và throw gộp nếu còn sót. Run bị kill giữa chừng để lại dữ liệu `it_*` (chưa có script dọn riêng).
