@@ -79,7 +79,7 @@ export class BookingController {
     @Headers("user-agent") userAgent: string | undefined,
     @Body(new ZodValidationPipe(consentSchema)) body: ConsentInput,
   ) {
-    return this.bookingService.saveConsent(user, id, ip || "127.0.0.1", userAgent, body.version);
+    return this.bookingService.saveConsent(user, id, ip || null, userAgent, body.version);
   }
 
   /**

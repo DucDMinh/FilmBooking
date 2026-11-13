@@ -4,6 +4,7 @@ import { Test } from "@nestjs/testing";
 import { SignJWT } from "jose";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { ERROR_HTTP_STATUS } from "@filmbooking/shared";
 import { AccessService } from "../src/common/auth/access.service";
 import { AuthGuard } from "../src/common/auth/auth.guard";
 import { RolesGuard } from "../src/common/auth/roles.guard";
@@ -20,12 +21,17 @@ const SUPABASE_URL = "https://test.supabase.co";
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
 const HN01 = uuid(1);
+const HN_CLOSED = uuid(2);
 const ROOM_1 = uuid(10);
+const ROOM_CLOSED = uuid(11);
 const MOVIE_1 = uuid(20);
 const MOVIE_OTHER = uuid(21);
+const MOVIE_DRAFT = uuid(22);
 
 const SHOWTIME_1 = uuid(100);
 const SHOWTIME_CANCELLED = uuid(101);
+const SHOWTIME_CLOSED = uuid(102);
+const SHOWTIME_DRAFT_MOVIE = uuid(103);
 
 const SEAT_E1 = uuid(201);
 const SEAT_E2 = uuid(202);
@@ -78,6 +84,15 @@ class FakeDb {
           name: "FilmBooking Hà Nội 01",
           address: "123 Đường Láng",
           district: "Đống Đa",
+          status: "OPEN",
+        },
+        {
+          id: HN_CLOSED,
+          code: "HN_CLOSED",
+          name: "FilmBooking Tạm Đóng",
+          address: "456 Giải Phóng",
+          district: "Hoàng Mai",
+          status: "TEMP_CLOSED",
         },
       ],
       rooms: [
@@ -88,6 +103,13 @@ class FakeDb {
           grid_rows: 10,
           grid_cols: 12,
         },
+        {
+          id: ROOM_CLOSED,
+          cinema_id: HN_CLOSED,
+          name: "Phòng Tạm Đóng",
+          grid_rows: 10,
+          grid_cols: 12,
+        },
       ],
       movies: [
         {
@@ -95,6 +117,14 @@ class FakeDb {
           title: "Dune 2",
           age_rating: "T13",
           poster_url: "https://example.com/dune2.jpg",
+          status: "PUBLISHED",
+        },
+        {
+          id: MOVIE_DRAFT,
+          title: "Phim Nháp",
+          age_rating: "P",
+          poster_url: "https://example.com/draft.jpg",
+          status: "DRAFT",
         },
       ],
       showtimes: [
@@ -117,6 +147,26 @@ class FakeDb {
           ends_at: "2026-12-05T17:30:00Z",
           format: "2D",
           status: "CANCELLED",
+        },
+        {
+          id: SHOWTIME_CLOSED,
+          cinema_id: HN_CLOSED,
+          room_id: ROOM_CLOSED,
+          movie_id: MOVIE_1,
+          starts_at: "2026-12-05T18:00:00Z",
+          ends_at: "2026-12-05T20:30:00Z",
+          format: "2D",
+          status: "ON_SALE",
+        },
+        {
+          id: SHOWTIME_DRAFT_MOVIE,
+          cinema_id: HN01,
+          room_id: ROOM_1,
+          movie_id: MOVIE_DRAFT,
+          starts_at: "2026-12-05T21:00:00Z",
+          ends_at: "2026-12-05T23:30:00Z",
+          format: "2D",
+          status: "ON_SALE",
         },
       ],
       seats: [
@@ -216,7 +266,7 @@ class FakeDb {
     return new Query(this, table);
   }
 
-  rpc(fn: string, args: Record<string, unknown>): Promise<Result> {
+  rpc(fn: string, args: Record<string, unknown>, currentUserId?: string): Promise<Result> {
     if (fn === "price_quote") {
       const seatIds = (args.p_seat_ids as string[]) ?? [];
       const quoted = seatIds.map((seatId) => {
@@ -310,7 +360,7 @@ class FakeDb {
         channel: "WEB",
         cinema_id: showtime.cinema_id,
         showtime_id: showtimeId,
-        user_id: ALICE, // default caller
+        user_id: currentUserId || ALICE,
         status: "holding",
         subtotal_amount: subtotal,
         discount_amount: 0,
@@ -508,13 +558,16 @@ class Query implements PromiseLike<Result> {
   private orderAsc = true;
   private mode: "many" | "one" | "maybe" = "many";
 
+  private selectedCols?: string;
+
   constructor(
     private readonly db: FakeDb,
     private readonly table: string,
     private readonly isAdmin = true,
   ) {}
 
-  select() {
+  select(cols?: string) {
+    this.selectedCols = cols;
     return this;
   }
   insert(payload: Row | Row[]) {
@@ -562,6 +615,12 @@ class Query implements PromiseLike<Result> {
 
   private matching(): Row[] {
     const rows = (this.db.tables[this.table] ?? []).filter((row) => this.filters.every((f) => f(row)));
+    if (this.table === "showtimes") {
+      for (const row of rows) {
+        const movie = (this.db.tables.movies ?? []).find((m) => m.id === row.movie_id);
+        row.movies = movie ? { id: movie.id, status: movie.status, age_rating: movie.age_rating, poster_url: movie.poster_url } : null;
+      }
+    }
     if (this.orderKey) {
       const k = this.orderKey;
       const asc = this.orderAsc;
@@ -580,6 +639,16 @@ class Query implements PromiseLike<Result> {
   }
 
   private execute(): Result {
+    // Mô phỏng schema cache PostgREST: showtimes không có foreign key đơn lẻ tới cinemas
+    if (this.table === "showtimes" && this.selectedCols?.includes("cinemas(")) {
+      return {
+        data: null,
+        error: {
+          code: "PGRST200",
+          message: "Could not find a relationship between 'showtimes' and 'cinemas' in the schema cache",
+        },
+      };
+    }
     // Mô phỏng ràng buộc phân quyền Postgres & RLS thật (Defect 1, 2, 3)
     if (!this.isAdmin) {
       if (this.op === "update" && this.table === "orders") {
@@ -607,6 +676,7 @@ class Query implements PromiseLike<Result> {
         id: this.db.newId(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        ...(this.table === "consents" && !("accepted_at" in row) ? { accepted_at: new Date().toISOString() } : {}),
         ...row,
       }));
       store.push(...incoming);
@@ -634,6 +704,7 @@ class FakeClient {
   constructor(
     private readonly db: FakeDb,
     private readonly isAdmin: boolean,
+    private readonly userId?: string,
   ) {}
 
   from(table: string) {
@@ -641,7 +712,7 @@ class FakeClient {
   }
 
   rpc(fn: string, args: Record<string, unknown>) {
-    return this.db.rpc(fn, args);
+    return this.db.rpc(fn, args, this.userId);
   }
 
   get auth() {
@@ -652,8 +723,21 @@ class FakeClient {
 // ── Test harness ────────────────────────────────────────────────────────────
 const fakeDb = new FakeDb();
 
+const decodeUserId = (jwt?: string) => {
+  if (!jwt) return undefined;
+  try {
+    const parts = jwt.split(".");
+    const part1 = parts[1];
+    if (!part1) return undefined;
+    const payload = JSON.parse(Buffer.from(part1, "base64").toString());
+    return payload.sub as string;
+  } catch {
+    return undefined;
+  }
+};
+
 const fakeSupabase = {
-  forUser: () => new FakeClient(fakeDb, false),
+  forUser: (jwt?: string) => new FakeClient(fakeDb, false, decodeUserId(jwt)),
   admin: () => new FakeClient(fakeDb, true),
 };
 
@@ -774,6 +858,26 @@ describe("Booking API (Layer 5 Task 01: Sơ đồ ghế, giữ/nhả ghế, tóm
     it("trả về 409 khi suất chiếu đã bị huỷ", async () => {
       const res = await request(app.getHttpServer()).get(`/showtimes/${SHOWTIME_CANCELLED}/seatmap`).expect(409);
       expect(res.body.error.code).toBe("SHOWTIME_CANCELLED");
+    });
+
+    it("A/MAJOR-4: trả về 404 khi suất chiếu thuộc rạp TEMP_CLOSED", async () => {
+      const res = await request(app.getHttpServer()).get(`/showtimes/${SHOWTIME_CLOSED}/seatmap`).expect(404);
+      expect(res.body.error.code).toBe("NOT_FOUND");
+      expect(res.body.error.message).toBe("Suất chiếu không khả dụng");
+    });
+
+    it("A/MAJOR-4: trả về 404 khi suất chiếu thuộc phim DRAFT", async () => {
+      const res = await request(app.getHttpServer()).get(`/showtimes/${SHOWTIME_DRAFT_MOVIE}/seatmap`).expect(404);
+      expect(res.body.error.code).toBe("NOT_FOUND");
+      expect(res.body.error.message).toBe("Suất chiếu không khả dụng");
+    });
+
+    it("A/MAJOR-4: FakeDb chặn embedding cinemas(status) trên showtimes mô phỏng lỗi PGRST200", async () => {
+      const res = await fakeSupabase.admin().from("showtimes").select("id, cinemas(status)").eq("id", SHOWTIME_1).maybeSingle();
+      expect(res.error).toMatchObject({
+        code: "PGRST200",
+        message: "Could not find a relationship between 'showtimes' and 'cinemas' in the schema cache",
+      });
     });
   });
 
@@ -1006,25 +1110,32 @@ describe("Booking API (Layer 5 Task 01: Sơ đồ ghế, giữ/nhả ghế, tóm
       orderId = res.body.orderId;
     });
 
-    it("AC-08: lưu bằng chứng đồng ý không huỷ/không hoàn kèm thời điểm và phiên bản nội dung", async () => {
+    it("AC-08 & A/MAJOR-2: lưu bằng chứng đồng ý không huỷ/không hoàn kèm thời điểm và phiên bản nội dung server-enforced, không fake IP", async () => {
       const res = await request(app.getHttpServer())
         .post(`/bookings/${orderId}/consent`)
         .set("Authorization", `Bearer ${aliceToken}`)
         .set("User-Agent", "TestRunner/1.0")
-        .send({ version: "2.1.0" })
+        .send({ version: "1.0.0" })
         .expect(201);
 
       expect(res.body.ok).toBe(true);
       expect(res.body.consentAt).toBeDefined();
-      expect(res.body.version).toBe("2.1.0");
+      expect(res.body.version).toBe("1.0.0");
 
       // Kiểm tra bản ghi consents được lưu vào DB
       const consentRecord = (fakeDb.tables.consents ?? []).find(
         (c) => c.user_id === ALICE && c.consent_type === "NO_REFUND_BOOKING",
       );
       expect(consentRecord).toBeDefined();
-      expect(consentRecord?.version).toBe("2.1.0");
-      expect((consentRecord?.metadata as { order_id: string })?.order_id).toBe(orderId);
+      expect(consentRecord?.version).toBe("1.0.0");
+      expect((consentRecord?.metadata as { order_id: string; ip: string | null })?.order_id).toBe(orderId);
+      // IP được lấy từ kết nối thực tế
+      expect((consentRecord?.metadata as { ip: string | null })?.ip).toBeDefined();
+
+      // Kiểm tra orders.consent_at được cập nhật chính xác bằng accepted_at của consentRecord
+      const updatedOrder = (fakeDb.tables.orders ?? []).find((o) => o.id === orderId);
+      expect(updatedOrder?.consent_at).toBe(consentRecord?.accepted_at);
+      expect(res.body.consentAt).toBe(consentRecord?.accepted_at);
 
       // Tóm tắt đơn hiển thị đã đồng ý
       const summary = await request(app.getHttpServer())
@@ -1033,7 +1144,26 @@ describe("Booking API (Layer 5 Task 01: Sơ đồ ghế, giữ/nhả ghế, tóm
         .expect(200);
 
       expect(summary.body.consent.consented).toBe(true);
-      expect(summary.body.consent.consentAt).toBeDefined();
+      expect(summary.body.consent.consentAt).toBe(consentRecord?.accepted_at);
+    });
+
+    it("A/MAJOR-2: saveConsent lưu ip: null khi không có IP (không fake 127.0.0.1)", async () => {
+      const bookingService = app.get(BookingService);
+      const aliceAuthUser = { id: ALICE, email: "alice@filmbooking.vn", jwt: aliceToken, authTime: Math.floor(Date.now() / 1000) };
+      await bookingService.saveConsent(aliceAuthUser, orderId, null, "TestRunner/1.0");
+
+      const latestConsent = (fakeDb.tables.consents ?? []).filter((c) => c.user_id === ALICE).pop();
+      expect((latestConsent?.metadata as { ip: string | null })?.ip).toBeNull();
+    });
+
+    it("A/MAJOR-2: từ chối 400 VALIDATION_ERROR khi client gửi phiên bản không hợp lệ", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/bookings/${orderId}/consent`)
+        .set("Authorization", `Bearer ${aliceToken}`)
+        .send({ version: "99.9.9" })
+        .expect(400);
+
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
     });
 
     it("người khác gọi consent -> 403 FORBIDDEN", async () => {
@@ -1183,6 +1313,43 @@ describe("Booking API (Layer 5 Task 01: Sơ đồ ghế, giữ/nhả ghế, tóm
       expect(res.body.discountAmount).toBe(0);
       expect(res.body.totalAmount).toBe(150000);
     });
+
+    it("A/MAJOR-3: non-owner (Bob) hoặc Staff gọi applyVoucher -> 403 FORBIDDEN", async () => {
+      const resBob = await request(app.getHttpServer())
+        .post(`/bookings/${orderId}/voucher`)
+        .set("Authorization", `Bearer ${bobToken}`)
+        .send({ code: "VOUCHER10K" })
+        .expect(403);
+      expect(resBob.body.error.code).toBe("FORBIDDEN");
+
+      const resStaff = await request(app.getHttpServer())
+        .post(`/bookings/${orderId}/voucher`)
+        .set("Authorization", `Bearer ${staffToken}`)
+        .send({ code: "VOUCHER10K" })
+        .expect(403);
+      expect(resStaff.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("A/MAJOR-3: non-owner (Bob) hoặc Staff gọi removeVoucher -> 403 FORBIDDEN", async () => {
+      // Alice áp dụng voucher trước
+      await request(app.getHttpServer())
+        .post(`/bookings/${orderId}/voucher`)
+        .set("Authorization", `Bearer ${aliceToken}`)
+        .send({ code: "VOUCHER10K" })
+        .expect(201);
+
+      const resBob = await request(app.getHttpServer())
+        .delete(`/bookings/${orderId}/voucher`)
+        .set("Authorization", `Bearer ${bobToken}`)
+        .expect(403);
+      expect(resBob.body.error.code).toBe("FORBIDDEN");
+
+      const resStaff = await request(app.getHttpServer())
+        .delete(`/bookings/${orderId}/voucher`)
+        .set("Authorization", `Bearer ${staffToken}`)
+        .expect(403);
+      expect(resStaff.body.error.code).toBe("FORBIDDEN");
+    });
   });
 
   // ==========================================================================
@@ -1222,6 +1389,29 @@ describe("Booking API (Layer 5 Task 01: Sơ đồ ghế, giữ/nhả ghế, tóm
         .expect(404);
 
       expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("A/MAJOR-3: non-owner (Bob) hoặc Staff gọi releaseHold -> 403 FORBIDDEN", async () => {
+      const resBob = await request(app.getHttpServer())
+        .delete(`/bookings/${orderId}/hold`)
+        .set("Authorization", `Bearer ${bobToken}`)
+        .expect(403);
+      expect(resBob.body.error.code).toBe("FORBIDDEN");
+
+      const resStaff = await request(app.getHttpServer())
+        .delete(`/bookings/${orderId}/hold`)
+        .set("Authorization", `Bearer ${staffToken}`)
+        .expect(403);
+      expect(resStaff.body.error.code).toBe("FORBIDDEN");
+    });
+  });
+
+  // ==========================================================================
+  // AC-08 & A/MAJOR-5: CONSENT_REQUIRED HTTP Status Code
+  // ==========================================================================
+  describe("AC-08 & A/MAJOR-5: CONSENT_REQUIRED HTTP Status", () => {
+    it("CONSENT_REQUIRED có HTTP status 409 theo AC-08 và API_SPEC", () => {
+      expect(ERROR_HTTP_STATUS.CONSENT_REQUIRED).toBe(409);
     });
   });
 

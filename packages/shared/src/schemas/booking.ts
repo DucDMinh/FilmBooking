@@ -75,7 +75,7 @@ export interface AgeConfirmResponse {
 }
 
 export const consentSchema = z.object({
-  version: z.string().trim().min(1, "Version is required").default("1.0.0").optional(),
+  version: z.string().trim().min(1, "Version is required").max(20, "Version is too long").default("1.0.0").optional(),
 });
 export type ConsentInput = z.infer<typeof consentSchema>;
 

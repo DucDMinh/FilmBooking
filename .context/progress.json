@@ -44,6 +44,19 @@
   ],
   "bugs": [
     {
+      "id": "layer5-review/phase-1-task-03",
+      "title": "A/MAJOR-2..5 Booking Consent Atomicity, Ownership Scoping & Seatmap Visibility",
+      "status": "done",
+      "severity": "high",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-layer5-review-phase-1-task-03-round-2-review.md"
+      },
+      "updatedAt": "2026-11-13T10:48:00.000Z"
+    },
+    {
       "id": "layer5-review/phase-1-task-02",
       "title": "K5-2 Orders resolveManualReview & Module DI Hardening",
       "status": "done",

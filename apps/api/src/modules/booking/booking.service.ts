@@ -1,18 +1,23 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ERROR_CODES } from "@filmbooking/shared";
 import type {
-  AgeConfirmResponse,
-  ApplyVoucherResponse,
-  BookingSummaryResponse,
-  ConsentResponse,
-  HoldSeatsInput,
-  HoldSeatsResponse,
+  AgeConfirmResponse, ApplyVoucherResponse, BookingSummaryResponse,
+  ConsentResponse, HoldSeatsInput, HoldSeatsResponse,
 } from "@filmbooking/shared/schemas/booking";
 import { AccessService, type AuthenticatedRequest } from "../../common/auth/access.service";
 import type { AuthUser } from "../../common/auth/decorators";
 import { AppException } from "../../common/errors/app-exception";
 import { SupabaseService } from "../../common/supabase/supabase.service";
-import { buildBookingSummary, handleHoldError, handleVoucherBusinessError } from "./booking.helper";
+import {
+  buildBookingSummary,
+  ensureOrderAccessOrThrow,
+  handleHoldError,
+  handleVoucherBusinessError,
+  resolveVoucherSummary,
+  verifyOrderActionEligibility,
+} from "./booking.helper";
+
+const SERVER_CONSENT_VERSION = "1.0.0";
 
 @Injectable()
 export class BookingService {
@@ -62,6 +67,8 @@ export class BookingService {
    * Nhả ghế đang giữ của đơn.
    */
   async releaseHold(user: AuthUser, orderId: string): Promise<{ ok: boolean; orderId: string }> {
+    await verifyOrderActionEligibility(this.supabase.forUser(user.jwt), this.supabase.admin(), user, orderId, "nhả ghế");
+
     const { error } = await this.supabase.forUser(user.jwt).rpc("release_seats", {
       p_order_id: orderId,
     });
@@ -98,7 +105,7 @@ export class BookingService {
       .maybeSingle();
 
     if (!order) {
-      await this.ensureOrderAccessOrThrow(user, orderId);
+      await ensureOrderAccessOrThrow(this.supabase.admin(), user, orderId);
       throw new AppException(ERROR_CODES.NOT_FOUND, "Đơn hàng không tồn tại");
     }
 
@@ -115,7 +122,7 @@ export class BookingService {
       userDb.from("showtimes").select("movie_id, format, movies(age_rating, poster_url)").eq("id", order.showtime_id).maybeSingle(),
     ]);
 
-    const voucher = await this.resolveVoucherSummary(orderId, order.discount_amount);
+    const voucher = await resolveVoucherSummary(this.supabase.admin(), orderId, order.discount_amount);
 
     return buildBookingSummary({
       order,
@@ -131,7 +138,7 @@ export class BookingService {
    * Cập nhật `orders` qua service role (admin) sau khi kiểm tra quyền sở hữu đơn.
    */
   async ageConfirm(user: AuthUser, orderId: string): Promise<AgeConfirmResponse> {
-    const order = await this.verifyOrderActionEligibility(user, orderId, "xác nhận độ tuổi");
+    const order = await verifyOrderActionEligibility(this.supabase.forUser(user.jwt), this.supabase.admin(), user, orderId, "xác nhận độ tuổi");
 
     const { error } = await this.supabase
       .admin()
@@ -150,27 +157,48 @@ export class BookingService {
   async saveConsent(
     user: AuthUser,
     orderId: string,
-    ip: string,
+    ip: string | null,
     userAgent?: string,
-    version: string = "1.0.0",
+    version: string = SERVER_CONSENT_VERSION,
   ): Promise<ConsentResponse> {
-    const order = await this.verifyOrderActionEligibility(user, orderId, "xác nhận điều khoản");
-    const consentAt = new Date().toISOString();
+    const order = await verifyOrderActionEligibility(this.supabase.forUser(user.jwt), this.supabase.admin(), user, orderId, "xác nhận điều khoản");
 
-    const [updateOrder, insertConsent] = await Promise.all([
-      this.supabase.admin().from("orders").update({ consent_at: consentAt }).eq("id", order.id),
-      this.supabase.admin().from("consents").insert({
+    if (version && version !== SERVER_CONSENT_VERSION) {
+      throw new AppException(ERROR_CODES.VALIDATION_ERROR, "Phiên bản điều khoản không hợp lệ");
+    }
+    const enforcedVersion = SERVER_CONSENT_VERSION;
+
+    // Ghi nhận consents trước để DB sinh accepted_at chính xác
+    const { data: consentRecord, error: insertError } = await this.supabase
+      .admin()
+      .from("consents")
+      .insert({
         user_id: user.id,
         consent_type: "NO_REFUND_BOOKING",
-        version,
-        metadata: { order_id: order.id, ip, user_agent: userAgent ?? null },
-      }),
-    ]);
+        version: enforcedVersion,
+        metadata: { order_id: order.id, ip: ip || null, user_agent: userAgent ?? null },
+      })
+      .select("accepted_at")
+      .single();
 
-    if (updateOrder.error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, updateOrder.error.message);
-    if (insertConsent.error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, insertConsent.error.message);
+    if (insertError || !consentRecord) {
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, insertError?.message ?? "Không thể lưu bằng chứng đồng ý");
+    }
 
-    return { ok: true, consentAt, version };
+    const consentAt = (consentRecord as { accepted_at: string }).accepted_at;
+
+    // Cập nhật orders.consent_at theo accepted_at thực tế do DB ghi nhận
+    const { error: updateError } = await this.supabase
+      .admin()
+      .from("orders")
+      .update({ consent_at: consentAt })
+      .eq("id", order.id);
+
+    if (updateError) {
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, updateError.message);
+    }
+
+    return { ok: true, consentAt, version: enforcedVersion };
   }
 
   /**
@@ -178,6 +206,8 @@ export class BookingService {
    * Rate limit: tối đa 10 lần nhập/phút/khách -> 429 nếu vượt (R-95).
    */
   async applyVoucher(user: AuthUser, orderId: string, code: string): Promise<ApplyVoucherResponse> {
+    await verifyOrderActionEligibility(this.supabase.forUser(user.jwt), this.supabase.admin(), user, orderId, "áp dụng voucher");
+
     const { data, error } = await this.supabase.forUser(user.jwt).rpc("apply_voucher", {
       p_order_id: orderId,
       p_code: code,
@@ -230,6 +260,8 @@ export class BookingService {
    * Gỡ voucher khỏi đơn hàng.
    */
   async removeVoucher(user: AuthUser, orderId: string): Promise<ApplyVoucherResponse> {
+    await verifyOrderActionEligibility(this.supabase.forUser(user.jwt), this.supabase.admin(), user, orderId, "gỡ voucher");
+
     const { data, error } = await this.supabase.forUser(user.jwt).rpc("remove_voucher", {
       p_order_id: orderId,
     });
@@ -263,75 +295,5 @@ export class BookingService {
       discountAmount: 0,
       totalAmount: res.total_amount,
     };
-  }
-
-  /**
-   * Lấy mã voucher hiển thị cho khách qua admin client (bảng vouchers có RLS chỉ Admin/Manager SELECT).
-   */
-  private async resolveVoucherSummary(orderId: string, discountAmount: number) {
-    if (discountAmount <= 0) return null;
-
-    const { data: redemption } = await this.supabase
-      .admin()
-      .from("voucher_redemptions")
-      .select("voucher_id, discount_amount")
-      .eq("order_id", orderId)
-      .in("status", ["HELD", "CONSUMED"])
-      .maybeSingle();
-
-    if (!redemption) return null;
-
-    const { data: v } = await this.supabase
-      .admin()
-      .from("vouchers")
-      .select("code")
-      .eq("id", redemption.voucher_id)
-      .maybeSingle();
-
-    return {
-      code: (v as { code?: string } | null)?.code ?? "",
-      discount: redemption.discount_amount,
-    };
-  }
-
-  private async verifyOrderActionEligibility(user: AuthUser, orderId: string, actionName: string) {
-    const userDb = this.supabase.forUser(user.jwt);
-    const { data: order } = await userDb
-      .from("orders")
-      .select("id, user_id, status, hold_expires_at")
-      .eq("id", orderId)
-      .maybeSingle();
-
-    if (!order) {
-      await this.ensureOrderAccessOrThrow(user, orderId);
-      throw new AppException(ERROR_CODES.NOT_FOUND, "Đơn hàng không tồn tại");
-    }
-
-    if (order.user_id !== user.id) {
-      throw new AppException(ERROR_CODES.FORBIDDEN, `Không có quyền thao tác trên đơn hàng này`);
-    }
-
-    if (order.status !== "holding" && order.status !== "pending_payment") {
-      throw new AppException(ERROR_CODES.CONFLICT, `Đơn hàng không ở trạng thái có thể ${actionName}`);
-    }
-
-    if (order.hold_expires_at && new Date(order.hold_expires_at) < new Date()) {
-      throw new AppException(ERROR_CODES.HOLD_EXPIRED, "Đơn giữ ghế đã hết hạn");
-    }
-
-    return order;
-  }
-
-  private async ensureOrderAccessOrThrow(user: AuthUser, orderId: string) {
-    const { data: existing } = await this.supabase
-      .admin()
-      .from("orders")
-      .select("id, user_id")
-      .eq("id", orderId)
-      .maybeSingle();
-
-    if (existing && existing.user_id !== user.id) {
-      throw new AppException(ERROR_CODES.FORBIDDEN, "Không có quyền thao tác trên đơn hàng này");
-    }
   }
 }

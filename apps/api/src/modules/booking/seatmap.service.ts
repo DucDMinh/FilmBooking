@@ -62,7 +62,7 @@ export class SeatmapService {
     const db = this.supabase.admin();
     const { data: showtime, error: stErr } = await db
       .from("showtimes")
-      .select("id, cinema_id, room_id, movie_id, starts_at, ends_at, format, status")
+      .select("id, cinema_id, room_id, movie_id, starts_at, ends_at, format, status, movies(status)")
       .eq("id", showtimeId)
       .maybeSingle();
 
@@ -72,14 +72,28 @@ export class SeatmapService {
       throw new AppException(ERROR_CODES.SHOWTIME_CANCELLED, "Suất chiếu đã bị huỷ");
     }
 
-    const { data: room, error: roomErr } = await db
-      .from("rooms")
-      .select("id, name, grid_rows, grid_cols")
-      .eq("id", showtime.room_id)
-      .single();
+    const [cinemaRes, roomRes] = await Promise.all([
+      db.from("cinemas").select("status").eq("id", showtime.cinema_id).maybeSingle(),
+      db.from("rooms").select("id, name, grid_rows, grid_cols").eq("id", showtime.room_id).single(),
+    ]);
 
-    if (roomErr) throw new AppException(ERROR_CODES.INTERNAL_ERROR, roomErr.message);
-    return { showtime, room };
+    if (cinemaRes.error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, cinemaRes.error.message);
+    if (roomRes.error || !roomRes.data) {
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, roomRes.error?.message ?? "Phòng chiếu không tồn tại");
+    }
+
+    const cinemaStatus = cinemaRes.data?.status;
+
+    const movieData = (showtime as Record<string, unknown>).movies;
+    const movieStatus = Array.isArray(movieData)
+      ? (movieData[0] as { status?: string } | undefined)?.status
+      : (movieData as { status?: string } | null)?.status;
+
+    if (cinemaStatus !== "OPEN" || movieStatus !== "PUBLISHED") {
+      throw new AppException(ERROR_CODES.NOT_FOUND, "Suất chiếu không khả dụng");
+    }
+
+    return { showtime, room: roomRes.data };
   }
 
   private async fetchPricingMap(showtimeId: string, seats: Array<{ id: string; seat_type: string }>) {

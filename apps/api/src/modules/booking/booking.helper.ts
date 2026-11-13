@@ -1,5 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ERROR_CODES } from "@filmbooking/shared";
 import type { BookingSummaryResponse } from "@filmbooking/shared/schemas/booking";
+import type { AuthUser } from "../../common/auth/decorators";
 import { AppException } from "../../common/errors/app-exception";
 
 /**
@@ -152,4 +154,85 @@ export function buildBookingSummary(params: BuildSummaryParams): BookingSummaryR
     },
     ageConfirmed: order.age_confirmed,
   };
+}
+
+/**
+ * Lấy mã voucher hiển thị cho khách qua admin client (bảng vouchers có RLS chỉ Admin/Manager SELECT).
+ */
+export async function resolveVoucherSummary(adminDb: SupabaseClient, orderId: string, discountAmount: number) {
+  if (discountAmount <= 0) return null;
+
+  const { data: redemption } = await adminDb
+    .from("voucher_redemptions")
+    .select("voucher_id, discount_amount")
+    .eq("order_id", orderId)
+    .in("status", ["HELD", "CONSUMED"])
+    .maybeSingle();
+
+  if (!redemption) return null;
+
+  const { data: v } = await adminDb
+    .from("vouchers")
+    .select("code")
+    .eq("id", redemption.voucher_id)
+    .maybeSingle();
+
+  return {
+    code: (v as { code?: string } | null)?.code ?? "",
+    discount: redemption.discount_amount,
+  };
+}
+
+/**
+ * Kiểm tra xem người dùng có quyền tiếp cận đơn (tránh lộ thông tin khi RLS trả về rỗng).
+ */
+export async function ensureOrderAccessOrThrow(adminDb: SupabaseClient, user: AuthUser, orderId: string) {
+  const { data: existing } = await adminDb
+    .from("orders")
+    .select("id, user_id")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (existing && existing.user_id !== user.id) {
+    throw new AppException(ERROR_CODES.FORBIDDEN, "Không có quyền thao tác trên đơn hàng này");
+  }
+}
+
+/**
+ * Xác thực tư cách thao tác trên đơn hàng (A/MAJOR-3):
+ * 1. Đơn phải tồn tại và thuộc về chính khách hàng đang đăng nhập.
+ * 2. Đơn phải ở trạng thái holding hoặc pending_payment.
+ * 3. Đơn giữ ghế chưa hết hạn.
+ */
+export async function verifyOrderActionEligibility(
+  userDb: SupabaseClient,
+  adminDb: SupabaseClient,
+  user: AuthUser,
+  orderId: string,
+  actionName: string,
+) {
+  const { data: order } = await userDb
+    .from("orders")
+    .select("id, user_id, status, hold_expires_at")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (!order) {
+    await ensureOrderAccessOrThrow(adminDb, user, orderId);
+    throw new AppException(ERROR_CODES.NOT_FOUND, "Đơn hàng không tồn tại");
+  }
+
+  if (order.user_id !== user.id) {
+    throw new AppException(ERROR_CODES.FORBIDDEN, "Không có quyền thao tác trên đơn hàng này");
+  }
+
+  if (order.status !== "holding" && order.status !== "pending_payment") {
+    throw new AppException(ERROR_CODES.CONFLICT, `Đơn hàng không ở trạng thái có thể ${actionName}`);
+  }
+
+  if (order.hold_expires_at && new Date(order.hold_expires_at) < new Date()) {
+    throw new AppException(ERROR_CODES.HOLD_EXPIRED, "Đơn giữ ghế đã hết hạn");
+  }
+
+  return order;
 }

@@ -264,12 +264,12 @@ describe("Auth mở rộng (e2e, mock Supabase + Turnstile)", () => {
       expect(fake.state.users.size).toBe(0);
     });
 
-    it("requires consent: unticked -> 422 CONSENT_REQUIRED; stale terms version -> 422", async () => {
+    it("requires consent: unticked -> 409 CONSENT_REQUIRED; stale terms version -> 409", async () => {
       const unticked = await http().post("/auth/register").send(registerBody({ acceptTerms: false }));
-      expect(unticked.status).toBe(422);
+      expect(unticked.status).toBe(409);
       expect(unticked.body.error.code).toBe("CONSENT_REQUIRED");
       const stale = await http().post("/auth/register").send(registerBody({ termsVersion: "0.9" }));
-      expect(stale.status).toBe(422);
+      expect(stale.status).toBe(409);
       expect(stale.body.error.code).toBe("CONSENT_REQUIRED");
       expect(fake.state.users.size).toBe(0);
     });
