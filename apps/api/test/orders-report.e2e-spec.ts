@@ -10,8 +10,10 @@ import { RolesGuard } from "../src/common/auth/roles.guard";
 import { AllExceptionsFilter } from "../src/common/errors/all-exceptions.filter";
 import { SupabaseService } from "../src/common/supabase/supabase.service";
 import { ENV, type Env } from "../src/config/env";
+import { OrdersModule } from "../src/modules/orders/orders.module";
 import { AdminOrdersController, OrdersController } from "../src/modules/orders/orders.controller";
 import { OrdersService } from "../src/modules/orders/orders.service";
+import { ReportModule } from "../src/modules/report/report.module";
 import { AdminReportController, ReportController, ReportService } from "../src/modules/report/report.controller";
 
 const JWT_SECRET = "test-jwt-secret-test-jwt-secret-1234";
@@ -64,6 +66,7 @@ class FakeDb {
   reset() {
     const now = new Date();
     const in15m = new Date(now.getTime() + 15 * 60 * 1000);
+    const in3h = new Date(now.getTime() + 180 * 60 * 1000);
 
     this.tables = {
       user_roles: [{ user_id: ADMIN, role: "ADMIN" }],
@@ -87,8 +90,8 @@ class FakeDb {
           cinema_id: HN01,
           room_id: uuid(902),
           format: "2D",
-          starts_at: "2026-11-13T10:00:00Z",
-          ends_at: "2026-11-13T12:00:00Z",
+          starts_at: in3h.toISOString(),
+          ends_at: new Date(in3h.getTime() + 120 * 60 * 1000).toISOString(),
           status: "ON_SALE",
           movies: { title_vi: "Phim Hay HN01" },
         },
@@ -97,8 +100,8 @@ class FakeDb {
           cinema_id: HN02,
           room_id: uuid(903),
           format: "2D",
-          starts_at: "2026-11-13T10:00:00Z",
-          ends_at: "2026-11-13T12:00:00Z",
+          starts_at: in3h.toISOString(),
+          ends_at: new Date(in3h.getTime() + 120 * 60 * 1000).toISOString(),
           status: "ON_SALE",
           movies: { title_vi: "Phim Hay HN02" },
         },
@@ -310,15 +313,84 @@ class FakeDb {
   rpc(fn: string, args: Record<string, unknown>): Promise<Result> {
     const pCinemaId = args.p_cinema_id as string | null | undefined;
 
-    // Giả lập RBAC cho RPC báo cáo (AC-16): Manager rạp A gọi rạp B -> 42501
-    // Giả lập từ currentJwt:
-    if (this.currentJwt?.includes(MANAGER_HN01)) {
-      if (pCinemaId === HN02) {
-        return Promise.resolve({ data: null, error: { code: "42501", message: "FORBIDDEN_CINEMA_SCOPE" } });
+    let callerId: string | null = null;
+    if (this.currentJwt) {
+      try {
+        const part = this.currentJwt.split(".")[1];
+        if (part) {
+          const payload = JSON.parse(Buffer.from(part, "base64").toString());
+          callerId = payload.sub ?? null;
+        }
+      } catch {
+        callerId = null;
       }
     }
-    if (this.currentJwt?.includes(STAFF_HN01) || this.currentJwt?.includes(STAFF_HN02)) {
+
+    // Giả lập RBAC cho RPC báo cáo (AC-16): Manager rạp A gọi rạp B -> 42501
+    const isCallerStaff = (this.tables.staff_assignments ?? []).some(
+      (sa) => sa.user_id === callerId && sa.role === "STAFF",
+    );
+    if (isCallerStaff) {
       return Promise.resolve({ data: null, error: { code: "42501", message: "FORBIDDEN_CINEMA_SCOPE" } });
+    }
+    const isCallerManagerHn01 = (this.tables.staff_assignments ?? []).some(
+      (sa) => sa.user_id === callerId && sa.cinema_id === HN01 && sa.role === "MANAGER",
+    );
+    if (isCallerManagerHn01 && pCinemaId === HN02) {
+      return Promise.resolve({ data: null, error: { code: "42501", message: "FORBIDDEN_CINEMA_SCOPE" } });
+    }
+
+    if (fn === "resolve_manual_review") {
+      const orderId = args.p_order_id as string;
+      const order = (this.tables.orders ?? []).find((o) => o.id === orderId);
+      if (!order) {
+        return Promise.resolve({ data: null, error: { code: "P0002", message: "ORDER_NOT_FOUND" } });
+      }
+      if (order.status !== "needs_manual_review") {
+        return Promise.resolve({ data: null, error: { code: "P0003", message: "INVALID_ORDER_STATUS" } });
+      }
+      if (order.manual_review_resolved_at) {
+        return Promise.resolve({ data: null, error: { code: "P0004", message: "ALREADY_RESOLVED" } });
+      }
+
+      const isAdmin = (this.tables.user_roles ?? []).some(
+        (ur) => ur.user_id === callerId && ur.role === "ADMIN",
+      );
+      const isManager = (this.tables.staff_assignments ?? []).some(
+        (sa) => sa.user_id === callerId && sa.cinema_id === order.cinema_id && sa.role === "MANAGER",
+      );
+
+      if (!isAdmin && !isManager) {
+        return Promise.resolve({ data: null, error: { code: "42501", message: "FORBIDDEN_SCOPE" } });
+      }
+
+      const now = new Date().toISOString();
+      order.manual_review_resolved_at = now;
+
+      (this.tables.audit_logs ??= []).push({
+        action: "UPDATE",
+        actor_id: callerId ?? (order.user_id as string),
+        cinema_id: order.cinema_id as string,
+        table_name: "orders",
+        record_id: order.id as string,
+        after_data: {
+          action_detail: "RESOLVE_MANUAL_REVIEW",
+          action: args.p_action,
+          note: args.p_note ?? null,
+          refund_reference: args.p_refund_reference ?? null,
+          refunded_amount: args.p_refunded_amount ?? null,
+          resolved_at: now,
+        },
+      });
+
+      return Promise.resolve({
+        data: {
+          success: true,
+          order_id: order.id,
+          resolved_at: now,
+        },
+        error: null,
+      });
     }
 
     if (fn === "report_revenue") {
@@ -806,50 +878,42 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
       expect(res.body.error.code).toBe("FORBIDDEN");
     });
 
-    it("Manager HN01 ghi xử lý CONFIRM_SALE khi ghế trống -> 200/201 Thành công", async () => {
+    it("Manager HN01 ghi xử lý CONFIRM_SALE -> 200/201 Thành công, status giữ nguyên needs_manual_review", async () => {
       const res = await request(app.getHttpServer())
         .post(`/orders/${ORDER_NMR_HN01}/resolve-manual-review`)
         .set("Authorization", `Bearer ${managerHn01Token}`)
-        .send({ action: "CONFIRM_SALE", note: "Ghế còn trống, chốt bán" })
+        .send({ action: "CONFIRM_SALE", note: "Ghế còn trống, đánh dấu đã xử lý thủ công" })
         .expect(201);
 
       expect(res.body.success).toBe(true);
       expect(res.body.action).toBe("CONFIRM_SALE");
 
-      // Đơn đã cập nhật status: 'paid' và manual_review_resolved_at (Defect 3)
+      // Đơn đã cập nhật manual_review_resolved_at nhưng status GIỮ NGUYÊN 'needs_manual_review' (C1, SPECIFICATIONS.md:311)
       const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_NMR_HN01);
-      expect(order?.status).toBe("paid");
+      expect(order?.status).toBe("needs_manual_review");
       expect(order?.manual_review_resolved_at).not.toBeNull();
 
-      // Vé đã được sinh
+      // Không tạo vé ma hay ghế ma
       const tickets = (fakeDb.tables.tickets ?? []).filter((t) => t.order_id === ORDER_NMR_HN01);
-      expect(tickets.length).toBeGreaterThan(0);
+      expect(tickets.length).toBe(0);
 
-      // Audit log ghi action: 'UPDATE' và action_detail: 'CONFIRM_SALE' (Defect 1)
+      // Audit log ghi action: 'UPDATE' và action_detail: 'RESOLVE_MANUAL_REVIEW'
       const auditLog = (fakeDb.tables.audit_logs ?? []).find(
         (a) => a.table_name === "orders" && a.record_id === ORDER_NMR_HN01,
       );
       expect(auditLog).toBeDefined();
       expect(auditLog?.action).toBe("UPDATE");
-      expect((auditLog?.after_data as Record<string, unknown>)?.action_detail).toBe("CONFIRM_SALE");
+      expect((auditLog?.after_data as Record<string, unknown>)?.action_detail).toBe("RESOLVE_MANUAL_REVIEW");
     });
 
-    it("Manager HN01 ghi xử lý CONFIRM_SALE khi ghế đã bị bán -> 409 SEAT_TAKEN", async () => {
-      // Đánh dấu ghế SEAT_1 đã bị bán bởi đơn khác
-      (fakeDb.tables.showtime_seat_states ??= []).push({
-        showtime_id: SHOWTIME_HN01_1,
-        seat_id: SEAT_1,
-        order_id: ORDER_PAID_HN01,
-        state: "SOLD",
-      });
-
+    it("Manager HN02 gọi xử lý đơn của HN01 -> 403 FORBIDDEN_CINEMA", async () => {
       const res = await request(app.getHttpServer())
         .post(`/orders/${ORDER_NMR_HN01}/resolve-manual-review`)
-        .set("Authorization", `Bearer ${managerHn01Token}`)
-        .send({ action: "CONFIRM_SALE", note: "Thử chốt bán ghế đã bán" })
-        .expect(409);
+        .set("Authorization", `Bearer ${managerHn02Token}`)
+        .send({ action: "CONFIRM_SALE", note: "Manager HN02 cố xử lý đơn của HN01" })
+        .expect(403);
 
-      expect(res.body.error.code).toBe("SEAT_TAKEN");
+      expect(res.body.error.code).toBe("FORBIDDEN_CINEMA");
     });
 
     it("Manager HN01 ghi xử lý REFUND_MANUAL thiếu refundReference hoặc refundedAmount -> 400 VALIDATION_ERROR", async () => {
@@ -862,7 +926,7 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
       expect(res.body.error.code).toBe("VALIDATION_ERROR");
     });
 
-    it("Manager HN01 ghi xử lý REFUND_MANUAL đủ trường -> Thành công và ghi vào affected_order_actions", async () => {
+    it("Manager HN01 ghi xử lý REFUND_MANUAL đủ trường -> Thành công và ghi vào audit_logs", async () => {
       const res = await request(app.getHttpServer())
         .post(`/orders/${ORDER_NMR_HN01}/resolve-manual-review`)
         .set("Authorization", `Bearer ${managerHn01Token}`)
@@ -877,18 +941,21 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
       expect(res.body.success).toBe(true);
       expect(res.body.action).toBe("REFUND_MANUAL");
 
-      const action = (fakeDb.tables.affected_order_actions ?? []).find((a) => a.order_id === ORDER_NMR_HN01);
-      expect(action).toBeDefined();
-      expect(action?.refund_reference).toBe("VCB_REFUND_999");
-      expect(action?.refunded_amount).toBe(120000);
+      // Đơn giữ nguyên status needs_manual_review và có manual_review_resolved_at
+      const order = (fakeDb.tables.orders ?? []).find((o) => o.id === ORDER_NMR_HN01);
+      expect(order?.status).toBe("needs_manual_review");
+      expect(order?.manual_review_resolved_at).not.toBeNull();
 
-      // Audit log ghi action: 'UPDATE' và action_detail: 'REFUND_MANUAL' (Defect 1)
+      // Audit log ghi action: 'UPDATE' và action_detail: 'RESOLVE_MANUAL_REVIEW'
       const auditLog = (fakeDb.tables.audit_logs ?? []).find(
         (a) => a.table_name === "orders" && a.record_id === ORDER_NMR_HN01,
       );
       expect(auditLog).toBeDefined();
       expect(auditLog?.action).toBe("UPDATE");
-      expect((auditLog?.after_data as Record<string, unknown>)?.action_detail).toBe("REFUND_MANUAL");
+      const afterData = auditLog?.after_data as Record<string, unknown>;
+      expect(afterData?.action_detail).toBe("RESOLVE_MANUAL_REVIEW");
+      expect(afterData?.refund_reference).toBe("VCB_REFUND_999");
+      expect(afterData?.refunded_amount).toBe(120000);
     });
 
     it("FakeDb chặn cứng insert action không thuộc ('INSERT', 'UPDATE', 'DELETE') trên audit_logs", async () => {
@@ -1069,6 +1136,33 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
 
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body[0].totalAffectedOrders).toBe(1);
+    });
+  });
+
+  // ── M7: OrdersModule & ReportModule import AuthModule (DI Verification) ────
+  describe("M7: Module DI Hardening", () => {
+    it("OrdersModule và ReportModule khởi tạo trơn tru mà không cần khai báo lặp AccessService", async () => {
+      const moduleFixture = await Test.createTestingModule({
+        imports: [OrdersModule, ReportModule],
+      })
+        .useMocker((token) => {
+          if (token === SupabaseService) return fakeSupabase;
+          if (token === ENV) {
+            return {
+              SUPABASE_URL,
+              SUPABASE_ANON_KEY: "anon-key",
+              SUPABASE_SERVICE_ROLE_KEY: "service-key",
+              SUPABASE_JWT_SECRET: JWT_SECRET,
+            };
+          }
+          return undefined;
+        })
+        .compile();
+
+      expect(moduleFixture.get(OrdersService)).toBeDefined();
+      expect(moduleFixture.get(ReportService)).toBeDefined();
+      expect(moduleFixture.get(AccessService)).toBeDefined();
+      await moduleFixture.close();
     });
   });
 });

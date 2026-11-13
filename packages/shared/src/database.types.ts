@@ -1081,6 +1081,9 @@ isOneToOne: false
 "sell_order_seats":
 { Args: { "p_order_id": string }; Returns: boolean
                            },
+"resolve_manual_review":
+{ Args: { "p_action": string,"p_note"?: string | null,"p_order_id": string,"p_refund_reference"?: string | null,"p_refunded_amount"?: number | null }; Returns: Json
+                           },
 "set_cinema_status":
 { Args: { "p_cinema_id": string,"p_status": Database["public"]['Enums']["cinema_status"] }; Returns: Json
                            },

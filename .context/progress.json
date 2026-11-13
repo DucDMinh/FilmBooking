@@ -44,6 +44,19 @@
   ],
   "bugs": [
     {
+      "id": "layer5-review/phase-1-task-02",
+      "title": "K5-2 Orders resolveManualReview & Module DI Hardening",
+      "status": "done",
+      "severity": "blocker",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-layer5-review-phase-1-task-02-round-1-review.md"
+      },
+      "updatedAt": "2026-11-13T09:52:00.000Z"
+    },
+    {
       "id": "layer5-review/phase-1-task-01",
       "title": "K5-1 PayOS Webhook Race & Duplicate Payment Handling",
       "status": "done",

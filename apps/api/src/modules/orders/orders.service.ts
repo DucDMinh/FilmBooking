@@ -417,8 +417,8 @@ export class OrdersService {
   }
 
   /**
-   * Xử lý đơn needs_manual_review (R-104, AC-11)
-   * Staff -> 403 (chỉ đọc). Manager rạp đó + Admin -> OK.
+   * Xử lý đơn needs_manual_review (R-104, AC-11, SPECIFICATIONS.md:311)
+   * Staff -> 403 (chỉ đọc). Manager rạp đó + Admin -> Gọi RPC resolve_manual_review nguyên tử.
    */
   async resolveManualReview(
     user: AuthUser,
@@ -427,27 +427,19 @@ export class OrdersService {
   ): Promise<{ success: true; orderId: string; action: string; resolvedAt: string }> {
     const access = await this.access.loadForRequest({ user });
 
-    const [orderRes, seatsRes] = await Promise.all([
-      this.supabase.admin().from("orders").select("*").eq("id", orderId).maybeSingle(),
-      this.supabase.admin().from("order_seats").select("*").eq("order_id", orderId),
-    ]);
+    // Kiểm tra đơn tồn tại và phân quyền tầng API
+    const { data: order, error: orderErr } = await this.supabase
+      .admin()
+      .from("orders")
+      .select("id, cinema_id, status, manual_review_resolved_at")
+      .eq("id", orderId)
+      .maybeSingle();
 
-    if (orderRes.error) throw orderRes.error;
-    if (!orderRes.data) {
+    if (orderErr) throw orderErr;
+    if (!order) {
       throw new AppException(ERROR_CODES.NOT_FOUND, "Không tìm thấy đơn hàng");
     }
 
-    const order = orderRes.data as OrderDbRow;
-    interface OrderSeatDbRow {
-      id: string;
-      seat_id: string;
-      seat_label: string;
-      seat_type: string;
-      price_amount: number;
-    }
-    const orderSeats = (seatsRes.data ?? []) as OrderSeatDbRow[];
-
-    // Phân quyền: Staff chỉ đọc -> 403 (AC-11)
     if (!access.isAdmin) {
       const heldRole = access.cinemaRoles.get(order.cinema_id);
       if (!heldRole) {
@@ -465,141 +457,37 @@ export class OrdersService {
       throw new AppException(ERROR_CODES.CONFLICT, "Đơn hàng này đã được xử lý trước đó");
     }
 
-    const nowIso = new Date().toISOString();
+    // Gọi RPC resolve_manual_review nguyên tử (DB enforcing RLS / scope & state machine)
+    const { data, error } = await this.supabase.forUser(user.jwt).rpc("resolve_manual_review", {
+      p_order_id: orderId,
+      p_action: input.action,
+      p_note: input.note ?? null,
+      p_refund_reference: input.refundReference ?? null,
+      p_refunded_amount: input.refundedAmount ?? null,
+    });
 
-    if (input.action === "CONFIRM_SALE") {
-      // Kiểm tra ghế còn trống không
-      const seatIds = orderSeats.map((s) => s.seat_id);
-      if (seatIds.length > 0) {
-        const { data: takenSeats, error: seatErr } = await this.supabase
-          .admin()
-          .from("showtime_seat_states")
-          .select("seat_id, order_id, state")
-          .eq("showtime_id", order.showtime_id)
-          .in("seat_id", seatIds)
-          .eq("state", "SOLD");
-
-        if (seatErr) throw seatErr;
-
-        const takenByOthers = (takenSeats ?? []).filter((s) => s.order_id !== order.id);
-        if (takenByOthers.length > 0) {
-          throw new AppException(ERROR_CODES.SEAT_TAKEN, "Ghế đã bị bán cho khách khác, không thể chốt bán");
-        }
+    if (error) {
+      if (error.code === "42501" || error.message?.includes("FORBIDDEN_SCOPE")) {
+        throw new AppException(ERROR_CODES.FORBIDDEN, "Không có quyền xử lý đơn hàng này");
       }
-
-      // Đánh dấu ghế SOLD cho đơn này
-      for (const seat of orderSeats) {
-        await this.supabase
-          .admin()
-          .from("showtime_seat_states")
-          .upsert({
-            showtime_id: order.showtime_id,
-            seat_id: seat.seat_id,
-            cinema_id: order.cinema_id,
-            state: "SOLD",
-            source: "WEB",
-            order_id: order.id,
-            expires_at: null,
-          });
+      if (error.code === "P0002" || error.message?.includes("ORDER_NOT_FOUND")) {
+        throw new AppException(ERROR_CODES.NOT_FOUND, "Không tìm thấy đơn hàng");
       }
-
-      // Cập nhật status: 'paid' và manual_review_resolved_at (để checkin_ticket cho phép soát vé)
-      const { error: updErr } = await this.supabase
-        .admin()
-        .from("orders")
-        .update({
-          status: "paid",
-          manual_review_resolved_at: nowIso,
-        })
-        .eq("id", order.id);
-
-      if (updErr) throw updErr;
-
-      // Sinh vé nếu chưa có
-      for (const seat of orderSeats) {
-        await this.supabase
-          .admin()
-          .from("tickets")
-          .upsert(
-            {
-              order_id: order.id,
-              order_seat_id: seat.id,
-              showtime_id: order.showtime_id,
-              cinema_id: order.cinema_id,
-            },
-            { onConflict: "order_seat_id" },
-          );
+      if (error.code === "P0003" || error.message?.includes("INVALID_ORDER_STATUS")) {
+        throw new AppException(ERROR_CODES.CONFLICT, "Đơn hàng không ở trạng thái cần xem xét thủ công");
       }
-
-      // Ghi audit log (action: UPDATE tuân thủ check constraint Postgres audit_logs_action_check)
-      const { error: auditErr } = await this.supabase
-        .admin()
-        .from("audit_logs")
-        .insert({
-          action: "UPDATE",
-          actor_id: user.id,
-          cinema_id: order.cinema_id,
-          table_name: "orders",
-          record_id: order.id,
-          after_data: {
-            action_detail: "CONFIRM_SALE",
-            action: input.action,
-            note: input.note,
-            resolved_at: nowIso,
-          },
-        });
-      if (auditErr) throw auditErr;
-    } else if (input.action === "REFUND_MANUAL") {
-      // Đánh dấu đã giải quyết
-      const { error: updErr } = await this.supabase
-        .admin()
-        .from("orders")
-        .update({ manual_review_resolved_at: nowIso })
-        .eq("id", order.id);
-
-      if (updErr) throw updErr;
-
-      // Ghi nhận vào affected_order_actions
-      await this.supabase
-        .admin()
-        .from("affected_order_actions")
-        .insert({
-          order_id: order.id,
-          cinema_id: order.cinema_id,
-          action: "REFUNDED_MANUAL",
-          note: input.note ?? null,
-          refund_reference: input.refundReference ?? null,
-          refunded_amount: input.refundedAmount ?? null,
-          performed_by: user.id,
-        });
-
-      // Ghi audit log (action: UPDATE tuân thủ check constraint Postgres audit_logs_action_check)
-      const { error: auditErr } = await this.supabase
-        .admin()
-        .from("audit_logs")
-        .insert({
-          action: "UPDATE",
-          actor_id: user.id,
-          cinema_id: order.cinema_id,
-          table_name: "orders",
-          record_id: order.id,
-          after_data: {
-            action_detail: "REFUND_MANUAL",
-            action: input.action,
-            note: input.note,
-            refund_reference: input.refundReference,
-            refunded_amount: input.refundedAmount,
-            resolved_at: nowIso,
-          },
-        });
-      if (auditErr) throw auditErr;
+      if (error.code === "P0004" || error.message?.includes("ALREADY_RESOLVED")) {
+        throw new AppException(ERROR_CODES.CONFLICT, "Đơn hàng này đã được xử lý trước đó");
+      }
+      throw error;
     }
 
+    const res = (data as { success: boolean; order_id: string; resolved_at: string } | null) ?? null;
     return {
       success: true,
-      orderId: order.id,
+      orderId,
       action: input.action,
-      resolvedAt: nowIso,
+      resolvedAt: res?.resolved_at ?? new Date().toISOString(),
     };
   }
 

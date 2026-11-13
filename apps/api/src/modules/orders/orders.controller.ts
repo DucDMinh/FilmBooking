@@ -54,7 +54,7 @@ export class OrdersController {
     return this.ordersService.getOrderDetail(user, id);
   }
 
-  @Roles("STAFF", "MANAGER")
+  @Roles("MANAGER")
   @Post(":id/resolve-manual-review")
   resolveManualReview(
     @CurrentUser() user: AuthUser,
@@ -102,7 +102,7 @@ export class AdminOrdersController {
     return this.ordersService.getOrderDetail(user, id);
   }
 
-  @Roles("STAFF", "MANAGER")
+  @Roles("MANAGER")
   @Post("orders/:id/resolve-manual-review")
   resolveManualReview(
     @CurrentUser() user: AuthUser,
