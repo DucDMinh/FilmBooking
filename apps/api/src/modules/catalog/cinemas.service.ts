@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ERROR_CODES } from "@filmbooking/shared";
 import {
   CINEMA_ADMIN_ONLY_FIELDS,
+  type AdminCinemaDto,
   type CinemaDbStatus,
   type CinemaDto,
   type CreateCinemaInput,
@@ -75,6 +76,16 @@ function cinemaToDto(row: CinemaRow): CinemaDto {
     amenities: row.amenities,
     status: row.status,
   };
+}
+
+const ADMIN_CINEMA_COLUMNS = `${CINEMA_COLUMNS}, rooms(count)`;
+
+interface AdminCinemaRow extends CinemaRow {
+  rooms: { count: number }[] | null;
+}
+
+function adminCinemaToDto(row: AdminCinemaRow): AdminCinemaDto {
+  return { ...cinemaToDto(row), id: row.id, roomCount: row.rooms?.[0]?.count ?? 0 };
 }
 
 function cinemaToColumns(input: CreateCinemaInput | UpdateCinemaInput): Record<string, unknown> {
@@ -164,7 +175,28 @@ export class CinemasService {
     };
   }
 
-  // ── Quản lý — dùng JWT của user, RLS vẫn áp dụng ───────────────
+  // ── Quản lý ───────────────────────────────────────────────────
+
+  /**
+   * Danh sách rạp MỌI trạng thái cho màn quản trị. Quyền do guard/Nest quyết định (service role bỏ qua RLS):
+   * Admin xem tất cả; Manager chỉ rạp mình quản lý (`managedCinemaIds`).
+   */
+  async listAdmin(managedCinemaIds: readonly string[] | "all"): Promise<AdminCinemaDto[]> {
+    let query = this.supabase.admin().from("cinemas").select(ADMIN_CINEMA_COLUMNS);
+    if (managedCinemaIds !== "all") query = query.in("id", [...managedCinemaIds]);
+    const rows = asRows<AdminCinemaRow>(unwrap(await query.order("name")));
+    return rows.map(adminCinemaToDto);
+  }
+
+  async getAdmin(id: string): Promise<AdminCinemaDto> {
+    const row = unwrap(
+      await this.supabase.admin().from("cinemas").select(ADMIN_CINEMA_COLUMNS).eq("id", id).maybeSingle(),
+    ) as AdminCinemaRow | null;
+    if (!row) throw new AppException(ERROR_CODES.NOT_FOUND, "Cinema not found");
+    return adminCinemaToDto(row);
+  }
+
+  // ── Ghi — dùng JWT của user, RLS vẫn áp dụng ───────────────
 
   async create(jwt: string, input: CreateCinemaInput): Promise<CinemaDto> {
     const db = this.supabase.forUser(jwt);

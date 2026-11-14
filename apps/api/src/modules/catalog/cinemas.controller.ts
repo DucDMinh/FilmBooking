@@ -6,6 +6,7 @@ import {
   idParamSchema,
   listCinemasQuerySchema,
   updateCinemaSchema,
+  type AdminCinemaDto,
   type CinemaDto,
   type CreateCinemaInput,
   type ProvinceDto,
@@ -42,6 +43,22 @@ export class CinemasController {
     @Query(new ZodValidationPipe(cinemaDetailQuerySchema)) query: { date?: string },
   ): Promise<CinemaDetailDto> {
     return this.cinemas.detailPublic(code, query.date);
+  }
+
+  /** Mọi trạng thái + số phòng. Admin: tất cả; Manager: chỉ rạp mình quản lý. */
+  @Roles("MANAGER")
+  @Get("admin/cinemas")
+  async listAdmin(@Req() request: AuthenticatedRequest): Promise<AdminCinemaDto[]> {
+    const { isAdmin, cinemaRoles } = await this.access.loadForRequest(request);
+    const managed = [...cinemaRoles].filter(([, role]) => role === "MANAGER").map(([id]) => id);
+    return this.cinemas.listAdmin(isAdmin ? "all" : managed);
+  }
+
+  @Roles("MANAGER")
+  @CinemaScope()
+  @Get("admin/cinemas/:cinemaId")
+  getAdmin(@Param("cinemaId", new ZodValidationPipe(idParamSchema)) cinemaId: string): Promise<AdminCinemaDto> {
+    return this.cinemas.getAdmin(cinemaId);
   }
 
   @Roles("ADMIN")

@@ -133,11 +133,27 @@ export const updateMovieSchema = z
   .partial()
   .refine((body) => Object.keys(body).length > 0, { message: "At least one field is required" });
 
+// ── Upload ảnh (poster/banner/ảnh rạp) qua signed upload URL ────────
+export const UPLOAD_BUCKETS = ["posters", "banners", "cinema-images"] as const;
+export const UPLOAD_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+/** Khớp `file_size_limit` của bucket (5 MB) trong migration catalog. */
+export const UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+
+export const createUploadSchema = z.strictObject({
+  bucket: z.enum(UPLOAD_BUCKETS),
+  /** Bắt buộc với Manager khi bucket = cinema-images (thư mục `<cinemaId>/`); Admin có thể bỏ khi tạo rạp mới. */
+  cinemaId: z.guid().optional(),
+  contentType: z.enum(UPLOAD_CONTENT_TYPES),
+  sizeBytes: z.number().int().positive().max(UPLOAD_MAX_BYTES),
+});
+
 export const idParamSchema = z.guid();
 export const codeParamSchema = cinemaCode;
 export const slugParamSchema = movieFields.slug;
 
 // ── Kiểu trả về (thời gian UTC ISO; catalog không chứa tiền) ───────
+export type CreateUploadInput = z.output<typeof createUploadSchema>;
+export type UploadBucket = (typeof UPLOAD_BUCKETS)[number];
 export type CreateCinemaInput = z.output<typeof createCinemaSchema>;
 export type UpdateCinemaInput = z.output<typeof updateCinemaSchema>;
 export type CreateMovieInput = z.output<typeof createMovieSchema>;
@@ -165,6 +181,19 @@ export interface CinemaDto {
   imageUrl: string | null;
   amenities: string[];
   status: CinemaDbStatus;
+}
+
+/** Rạp trong màn quản trị: mọi trạng thái + số phòng. */
+export interface AdminCinemaDto extends CinemaDto {
+  id: string;
+  roomCount: number;
+}
+
+export interface UploadTicketDto {
+  path: string;
+  token: string;
+  signedUrl: string;
+  publicUrl: string;
 }
 
 export interface MovieDto {
