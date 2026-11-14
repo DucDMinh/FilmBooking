@@ -20,14 +20,14 @@ Ma trận quyền §5.3: Staff/Manager HN01 thử đọc/ghi suất, đơn, báo
 - layer-6-task-01 (Wiring API #4: đăng ký booking, payment, mail/jobs, checkin, admin, ord)
 
 ## Acceptance Criteria
-- [ ] AC-16: Manager HN01 → không nhận/không sửa dữ liệu HN02 (API 403 + query trực tiếp trả 0 dòng).
-- [ ] AC-17: khách A truy vấn đơn khách B → 0 dòng.
-- [ ] AC-13: Staff HN02 quét vé HN01 → WRONG_CINEMA, không lộ PII.
-- [ ] pgTAP: không còn bảng public nào thiếu RLS.
+- [x] AC-16: Manager HN01 → không nhận/không sửa dữ liệu HN02 (API 403 + query trực tiếp trả 0 dòng).
+- [x] AC-17: khách A truy vấn đơn khách B → 0 dòng.
+- [x] AC-13: Staff HN02 quét vé HN01 → WRONG_CINEMA, không lộ PII.
+- [x] pgTAP: không còn bảng public nào thiếu RLS.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
 - [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
 - [ ] Reviewer độc lập PASS
 - [ ] committed (1 task = 1 commit)
