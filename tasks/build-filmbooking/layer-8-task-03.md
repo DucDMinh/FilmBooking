@@ -19,10 +19,10 @@ Integration với PayOS mock + chữ ký HMAC thật: sai chữ ký, lặp webho
 - layer-6-task-02 (Job đối soát PayOS 5' + lịch pg_cron/pg_net gọi Nest /jobs)
 
 ## Acceptance Criteria
-- [ ] AC-09: chữ ký sai → đơn không đổi + log cảnh báo.
-- [ ] AC-10: 3 webhook song song → 1 payment, 1 vé, 1 email.
-- [ ] AC-11: tiền về muộn khi ghế đã bán → needs_manual_review + email khách + hiện cho Admin/Manager.
-- [ ] Webhook lỡ → `/jobs/reconcile` đưa đơn về paid đúng 1 lần.
+- [x] AC-09: chữ ký sai → đơn không đổi + log cảnh báo.
+- [x] AC-10: 3 webhook song song → 1 payment, 1 vé, 1 email.
+- [x] AC-11: tiền về muộn khi ghế đã bán → needs_manual_review + email khách + hiện cho Admin/Manager.
+- [x] Webhook lỡ → `/jobs/reconcile` đưa đơn về paid đúng 1 lần.
 
 ## DoD (Definition of Done)
 - [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
