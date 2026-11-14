@@ -37,6 +37,7 @@ type Responder = (query: Query) => { data?: unknown; error?: { code?: string; me
 /** Mock supabase-js: mọi method chain được và ghi lại; `await` trả về kết quả do test đặt theo bảng + thao tác. */
 function createFakeSupabase() {
   const queries: Query[] = [];
+  const uploads: { bucket: string; path: string; jwt: string }[] = [];
   const handlers = new Map<string, Responder>();
 
   const builder = (table: string, jwt: string): unknown => {
@@ -62,7 +63,18 @@ function createFakeSupabase() {
 
   const service = {
     admin: () => ({ from: (table: string) => builder(table, "admin") }),
-    forUser: (jwt: string) => ({ from: (table: string) => builder(table, jwt) }),
+    forUser: (jwt: string) => ({
+      from: (table: string) => builder(table, jwt),
+      storage: {
+        from: (bucket: string) => ({
+          createSignedUploadUrl: async (path: string) => {
+            uploads.push({ bucket, path, jwt });
+            return { data: { token: "tok", signedUrl: `https://abc.supabase.co/upload/${bucket}/${path}` }, error: null };
+          },
+          getPublicUrl: (path: string) => ({ data: { publicUrl: `https://abc.supabase.co/public/${bucket}/${path}` } }),
+        }),
+      },
+    }),
   };
   const roleHandlers = () => {
     handlers.set("user_roles:select", (q) => ({ data: userRoles.filter((r) => hasEq(q, "user_id", r.user_id)) }));
@@ -73,9 +85,11 @@ function createFakeSupabase() {
   return {
     service,
     queries,
+    uploads,
     on: (key: string, responder: Responder) => handlers.set(key, responder),
     reset: () => {
       queries.length = 0;
+      uploads.length = 0;
       handlers.clear();
       roleHandlers();
     },
@@ -441,6 +455,108 @@ describe("catalog API (e2e, mock Supabase)", () => {
         .send({ ageRating: "T18" });
       expect(patched.status).toBe(200);
       expect(opArgs(lastQuery(fake.queries, "movies"), "update")[0]?.[0]).toEqual({ age_rating: "T18" });
+    });
+
+    describe("admin cinema list/detail (R-32)", () => {
+      const closed = (overrides: Record<string, unknown> = {}) =>
+        cinemaRow({ status: "TEMP_CLOSED", rooms: [{ count: 4 }], ...overrides });
+
+      it("requires a staff role (Customer gets 403)", async () => {
+        const response = await request(server()).get("/admin/cinemas").set("Authorization", await auth("bbbbbbbb-0000-0000-0000-000000000009"));
+        expect(response.status).toBe(403);
+      });
+
+      it("Admin lists every cinema in any status with room count, unfiltered", async () => {
+        fake.on("cinemas:select", () => ({ data: [closed(), closed({ id: HN02, code: "HN02", status: "COMING_SOON", rooms: [] })] }));
+        const response = await request(server()).get("/admin/cinemas").set("Authorization", await auth(ADMIN));
+        expect(response.status).toBe(200);
+        expect(response.body.map((c: { status: string }) => c.status)).toEqual(["TEMP_CLOSED", "COMING_SOON"]);
+        expect(response.body[0]).toMatchObject({ id: HN01, roomCount: 4, provinceCode: "HN" });
+        expect(response.body[1].roomCount).toBe(0);
+        const query = lastQuery(fake.queries, "cinemas");
+        expect(query?.jwt).toBe("admin");
+        expect(opArgs(query, "in")).toEqual([]);
+        expect(opArgs(query, "eq").some(([column]) => column === "status")).toBe(false);
+      });
+
+      it("Manager only gets the cinemas they manage", async () => {
+        fake.on("cinemas:select", () => ({ data: [closed()] }));
+        const response = await request(server()).get("/admin/cinemas").set("Authorization", await auth(MANAGER));
+        expect(response.status).toBe(200);
+        expect(opArgs(lastQuery(fake.queries, "cinemas"), "in")).toEqual([["id", [HN01]]]);
+      });
+
+      it("detail: Manager of HN01 reads own non-OPEN cinema, 403 for another, 404 when missing", async () => {
+        fake.on("cinemas:select", () => ({ data: closed() }));
+        const own = await request(server()).get(`/admin/cinemas/${HN01}`).set("Authorization", await auth(MANAGER));
+        expect(own.status).toBe(200);
+        expect(own.body).toMatchObject({ id: HN01, status: "TEMP_CLOSED", roomCount: 4 });
+
+        const other = await request(server()).get(`/admin/cinemas/${HN02}`).set("Authorization", await auth(MANAGER));
+        expect(other.status).toBe(403);
+        expect(other.body.error.code).toBe("FORBIDDEN_CINEMA");
+
+        fake.on("cinemas:select", () => ({ data: null }));
+        const missing = await request(server()).get(`/admin/cinemas/${HN02}`).set("Authorization", await auth(ADMIN));
+        expect(missing.status).toBe(404);
+      });
+    });
+
+    describe("POST /admin/uploads (R-41)", () => {
+      const post = async (sub: string, body: object) =>
+        request(server()).post("/admin/uploads").set("Authorization", await auth(sub)).send(body);
+      const image = { contentType: "image/png", sizeBytes: 1024 };
+
+      it("Admin gets a signed URL for posters with the caller's JWT", async () => {
+        const response = await post(ADMIN, { bucket: "posters", ...image });
+        expect(response.status).toBe(201);
+        expect(response.body.token).toBe("tok");
+        expect(response.body.path).toMatch(/^[0-9a-f-]{36}.png$/);
+        expect(response.body.publicUrl).toContain(`/public/posters/${response.body.path}`);
+        expect(fake.uploads).toHaveLength(1);
+        expect(fake.uploads[0]?.jwt).not.toBe("admin");
+      });
+
+      it("Manager cannot upload posters/banners (403)", async () => {
+        const response = await post(MANAGER, { bucket: "banners", ...image });
+        expect(response.status).toBe(403);
+        expect(fake.uploads).toHaveLength(0);
+      });
+
+      it("Manager uploads cinema-images only into their own cinema folder", async () => {
+        const ok = await post(MANAGER, { bucket: "cinema-images", cinemaId: HN01, ...image });
+        expect(ok.status).toBe(201);
+        expect(ok.body.path.startsWith(`${HN01}/`)).toBe(true);
+
+        const other = await post(MANAGER, { bucket: "cinema-images", cinemaId: HN02, ...image });
+        expect(other.status).toBe(403);
+        expect(other.body.error.code).toBe("FORBIDDEN_CINEMA");
+
+        const noCinema = await post(MANAGER, { bucket: "cinema-images", ...image });
+        expect(noCinema.status).toBe(403);
+      });
+
+      it("Admin may upload a cinema image before the cinema exists (new/ folder)", async () => {
+        const response = await post(ADMIN, { bucket: "cinema-images", ...image });
+        expect(response.status).toBe(201);
+        expect(response.body.path.startsWith("new/")).toBe(true);
+      });
+
+      it("rejects non-image types, oversize files, unknown buckets and extra fields (400)", async () => {
+        for (const body of [
+          { bucket: "posters", contentType: "application/pdf", sizeBytes: 10 },
+          { bucket: "posters", contentType: "image/png", sizeBytes: 5 * 1024 * 1024 + 1 },
+          { bucket: "avatars", ...image },
+          { bucket: "posters", ...image, path: "../x" },
+        ]) {
+          expect((await post(ADMIN, body)).status).toBe(400);
+        }
+        expect(fake.uploads).toHaveLength(0);
+      });
+
+      it("requires authentication", async () => {
+        expect((await request(server()).post("/admin/uploads").send({ bucket: "posters", ...image })).status).toBe(401);
+      });
     });
 
     it("deleting a movie that has showtimes returns CONFLICT", async () => {
