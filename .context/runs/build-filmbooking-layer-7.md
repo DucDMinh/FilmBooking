@@ -3,9 +3,9 @@
 ```yaml
 workItem: build/build-filmbooking
 phaseTask: layer-7 (8 task, task-09 POS REMOVED; 2 wave)
-step: closeout (layer 7)
+step: done (layer 7)
 agent: dispatcher
-status: awaiting            # close-out: commit + merge staging + tag
+status: done            # chờ checkpoint user
 attempt: 1
 updatedAt: 2026-11-14
 base: staging @ 1152292 (layer-6-done)
@@ -13,7 +13,7 @@ integrationBranch: layer-7-integration
 waves:
   wave1: [task-01, task-02, task-03, task-04]
   wave2: [task-05, task-06, task-07, task-08]
-next: "commit task-10 + close layer 7 -> merge layer-7-integration vào staging -> tag layer-7-done -> cleanup worktree -> checkpoint user (duyệt sang layer 8)"
+next: "⏸ checkpoint: user duyệt layer 7 -> bắt đầu layer 8 (7 task: test đồng thời, RLS, webhook PayOS, huỷ suất+auth, Playwright e2e, Sentry/a11y/perf, tài liệu as-built)"
 loopSignal: none
 ```
 
@@ -64,3 +64,4 @@ loopSignal: none
 - 2026-11-14 builder task-10 attempt 2 PASS (web 439). cinemaId từ resolveScope của shell, all/rỗng -> /admin/rap; isNavEntryActive; test rap-room-links.test.tsx + shell. ▶ reviewer task-10 round 2 running.
 - 2026-11-14 reviewer task-10 round 2 NORMAL PASS (web 439, report ghi xong trước khi bị ngắt bởi giới hạn 5h). Phase review: blocker GAP-008 đã sửa bởi task-10 -> layer 7 PASS.
 - Close-out: gap register thêm GAP-008..027 (008/011/027 resolved; 017 gộp 016; 009/010 planned), BACKLOG CR-004 (guard Admin) + CR-005 (refundMethod R-110); progress.json complete layer-7 task-01..08,10, currentLayer=8. Xoá journal phụ builder task-03 (sai quy ước).
+- 2026-11-14 merge staging @ 0aed1fc, tag layer-7-done, cleanup 8 worktree + branch wt/layer-7__*. ⏸ CHECKPOINT cuối layer 7.
