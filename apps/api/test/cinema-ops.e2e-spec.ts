@@ -492,6 +492,24 @@ describe("cinema-ops API", () => {
     });
   });
 
+  describe("GET chi tiết suất (admin, không lọc trạng thái)", () => {
+    const path = (cinemaId = HN01) => `/cinemas/${cinemaId}/showtimes/${SHOWTIME_1900}`;
+
+    it("Staff đọc được; suất CANCELLED và rạp không OPEN vẫn trả 200", async () => {
+      expect((await call("get", path(), STAFF_HN01)).body).toMatchObject({ id: SHOWTIME_1900, status: "ON_SALE" });
+      fakeDb.tables.showtimes![0]!.status = "CANCELLED";
+      fakeDb.tables.cinemas![0]!.status = "TEMP_CLOSED";
+      const res = await call("get", path(), MANAGER_HN01);
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("CANCELLED");
+    });
+
+    it("rạp khác trong path -> 403; suất không thuộc rạp -> 404", async () => {
+      expect((await call("get", path(HN02), MANAGER_HN01)).status).toBe(403);
+      expect((await call("get", path(HN02), ADMIN)).status).toBe(404);
+    });
+  });
+
   describe("R-54: suất đã bán vé", () => {
     beforeEach(() => {
       fakeDb.tables.showtime_seat_states!.push({ showtime_id: SHOWTIME_1900, seat_id: SEAT_A1, state: "SOLD" });
