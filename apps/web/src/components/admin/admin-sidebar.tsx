@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-import { isNavItemActive, type AdminNavItem } from "./nav-config";
+import { isNavEntryActive, resolveNavHref, type AdminNavItem } from "./nav-config";
 
 export function formatNavHref(href: string, cinemaParam: string | null, isExternal?: boolean): string {
   if (isExternal || !cinemaParam || !href.startsWith("/admin")) {
@@ -25,7 +25,13 @@ export function formatNavHref(href: string, cinemaParam: string | null, isExtern
   return `${href}${separator}cinema=${encodeURIComponent(cinemaParam)}`;
 }
 
-function NavList({ items, onNavigate }: Readonly<{ items: readonly AdminNavItem[]; onNavigate?: () => void }>) {
+interface NavProps {
+  items: readonly AdminNavItem[];
+  /** Rạp đang chọn đã resolve theo quyền (null/"all" = chưa chọn rạp cụ thể). */
+  cinemaId?: string | null;
+}
+
+function NavList({ items, cinemaId = null, onNavigate }: Readonly<NavProps & { onNavigate?: () => void }>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const cinemaParam = searchParams.get("cinema");
@@ -34,10 +40,11 @@ function NavList({ items, onNavigate }: Readonly<{ items: readonly AdminNavItem[
     <nav aria-label="Điều hướng quản trị">
       <ul className="flex flex-col gap-1">
         {items.map((item) => {
-          const active = !item.external && isNavItemActive(item.href, pathname);
-          const targetHref = formatNavHref(item.href, cinemaParam, item.external);
+          const active = isNavEntryActive(item, pathname);
+          // Giữ ?cinema= để scope không mất khi sang trang khác.
+          const targetHref = formatNavHref(resolveNavHref(item, cinemaId), cinemaParam, item.external);
           return (
-            <li key={item.href}>
+            <li key={item.label}>
               <Link
                 href={targetHref}
                 aria-current={active ? "page" : undefined}
@@ -66,15 +73,15 @@ function NavList({ items, onNavigate }: Readonly<{ items: readonly AdminNavItem[
 }
 
 /** Sidebar cố định 250px từ md; dưới md dùng AdminMobileNav (Sheet) đặt trong topbar. */
-export function AdminSidebar({ items }: Readonly<{ items: readonly AdminNavItem[] }>) {
+export function AdminSidebar({ items, cinemaId }: Readonly<NavProps>) {
   return (
     <aside className="hidden w-[250px] shrink-0 border-r border-border bg-chrome p-3 md:block">
-      <NavList items={items} />
+      <NavList items={items} cinemaId={cinemaId} />
     </aside>
   );
 }
 
-export function AdminMobileNav({ items }: Readonly<{ items: readonly AdminNavItem[] }>) {
+export function AdminMobileNav({ items, cinemaId }: Readonly<NavProps>) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -94,7 +101,7 @@ export function AdminMobileNav({ items }: Readonly<{ items: readonly AdminNavIte
             <SheetDescription className="sr-only">Điều hướng khu vực quản trị</SheetDescription>
           </SheetHeader>
           <div className="p-3">
-            <NavList items={items} onNavigate={() => setOpen(false)} />
+            <NavList items={items} cinemaId={cinemaId} onNavigate={() => setOpen(false)} />
           </div>
         </SheetContent>
       </Sheet>

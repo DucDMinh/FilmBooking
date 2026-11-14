@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CinemaForm, type CinemaSettings } from "@/components/admin/cinema-form";
 import { PageHeader, useAdminMe } from "@/components/admin/form-utils";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/states";
+import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import type { AdminCinemaDto } from "@filmbooking/shared/schemas/catalog";
 
@@ -60,6 +62,13 @@ export default function AdminCinemaEditPage() {
       <PageHeader
         title={isNew ? "Thêm rạp" : "Sửa rạp"}
         description="Rạp mới xuất hiện ở trang Rạp chiếu ngay khi lưu, không cần triển khai lại."
+        action={
+          isNew ? null : (
+            <Button asChild variant="secondary">
+              <Link href={`/admin/rap/${id}/phong`}>Phòng & sơ đồ ghế</Link>
+            </Button>
+          )
+        }
       />
       <CinemaForm role={role ?? "MANAGER"} cinema={loaded.cinema ?? undefined} settings={loaded.settings} />
     </div>

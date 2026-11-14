@@ -53,10 +53,10 @@ export function AdminShell({ role, cinemas: initialCinemas, children }: Readonly
 
   return (
     <div className="flex min-h-dvh bg-background">
-      <AdminSidebar items={items} />
+      <AdminSidebar items={items} cinemaId={scope} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-chrome px-4 md:h-18 md:px-6">
-          <AdminMobileNav items={items} />
+          <AdminMobileNav items={items} cinemaId={scope} />
           <span className="text-h3 font-heavy tracking-wide text-brand">CINEMO</span>
           <div className="ml-auto">
             <CinemaSelector

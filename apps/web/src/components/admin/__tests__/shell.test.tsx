@@ -11,9 +11,11 @@ import { AdminMobileNav, AdminSidebar } from "../admin-sidebar";
 import { CinemaSelector, CinemaScopeSwitcher } from "../cinema-selector";
 import {
   ADMIN_NAV_ITEMS,
+  isNavEntryActive,
   isNavItemActive,
   navItemsForRole,
   resolveAdminRole,
+  resolveNavHref,
 } from "../nav-config";
 import { ALL_CINEMAS, resolveScope, useAdminScope, type ScopeCinema } from "../use-admin-scope";
 
@@ -128,7 +130,7 @@ describe("nav-config: navItemsForRole và phạm vi vai trò (R-39, D4)", () => 
     // Không thấy các mục quản trị hệ thống
     expect(staffHrefs).not.toContain("/admin/phim");
     expect(staffHrefs).not.toContain("/admin/rap");
-    expect(staffHrefs).not.toContain("/admin/phong");
+    expect(staffHrefs).not.toContain("/admin/ngay-le");
     expect(staffHrefs).not.toContain("/admin/lich-chieu");
     expect(staffHrefs).not.toContain("/admin/gia");
     expect(staffHrefs).not.toContain("/admin/voucher");
@@ -150,7 +152,8 @@ describe("nav-config: navItemsForRole và phạm vi vai trò (R-39, D4)", () => 
 
     // Thêm các mục của Manager (SPEC §5.3, design-spec §3)
     expect(managerHrefs).toContain("/admin/rap");
-    expect(managerHrefs).toContain("/admin/phong");
+    expect(managerHrefs).not.toContain("/admin/phong");
+    expect(managerItems.some((i) => i.label === "Phòng & sơ đồ ghế")).toBe(true);
     expect(managerHrefs).toContain("/admin/lich-chieu");
     expect(managerHrefs).toContain("/admin/gia");
     expect(managerHrefs).toContain("/admin/voucher");
@@ -168,10 +171,36 @@ describe("nav-config: navItemsForRole và phạm vi vai trò (R-39, D4)", () => 
     const adminHrefs = adminItems.map((item) => item.href);
 
     expect(adminHrefs).toContain("/admin/phim");
+    expect(adminHrefs).toContain("/admin/ngay-le");
     expect(adminHrefs).toContain("/admin/voucher");
     expect(adminHrefs).toContain("/admin/audit-log");
     expect(adminHrefs).toContain("/admin/cau-hinh");
     expect(adminItems.length).toBe(ADMIN_NAV_ITEMS.length);
+  });
+
+  it("mục Phòng & sơ đồ ghế: có rạp đang chọn thì trỏ /admin/rap/<id>/phong, không thì /admin/rap", () => {
+    const rooms = ADMIN_NAV_ITEMS.find((i) => i.label === "Phòng & sơ đồ ghế");
+    expect(rooms).toBeDefined();
+    expect(resolveNavHref(rooms!, "c1")).toBe("/admin/rap/c1/phong");
+    expect(resolveNavHref(rooms!, null)).toBe("/admin/rap");
+    expect(resolveNavHref(rooms!, "all")).toBe("/admin/rap");
+    expect(resolveNavHref(rooms!, "")).toBe("/admin/rap");
+  });
+
+  it("active: trang phòng chỉ active mục Phòng; /admin/rap chỉ active Rạp chiếu", () => {
+    const rooms = ADMIN_NAV_ITEMS.find((i) => i.label === "Phòng & sơ đồ ghế")!;
+    const cinemas = ADMIN_NAV_ITEMS.find((i) => i.label === "Rạp chiếu")!;
+    for (const path of ["/admin/rap/c1/phong", "/admin/rap/c1/phong/r9"]) {
+      expect(isNavEntryActive(rooms, path)).toBe(true);
+      expect(isNavEntryActive(cinemas, path)).toBe(false);
+    }
+    expect(isNavEntryActive(rooms, "/admin/rap")).toBe(false);
+    expect(isNavEntryActive(cinemas, "/admin/rap")).toBe(true);
+    expect(isNavEntryActive(cinemas, "/admin/rap/c1")).toBe(true);
+  });
+
+  it("không mục sidebar nào trỏ route không tồn tại /admin/phong", () => {
+    for (const item of ADMIN_NAV_ITEMS) expect(item.href).not.toBe("/admin/phong");
   });
 
   it("CR remove-pos (spec 2.0.0): không có mục POS trong bất kỳ vai trò nào", () => {
@@ -375,6 +404,20 @@ describe("AdminSidebar và AdminMobileNav (Keyboard nav & Responsive Sheet)", ()
     // Link external không bị gắn ?cinema=
     const checkinLink = screen.getByRole("link", { name: /Soát vé/ });
     expect(checkinLink).toHaveAttribute("href", "/staff/soat-ve");
+  });
+
+  it("mục Phòng & sơ đồ ghế: có cinemaId → /admin/rap/<id>/phong (giữ ?cinema=); 'all' → /admin/rap", () => {
+    currentSearchParams = new URLSearchParams("cinema=c1");
+    const items = navItemsForRole("MANAGER");
+    const { unmount } = render(<AdminSidebar items={items} cinemaId="c1" />);
+    expect(screen.getByRole("link", { name: "Phòng & sơ đồ ghế" })).toHaveAttribute(
+      "href",
+      "/admin/rap/c1/phong?cinema=c1",
+    );
+    unmount();
+    currentSearchParams = new URLSearchParams("cinema=all");
+    render(<AdminSidebar items={items} cinemaId="all" />);
+    expect(screen.getByRole("link", { name: "Phòng & sơ đồ ghế" })).toHaveAttribute("href", "/admin/rap?cinema=all");
   });
 
   it("G/M13-1: không thêm query string khi không có param ?cinema=", () => {

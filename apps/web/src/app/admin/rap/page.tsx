@@ -103,6 +103,11 @@ export default function AdminCinemasPage() {
                         Sửa
                       </Link>
                     </Button>
+                    <Button asChild variant="secondary" size="sm">
+                      <Link href={`/admin/rap/${cinema.id}/phong`} aria-label={`Phòng và sơ đồ ghế rạp ${cinema.name}`}>
+                        Phòng
+                      </Link>
+                    </Button>
                     {isAdmin ? (
                       <Button
                         variant="ghost"

@@ -71,7 +71,7 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
 };
 export const paymentStatusLabel = (status: string): string => PAYMENT_STATUS_LABEL[status] ?? status;
 
-const AFFECTED_ACTION_LABEL: Record<string, string> = { EXCHANGED: "Đã đổi vé", REFUNDED_MANUAL: "Đã hoàn tiền thủ công" };
+const AFFECTED_ACTION_LABEL: Record<string, string> = { REFUNDED_MANUAL: "Đã hoàn tiền thủ công" };
 export const affectedActionLabel = (action: string): string => AFFECTED_ACTION_LABEL[action] ?? action;
 
 const MAIL_KIND_LABEL: Record<string, string> = {
