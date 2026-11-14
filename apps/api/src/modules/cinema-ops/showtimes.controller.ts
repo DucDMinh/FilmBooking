@@ -51,6 +51,18 @@ export class ShowtimesController {
     return this.showtimes.list(user, cinemaId, query);
   }
 
+  /** Chi tiết một suất cho màn quản trị: không lọc theo trạng thái suất/rạp/phim (khác seatmap công khai). */
+  @CinemaScope()
+  @Roles("STAFF")
+  @Get("cinemas/:cinemaId/showtimes/:showtimeId")
+  getOne(
+    @CurrentUser() user: AuthUser,
+    @Param("cinemaId", uuidParam) cinemaId: string,
+    @Param("showtimeId", uuidParam) showtimeId: string,
+  ) {
+    return this.showtimes.getOne(user, cinemaId, showtimeId);
+  }
+
   @CinemaScope()
   @Roles("MANAGER")
   @Post("cinemas/:cinemaId/showtimes")

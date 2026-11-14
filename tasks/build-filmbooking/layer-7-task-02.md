@@ -41,3 +41,8 @@ Màn 22 + B21: danh sách phòng, editor lưới hàng × cột (đặt loại �
 —
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.
+
+## Close-out (round 2 STRICT PASS)
+- Files bổ sung ngoài danh sách ban đầu: `apps/web/src/components/admin/room-layout-panel.tsx`, `rooms-manager.tsx`, `room-access.ts`, `__tests__/room-admin.test.tsx`.
+- Gap (ghi vào gap register lúc phase review layer 7): không đổi grid sau khi tạo phòng (updateRoomSchema không có grid); `nav-config.ts` trỏ `/admin/phong` không tồn tại; editor chưa read-only khi phòng có suất sắp chiếu (API chặn 409); N+1 GET sơ đồ ở danh sách phòng.
+- Doc impact: no doc impact (chỉ web, không đổi API contract).

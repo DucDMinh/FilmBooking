@@ -11,6 +11,8 @@
 | CR-001 | Bỏ toàn bộ POS khỏi dự án, chỉ làm web | REMOVE | done | [2026-11-12-remove-pos.md](archive/2026-11-12-remove-pos.md) | 2026-11-12 | 2026-11-12 |
 | CR-002 | (backlog) FK tickets.seat_id -> seats — chỉ thêm sau khi sell_order_seats khoá seats FOR KEY SHARE (tránh deadlock confirm_paid × hold_seats, F11 task-03) | BUG | pending | [2026-11-12-tickets-seat-fk.md](2026-11-12-tickets-seat-fk.md) | 2026-11-12 | |
 | CR-003 | Bỏ đổi suất khi rạp huỷ suất — khách liên hệ CSKH, chỉ hoàn tiền thủ công | MODIFY | done | [2026-11-12-remove-showtime-exchange.md](archive/2026-11-12-remove-showtime-exchange.md) | 2026-11-12 | 2026-11-12 |
+| CR-004 | API chặn Admin tự khoá/tự gỡ + giữ Admin cuối cùng (GAP-010) | BUG | pending | [2026-11-14-admin-self-lock-last-admin-guard.md](2026-11-14-admin-self-lock-last-admin-guard.md) | 2026-11-14 | |
+| CR-005 | Hoàn tiền thủ công thiếu phương thức + ngày hoàn bắt buộc R-110 (GAP-009) | BUG | pending | [2026-11-14-refund-method-required.md](2026-11-14-refund-method-required.md) | 2026-11-14 | |
 
 ## Quy tắc tracking
 
