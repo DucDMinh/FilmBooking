@@ -103,6 +103,10 @@ export class ShowtimesService {
     return rows.map(toShowtimeDto);
   }
 
+  async getOne(user: AuthUser, cinemaId: string, showtimeId: string) {
+    return toShowtimeDto(await this.requireShowtime(this.supabase.forUser(user.jwt), cinemaId, showtimeId));
+  }
+
   async create(user: AuthUser, cinemaId: string, input: CreateShowtimeInput) {
     const db = this.supabase.forUser(user.jwt);
     const planner = new Planner(db);

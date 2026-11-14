@@ -60,6 +60,12 @@ Mọi response đi qua helper chung `ok()` / `fail()` (không viết tay `res.js
 | Mail (`MailModule`) | — (không có route) | — | Resend + `email_outbox`; worker chạy qua `POST /jobs/send-emails` |
 | Web Public Routes (`apps/web` — Layer 4) | `/`, `/phim`, `/phim/[slug]`, `/lich-chieu`, `/rap`, `/rap/[code]`, `/sitemap.xml`, `/robots.txt` | Public SSR / Client | Chọn tỉnh/thành lưu cookie, lọc phim, lịch chiếu 7 ngày (disable suất hết ghế/qua cutoff 15'), bản đồ Leaflet client-only, nút rạp yêu thích, JSON-LD `Movie` & `MovieTheater` chống XSS |
 
+## Chi tiết suất cho quản trị (layer-7 task-03)
+
+`GET /cinemas/:cinemaId/showtimes/:showtimeId` — `@CinemaScope()` + `@Roles("STAFF")` (Admin, Manager, Staff của rạp). Trả `ShowtimeDto` (id, cinemaId, roomId, movieId, startsAt, endsAt, format, languageMode, status, createdAt, updatedAt). Khác `GET /showtimes/:id/seatmap` (công khai), endpoint này KHÔNG lọc theo trạng thái suất (trả cả `CANCELLED`), trạng thái rạp (`TEMP_CLOSED`/`INACTIVE`) hay phim. 404 `NOT_FOUND` khi suất không thuộc rạp trong path; 403 khi ngoài phạm vi rạp.
+
+`cancel_showtimes` (RPC, migration `20261114000000_cancel_showtimes_skip_cancelled`): bỏ qua suất đã `CANCELLED` (không ghi đè `cancel_reason`/`cancelled_by`/`cancelled_at`, không đếm lại); `cancelled_showtimes_count` chỉ tính suất được huỷ ở lần gọi này.
+
 ## Error codes
 
 | Code | Meaning |
