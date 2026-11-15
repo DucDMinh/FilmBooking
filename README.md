@@ -1,4 +1,72 @@
-# 🚀 AI-Powered Project Template (Web) — Claude Code edition
+# FilmBooking — web đặt vé xem phim
+
+Monorepo pnpm: `apps/web` (Next.js), `apps/api` (NestJS), `packages/shared` (zod schema, mã lỗi dùng chung), `supabase/` (migration, pgTAP, seed). Dữ liệu: Supabase (Postgres + Auth + Storage + Realtime). Thanh toán PayOS, email Resend, captcha Cloudflare Turnstile. Chỉ kênh **web** (POS đã gỡ, spec 2.0.0).
+
+Tài liệu as-built: [`docs/API_SPEC.md`](docs/API_SPEC.md) · [`docs/ERD.md`](docs/ERD.md) · [`docs/DESIGN.md`](docs/DESIGN.md) · [`docs/dev-setup.md`](docs/dev-setup.md). Yêu cầu (intent): [`SPECIFICATIONS.md`](SPECIFICATIONS.md).
+
+## Yêu cầu
+
+- Node >= 22, pnpm 10 (`packageManager: pnpm@10.28.0`; bật bằng `corepack enable`).
+- Docker Desktop đang chạy (Supabase local chạy bằng container).
+- `psql` trên PATH (chỉ cần cho `pnpm db:seed:demo`).
+- Supabase CLI không cần cài global: đã nằm trong devDependencies, gọi qua script `pnpm db:*` (hoặc `pnpm exec supabase ...`). Không gọi `supabase` trần.
+
+## Chạy local trong 8 bước
+
+1. `pnpm install`
+2. `pnpm db:start` — dựng Supabase local, tự apply `supabase/migrations/*` (không nạp seed). Ghi lại URL/key in ra (API `:54321`, Postgres `:54322`, Studio `:54323`, Mailpit `:54324`).
+3. `pnpm db:seed:demo` — nạp dữ liệu mẫu (5 rạp, phim, suất, 6 tài khoản; mật khẩu chung `LocalDev@123!`, xem `supabase/seed/README.md`). Chỉ chạy với DB loopback.
+4. `cp .env.example .env.local` rồi điền biến cho API (bảng dưới). Giá trị Supabase local lấy từ `pnpm exec supabase status -o env`.
+5. Tạo `apps/web/.env.local` chứa các biến `NEXT_PUBLIC_*` (và `API_URL` nếu cần) — Next chỉ đọc `.env.local` trong `apps/web`.
+6. Build + chạy API (cổng mặc định 3001): `pnpm --filter ./apps/api build && node --env-file=.env.local apps/api/dist/apps/api/src/main.js`. API không tự nạp `.env`; thiếu biến bắt buộc sẽ thoát kèm tên biến lỗi.
+7. Chạy web (cổng 3000): `pnpm --filter ./apps/web dev`.
+8. Mở http://localhost:3000, đăng nhập bằng tài khoản mẫu (vd `customer@filmbooking.local`). Email Auth local xem ở Mailpit `:54324`.
+
+Dừng stack: `pnpm db:stop`.
+
+## Biến môi trường
+
+Danh sách đầy đủ ở [`.env.example`](.env.example); schema kiểm tra của API ở `apps/api/src/config/env.ts` (`parseEnv`). **Không commit secret.**
+
+| Biến | Dùng bởi | Bắt buộc | Ghi chú |
+|---|---|---|---|
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | api | có | Hai khoá phải khác nhau |
+| `SUPABASE_JWT_SECRET` hoặc `SUPABASE_JWKS_URL` | api | có (một trong hai) | HS256 / RS256-ES256; `SUPABASE_JWT_ISSUER` tuỳ chọn; local ký ES256 nên dùng JWKS `<url>/auth/v1/.well-known/jwks.json` |
+| `WEB_ORIGIN` | api | có | Origin web cho CORS, phân tách bằng dấu phẩy (vd `http://localhost:3000`) |
+| `PORT` | api | không | Mặc định 3001 |
+| `TRUST_PROXY_HOPS` | api | không | Số proxy tin cậy (mặc định 1 ở production, 0 còn lại) |
+| `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` | api | production | Local có thể bỏ trống (không tạo được link thanh toán thật) |
+| `RESEND_API_KEY` | api | không | Gửi email giao dịch (`.env.example` có `RESEND_FROM_EMAIL` nhưng code API hiện không đọc) |
+| `TURNSTILE_SECRET_KEY` | api | cho đăng ký/quên mật khẩu | Thiếu = từ chối (fail-closed); local dùng secret test Cloudflare |
+| `JOB_SECRET` | api | cho `/jobs/*` | Header `x-job-secret`; thiếu = `/jobs/*` luôn 401 |
+| `SENTRY_DSN` (api), `NEXT_PUBLIC_SENTRY_DSN` (web) | api, web | không | <!-- TODO(dispatcher): xác nhận tên biến Sentry + hành vi tắt khi thiếu sau merge task-05/06 --> |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | web | có | |
+| `NEXT_PUBLIC_API_URL` (`API_URL` phía server, tuỳ chọn) | web | có | URL Nest, vd `http://localhost:3001` |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_SITE_URL` | web | không / production | Site key captcha; URL công khai cho canonical/sitemap |
+
+## Lệnh thường dùng
+
+| Lệnh | Việc |
+|---|---|
+| `pnpm lint` · `pnpm typecheck` · `pnpm build` | Kiểm tra / build mọi package |
+| `pnpm test` | Unit test mọi package + `node --test scripts/*.test.mjs` |
+| `pnpm test:int` | Integration test API <-> Supabase local (cần `pnpm db:start`; tự skip + cảnh báo nếu stack tắt) |
+| `pnpm db:test` | pgTAP (`supabase/tests/*.test.sql`) |
+| `pnpm db:migrate` | Apply migration mới lên DB local |
+| `pnpm db:types` | Sinh `packages/shared/src/database.types.ts` |
+| `pnpm e2e` | Playwright e2e (cần web + api + Supabase local đang chạy) <!-- TODO(dispatcher): điền cổng/biến e2e, lighthouserc.json (Lighthouse CI) sau merge task-05/06 --> |
+| `pnpm format` · `pnpm format:check` | Prettier |
+| `node scripts/check-api-routes.mjs` | Đối chiếu route trong code với `docs/API_SPEC.md` |
+
+**Cấm** `supabase db push` / `db reset` ngoài local; migration đã apply không sửa, thêm migration mới (xem `docs/dev-setup.md`).
+
+---
+
+# Phụ lục — Workflow AI template (Claude Code)
+
+> Phần dưới là tài liệu của template workflow dùng để phát triển repo này, không liên quan tới chạy ứng dụng.
+
+## Template workflow AI — Claude Code edition
 
 > A multi-agent template for **Claude Code**, for **working on repos that already have code** (bug/feature/update).
 > Ported from [ocanhdt12-gif/opencode-project-template](https://github.com/ocanhdt12-gif/opencode-project-template) (opencode). See **[Claude Code port notes](#claude-code-port-notes)** for what changed.
