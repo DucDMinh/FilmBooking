@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { preconnect } from "react-dom";
 import type { ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
@@ -27,7 +28,20 @@ export const viewport: Viewport = {
   themeColor: "#0B0D12",
 };
 
+/** Origin nguồn tải cross-origin (API, Supabase Realtime/Storage, ảnh seed) → mở sẵn kết nối, giảm LCP. */
+function crossOriginHints(): string[] {
+  const candidates = [process.env.NEXT_PUBLIC_API_URL, process.env.NEXT_PUBLIC_SUPABASE_URL, "https://images.unsplash.com"];
+  return candidates.flatMap((url) => {
+    try {
+      return url ? [new URL(url).origin] : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  for (const origin of crossOriginHints()) preconnect(origin);
   return (
     <html lang="vi" className={inter.variable}>
       <body className="min-h-dvh">

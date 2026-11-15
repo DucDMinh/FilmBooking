@@ -6,6 +6,7 @@ import type { SeatMapResponse } from "@filmbooking/shared/schemas/booking";
 import type { MovieDto } from "@filmbooking/shared/schemas/catalog";
 
 import { BookingStepper } from "@/components/booking/booking-stepper";
+import { CinemaTag } from "@/lib/monitoring/cinema-tag";
 import { SeatPicker, type SeatPickerAuth } from "@/components/booking/seat-picker";
 import { AgeBadge } from "@/components/common/age-badge";
 import { DateTime } from "@/components/common/money";
@@ -69,6 +70,7 @@ export default async function DatVePage({ params }: Readonly<{ params: Promise<{
 
   return (
     <div className="flex flex-col gap-4">
+      <CinemaTag cinemaId={seatMap.showtime.cinemaId} />
       <BookingStepper currentStep={2} />
       <header className="flex flex-col gap-1">
         <h1 className="flex flex-wrap items-center gap-2 text-h2 font-bold">

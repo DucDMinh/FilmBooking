@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 
 export default function ErrorPage({ error, retry }: { error: unknown; retry: () => void }) {
   useEffect(() => {
+    Sentry.captureException(error); // no-op khi chưa init (thiếu DSN)
     console.error(error);
   }, [error]);
 

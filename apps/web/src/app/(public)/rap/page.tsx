@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api/client";
+import { PUBLIC_CACHE } from "@/lib/api/cache";
 import { getServerAccessToken } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import type { CinemaDto, ProvinceDto } from "@filmbooking/shared/schemas/catalog";
@@ -27,9 +28,9 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
   const { province } = await searchParams;
 
   // Lấy danh sách tỉnh thành và rạp từ API
-  const provinces = await apiFetch<ProvinceDto[]>("/provinces").catch(() => [] as ProvinceDto[]);
+  const provinces = await apiFetch<ProvinceDto[]>("/provinces", PUBLIC_CACHE).catch(() => [] as ProvinceDto[]);
   const cinemaQuery = province ? `/cinemas?province=${encodeURIComponent(province)}` : "/cinemas";
-  const cinemas = await apiFetch<CinemaDto[]>(cinemaQuery).catch(() => [] as CinemaDto[]);
+  const cinemas = await apiFetch<CinemaDto[]>(cinemaQuery, PUBLIC_CACHE).catch(() => [] as CinemaDto[]);
 
   // Kiểm tra phiên đăng nhập và lấy danh sách rạp yêu thích của user (nếu có)
   const token = await getServerAccessToken();

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Calendar, Clock, Film, Globe, Play, User } from "lucide-react";
 import type { MovieDto, ShowtimeDto } from "@filmbooking/shared/schemas/catalog";
 import { apiFetch, ApiError } from "@/lib/api/client";
+import { PUBLIC_CACHE } from "@/lib/api/cache";
 import { buildMovieJsonLd, serializeJsonLd } from "@/lib/seo/movie-jsonld";
 import { BookingStepper } from "@/components/booking/booking-stepper";
 import { ShowtimeSchedule } from "@/components/catalog/showtime-schedule";
@@ -29,7 +30,7 @@ async function fetchMovieData(slug: string, date?: string, province?: string): P
   const qs = query.toString() ? `?${query.toString()}` : "";
 
   try {
-    return await apiFetch<MovieScheduleDto>(`/movies/${slug}${qs}`);
+    return await apiFetch<MovieScheduleDto>(`/movies/${slug}${qs}`, PUBLIC_CACHE);
   } catch (error) {
     if (error instanceof ApiError && (error.status === 404 || error.code === "NOT_FOUND")) {
       return null;

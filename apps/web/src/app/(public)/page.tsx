@@ -7,7 +7,9 @@ import { MovieCard } from "@/components/catalog/movie-card";
 import { ProvincePickerDialog } from "@/components/catalog/province-picker-dialog";
 import { EmptyState } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
+import { RemoteImage } from "@/components/common/remote-image";
 import { apiFetch } from "@/lib/api/client";
+import { PUBLIC_CACHE } from "@/lib/api/cache";
 import type { CinemaDto, MovieDto, ProvinceDto } from "@filmbooking/shared/schemas/catalog";
 
 export interface HomeBannerDto {
@@ -44,13 +46,13 @@ export default async function HomePage(props: HomePageProps) {
 
   const provinceQuery = currentProvinceCode ? `?province=${encodeURIComponent(currentProvinceCode)}` : "";
   const [homeData, provinces, cinemas] = await Promise.all([
-    apiFetch<HomeDto>(`/home${provinceQuery}`).catch((): HomeDto => ({
+    apiFetch<HomeDto>(`/home${provinceQuery}`, PUBLIC_CACHE).catch((): HomeDto => ({
       banners: [],
       nowShowing: [],
       comingSoon: [],
     })),
-    apiFetch<ProvinceDto[]>("/provinces").catch((): ProvinceDto[] => []),
-    apiFetch<CinemaDto[]>(`/cinemas${provinceQuery}`).catch((): CinemaDto[] => []),
+    apiFetch<ProvinceDto[]>("/provinces", PUBLIC_CACHE).catch((): ProvinceDto[] => []),
+    apiFetch<CinemaDto[]>(`/cinemas${provinceQuery}`, PUBLIC_CACHE).catch((): CinemaDto[] => []),
   ]);
 
   const currentProvince = provinces.find((p: ProvinceDto) => p.code === currentProvinceCode);
@@ -87,9 +89,11 @@ export default async function HomePage(props: HomePageProps) {
           className="relative overflow-hidden rounded-hero border border-border-subtle bg-surface"
         >
           <div className="relative aspect-[16/9] sm:aspect-[21/9] min-h-[300px] max-h-[460px] w-full overflow-hidden">
-            <img
+            <RemoteImage
               src={featuredBanner.bannerUrl}
               alt={`Banner phim ${featuredBanner.titleVi}`}
+              sizes="(min-width: 1280px) 1200px, 100vw"
+              priority
               className="size-full object-cover object-center"
             />
             {/* Lớp phủ gradient tối bảo đảm độ tương phản chữ */}

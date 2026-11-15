@@ -9,7 +9,21 @@ import {
 } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
 import { ERROR_CODES, type ApiErrorBody, type ErrorCode } from "@filmbooking/shared";
+import { captureServerError } from "../monitoring/sentry";
 import { AppException } from "./app-exception";
+
+interface ScopedRequest {
+  params?: Record<string, unknown>;
+  query?: Record<string, unknown>;
+  body?: Record<string, unknown>;
+}
+
+/** cinemaId (nếu request mang) để gắn tag cinema_id cho event lỗi. */
+function cinemaIdOf(host: ArgumentsHost): string | undefined {
+  const request = host.switchToHttp().getRequest<ScopedRequest | undefined>();
+  const found = request?.params?.cinemaId ?? request?.query?.cinemaId ?? request?.body?.cinemaId;
+  return typeof found === "string" ? found : undefined;
+}
 
 const INTERNAL_MESSAGE = "Internal server error";
 
@@ -63,6 +77,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const { status, body } = this.toResponse(exception);
+    if (status >= 500) captureServerError(exception, cinemaIdOf(host));
     const response = host.switchToHttp().getResponse();
     this.adapterHost.httpAdapter.reply(response, body, status);
   }

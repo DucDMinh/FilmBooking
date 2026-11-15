@@ -13,6 +13,7 @@ import {
   type PayosWebhookEnvelope,
 } from "@filmbooking/shared/schemas/payment";
 import { Public } from "../../common/auth/decorators";
+import { reportAlert } from "../../common/monitoring/sentry";
 import { PayosClient } from "./payos.client";
 import { PaymentService } from "./payment.service";
 
@@ -48,6 +49,7 @@ export class WebhookController {
     const verifiedData = await this.payosClient.verifyWebhook(envelope);
     if (!verifiedData) {
       this.logger.warn(`PayOS webhook signature invalid for orderCode=${orderCode}`);
+      reportAlert({ alert: "webhook_invalid_signature", message: "PayOS webhook sai chữ ký", extra: { orderCode: String(orderCode) } });
       return { success: false, message: "Invalid signature" };
     }
 

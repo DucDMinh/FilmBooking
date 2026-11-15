@@ -4,12 +4,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CinemaMap } from "@/components/catalog/cinema-map";
+import { CinemaTag } from "@/lib/monitoring/cinema-tag";
 import { FavoriteButton } from "@/components/catalog/favorite-button";
 import { AgeBadge } from "@/components/common/age-badge";
 import { EmptyState } from "@/components/common/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiFetch, ApiError } from "@/lib/api/client";
+import { PUBLIC_CACHE } from "@/lib/api/cache";
 import { buildCinemaJsonLd, serializeCinemaJsonLd } from "@/lib/seo/cinema-jsonld";
 import { getServerAccessToken } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -74,7 +76,7 @@ function formatVnTime(utcIso: string): string {
 
 async function fetchCinemaDetail(code: string, date: string): Promise<CinemaDetailDto | null> {
   try {
-    return await apiFetch<CinemaDetailDto>(`/cinemas/${encodeURIComponent(code)}?date=${date}`);
+    return await apiFetch<CinemaDetailDto>(`/cinemas/${encodeURIComponent(code)}?date=${date}`, PUBLIC_CACHE);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;
@@ -164,6 +166,7 @@ export default async function CinemaDetailPage({
 
   return (
     <>
+      {cinemaId ? <CinemaTag cinemaId={cinemaId} /> : null}
       {/* Schema.org MovieTheater JSON-LD cho AI agents & Search Engines (R-46) */}
       <script
         type="application/ld+json"
