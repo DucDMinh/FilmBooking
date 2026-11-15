@@ -16,6 +16,8 @@ const MOVIE_COLUMNS =
   "id, slug, title_vi, title_original, poster_url, banner_url, trailer_url, description, genres, duration_minutes, director, cast_members, country, original_language, subtitle_languages, dubbed_languages, release_date, age_rating, status";
 const SHOWTIME_COLUMNS = "id, room_id, starts_at, ends_at, format, language_mode, status";
 const LIST_LIMIT = 200;
+// Embed showtimes -> cinemas chỉ rõ tên FK: orders/showtime_seat_locks cũng nối 2 bảng này nên không chỉ rõ
+// thì PostgREST có thể coi là quan hệ mơ hồ (PGRST201). Tên khớp migration 20261114190000_showtimes_cinema_fk.sql.
 const BANNER_LIMIT = 5;
 const MS_PER_DAY = 86_400_000;
 
@@ -255,7 +257,7 @@ export class MoviesService {
     const { from, to } = vnDayRange(options.date, now);
     let schedule = db
       .from("showtimes")
-      .select(`${SHOWTIME_COLUMNS}, cinemas!inner(code, name, status, provinces!inner(code))`)
+      .select(`${SHOWTIME_COLUMNS}, cinemas!showtimes_cinema_id_fkey!inner(code, name, status, provinces!inner(code))`)
       .eq("movie_id", row.id)
       .neq("status", "CANCELLED")
       .eq("cinemas.status", "OPEN")
@@ -323,7 +325,7 @@ export class MoviesService {
   private async showingMovieIds(db: SupabaseClient, province: string | undefined, now: Date): Promise<Set<string>> {
     let query = db
       .from("showtimes")
-      .select("movie_id, cinemas!inner(status, provinces!inner(code))")
+      .select("movie_id, cinemas!showtimes_cinema_id_fkey!inner(status, provinces!inner(code))")
       .neq("status", "CANCELLED")
       .gte("ends_at", now.toISOString())
       .eq("cinemas.status", "OPEN");
