@@ -43,3 +43,9 @@ E2E trên web + api + Supabase local (seed): khách đăng ký→xác nhận (In
 playwright.config.ts chỉ task này tạo. Root script `pnpm e2e` đã khai ở layer-0-task-01; không sửa package.json.
 - Nguồn: `SPECIFICATIONS.md` 1.1.0, `docs/specs/2026-11-10-filmbooking-mvp-design.md`, `.context/design-spec.md` (UI), `skills/react-nodejs/design-tokens.md`.
 - Chỉ sửa file trong danh sách trên (dispatcher song song dựa vào đây). Cần file ngoài danh sách → ghi `Blocked`/báo dispatcher, không tự mở rộng.
+
+## Residual / Gap
+- Không có e2e "đăng ký → xác nhận email (Inbucket/Mailpit)": đăng ký qua UI bị Turnstile chặn (R-07), nên mọi user e2e được tạo qua GoTrue admin với `email_confirm: true`. Gợi ý gỡ sau: truyền Turnstile test secret "luôn pass" của Cloudflare (`1x0000000000000000000000000000000AA` + site key `1x00000000000000000000AA`) qua env webServer (cần mạng; lần thử đầu API vẫn trả "Xác minh không thành công"), hoặc mock Turnstile phía API cho môi trường test. Hộp thư local: http://127.0.0.1:54324/api/v1 (API kiểu Mailpit).
+- AC-19: sơ đồ ghế/suất/giá được dựng qua API (rạp + phòng qua form admin UI) và spec dừng ở bước giữ ghế / màn xác nhận, không đi tiếp tới thanh toán ở rạp mới (thanh toán đã được phủ ở booking.spec).
+- Đăng nhập UI được giãn nhịp (5 lần/65 s) trong `e2e/support/ui.ts` vì API giới hạn login 10/phút/IP (R-08).
+- `e2e` chưa nằm trong `pnpm typecheck` của repo; import `@supabase/supabase-js` đi qua `apps/api/node_modules` vì root không khai package (không được sửa package.json).
