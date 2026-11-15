@@ -1,0 +1,45 @@
+name: E2E (Playwright)
+
+# Job tuỳ chọn: chạy tay hoặc hằng đêm, không chặn PR (e2e cần Supabase local + build web/api nên chậm).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 19 * * *" # 02:00 giờ Việt Nam
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: playwright (chromium desktop + mobile 360)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # Giá trị giả chỉ để config.toml (env(...)) hợp lệ khi `supabase start`; KHÔNG phải secret.
+      SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: ci-placeholder
+      SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: ci-placeholder
+      SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID: ci-placeholder
+      SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET: ci-placeholder
+      TURNSTILE_SECRET_KEY: ci-placeholder
+      RESEND_API_KEY: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm db:start
+      # playwright.config.ts tự build + khởi động api/web và đọc khoá từ `supabase status`.
+      - run: pnpm e2e
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+      - name: Stop Supabase
+        if: always()
+        run: pnpm db:stop
