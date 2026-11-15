@@ -2,6 +2,7 @@ import type { MovieDto } from "@filmbooking/shared/schemas/catalog";
 import { Calendar, Film } from "lucide-react";
 import Link from "next/link";
 
+import { RemoteImage } from "@/components/common/remote-image";
 import { AgeBadge } from "@/components/common/age-badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -44,10 +45,10 @@ export function MovieCard({ movie, variant = "grid", className }: Readonly<Movie
           className="relative aspect-[2/3] w-full sm:w-32 shrink-0 overflow-hidden rounded-md bg-surface-elevated focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         >
           {movie.posterUrl ? (
-            <img
+            <RemoteImage
               src={movie.posterUrl}
               alt={`Poster phim ${movie.titleVi}`}
-              loading="lazy"
+              sizes="(min-width: 640px) 200px, 50vw"
               className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
@@ -109,10 +110,10 @@ export function MovieCard({ movie, variant = "grid", className }: Readonly<Movie
           className="relative block aspect-[2/3] w-full overflow-hidden bg-surface-elevated focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
         >
           {movie.posterUrl ? (
-            <img
+            <RemoteImage
               src={movie.posterUrl}
               alt={`Poster phim ${movie.titleVi}`}
-              loading="lazy"
+              sizes="(min-width: 640px) 200px, 50vw"
               className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (

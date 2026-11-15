@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { HttpException, Inject, Injectable } from "@nestjs/common";
 import { ERROR_CODES } from "@filmbooking/shared";
 import type {
   AgeConfirmResponse, ApplyVoucherResponse, BookingSummaryResponse,
@@ -7,6 +7,7 @@ import type {
 import { AccessService, type AuthenticatedRequest } from "../../common/auth/access.service";
 import type { AuthUser } from "../../common/auth/decorators";
 import { AppException } from "../../common/errors/app-exception";
+import { reportAlert } from "../../common/monitoring/sentry";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 import {
   buildBookingSummary,
@@ -48,7 +49,15 @@ export class BookingService {
     });
 
     if (error) {
-      handleHoldError(error);
+      try {
+        handleHoldError(error);
+      } catch (thrown) {
+        // Chỉ lỗi không mong đợi (5xx) tính vào "tỷ lệ lỗi giữ ghế"; SEAT_TAKEN/409... là bình thường.
+        if (thrown instanceof HttpException && thrown.getStatus() >= 500) {
+          reportAlert({ alert: "hold_error", message: "Giữ ghế lỗi không mong đợi", extra: { showtimeId: input.showtimeId } });
+        }
+        throw thrown;
+      }
     }
 
     const row = Array.isArray(data) ? data[0] : (data as Record<string, unknown>);
