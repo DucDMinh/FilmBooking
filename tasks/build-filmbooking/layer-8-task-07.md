@@ -20,16 +20,16 @@ Reconcile tài liệu as-built theo code: liệt kê endpoint REST (method, path
 - layer-6-task-02 (Job đối soát PayOS 5' + lịch pg_cron/pg_net gọi Nest /jobs)
 
 ## Acceptance Criteria
-- [ ] Mọi controller trong apps/api/src/modules có trong API_SPEC (kiểm bằng script grep đơn giản hoặc checklist).
-- [ ] ERD khớp migrations (tên bảng); không sửa intent docs (BRD/SPEC).
-- [ ] README cho phép người mới chạy local trong ≤ 10 bước.
+- [x] Mọi controller trong apps/api/src/modules có trong API_SPEC (kiểm bằng script grep đơn giản hoặc checklist).
+- [x] ERD khớp migrations (tên bảng); không sửa intent docs (BRD/SPEC).
+- [x] README cho phép người mới chạy local trong ≤ 10 bước.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `docs/API_SPEC.md`
