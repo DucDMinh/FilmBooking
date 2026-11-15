@@ -6,6 +6,7 @@ import { Calendar, Clock, MapPin } from "lucide-react";
 import { toVnParts } from "@filmbooking/shared";
 import type { MovieDto, ShowtimeDto } from "@filmbooking/shared/schemas/catalog";
 import { EmptyState } from "@/components/common/states";
+import { getVnDateString } from "@/lib/vn-date";
 import { cn } from "@/lib/utils";
 
 export interface CinemaScheduleGroup {
@@ -44,11 +45,7 @@ const LANGUAGE_MODE_LABELS: Record<string, string> = {
   ORIGINAL: "Bản gốc",
 };
 
-/** Lấy chuỗi ngày YYYY-MM-DD theo giờ Việt Nam (Asia/Ho_Chi_Minh). */
-export function getVnDateString(date: Date): string {
-  const { year, month, day } = toVnParts(date);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
+export { getVnDateString };
 
 /** Định dạng giờ phút HH:mm theo giờ Việt Nam. */
 export function formatVnTime(isoStringOrDate: string | Date): string {

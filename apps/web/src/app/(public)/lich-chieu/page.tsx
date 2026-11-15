@@ -4,8 +4,9 @@ import { Film, MapPin } from "lucide-react";
 import type { CinemaDto, MovieDto, ProvinceDto, ShowtimeDto } from "@filmbooking/shared/schemas/catalog";
 import { apiFetch } from "@/lib/api/client";
 import { BookingStepper } from "@/components/booking/booking-stepper";
-import { ShowtimeSchedule, getVnDateString } from "@/components/catalog/showtime-schedule";
+import { ShowtimeSchedule } from "@/components/catalog/showtime-schedule";
 import { EmptyState } from "@/components/common/states";
+import { getVnDateString } from "@/lib/vn-date";
 
 export const metadata: Metadata = {
   title: "Lịch chiếu phim | CINEMO",
