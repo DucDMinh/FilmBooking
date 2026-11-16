@@ -28,9 +28,9 @@ Ma trận quyền §5.3: Staff/Manager HN01 thử đọc/ghi suất, đơn, báo
 ## DoD (Definition of Done)
 - [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
 - [x] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `apps/api/test/integration/rls-scope.int-spec.ts`

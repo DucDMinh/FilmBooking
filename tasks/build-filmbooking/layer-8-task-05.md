@@ -21,16 +21,16 @@ E2E trên web + api + Supabase local (seed): khách đăng ký→xác nhận (In
 - layer-6-task-06 (Web Staff: chọn rạp làm việc + soát vé QR/nhập mã + kết quả màu)
 
 ## Acceptance Criteria
-- [ ] 4 spec PASS headless trên Chromium + mobile viewport 360px.
-- [ ] R-60/NFR-03: đo thời gian cập nhật realtime giữa 2 phiên web ≤ 2s.
-- [ ] Script `pnpm e2e` (root) — thêm vào CI job tuỳ chọn (manual/nightly).
+- [x] 4 spec PASS headless trên Chromium + mobile viewport 360px.
+- [x] R-60/NFR-03: đo thời gian cập nhật realtime giữa 2 phiên web ≤ 2s.
+- [x] Script `pnpm e2e` (root) — thêm vào CI job tuỳ chọn (manual/nightly).
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `playwright.config.ts`

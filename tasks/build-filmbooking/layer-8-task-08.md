@@ -25,9 +25,9 @@ bug fix (phát hiện trong layer 8 bởi builder task-06 khi chạy stack thậ
 3. Integration test mới `apps/api/test/integration/catalog-public.int-spec.ts` (Nest app thật + Supabase local, theo harness sẵn có): `GET /movies` (danh sách đang chiếu), chi tiết phim kèm lịch chiếu theo rạp/tỉnh, và các route catalog public khác có embed (rạp chi tiết + suất) trả 200 với dữ liệu đúng theo RunScope. Rà mọi truy vấn embed PostgREST khác trong `apps/api/src/modules/catalog` — cái nào hỏng tương tự thì sửa trong task này và nêu rõ.
 
 ## Acceptance Criteria
-- [ ] `GET /movies` và chi tiết phim trả 200 trên Supabase local có dữ liệu (integration test, không mock).
-- [ ] pgTAP 062 PASS; `pnpm db:test` toàn bộ PASS (migration áp bằng `pnpm exec supabase migration up`, KHÔNG `db reset`).
-- [ ] Không còn embed PostgREST nào trong catalog hỏng vì thiếu quan hệ (liệt kê đã rà).
+- [x] `GET /movies` và chi tiết phim trả 200 trên Supabase local có dữ liệu (integration test, không mock).
+- [x] pgTAP 062 PASS; `pnpm db:test` toàn bộ PASS (migration áp bằng `pnpm exec supabase migration up`, KHÔNG `db reset`).
+- [x] Không còn embed PostgREST nào trong catalog hỏng vì thiếu quan hệ (liệt kê đã rà).
 
 ## Files to Create/Modify
 - `supabase/migrations/<timestamp>_showtimes_cinema_fk.sql` (mới)

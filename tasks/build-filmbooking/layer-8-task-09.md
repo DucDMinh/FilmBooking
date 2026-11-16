@@ -22,9 +22,9 @@ bug fix (phát hiện bởi builder task-06 khi chạy stack thật với DB loc
 3. Test: unit/render test chứng minh `EmptyState` render với `icon` từ một server component (hoặc test cấu trúc module không có `"use client"`), + kiểm trên stack thật: với DB rỗng (hiện DB local rỗng), `GET /`, `/phim`, `/rap`, `/lich-chieu`, `/ve` trả 200 và hiện trạng thái rỗng (Next dev/prod local; cổng riêng 3300/3301 tránh đụng task khác).
 
 ## Acceptance Criteria
-- [ ] `/` và `/phim` (và các trang liệt kê ở Root cause nếu bị) trả 200 với DB rỗng, có text trạng thái rỗng.
-- [ ] Không còn caller nào truyền function component từ server page vào component client.
-- [ ] lint/typecheck/test web PASS; build web PASS.
+- [x] `/` và `/phim` (và các trang liệt kê ở Root cause nếu bị) trả 200 với DB rỗng, có text trạng thái rỗng.
+- [x] Không còn caller nào truyền function component từ server page vào component client.
+- [x] lint/typecheck/test web PASS; build web PASS.
 
 ## Files to Create/Modify
 - `apps/web/src/components/common/states.tsx` (+ file mới nếu tách)

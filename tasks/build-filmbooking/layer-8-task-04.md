@@ -28,8 +28,8 @@ Integration: huỷ suất 10 đơn paid → affected, email outbox → job gửi
 - [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
 - [x] Tests added + pass
 - [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `apps/api/test/integration/cancel-showtime.int-spec.ts`

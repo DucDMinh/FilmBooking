@@ -39,7 +39,7 @@ Danh sách đầy đủ ở [`.env.example`](.env.example); schema kiểm tra c�
 | `RESEND_API_KEY` | api | không | Gửi email giao dịch (`.env.example` có `RESEND_FROM_EMAIL` nhưng code API hiện không đọc) |
 | `TURNSTILE_SECRET_KEY` | api | cho đăng ký/quên mật khẩu | Thiếu = từ chối (fail-closed); local dùng secret test Cloudflare |
 | `JOB_SECRET` | api | cho `/jobs/*` | Header `x-job-secret`; thiếu = `/jobs/*` luôn 401 |
-| `SENTRY_DSN` (api), `NEXT_PUBLIC_SENTRY_DSN` (web) | api, web | không | <!-- TODO(dispatcher): xác nhận tên biến Sentry + hành vi tắt khi thiếu sau merge task-05/06 --> |
+| `SENTRY_DSN` (api), `NEXT_PUBLIC_SENTRY_DSN` (web) | api, web | không | DSN Sentry (api: `SENTRY_DSN`, web: `NEXT_PUBLIC_SENTRY_DSN`); thiếu = tắt hoàn toàn (không gửi gì). Có DSN: gắn tag `cinema_id`, scrub PII trước khi gửi |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | web | có | |
 | `NEXT_PUBLIC_API_URL` (`API_URL` phía server, tuỳ chọn) | web | có | URL Nest, vd `http://localhost:3001` |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_SITE_URL` | web | không / production | Site key captcha; URL công khai cho canonical/sitemap |
@@ -54,7 +54,7 @@ Danh sách đầy đủ ở [`.env.example`](.env.example); schema kiểm tra c�
 | `pnpm db:test` | pgTAP (`supabase/tests/*.test.sql`) |
 | `pnpm db:migrate` | Apply migration mới lên DB local |
 | `pnpm db:types` | Sinh `packages/shared/src/database.types.ts` |
-| `pnpm e2e` | Playwright e2e (cần web + api + Supabase local đang chạy) <!-- TODO(dispatcher): điền cổng/biến e2e, lighthouserc.json (Lighthouse CI) sau merge task-05/06 --> |
+| `pnpm e2e` | Playwright e2e (cần web + api + Supabase local đang chạy) — tự build + chạy api (cổng `E2E_API_PORT`, mặc định 3101) và web (`E2E_WEB_PORT`, mặc định 3100), đọc khoá Supabase từ `pnpm exec supabase status` (hoặc `E2E_SUPABASE_URL`/`E2E_SUPABASE_ANON_KEY`/`E2E_SUPABASE_SERVICE_ROLE_KEY`/`E2E_SUPABASE_JWT_SECRET`); 2 project desktop-chromium + mobile-360; dữ liệu tiền tố `e2e` tự dọn. Lighthouse CI: `lighthouserc.json` (budget LCP ≤ 2,5s median cho `/`, `/phim`, `/rap` tại `http://127.0.0.1:3200`, chạy trên build production local, cần DB có dữ liệu để số đo có ý nghĩa) |
 | `pnpm format` · `pnpm format:check` | Prettier |
 | `node scripts/check-api-routes.mjs` | Đối chiếu route trong code với `docs/API_SPEC.md` |
 

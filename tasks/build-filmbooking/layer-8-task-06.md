@@ -21,7 +21,7 @@ Sentry web + api (DSN từ env, tắt khi thiếu), tag `cinema_id`, cảnh báo
 
 ## Acceptance Criteria
 - [x] Lỗi thử ở API/web xuất hiện trong Sentry (hoặc transport mock) kèm tag cinema_id; không gửi PII (email/SĐT bị scrub).
-- [x] Lighthouse CI (mobile) trang chủ/phim/rạp: LCP ≤ 2,5s trên build production local (ghi số đo; cold start Render là rủi ro đã chấp nhận).
+- [ ] Lighthouse CI (mobile) trang chủ/phim/rạp: LCP ≤ 2,5s trên build production local (ghi số đo; cold start Render là rủi ro đã chấp nhận). **Một phần:** chỉ đo `/rap` 922ms (và `/dang-nhap` 919ms, ngoài `lighthouserc.json`); `/` và `/phim` chưa đo vì DB local rỗng — xem GAP-031.
 - [x] axe: 0 vi phạm serious/critical cho SeatMap, đăng nhập, xác nhận đơn.
 
 ## DoD (Definition of Done)
