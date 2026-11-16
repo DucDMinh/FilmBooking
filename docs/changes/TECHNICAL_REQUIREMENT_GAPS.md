@@ -31,6 +31,9 @@
 | GAP-025 | R-103 | Tìm mã đặt vé exact ở client | task-05 | Exact match server | open (P3) |
 | GAP-026 | R-106 | Màn cấu hình lệch design | task-07 r2 | UI polish | open (P3) |
 | GAP-027 | spec 3.0.0 | Leftover nhãn `EXCHANGED` trong `order-utils.ts` (đổi suất đã bỏ) | layer-7 phase review | Đã xoá — layer-7 task-10 | resolved |
+| GAP-028 | AC-08 (đăng ký) | Chưa có e2e "đăng ký → xác nhận email Inbucket": Turnstile thật chặn đăng ký qua UI; e2e dùng user tạo qua GoTrue admin `email_confirm` | layer-8 task-05 | Truyền Turnstile test secret "luôn pass" qua env webServer hoặc mock Turnstile; hiện test email chỉ tới outbox (int-test) | open |
+| GAP-029 | R-xx (thanh toán) | `confirm_paid` nhánh lệch tiền: giữ payment `PENDING` nhưng ghi đè `amount` bằng số tiền webhook; chỉ ghi `payment_events` AMOUNT_MISMATCH | layer-8 task-03 review | Không ghi đè `amount` khi lệch; thêm assert payment ở int-test | open |
+| GAP-030 | R-38 (catalog) | `GET /movies` 500 trên DB thật vì thiếu FK `showtimes.cinema_id → cinemas` (test catalog toàn mock nên lọt); `/`, `/phim`, `/lich-chieu` 500 khi rỗng (EmptyState/`getVnDateString` qua ranh giới client) | layer-8 task-06 | Đã sửa: migration `20261114190000` + int-test catalog-public (task-08); bỏ `"use client"` ở states.tsx + `lib/vn-date.ts` (task-09) | resolved |
 
 ## Follow-up kỹ thuật (không phải gap intent)
 
@@ -38,3 +41,8 @@
 - cancelUrl `/xac-nhan`: đơn vẫn `pending_payment` tới webhook/reconcile → nút Thanh toán còn hiện (createPayment huỷ link cũ khi tạo mới — an toàn, cần theo dõi UX).
 - Web: CTA sticky mobile màn 08; màn `/ket-qua` đơn `affected` tiêu đề sai; focus trap overlay QR + soát vé; staff kết quả NOT_FOUND/NOT_PAID hiện token khi quét QR; ngưỡng check-in 30' hardcode ở client.
 - test:int: chưa có dọn dữ liệu của lần chạy bị crash trước `afterAll`.
+- Layer 8 (MINOR từ review, không mở task): pgTAP 090:158-159 xanh giả (23514 do fixture EXCHANGED, không kiểm policy theo rạp; đã phủ ở 031:258); rls-scope mã đặt vé theo runId đảo có xác suất ~1/4096; hold-expiry flake do pg_cron expire giữa backdate và assert (hold-expiry:83,87); env `IT_*` không chặn sàn; gộp helper `api-app.ts` / `app-harness.ts`; cleanup `email_outbox`/`payment_events`/`audit_logs` sót ở int-test task-03; `rate_limit_buckets` do int-test để lại làm pgTAP 032#18 fail (dọn bằng `purge_expired_ops_data()`); pgTAP 062 ca 1 nên thêm `confdeltype='r'`; FK `showtimes_cinema_id_fkey` validate khóa bảng (chấp nhận trên DB demo local).
+- Layer 8 (web): `showtime-schedule.tsx` còn re-export + giữ `formatVnTime`/`isShowtimeOnlineClosed`/`generateNext7Days` trong module client (nên chuyển sang `lib/`); chưa có test chặn server import hàm từ module client; chưa kiểm `/ve`, `/rap/[code]`, `/phim/[slug]`, `/dat-ve/[showtimeId]` với DB rỗng.
+- Layer 8 (test): FakeDb `booking.e2e-spec.ts:643,875` và `orders-report.e2e-spec.ts:611,1163` còn mô phỏng PGRST200 cho embed showtimes→cinemas (không còn đúng schema thật); e2e không nằm trong `pnpm typecheck`, `e2e/support/data.ts` import supabase-js qua `apps/api/node_modules`; `.github/workflows/e2e.yml` chưa chạy thật; e2e `listUsers` chỉ 1 trang; mobile-360 là mô phỏng viewport Chromium.
+- Layer 8 (perf/obs): burst 100 hold cùng lúc p95 ~1,4–2,9s KHÔNG gate (gate p95 ≤ 1s ở ca theo nhịp 20/s theo NFR-02); Lighthouse `/` và `/phim` chưa đo (cần DB có dữ liệu).
+

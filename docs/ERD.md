@@ -92,6 +92,7 @@ Ghi chú thiết kế (G1 & G2 — Layer 3):
 - `20261112150000_cancel_showtimes_hardening`: `cancel_showtimes`/`preview_cancel_showtimes` tính cả đơn `checked_in`, email outbox idempotent. `20261112160000_rbac_cinema_reports_hardening`: `set_cinema_status` chỉ Admin; thêm `has_cinema_manager_scope` cho báo cáo (chỉ Manager/Admin).
 - `20261113170000_resolve_manual_review_rpc`: RPC `resolve_manual_review` chỉ gán `manual_review_resolved_at` (giữ status `needs_manual_review`).
 - `20261114000000_cancel_showtimes_skip_cancelled`: `cancel_showtimes` bỏ qua suất đã `CANCELLED`.
+- `20261114190000_showtimes_cinema_fk` (HIGH_RISK_MIGRATION, chỉ local): thêm FK `showtimes_cinema_id_fkey` `showtimes(cinema_id)` → `cinemas(id)` ON DELETE RESTRICT, ngoài FK ghép `(room_id, cinema_id)` → `rooms`. Cần để PostgREST embed `cinemas!…!inner` từ `showtimes` (trước đó `GET /movies` 500, PGRST200); các embed `movies`/`cinemas` ở catalog chỉ rõ tên FK. Rollback: `alter table showtimes drop constraint showtimes_cinema_id_fkey`.
 - POS đã gỡ (`20261112130000_remove_pos`): 3 bảng `pos_*` bị DROP, không còn trong schema.
 
 ## Relationships
