@@ -9,12 +9,13 @@
 - Acceptance:
   - Topbar admin (desktop + mobile nav) có nút "Đăng xuất"; bấm → hết phiên (cookie auth bị xoá) → về `/dang-nhap`; vào lại `/admin` bị đẩy về đăng nhập.
   - Hành vi tương tự ở `/staff`.
-- Status: ready
+- Status: done (reviewer NORMAL PASS round 1)
 
 ## Repro Verification
 - Original repro: đăng nhập admin@filmbooking.local → vào `/admin` → tìm cách đăng xuất
 - Expected: có nút Đăng xuất
 - Actual before fix: không có; kẹt trong phiên admin
-- Actual after fix:
-- Evidence:
-- Status: PENDING
+- Actual after fix: topbar admin (md+) có nút outline "Đăng xuất" (icon LogOut); menu điều hướng mobile (Sheet) có nút "Đăng xuất" full-width ở chân; header `/staff` có nút "Đăng xuất" (ml-auto). Bấm → disable + nhãn "Đang đăng xuất…" → `signOutAction()` → `router.replace("/dang-nhap")` + `router.refresh()`; lỗi → toast.error, nút dùng lại được. `signOutAction` đã xoá sẵn mọi cookie `sb-*` + `fb-remember` nên không sửa action.
+- Evidence: test đỏ trước fix (`sign-out.test.tsx` không resolve được `@/components/common/sign-out-button`) → xanh sau fix 5/5. Trong `apps/web`: `pnpm lint` sạch, `pnpm typecheck` sạch, `pnpm test` 33 files / 451 tests PASS. Chưa verify thủ công trên trình duyệt (không khởi động web 3000 theo ràng buộc).
+- Files: `components/common/sign-out-button.tsx` (mới), `components/admin/admin-shell.tsx`, `components/admin/admin-sidebar.tsx`, `app/staff/layout.tsx`, `components/admin/__tests__/sign-out.test.tsx` (mới; `shell.test.tsx` có sẵn giữ nguyên). Layout `/staff` là server component nên không có test render riêng; phủ bằng SignOutButton test.
+- Status: PASS

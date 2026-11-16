@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { SignOutButton } from "@/components/common/sign-out-button";
 import { resolveAdminRole } from "@/components/admin/nav-config";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { getServerAccessToken } from "@/lib/supabase/server";
@@ -33,6 +34,7 @@ export default async function StaffLayout({ children }: Readonly<{ children: Rea
       <header className="flex h-14 items-center border-b border-border bg-chrome px-4 md:h-18 md:px-6">
         <span className="text-h3 font-heavy tracking-wide text-brand">CINEMO</span>
         <span className="ml-2 text-body-sm font-heavy tracking-wide text-fg-secondary">/ SOÁT VÉ</span>
+        <SignOutButton variant="outline" size="sm" className="ml-auto" />
       </header>
       {children}
     </div>

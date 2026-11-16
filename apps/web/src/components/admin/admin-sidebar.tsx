@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { SignOutButton } from "@/components/common/sign-out-button";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -102,6 +103,9 @@ export function AdminMobileNav({ items, cinemaId }: Readonly<NavProps>) {
           </SheetHeader>
           <div className="p-3">
             <NavList items={items} cinemaId={cinemaId} onNavigate={() => setOpen(false)} />
+          </div>
+          <div className="border-t border-border p-3">
+            <SignOutButton variant="outline" className="w-full" />
           </div>
         </SheetContent>
       </Sheet>
