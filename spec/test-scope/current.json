@@ -1,9 +1,9 @@
 {
   "specVersion": "3.1.0",
-  "scopeVersion": 18,
-  "generatedAt": "2026-11-16T14:17:37+07:00",
+  "scopeVersion": 19,
+  "generatedAt": "2026-11-16T17:48:43+07:00",
   "trigger": "bug-fix",
-  "workItem": "bug-lich-chieu/phase-1-task-01",
+  "workItem": "bug-phim-detail/phase-1-task-01",
   "specRefs": [
     "R-35",
     "R-37",
@@ -16,21 +16,38 @@
       "apps/web/src/app/(public)/lich-chieu/page.tsx",
       "apps/web/src/components/catalog/schedule-filters.tsx",
       "apps/web/src/components/catalog/showtime-schedule.tsx",
-      "apps/web/src/lib/vn-date.ts"
+      "apps/web/src/lib/vn-date.ts",
+      "apps/web/src/app/(public)/phim/[slug]/page.tsx",
+      "apps/web/src/components/catalog/movie-showtime-schedule.tsx",
+      "apps/web/src/components/catalog/__tests__/movie-showtime-schedule.test.tsx",
+      "apps/web/src/app/(public)/phim/[slug]/__tests__/page.test.tsx"
     ],
     "modules": [
       "web-catalog",
       "web-lich-chieu",
-      "showtime-schedule"
-    ]
+      "showtime-schedule",
+      "web-phim-detail"
+    ],
+    "filesByWorkItem": {
+      "bug-lich-chieu/phase-1-task-01": [
+        "apps/web/src/app/(public)/lich-chieu/page.tsx",
+        "apps/web/src/components/catalog/schedule-filters.tsx",
+        "apps/web/src/components/catalog/showtime-schedule.tsx",
+        "apps/web/src/lib/vn-date.ts"
+      ],
+      "bug-phim-detail/phase-1-task-01": [
+        "apps/web/src/app/(public)/phim/[slug]/page.tsx",
+        "apps/web/src/components/catalog/movie-showtime-schedule.tsx",
+        "apps/web/src/components/catalog/__tests__/movie-showtime-schedule.test.tsx",
+        "apps/web/src/app/(public)/phim/[slug]/__tests__/page.test.tsx"
+      ]
+    }
   },
   "impact": {
     "direct": [
-      "web.lich-chieu.filters — R-35, R-43: đổi Khu vực (tỉnh) / Phim / Rạp ở /lich-chieu → URL đổi (query `province`, `movie`, `cinema`, `date`) và kết quả đổi theo; các tham số còn lại được giữ; đổi tỉnh XOÁ `cinema` (danh sách rạp phụ thuộc tỉnh); bỏ chọn → về 'Tất cả'",
-      "web.lich-chieu.all-movies — R-44, R-43: mặc định (không tham số) hiện MỌI phim đang chiếu có suất trong ngày đã chọn (mỗi phim 1 khối, nguồn /movies/:slug?date=&province=), không còn chỉ phim đầu; phim không có suất trong ngày bị ẩn; không phim nào có suất → 1 EmptyState chung; chọn phim → chỉ phim đó",
-      "web.lich-chieu.by-cinema — R-37, R-43: chọn rạp → xem theo rạp (nguồn /cinemas/:code?date=), lọc thêm theo phim nếu có chọn phim",
-      "web.lich-chieu.date-strip — R-44: dải 7 ngày (hôm nay..+6) dùng chung MỘT lần ở đầu kết quả; bấm ngày → URL `?date=YYYY-MM-DD` đổi, nút ngày đang chọn đổi (aria-pressed), suất tải lại theo ngày; giữ phim/rạp/tỉnh khi đổi ngày",
-      "web.lich-chieu.url-params — tham số URL không hợp lệ KHÔNG gây lỗi 500: `movie`/`cinema`/`province` rỗng, `.`, `..`, `%2e`, `../../x`, chứa khoảng trắng, quá dài, hoặc lặp (?movie=a&movie=b) → coi như chưa chọn; `date` rác / đã qua / ngoài hôm nay..+6 (theo ngày VN) → rơi về hôm nay; payload API sai shape → bỏ khối hoặc EmptyState, trang vẫn 200"
+      "web.phim-detail.date-strip — R-44, R-43: ở /phim/[slug], dải 7 ngày (hôm nay..+6) bấm ngày → URL đổi `?date=YYYY-MM-DD`, nút ngày được chọn đổi (aria-pressed), danh sách suất tải lại theo đúng ngày đó (page gọi API /movies/:slug?date=<ngày>[&province=]; trước fix chỉ hôm nay có suất, 6 ngày còn lại trống). Bấm ngày khi URL ĐÃ có `?date=` vẫn đổi được (trước fix selectedDate không đi kèm onDateChange nên đứng yên). Giữ `?province=` hiện có và giữ neo `#lich-chieu` (không cuộn lên đầu trang, scroll:false)",
+      "web.phim-detail.url-params — R-43: `?date=` rác (`abc`, `2030-01-01`, ngày không tồn tại như 2026-02-30), đã qua / ngoài hôm nay..+6 theo ngày VN, hoặc lặp / dạng mảng (`?date=a&date=b`, `date[]=`) → rơi về hôm nay, trang vẫn HTTP 200 (không 500, không 404); `?date=` hợp lệ hôm nay..+6 → hiển thị đúng ngày đó",
+      "web.phim-detail.server-render — R-46: /phim/[slug] vẫn render phía server (page.tsx là server component, suất của ngày đang chọn có trong HTML ban đầu); chỉ MovieShowtimeSchedule là client component, chỉ gọi router.push; JSON-LD ScreeningEvent lấy theo suất của ngày đang chọn; generateMetadata vẫn gọi API không kèm date"
     ],
     "dependents": [
       "web.showtime-schedule (dùng chung) — prop mới `hideDateStrip` (mặc định false) và `ONE_DAY_MS` dùng chung từ lib/vn-date: ảnh hưởng mọi nơi render ShowtimeSchedule (/lich-chieu, /phim/[slug])",
@@ -52,7 +69,13 @@
       "auth.rbac — R-135: ma trận phân quyền/RLS KHÔNG đổi; customer vào /admin hoặc /staff → /khong-co-quyen (không loop); API /admin, /staff vẫn tự kiểm quyền (fail-open khi /me lỗi chỉ hạ cánh ở trang khách)",
       "web.proxy — header x-pathname do proxy.ts đặt (ghi đè giá trị client gửi) cho guard client của (public) layout",
       "booking.seat-map / hold — R-62: giữ ghế với showtimeId/seatIds non-RFC (ID seed) không còn 400",
-      "admin.cancel-showtime / affected-orders — R-108/R-110: preview/cancel nhận showtimeIds/cinemaId non-RFC; :orderId vẫn chặt .uuid() (orders.id = gen_random_uuid())"
+      "admin.cancel-showtime / affected-orders — R-108/R-110: preview/cancel nhận showtimeIds/cinemaId non-RFC; :orderId vẫn chặt .uuid() (orders.id = gen_random_uuid())",
+      "[v18 bug-lich-chieu, nay là vùng phụ thuộc] web.lich-chieu.filters — R-35, R-43: đổi Khu vực (tỉnh) / Phim / Rạp ở /lich-chieu → URL đổi (query `province`, `movie`, `cinema`, `date`) và kết quả đổi theo; các tham số còn lại được giữ; đổi tỉnh XOÁ `cinema` (danh sách rạp phụ thuộc tỉnh); bỏ chọn → về 'Tất cả'",
+      "[v18 bug-lich-chieu, nay là vùng phụ thuộc] web.lich-chieu.all-movies — R-44, R-43: mặc định (không tham số) hiện MỌI phim đang chiếu có suất trong ngày đã chọn (mỗi phim 1 khối, nguồn /movies/:slug?date=&province=), không còn chỉ phim đầu; phim không có suất trong ngày bị ẩn; không phim nào có suất → 1 EmptyState chung; chọn phim → chỉ phim đó",
+      "[v18 bug-lich-chieu, nay là vùng phụ thuộc] web.lich-chieu.by-cinema — R-37, R-43: chọn rạp → xem theo rạp (nguồn /cinemas/:code?date=), lọc thêm theo phim nếu có chọn phim",
+      "[v18 bug-lich-chieu, nay là vùng phụ thuộc] web.lich-chieu.date-strip — R-44: dải 7 ngày (hôm nay..+6) dùng chung MỘT lần ở đầu kết quả; bấm ngày → URL `?date=YYYY-MM-DD` đổi, nút ngày đang chọn đổi (aria-pressed), suất tải lại theo ngày; giữ phim/rạp/tỉnh khi đổi ngày",
+      "[v18 bug-lich-chieu, nay là vùng phụ thuộc] web.lich-chieu.url-params — tham số URL không hợp lệ KHÔNG gây lỗi 500: `movie`/`cinema`/`province` rỗng, `.`, `..`, `%2e`, `../../x`, chứa khoảng trắng, quá dài, hoặc lặp (?movie=a&movie=b) → coi như chưa chọn; `date` rác / đã qua / ngoài hôm nay..+6 (theo ngày VN) → rơi về hôm nay; payload API sai shape → bỏ khối hoặc EmptyState, trang vẫn 200",
+      "web.showtime-schedule + MovieShowtimeSchedule (bug-phim-detail, scope v19) — /phim/[slug] nay bọc ShowtimeSchedule qua client wrapper MovieShowtimeSchedule (truyền selectedDate + onDateChange → router.push `?date=[&province=]#lich-chieu`, scroll:false); ShowtimeSchedule KHÔNG đổi chữ ký/hành vi, retest cả /phim/[slug] và /lich-chieu"
     ],
     "regression": [
       "/lich-chieu: ma trận lọc — (không lọc), tỉnh, phim, rạp, phim+rạp, tỉnh+phim, tỉnh+rạp, kèm date hôm nay / +3 / +6; sau mỗi bước URL và nội dung khớp; đổi tỉnh khi đang chọn rạp → `cinema` bị xoá",
@@ -61,7 +84,7 @@
       "/lich-chieu responsive: không tràn ngang ở 360/768/1280 px",
       "/phim/[slug] KHÔNG hồi quy: vẫn dùng ShowtimeSchedule với dải ngày đầy đủ (hideDateStrip mặc định false), chọn suất → /dat-ve/<showtimeId> như cũ",
       "Chuyển hướng R-135 trên trang khách (nhân sự mở /lich-chieu → khu vực vai trò) không bị ảnh hưởng",
-      "Nợ ngoài phạm vi (KHÔNG viết test kỳ vọng hành vi đúng): dải ngày ở /phim/[slug] vốn hỏng — API /movies/:slug chỉ trả 1 ngày (không có ?date= → chỉ suất hôm nay), và khi có `?date=` thì `selectedDate` không đi kèm `onDateChange` nên bấm ngày không đổi được. Bug riêng, cần backlog/triage riêng",
+      "[ĐÃ SỬA ở scope v19 / bug-phim-detail — không còn là nợ; test kỳ vọng hành vi đúng, xem impact.direct web.phim-detail.date-strip] Nợ ngoài phạm vi (KHÔNG viết test kỳ vọng hành vi đúng): dải ngày ở /phim/[slug] vốn hỏng — API /movies/:slug chỉ trả 1 ngày (không có ?date= → chỉ suất hôm nay), và khi có `?date=` thì `selectedDate` không đi kèm `onDateChange` nên bấm ngày không đổi được. Bug riêng, cần backlog/triage riêng",
       "Nợ chấp nhận (demo): ScheduleDateNav dùng `new Date()` phía client → lệch ngắn sát nửa đêm VN giữa server/client; không timeout fetch, mỗi phim 1 request (Promise.allSettled)",
       "pos — REMOVED ở spec 2.0.0 (R-111, R-120→R-130, AC-20→AC-23): mọi test POS (API /pos/v1/*, khoá API POS, POS giả lập, đơn kênh POS, đồng bộ web↔POS) chuyển n/a / xoá; KHÔNG viết test mới cho POS",
       "Lưu ý: DB hiện vẫn còn RPC confirm_pos_sale, bảng khoá/nhật ký API POS, nhánh POS trong hold_seats/cancel_showtimes — chờ task code riêng chặn entry point (scope sau sẽ liệt kê files); không test các đối tượng này",
@@ -73,7 +96,19 @@
       "Đăng xuất ở /admin (desktop + mobile) và /staff; đăng xuất/xoá tài khoản khách (R-15, delete-account-dialog dùng cùng signOutAction) không hồi quy",
       "Retest e2e hiện có: chạy `pnpm e2e` (luồng đăng nhập/đặt vé/admin) — tìm kỳ vọng cũ 'admin/staff đăng nhập xong về /' để cập nhật theo R-135",
       "Retest API ID: mọi endpoint nhận id (cinemas/rooms/seats, showtimes, holds, orders, checkin, profile, pricing, cancellation, report) với ID non-RFC và chuỗi rác",
-      "Lưu ý nợ/ngoài phạm vi: cancellation.controller @Param(\"cinemaId\") ở 4 route (~dòng 102,123,165,187) và pricing.controller :id/:showtimeId (~123,134,142,150) chưa có pipe validate id (residual F3, cần triage riêng); identity.ts:57 authenticatedUserId vẫn .uuid() chặt (service bỏ qua giá trị) — không viết test kỳ vọng hai điểm này"
+      "Lưu ý nợ/ngoài phạm vi: cancellation.controller @Param(\"cinemaId\") ở 4 route (~dòng 102,123,165,187) và pricing.controller :id/:showtimeId (~123,134,142,150) chưa có pipe validate id (residual F3, cần triage riêng); identity.ts:57 authenticatedUserId vẫn .uuid() chặt (service bỏ qua giá trị) — không viết test kỳ vọng hai điểm này",
+      "/phim/[slug] (phim đang chiếu có suất, seed: Người Nhện, Doraemon, Hành Tinh Cát: Phần Hai, Mai): mở không tham số → ngày hôm nay được chọn; bấm lần lượt ngày +1..+6 → mỗi ngày URL `?date=` đổi, nút aria-pressed đúng ngày, mỗi ngày có danh sách suất (seed ~11 suất/ngày), ngày không có suất → EmptyState; sau mỗi lần bấm ngày KHÔNG cuộn lên đầu trang, URL giữ `#lich-chieu`",
+      "/phim/[slug]?date=<hôm nay+2> rồi bấm ngày khác → vẫn đổi được (ca selectedDate có sẵn từ URL)",
+      "/phim/[slug]?province=<mã tỉnh hợp lệ>: bấm ngày → URL giữ cả `province` và `date`, kết quả vẫn lọc theo tỉnh",
+      "/phim/[slug] tham số date rác: `?date=abc`, `?date=2030-01-01`, `?date=2026-02-30`, `?date=2026-13-45`, `?date=` (rỗng), `?date=<hôm qua>`, `?date=<hôm nay+7>`, `?date=a&date=b`, `?date[]=x` → HTTP 200, nội dung = hôm nay",
+      "/phim/[slug] chọn suất: bấm một suất còn mở bán → /dat-ve/<showtimeId> như cũ; suất đã đóng bán online hiển thị 'Mua tại quầy' đúng như trước (logic isShowtimeOnlineClosed không đổi)",
+      "/phim/[slug] phim 'sắp chiếu' chưa có suất (R-45): vẫn hiện ngày khởi chiếu, không có nút đặt vé, không lỗi khi có ?date=",
+      "/phim/[slug] slug không tồn tại → 404 như cũ; API lỗi/không kết nối → notFound graceful như cũ",
+      "/phim/[slug] responsive: không tràn ngang ở 360/768/1280 px; dải ngày bấm được trên mobile",
+      "Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng) — D3: `?province=` sai/không tồn tại (kể cả lặp tham số `?province=a&province=b`) vẫn cho 404 vì API /movies/:slug trả lỗi; ngoài phạm vi task, cần triage riêng",
+      "Residual đã biết (nợ chấp nhận, demo): dải 7 ngày ở client dùng `new Date()` (ScheduleDateNav) nên có thể lệch ngắn sát nửa đêm VN giữa server (resolveScheduleDate theo ngày VN) và client — không viết test cố định ở khung giờ 23:xx–00:xx giờ VN",
+      "Residual nhỏ: generateMetadata gọi API không kèm date (thêm 1 lần gọi khi không cache, cache 60s); không có trạng thái loading khi đổi ngày (router.push) — không test",
+      "Lưu ý dữ liệu: ngày hôm nay có thể không có link đặt vé nếu chạy test sau giờ các suất đóng bán online (hiện 'Mua tại quầy') — chọn ngày +1..+6 khi cần assert link /dat-ve/"
     ]
   },
   "acceptance": [
@@ -109,7 +144,12 @@
     "CR admin-ux (R-135) A3: Given nhân sự đã đăng nhập When mở /dang-nhap Then chuyển về khu vực vai trò; Given next=/admin/... hoặc /staff/... hoặc /tai-khoan/... Then tôn trọng; next=//evil.com, https://evil.com, /admin/../phim Then không chuyển ra ngoài / không tới trang khách của nhân sự.",
     "CR admin-ux (R-135) A4: Given customer đăng nhập When mở /admin hoặc /staff Then /khong-co-quyen, không lặp chuyển hướng; Given khách chưa đăng nhập When mở /admin Then /dang-nhap?next=/admin.",
     "CR admin-ux (R-135) A5: Given đang ở /admin (desktop + mobile) hoặc /staff When bấm Đăng xuất Then phiên bị xoá, về /dang-nhap; vào lại /admin bị đẩy về đăng nhập; lỗi đăng xuất → toast, nút dùng lại được.",
-    "CR admin-ux (ID) A6: Given admin When GET /cinemas/20000000-0000-0000-0000-000000000002/rooms và /rooms/<roomId seed>/seats Then 200 có phòng/ghế; GET /showtimes/50000000-0000-0000-0000-000000000001/seatmap Then 200; /cinemas/abc/rooms Then 400 VALIDATION_ERROR."
+    "CR admin-ux (ID) A6: Given admin When GET /cinemas/20000000-0000-0000-0000-000000000002/rooms và /rooms/<roomId seed>/seats Then 200 có phòng/ghế; GET /showtimes/50000000-0000-0000-0000-000000000001/seatmap Then 200; /cinemas/abc/rooms Then 400 VALIDATION_ERROR.",
+    "CR phim-detail A1: Given mở /phim/<slug> của phim đang chiếu When bấm một ngày khác trong dải 7 ngày Then URL đổi `?date=YYYY-MM-DD#lich-chieu`, nút ngày được chọn đổi (aria-pressed), danh sách suất hiển thị đúng suất của ngày đó (không còn chỉ hôm nay có suất); trang không cuộn lên đầu. [R-44, R-43]",
+    "CR phim-detail A2: Given đang ở /phim/<slug>?date=<ngày hợp lệ> When bấm ngày khác Then vẫn đổi ngày được (URL + nút + suất đổi). [R-44]",
+    "CR phim-detail A3: Given đang ở /phim/<slug>?province=<tỉnh hợp lệ> When bấm đổi ngày Then URL giữ cả `province` và `date`, và neo `#lich-chieu`. [R-44, R-43]",
+    "CR phim-detail A4: Given `?date=` rác / ngoài hôm nay..+6 (theo ngày VN) / lặp / dạng mảng When mở /phim/<slug> Then HTTP 200 và hiển thị ngày hôm nay. [R-43]",
+    "CR phim-detail A5: Given /phim/<slug> When tải trang Then nội dung lịch chiếu có trong HTML render phía server (SSR) và vẫn chọn suất → /dat-ve/<showtimeId> như trước. [R-46, R-44]"
   ],
-  "risk": "medium"
+  "risk": "low"
 }

@@ -1,0 +1,1 @@
+Builder summary (bug phim-detail phase-1-task-01): /phim/[slug] dùng resolveScheduleDate + fetch theo ngày; component client mới MovieShowtimeSchedule (router.push ?date=&province= #lich-chieu, scroll:false). Test đỏ -> xanh; lint/typecheck/test/build PASS. Chưa commit, chưa review.

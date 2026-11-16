@@ -473,11 +473,24 @@
         "reportPath": ".context/review-reports/bug-layer34-review-phase-2-task-08-round-1-review.md"
       },
       "updatedAt": "2026-11-13T04:45:00.000Z"
+    },
+    {
+      "id": "phim-detail/phase-1-task-01",
+      "title": "/phim/[slug]: dải 7 ngày chỉ có Hôm nay có suất; có ?date= bấm ngày không đổi",
+      "status": "done",
+      "severity": "high",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "NORMAL",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-phim-detail-phase-1-task-01-round-2-review.md"
+      },
+      "updatedAt": "2026-11-16T10:50:15.166Z"
     }
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-16T07:18:00.108Z",
+  "lastUpdated": "2026-11-16T10:50:15.166Z",
   "inProgressTask": null,
   "completedTasks": [
     {

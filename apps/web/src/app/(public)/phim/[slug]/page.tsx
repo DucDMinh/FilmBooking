@@ -7,8 +7,9 @@ import { apiFetch, ApiError } from "@/lib/api/client";
 import { PUBLIC_CACHE } from "@/lib/api/cache";
 import { buildMovieJsonLd, serializeJsonLd } from "@/lib/seo/movie-jsonld";
 import { BookingStepper } from "@/components/booking/booking-stepper";
-import { ShowtimeSchedule } from "@/components/catalog/showtime-schedule";
+import { MovieShowtimeSchedule } from "@/components/catalog/movie-showtime-schedule";
 import { AgeBadge } from "@/components/common/age-badge";
+import { resolveScheduleDate } from "@/lib/vn-date";
 
 interface MovieScheduleDto {
   movie: MovieDto;
@@ -20,7 +21,7 @@ interface MovieScheduleDto {
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ date?: string; province?: string }>;
+  searchParams: Promise<{ date?: string | string[]; province?: string }>;
 }
 
 async function fetchMovieData(slug: string, date?: string, province?: string): Promise<MovieScheduleDto | null> {
@@ -72,8 +73,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function MovieDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const { date, province } = await searchParams;
+  // API chỉ trả suất của đúng 1 ngày nên luôn truyền ngày đã chuẩn hoá (sai/ngoài 7 ngày/lặp tham số → hôm nay)
+  const activeDate = resolveScheduleDate(typeof date === "string" ? date : undefined);
 
-  const data = await fetchMovieData(slug, date, province);
+  const data = await fetchMovieData(slug, activeDate, province);
   if (!data) {
     notFound();
   }
@@ -220,10 +223,11 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
           {/* Stepper đặt vé bước 1: Chọn suất */}
           <BookingStepper currentStep={1} />
 
-          <ShowtimeSchedule
+          <MovieShowtimeSchedule
             movie={movie}
             schedule={schedule}
-            selectedDate={date}
+            selectedDate={activeDate}
+            province={province}
           />
         </section>
       </article>
