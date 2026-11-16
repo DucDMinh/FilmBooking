@@ -11,7 +11,11 @@ import DeletionPage, { metadata as deletionMeta } from "@/app/(public)/huong-dan
 import { SiteHeader } from "@/components/shell/site-header";
 import { LEGAL_DRAFT_NOTICE } from "@/lib/legal";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/phim" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/phim",
+  // SignOutButton (header khi đã đăng nhập) dùng useRouter.
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn(), push: vi.fn() }),
+}));
 
 import { LEGAL_LINKS, SiteFooter } from "@/components/shell/site-footer";
 
@@ -122,6 +126,14 @@ describe("SiteHeader", () => {
   it("đã đăng nhập: link tài khoản trỏ /tai-khoan", () => {
     render(<SiteHeader user={{ displayName: "An" }} />);
     expect(screen.getByRole("link", { name: "An" })).toHaveAttribute("href", "/tai-khoan");
+  });
+
+  it("đã đăng nhập: header có nút Đăng xuất; chưa đăng nhập thì không", () => {
+    const { unmount } = render(<SiteHeader user={{ displayName: "An" }} />);
+    expect(screen.getByRole("button", { name: "Đăng xuất" })).toBeInTheDocument();
+    unmount();
+    render(<SiteHeader user={null} />);
+    expect(screen.queryByRole("button", { name: "Đăng xuất" })).not.toBeInTheDocument();
   });
 });
 

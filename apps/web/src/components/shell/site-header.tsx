@@ -14,6 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { SignOutButton } from "../common/sign-out-button";
 
 // "Khuyến mãi" ẩn ở MVP (D8).
 export const NAV_ITEMS = [
@@ -68,12 +69,17 @@ export function SiteHeader({ user }: Readonly<{ user?: HeaderUser | null }>) {
 
         <div className="ml-auto flex items-center gap-2">
           {user ? (
+            <>
             <Button asChild variant="secondary" className="hidden md:inline-flex">
               <Link href="/tai-khoan">
                 <User aria-hidden="true" />
                 {user.displayName}
               </Link>
             </Button>
+            <SignOutButton variant="outline" size="sm" className="ml-auto" />
+            </>
+            
+            
           ) : (
             <Button asChild variant="secondary" className="hidden md:inline-flex">
               <Link href="/dang-nhap">Đăng nhập</Link>
