@@ -78,7 +78,7 @@ function cinemaToDto(row: CinemaRow): CinemaDto {
   };
 }
 
-const ADMIN_CINEMA_COLUMNS = `${CINEMA_COLUMNS}, rooms(count)`;
+const ADMIN_CINEMA_COLUMNS = `${CINEMA_COLUMNS}, rooms!rooms_cinema_id_fkey(count)`;
 
 interface AdminCinemaRow extends CinemaRow {
   rooms: { count: number }[] | null;

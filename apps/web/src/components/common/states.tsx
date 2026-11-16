@@ -1,5 +1,6 @@
-"use client";
-
+// Cố ý KHÔNG có "use client": module không dùng hook/handler riêng, nên dùng được cả từ server page
+// lẫn client component. Thêm "use client" sẽ khiến server page truyền `icon={Film}` (function) → lỗi
+// "Functions cannot be passed directly to Client Components" (500 khi danh sách rỗng).
 import { AlertTriangle, Inbox, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 

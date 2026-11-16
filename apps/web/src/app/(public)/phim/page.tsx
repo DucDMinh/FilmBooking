@@ -8,6 +8,7 @@ import { MovieFilters } from "@/components/catalog/movie-filters";
 import { EmptyState } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api/client";
+import { PUBLIC_CACHE } from "@/lib/api/cache";
 import type { MovieDto } from "@filmbooking/shared/schemas/catalog";
 
 export const metadata: Metadata = {
@@ -46,7 +47,7 @@ export default async function MoviesPage(props: MoviesPageProps) {
   if (province) query.set("province", province);
 
   const queryString = query.toString();
-  const movies = await apiFetch<MovieDto[]>(`/movies${queryString ? `?${queryString}` : ""}`).catch(
+  const movies = await apiFetch<MovieDto[]>(`/movies${queryString ? `?${queryString}` : ""}`, PUBLIC_CACHE).catch(
     () => [],
   );
 

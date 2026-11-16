@@ -19,17 +19,17 @@ Integration với PayOS mock + chữ ký HMAC thật: sai chữ ký, lặp webho
 - layer-6-task-02 (Job đối soát PayOS 5' + lịch pg_cron/pg_net gọi Nest /jobs)
 
 ## Acceptance Criteria
-- [ ] AC-09: chữ ký sai → đơn không đổi + log cảnh báo.
-- [ ] AC-10: 3 webhook song song → 1 payment, 1 vé, 1 email.
-- [ ] AC-11: tiền về muộn khi ghế đã bán → needs_manual_review + email khách + hiện cho Admin/Manager.
-- [ ] Webhook lỡ → `/jobs/reconcile` đưa đơn về paid đúng 1 lần.
+- [x] AC-09: chữ ký sai → đơn không đổi + log cảnh báo.
+- [x] AC-10: 3 webhook song song → 1 payment, 1 vé, 1 email.
+- [x] AC-11: tiền về muộn khi ghế đã bán → needs_manual_review + email khách + hiện cho Admin/Manager.
+- [x] Webhook lỡ → `/jobs/reconcile` đưa đơn về paid đúng 1 lần.
 
 ## DoD (Definition of Done)
-- [ ] Code written (chỉ trong scope, đúng Files to Create/Modify)
-- [ ] Tests added + pass
-- [ ] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
-- [ ] Reviewer độc lập PASS
-- [ ] committed (1 task = 1 commit)
+- [x] Code written (chỉ trong scope, đúng Files to Create/Modify)
+- [x] Tests added + pass
+- [x] Check commands pass (theo `.context/project-config.md`: `pnpm -w lint`, `pnpm -w typecheck`, `pnpm -w test`, `pnpm -w build`)
+- [x] Reviewer độc lập PASS
+- [x] committed (1 task = 1 commit)
 
 ## Files to Create/Modify
 - `apps/api/test/integration/payos-webhook.int-spec.ts`

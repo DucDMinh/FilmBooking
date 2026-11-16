@@ -1,4 +1,4 @@
-# ERD — Overview & Pointers
+# ERD (as-built) — Overview & Pointers
 
 > ⚠️ **Không nhúng schema tay ở đây** — sẽ lệch với migration thật.
 > File này là **overview + pointer** tới source of truth.
@@ -52,9 +52,10 @@
 | `payment_events` | Sự kiện webhook/thanh toán idempotent (`UNIQUE(provider, provider_event_id)`, không lưu raw payload) | belongs to `payments`, `orders` | 20261111030100 |
 | `vouchers` | Mã giảm giá (PERCENT / FIXED, phạm vi chuỗi hoặc rạp, giới hạn lượt/ngân sách) | belongs to `cinemas` (nullable) | 20261111030100 |
 | `voucher_redemptions` | Lịch sử áp dụng voucher theo đơn | belongs to `vouchers`, `orders`, `profiles` | 20261111030100 |
-| `affected_order_actions` | Xử lý đơn bị ảnh hưởng khi huỷ suất/đóng rạp (đổi suất / hoàn tiền thủ công bởi Staff/Manager rạp đó) | belongs to `orders`, `cinemas`, `showtimes` | 20261111030100 |
+| `affected_order_actions` | Ghi nhận xử lý đơn bị ảnh hưởng khi huỷ suất/đóng rạp: hoàn tiền thủ công bởi Staff/Manager rạp đó (enum `affected_action` còn giá trị `EXCHANGED` là tàn dư — spec 3.0.0 không còn đổi suất) | belongs to `orders`, `cinemas`, `showtimes` | 20261111030100 |
 | `checkin_logs` | Nhật ký soát vé tại rạp | belongs to `tickets`, `orders`, `showtimes`, `cinemas` | 20261111030100 |
 | `affected_order_cases` | Hồ sơ đơn bị ảnh hưởng khi huỷ suất chiếu hàng loạt (`counter_contact` chỉ còn dead code cho đơn kênh POS cũ — AC-24) | belongs to `orders`, `showtimes`, `cinemas` | 20261111040300 |
+| `identity_link_intents` | Ý định liên kết MXH (dùng 1 lần, TTL 10', `consumed_at`; CHECK provider google/facebook); API ghi qua `POST /me/identities/link-intent`, chỉ `service_role` | belongs to `auth.users` | 20261112170000, 20261113090000 |
 | `oauth_missing_email_requests` | Token một lần xác thực email bổ sung cho đăng nhập Facebook không có email (R-21, #18) | belongs to `profiles` | 20261111040500 |
 
 Views báo cáo MVP (`security_invoker = true`, lọc theo `has_cinema_scope(cinema_id)` / `is_admin()` — `20261111040400`):
@@ -63,7 +64,7 @@ Views báo cáo MVP (`security_invoker = true`, lọc theo `has_cinema_scope(cin
 - `v_report_payos_reconciliation`: đối soát PayOS (lệch tiền `AMOUNT_MISMATCH`, pending quá hạn, `NEEDS_MANUAL_REVIEW`).
 - `v_report_cancelled_showtimes`: thống kê suất bị huỷ & số đơn `affected` / đã đổi / hoàn thủ công (lát MVP của R-119).
 
-Storage buckets: `posters`, `banners` (Admin ghi), `cinema-images` (Admin hoặc Manager đúng thư mục `<cinema_id>/`), `avatars` (thư mục `<uid>/`). Cron: `delete-unconfirmed-users` (mỗi giờ; bỏ qua user Facebook), `purge-expired-ops-data` (dọn `rate_limit_buckets`, `login_attempts` quá hạn). Auth hook & triggers: `public.hook_before_user_created` (chỉ cho `app_metadata.created_via='nest'` hoặc Google/Facebook), `trg_guard_identity_insert` (chặn 1 MXH gắn 2 user R-23; identity OAuth chèn vào user đã tồn tại — có identity hoặc có mật khẩu — chỉ qua khi có link-intent khớp, còn hạn, chưa dùng, rồi đánh dấu `consumed_at`; không có → 23514, chặn auto-merge AC-04/M-05). Bảng `public.identity_link_intents` (`id`, `user_id` → `auth.users` on delete cascade, `provider` CHECK in (`google`,`facebook`), `expires_at` mặc định now()+10 phút, `consumed_at`, `created_at`; index partial `(user_id, provider) where consumed_at is null`; RLS bật, chỉ `service_role`) do API ghi qua `POST /me/identities/link-intent`, `trg_on_identity_change` (enqueue email thông báo liên kết/huỷ liên kết R-24).
+Storage buckets: `posters`, `banners` (Admin ghi), `cinema-images` (Admin hoặc Manager đúng thư mục `<cinema_id>/`), `avatars` (thư mục `<uid>/`). Cron: `expire-overdue-holds` (mỗi phút, gọi `expire_overdue_holds()`), `delete-unconfirmed-users` (mỗi giờ; bỏ qua user Facebook), `purge-expired-ops-data` (dọn `rate_limit_buckets`, `login_attempts` quá hạn). Auth hook & triggers: `public.hook_before_user_created` (chỉ cho `app_metadata.created_via='nest'` hoặc Google/Facebook), `trg_guard_identity_insert` (chặn 1 MXH gắn 2 user R-23; identity OAuth chèn vào user đã tồn tại — có identity hoặc có mật khẩu — chỉ qua khi có link-intent khớp, còn hạn, chưa dùng, rồi đánh dấu `consumed_at`; không có → 23514, chặn auto-merge AC-04/M-05). Bảng `public.identity_link_intents` (`id`, `user_id` → `auth.users` on delete cascade, `provider` CHECK in (`google`,`facebook`), `expires_at` mặc định now()+10 phút, `consumed_at`, `created_at`; index partial `(user_id, provider) where consumed_at is null`; RLS bật, chỉ `service_role`) do API ghi qua `POST /me/identities/link-intent`, `trg_on_identity_change` (enqueue email thông báo liên kết/huỷ liên kết R-24).
 
 Hàm RLS & RPC nghiệp vụ dùng chung:
 - Lõi & Giá (Layer 1–3): `is_admin()`, `has_cinema_role(cinema_id, staff_role[])`, `has_cinema_scope(cinema_id)`, `price_quote(showtime_id, seat_ids[])`, `showtime_has_sales(showtime_id)`.
@@ -79,6 +80,21 @@ Ghi chú thiết kế (G1 & G2 — Layer 3):
 - Nguồn override thời gian dọn phòng theo rạp duy nhất là `cinemas.cleaning_minutes` (fallback `app_settings['default_cleaning_minutes']`); key `default_cleaning_minutes` bị cấm trong `cinema_settings` để tránh 2 nguồn xung đột. Khi đổi `movies.duration_minutes` hoặc `cinemas.cleaning_minutes`, trigger tự tính lại `ends_at` cho các suất tương lai chưa bán vé (nếu gây chồng giờ → raise `23P01`).
 - Policy `showtimes_select` chỉ cho anon/khách thấy suất của phim `PUBLISHED` thuộc rạp `OPEN` (R-33); nhân sự/Admin vẫn thấy theo quyền. Trigger `showtimes_protect_sold` (R-54) chặn sửa giờ/phòng/phim hoặc xoá suất đã có vé/đơn bán.
 
+## Enum chính (đối chiếu migration)
+
+`order_status`: `holding`, `pending_payment`, `paid`, `expired`, `cancelled`, `affected`, `needs_manual_review`, `refunded_manual`, `checked_in`, `exchanged` (`exchanged` là tàn dư, không còn luồng ghi). `payment_status`: PENDING/PAID/CANCELLED/EXPIRED/FAILED. `seat_state`: HELD/SOLD. `showtime_status`: ON_SALE/CLOSED/CANCELLED. `cinema_status`: COMING_SOON/OPEN/TEMP_CLOSED/CLOSED. `order_channel`: WEB/POS (POS tàn dư). `checkin_result`: SUCCESS, WRONG_CINEMA, OUTSIDE_WINDOW, ALREADY_USED, AFFECTED, INVALID.
+
+## Migration muộn (đối chiếu tên file)
+
+- `20261112100000_order_lifecycle_pending_payment`: vòng đời `pending_payment` (hết hạn -> `expired`, tạo đơn mới huỷ đơn holding/pending cũ, unique index một đơn đang giữ mỗi khách).
+- `20261112110000_confirm_paid_hardening`, `20261113160000_confirm_paid_order_code_lookup`: siết `confirm_paid` (chỉ `service_role`); chọn payment theo `order_code`; thêm cột `payments.link_cancelled_at`.
+- `20261112140000_hold_seats_hardening`: thứ tự khoá `showtimes FOR SHARE` -> orders -> payments -> seats -> seat_states.
+- `20261112150000_cancel_showtimes_hardening`: `cancel_showtimes`/`preview_cancel_showtimes` tính cả đơn `checked_in`, email outbox idempotent. `20261112160000_rbac_cinema_reports_hardening`: `set_cinema_status` chỉ Admin; thêm `has_cinema_manager_scope` cho báo cáo (chỉ Manager/Admin).
+- `20261113170000_resolve_manual_review_rpc`: RPC `resolve_manual_review` chỉ gán `manual_review_resolved_at` (giữ status `needs_manual_review`).
+- `20261114000000_cancel_showtimes_skip_cancelled`: `cancel_showtimes` bỏ qua suất đã `CANCELLED`.
+- `20261114190000_showtimes_cinema_fk` (HIGH_RISK_MIGRATION, chỉ local): thêm FK `showtimes_cinema_id_fkey` `showtimes(cinema_id)` → `cinemas(id)` ON DELETE RESTRICT, ngoài FK ghép `(room_id, cinema_id)` → `rooms`. Cần để PostgREST embed `cinemas!…!inner` từ `showtimes` (trước đó `GET /movies` 500, PGRST200); các embed `movies`/`cinemas` ở catalog chỉ rõ tên FK. Rollback: `alter table showtimes drop constraint showtimes_cinema_id_fkey`.
+- POS đã gỡ (`20261112130000_remove_pos`): 3 bảng `pos_*` bị DROP, không còn trong schema.
+
 ## Relationships
 
 ```
@@ -86,10 +102,14 @@ cinemas ──< rooms ──< seats · rooms ──< showtimes >── movies ·
 provinces ──< cinemas ──< staff_assignments >── profiles ── auth.users
 cinemas ──< cinema_settings >── app_settings
 profiles ──< consents · profiles ──< favorite_cinemas >── cinemas · profiles ──< user_roles
+profiles ──< orders ──< order_seats >── seats · orders ──< tickets · orders ──< payments ──< payment_events
+showtimes ──< showtime_seat_states >── seats (UNIQUE showtime+seat) · showtimes ──< seat_status_public
+orders ──< voucher_redemptions >── vouchers · orders ──< affected_order_cases / affected_order_actions
+tickets ──< checkin_logs
 ```
 
 ## Notes (business rules dữ liệu)
 
-- Soft delete? (`deleted_at`) — nếu có, ghi rõ ở đây.
-- Archival / retention policy.
-- Index đặc biệt: mô tả **lý do**; định nghĩa index nằm ở migration/schema.
+- Không dùng soft delete; xoá tài khoản ẩn danh hoá PII (trigger `profiles_scrub_order_pii`), giữ đơn/vé.
+- Retention: cron `purge-expired-ops-data` dọn `rate_limit_buckets`/`login_attempts`; `audit_logs` giữ lâu hơn dữ liệu gốc. Cron khác: `expire-overdue-holds` (mỗi phút), `delete-unconfirmed-users`, `job-send-emails`, `job-reconcile-payos`.
+- Chống bán trùng: `UNIQUE(showtime_id, seat_id)` trên `showtime_seat_states` và `tickets`; exclusion chống chồng suất trong phòng.

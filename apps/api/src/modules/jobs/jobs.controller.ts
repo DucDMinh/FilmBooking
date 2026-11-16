@@ -1,6 +1,7 @@
 import { Controller, HttpCode, HttpStatus, Inject, Injectable, Logger, Optional, Post, Query, UseGuards } from "@nestjs/common";
 import { Public } from "../../common/auth/decorators";
 import { JobSecretGuard } from "../../common/auth/job-secret.guard";
+import { reportAlert } from "../../common/monitoring/sentry";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 import { ENV, type Env } from "../../config/env";
 import { MailService } from "../mail/mail.service";
@@ -249,6 +250,13 @@ export class JobsService {
 
           if (isFinalFailure) {
             failed++;
+            // Không đưa email người nhận / last_error vào event (PII); chỉ kind + id outbox.
+            reportAlert({
+              alert: "email_failed",
+              message: "Email outbox chuyển FAILED",
+              cinemaId: item.cinema_id,
+              extra: { outboxId: item.id, kind: item.kind, attempts: nextAttempts },
+            });
           }
           this.logger.warn(
             `Email outbox id=${item.id} attempt=${nextAttempts}/${MAX_EMAIL_ATTEMPTS} failed: ${errorMsg}`,

@@ -1,6 +1,7 @@
 "use client";
 
 import { Inter } from "next/font/google";
+import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
 import "./globals.css";
@@ -15,6 +16,7 @@ const inter = Inter({
 // Next 16.4 truyền cả `retry` (re-fetch + render lại) lẫn `reset`; docs khuyến nghị `retry`.
 export default function GlobalError({ error, retry }: { error: unknown; retry: () => void }) {
   useEffect(() => {
+    Sentry.captureException(error); // no-op khi chưa init (thiếu DSN)
     console.error(error);
   }, [error]);
 
