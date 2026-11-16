@@ -7,12 +7,17 @@ import { getSupabaseEnv } from "@/lib/supabase/env";
 // /dat-ve/[showtimeId] (chọn ghế) mở cho khách xem sơ đồ; chỉ các màn đơn hàng cần đăng nhập.
 const PROTECTED_PREFIXES = ["/tai-khoan", "/ve", "/dat-ve/don", "/admin", "/staff"];
 
+const PATHNAME_HEADER = "x-pathname";
+
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 export async function proxy(request: NextRequest) {
   const { url, anonKey } = getSupabaseEnv();
+  // Layout (public) cần biết pathname để chuyển nhân sự đi (Server Component không đọc được URL).
+  // Luôn ghi đè để client không giả mạo được; chỉ là gợi ý UX, không dùng cho phân quyền.
+  request.headers.set(PATHNAME_HEADER, request.nextUrl.pathname);
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(url, anonKey, {

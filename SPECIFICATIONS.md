@@ -1,7 +1,7 @@
 ---
-spec_version: 3.0.0
-updated_at: 2026-11-12
-source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + change remove-pos 2026-11-12 (spec/changes/2026-11-12-remove-pos.md) + change remove-showtime-exchange 2026-11-12 (spec/changes/2026-11-12-remove-showtime-exchange.md)
+spec_version: 3.1.0
+updated_at: 2026-11-16
+source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + change remove-pos 2026-11-12 (spec/changes/2026-11-12-remove-pos.md) + change remove-showtime-exchange 2026-11-12 (spec/changes/2026-11-12-remove-showtime-exchange.md) + change admin-ux 2026-11-16 (tasks/bug-admin-ux, user duyệt điều hướng theo vai trò)
 ---
 
 # SPECIFICATIONS.md — Hệ thống Đặt vé Xem phim Online (Chuỗi rạp)
@@ -91,6 +91,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + 
 | R-15 | Quản lý phiên | Trang hồ sơ có chức năng **"Đăng xuất khỏi mọi thiết bị"**. Phiên tồn tại tối đa **30 ngày** nếu chọn "Ghi nhớ đăng nhập", ngược lại **hết khi đóng trình duyệt**; token **tự gia hạn ngầm**. | BR-AUTH-15 (S), BR-AUTH-16 (S) | S | MVP |
 | R-16 | Quay về đúng trang sau đăng nhập | Sau đăng nhập, khách quay lại đúng trang đang thao tác (vd đang chọn ghế → màn chọn ghế của **đúng suất** đó). | BR-AUTH-17 (M) | M | MVP |
 | R-17 | Tài khoản nhân sự không tự đăng ký | Vai trò **Staff / Cinema Manager / Admin** chỉ do **Admin/Manager tạo hoặc nâng quyền**; luồng đăng ký công khai chỉ tạo Customer. | BR-AUTH-18 (M) | M | MVP |
+| R-135 | Điều hướng theo vai trò & đăng xuất của nhân sự | (1) Sau đăng nhập (mật khẩu **và** OAuth): **Admin, Cinema Manager → khu vực quản trị `/admin`**; **Staff → khu vực nhân viên `/staff`** (màn vào là chọn rạp `/staff/chon-rap`); **Customer** giữ nguyên (về trang `next` hoặc trang chủ). (2) Nhân sự (Admin/Manager/Staff) đã đăng nhập mở bất kỳ **trang khách** (trang chủ, phim, rạp, đặt vé…) → **tự chuyển về khu vực của vai trò**, **trừ** trang tài khoản `/tai-khoan/*` (đổi mật khẩu, liên kết, hồ sơ vẫn dùng được). (3) Mở `/dang-nhap` khi đã đăng nhập là nhân sự → chuyển về khu vực vai trò. (4) `next` trỏ vào `/admin*`, `/staff*` hoặc `/tai-khoan*` được **tôn trọng**; `next` trỏ trang khách của nhân sự bị bỏ qua (dùng trang chủ vai trò); chống open-redirect. (5) Tài khoản nhiều vai trò: ưu tiên **Admin > Manager > Staff**. (6) Khu vực `/admin` (thanh trên desktop và menu di động) và `/staff` đều có nút **Đăng xuất**, bấm → xoá phiên → về `/dang-nhap`. (7) Customer vào `/admin`/`/staff` → trang "không có quyền" (không lặp chuyển hướng). Không đổi quyền (ma trận phân quyền, RLS) — chỉ đổi điều hướng. | CR admin-ux 2026-11-16 (user duyệt; mở rộng BR-AUTH-17, BR-AUTH-18; §5.3) | M | MVP |
 
 ### 2. SOCIAL — Đăng nhập & liên kết Google / Facebook (BRD §6.2)
 
@@ -512,8 +513,9 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + 
 | REPORT | BR-RPT-01→R-112 · 02→R-113 · 03→R-114 · 04→R-115 · 05→R-96 · 06→R-116 · 07→R-117 · 08→R-118 · 09→R-119 |
 | POS | BR-POS-01…11 → R-120…R-130: **REMOVED** (spec 2.0.0) · BR-ADM-15 → R-111: **REMOVED** |
 | POLICY | §7.1→R-131, R-132, R-134 · §7.2→R-133 · §7.3→R-132, R-134 |
+| CR admin-ux (2026-11-16) | không có mã BR gốc → R-135 (điều hướng theo vai trò + đăng xuất của nhân sự; liên quan BR-AUTH-17/18, §5.3) |
 
-**Tổng (spec 2.0.0):** 134 mã requirement (R-01…R-134), trong đó **12 REMOVED** (R-111, R-120…R-130) → **122 còn hiệu lực** — **109 MVP** (trong đó 10 gắn phase `[cần xác nhận]`), **13 GĐ2** (trong đó 1 gắn phase `[cần xác nhận]`). Phủ **128/128** mã BR còn hiệu lực (12 mã BR-POS-01…11, BR-ADM-15 REMOVED), **18/18** NFR, **22/22** AC còn hiệu lực (AC-20…AC-23 REMOVED).
+**Tổng (spec 3.1.0):** 135 mã requirement (R-01…R-135), trong đó **12 REMOVED** (R-111, R-120…R-130) → **123 còn hiệu lực** — **110 MVP** (trong đó 10 gắn phase `[cần xác nhận]`), **13 GĐ2** (trong đó 1 gắn phase `[cần xác nhận]`). Phủ **128/128** mã BR còn hiệu lực (12 mã BR-POS-01…11, BR-ADM-15 REMOVED), **18/18** NFR, **22/22** AC còn hiệu lực (AC-20…AC-23 REMOVED).
 
 ## Điểm cần xác nhận
 

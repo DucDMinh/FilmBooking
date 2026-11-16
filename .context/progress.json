@@ -1,6 +1,6 @@
 {
   "mode": "initial-build",
-  "activeWorkItem": "bug/admin-ux",
+  "activeWorkItem": "build/build-filmbooking",
   "features": [
     {
       "id": "remove-pos",
@@ -43,6 +43,19 @@
     }
   ],
   "bugs": [
+    {
+      "id": "admin-ux/phase-1-task-03",
+      "title": "Chuyển hướng theo vai trò: nhân sự đăng nhập về khu vực của họ, không vào trang khách (spec R-135)",
+      "status": "done",
+      "severity": "medium",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/bug-admin-ux-phase-1-task-03-round-1-review.md"
+      },
+      "updatedAt": "2026-11-16T03:18:58.449Z"
+    },
     {
       "id": "admin-ux/phase-1-task-02",
       "title": "Khu vực admin/staff thiếu nút Đăng xuất",
@@ -451,7 +464,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-16T02:58:27.069Z",
+  "lastUpdated": "2026-11-16T03:18:58.450Z",
   "inProgressTask": null,
   "completedTasks": [
     {

@@ -1,14 +1,20 @@
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import type { ReactNode } from "react";
 
+import { StaffAreaGuard } from "@/components/auth/staff-area-guard";
 import { SiteFooter } from "@/components/shell/site-footer";
 import { SiteHeader, type HeaderUser } from "@/components/shell/site-header";
 import { UnverifiedEmailBanner } from "@/components/shell/unverified-email-banner";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { fetchMeOrNull } from "@/lib/auth/load-me";
+import { isStaffAllowedPath, roleHome } from "@/lib/auth/role-home";
+import { createServerSupabase, getServerAccessToken } from "@/lib/supabase/server";
 
 export default async function PublicLayout({ children }: Readonly<{ children: ReactNode }>) {
   let headerUser: HeaderUser | null = null;
   let email: string | null = null;
   let emailConfirmed = true;
+  let staffHome: string | null = null;
 
   try {
     const supabase = await createServerSupabase();
@@ -23,9 +29,19 @@ export default async function PublicLayout({ children }: Readonly<{ children: Re
       headerUser = {
         displayName: name || "Tài khoản",
       };
+      // Chỉ người đã đăng nhập mới tốn thêm 1 lệnh /me; khách không bao giờ gọi.
+      const accessToken = await getServerAccessToken();
+      if (accessToken) staffHome = roleHome(await fetchMeOrNull(accessToken));
     }
   } catch {
     // Phiên không khả dụng hoặc chưa cấu hình biến môi trường
+  }
+
+  // x-pathname do proxy.ts gắn; thiếu thì bỏ qua redirect server (StaffAreaGuard phía client vẫn chặn).
+  // redirect() ném lỗi điều hướng nên phải nằm ngoài try/catch ở trên.
+  if (staffHome) {
+    const pathname = (await headers()).get("x-pathname");
+    if (pathname && !isStaffAllowedPath(pathname)) redirect(staffHome);
   }
 
   return (
@@ -36,6 +52,7 @@ export default async function PublicLayout({ children }: Readonly<{ children: Re
       >
         Bỏ qua tới nội dung chính
       </a>
+      {staffHome ? <StaffAreaGuard home={staffHome} /> : null}
       <SiteHeader user={headerUser} />
       <UnverifiedEmailBanner email={email} emailConfirmed={emailConfirmed} />
       <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6 md:py-8">

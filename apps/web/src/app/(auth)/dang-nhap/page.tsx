@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { LoginForm, type LoginResult } from "@/components/auth/login-form";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import {
@@ -7,7 +8,9 @@ import {
   REMEMBER_MAX_AGE,
   sessionCookieOptions,
 } from "@/lib/supabase/cookie-options";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { fetchMeOrNull } from "@/lib/auth/load-me";
+import { resolvePostLoginTarget, roleHome } from "@/lib/auth/role-home";
+import { createServerSupabase, getServerAccessToken } from "@/lib/supabase/server";
 import type { AuthSessionResponse } from "@filmbooking/shared/schemas/auth";
 
 export const metadata: Metadata = {
@@ -19,8 +22,26 @@ interface PageProps {
   searchParams: Promise<{ next?: string; error?: string }>;
 }
 
+/**
+ * Nhân sự đã đăng nhập mà mở /dang-nhap → đích theo vai trò. Khách / customer / lỗi phiên / lỗi /me → null (hiện form).
+ * Khách chưa đăng nhập không có token nên không tốn lệnh /me.
+ */
+async function staffRedirectTarget(next: string | undefined): Promise<string | null> {
+  try {
+    const accessToken = await getServerAccessToken();
+    if (!accessToken) return null;
+    const me = await fetchMeOrNull(accessToken);
+    return roleHome(me) ? resolvePostLoginTarget({ next, me }) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function LoginPage({ searchParams }: PageProps) {
   const { next, error } = await searchParams;
+
+  const staffTarget = await staffRedirectTarget(next);
+  if (staffTarget) redirect(staffTarget);
 
   async function handleLogin(data: {
     email: string;
@@ -74,7 +95,9 @@ export default async function LoginPage({ searchParams }: PageProps) {
         }
       }
 
-      return { success: true };
+      // /me lỗi → fail-open: về `next`/`/`, layout (public) vẫn chuyển nhân sự đi khi hạ cánh ở trang khách.
+      const me = await fetchMeOrNull(res.accessToken);
+      return { success: true, redirectTo: resolvePostLoginTarget({ next, me }) };
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         return {

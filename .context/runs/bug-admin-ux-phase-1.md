@@ -2,10 +2,10 @@
 
 ```yaml
 workItem: bug/admin-ux
-phaseTask: phase-1-task-01
-step: builder
+phaseTask: phase-1 (task-01..03 done)
+step: done
 agent: builder
-status: running
+status: done
 attempt: 0
 interrupted: false
 updatedAt: 2026-11-16
@@ -30,3 +30,10 @@ batchQueue: [task-01, task-02, task-03]
 - 2026-11-16 ✅ DONE [agent: builder] task-02: SignOutButton dùng chung (components/common/sign-out-button.tsx) gắn vào topbar admin (desktop), Sheet mobile nav, header /staff; test mới components/admin/__tests__/sign-out.test.tsx 5/5; web lint/typecheck sạch, test 451 PASS. Builder lỡ ghi đè shell.test.tsx rồi khôi phục từ HEAD (dispatcher kiểm git diff). Chưa commit.
 - 2026-11-16 ▶ START [agent: reviewer] task-02 round 1 NORMAL running — cancel sẽ rerun.
 - 2026-11-16 ✅ DONE [agent: reviewer] task-02 round 1 NORMAL PASS (report .context/review-reports/bug-admin-ux-phase-1-task-02-round-1-review.md; root pnpm lint/typecheck/test PASS, web 451). MINOR -> Residual: L1 chưa kiểm breakpoint trên trình duyệt thật; L2 signOutAction trả err.message, cookie không xoá nếu signOut ném lỗi (có từ trước); L3 sessionStorage staff.cinemaId không xoá khi đăng xuất; L4 redirect layout + router.replace song song có thể nháy. Close-out task-02: commit (loại shell.test.tsx = chỉ line ending, và apps/web/AGENTS.md). NEXT: task-03.
+- 2026-11-16 ✅ task-02 commit fa2e035. ▶ START [agent: builder] task-03 (chuyển hướng theo vai trò, STRICT) running — cancel sẽ redo (đọc file + git diff trước, không revert).
+- 2026-11-16 ✅ DONE [agent: builder] task-03: role-home.ts/load-me.ts + (public)/layout redirect (header x-pathname từ proxy) + dang-nhap redirectTo + auth/callback + StaffAreaGuard client; STAFF đích /staff/chon-rap (vì /staff không có page); cho nhân sự giữ next vào /tai-khoan*. web lint/typecheck sạch, web test 505 PASS. CHƯA chạy build/e2e/trình duyệt (x-pathname tới Server Component chưa kiểm thật). Chưa commit.
+- 2026-11-16 ▶ START [agent: reviewer] task-03 round 1 STRICT running — cancel sẽ rerun.
+- 2026-11-16 ✅ DONE [agent: reviewer] task-03 round 1 STRICT PASS (report .context/review-reports/bug-admin-ux-phase-1-task-03-round-1-review.md; root lint/typecheck/test/build PASS, web 505). MINOR m1 next=/staff -> 404 (không có page); m2 dang-nhap nuốt ?error= của nhân sự; m3 customer đăng nhập +1 /me mỗi tải cứng; m4 isStaffAllowedPath nhận //host/admin (không khai thác được vì luôn qua sanitizeNext trước); m5 thiếu test /staffing,/admin@evil,%2f; i1 proxy matcher bỏ qua đường dẫn đuôi ảnh -> x-pathname client tự gửi lọt (chỉ ảnh hưởng chính nhân sự, guard client vẫn chặn).
+- 2026-11-16 DISPATCHER KIỂM THẬT (phiên GoTrue thật + web dev 3000): admin/manager.hn01: / /phim /rap /dang-nhap -> 307 /admin, /tai-khoan/bao-mat 200; staff.hn01: -> 307 /staff/chon-rap; customer: / /phim /rap 200, /admin và /staff/chon-rap -> 307 /khong-co-quyen. x-pathname tới Server Component OK. B3 live sau restart API: 5 rạp đều trả rooms (3,4,3,3,3), /seats 200 (phòng 30000000-…0101: 66 ô), seatmap suất Live 50000000-…0001 200.
+- 2026-11-16 ▶ START dispatcher: e2e (pnpm e2e) + [agent: spec-publisher] bug-fix batch admin-ux running — cancel sẽ chạy lại.
+- 2026-11-16 ✅ DONE dispatcher: pnpm e2e 10 passed (3,3 phút). ✅ DONE [agent: spec-publisher]: spec 3.0.0 -> 3.1.0 (R-135), scope v16 -> v17 (trigger bug-fix, risk high), spec/updates/2026-11-16-admin-ux.md, CHANGELOG, decisions.md. Close-out task-03 + spec: progress.json, commit (loại shell.test.tsx, build-filmbooking-layer-8.md, apps/web/AGENTS.md). step: done. Batch admin-ux 3/3 PASS.

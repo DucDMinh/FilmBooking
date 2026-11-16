@@ -13,12 +13,22 @@
   - admin đã đăng nhập gõ `/`, `/phim`, `/dat-ve/<id>` → về `/admin`; gõ `/tai-khoan/bao-mat` → vẫn vào được.
   - customer vào `/admin` → `/khong-co-quyen` (không loop).
   - Test unit cho helper vai trò → đích; test layout redirect; lint/typecheck/test/build PASS.
-- Status: ready (chạy SAU task-02 để khu vực admin đã có nút Đăng xuất)
+- Status: done (reviewer STRICT PASS round 1)
 
 ## Repro Verification
 - Original repro: đăng nhập admin@filmbooking.local qua `/dang-nhap`
 - Expected: vào `/admin`; không vào được trang khách
 - Actual before fix: về `/` (trang khách), vào được mọi trang khách
-- Actual after fix:
-- Evidence:
-- Status: PENDING
+- Actual after fix: đăng nhập (mật khẩu + OAuth callback) và mở `/dang-nhap` khi đã đăng nhập đều đi theo vai trò; nhân sự mở trang `(public)` bị redirect về khu vực của họ (trừ `/tai-khoan/*`); khách không tốn thêm request `/me`.
+- Evidence (unit/integration có mock, chưa chạy e2e/trình duyệt thật):
+  - Đỏ→xanh: `lib/auth/__tests__/role-home.test.ts`, `app/(public)/__tests__/layout.test.tsx` (8 test đỏ trên layout cũ), `app/(auth)/dang-nhap/__tests__/page.test.tsx` (10 đỏ), `app/auth/callback/__tests__/route.test.ts` (6 đỏ), `src/__tests__/proxy.test.ts` (2 đỏ), `components/auth/__tests__/staff-area-guard.test.tsx`, `auth-forms.test.tsx` (+1 test redirectTo).
+  - `pnpm lint` PASS, `pnpm typecheck` PASS, `pnpm --filter @filmbooking/web test` 39 files / 505 tests PASS. `pnpm build`: bỏ qua (web dev đang chạy, tránh đụng `.next`).
+- Bảng tài khoản demo → đích (mật khẩu / OAuth, không `next`):
+
+  | Tài khoản | Vai trò (`resolveAdminRole`) | Sau đăng nhập | Mở `/`, `/phim`, `/dat-ve/<id>` | Mở `/tai-khoan/*` |
+  |---|---|---|---|---|
+  | admin@filmbooking.local | ADMIN | `/admin` | → `/admin` | ở lại |
+  | manager.hn01@filmbooking.local | MANAGER | `/admin` | → `/admin` | ở lại |
+  | staff.hn01@filmbooking.local | STAFF | `/staff/chon-rap` (không phải `/staff`: route này không có page, sẽ 404) | → `/staff/chon-rap` | ở lại |
+  | customer@filmbooking.local | CUSTOMER | `next` hoặc `/` (như cũ) | bình thường | bình thường |
+- Status: PASS (reviewer STRICT PASS; dispatcher: kiểm thật 307 theo vai trò + pnpm e2e 10/10)

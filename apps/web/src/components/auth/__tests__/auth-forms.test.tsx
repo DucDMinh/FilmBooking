@@ -180,6 +180,31 @@ describe("LoginForm", () => {
     });
   });
 
+  it("ưu tiên redirectTo do server tính theo vai trò, vẫn lọc open-redirect", async () => {
+    const user = userEvent.setup();
+    const originalLocation = window.location;
+    const mockLocation = { ...originalLocation, href: "" };
+    Object.defineProperty(window, "location", { writable: true, value: mockLocation });
+
+    const mockLogin = vi.fn().mockResolvedValue({ success: true, redirectTo: "/admin" });
+    render(<LoginForm next="/ve" onLogin={mockLogin} />);
+    await user.type(screen.getByLabelText("Email"), "admin@test.vn");
+    await user.type(screen.getByLabelText("Mật khẩu"), "ValidPassword123");
+    await user.click(screen.getByRole("button", { name: "Đăng nhập" }));
+    await waitFor(() => expect(mockLocation.href).toBe("/admin"));
+
+    cleanup();
+    mockLocation.href = "";
+    mockLogin.mockResolvedValue({ success: true, redirectTo: "//evil.com" });
+    render(<LoginForm next="/ve" onLogin={mockLogin} />);
+    await user.type(screen.getByLabelText("Email"), "admin@test.vn");
+    await user.type(screen.getByLabelText("Mật khẩu"), "ValidPassword123");
+    await user.click(screen.getByRole("button", { name: "Đăng nhập" }));
+    await waitFor(() => expect(mockLocation.href).toBe("/ve"));
+
+    Object.defineProperty(window, "location", { writable: true, value: originalLocation });
+  });
+
   it("đăng nhập thành công gọi onLogin và điều hướng an toàn", async () => {
     const user = userEvent.setup();
     const mockLogin = vi.fn().mockResolvedValue({ success: true });

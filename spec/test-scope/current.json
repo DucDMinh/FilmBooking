@@ -1,9 +1,9 @@
 {
-  "specVersion": "3.0.0",
-  "scopeVersion": 16,
-  "generatedAt": "2026-11-13T20:20:00+07:00",
+  "specVersion": "3.1.0",
+  "scopeVersion": 17,
+  "generatedAt": "2026-11-16T12:00:00+07:00",
   "trigger": "bug-fix",
-  "workItem": "bug-layer5-review/phase-4-task-12",
+  "workItem": "bug-admin-ux/phase-1-task-01..03",
   "specRefs": [
     "R-01",
     "R-02",
@@ -126,43 +126,53 @@
     "R-131",
     "R-132",
     "R-133",
-    "R-134"
+    "R-134",
+    "R-135"
   ],
   "changed": {
-    "files": [],
+    "files": [
+      "packages/shared/src/schemas/cinema-ops.ts",
+      "packages/shared/src/schemas/admin.ts",
+      "packages/shared/src/schemas/checkin.ts",
+      "packages/shared/src/schemas/profile.ts",
+      "packages/shared/src/schemas/orders.ts",
+      "packages/shared/src/schemas/report.ts",
+      "packages/shared/src/schemas/booking.ts",
+      "packages/shared/src/schemas/cancellation.ts",
+      "packages/shared/src/schemas/pricing.ts",
+      "apps/api/src/cancellation/cancellation.controller.ts",
+      "apps/web/src/components/common/sign-out-button.tsx",
+      "apps/web/src/components/admin/admin-shell.tsx",
+      "apps/web/src/components/admin/admin-sidebar.tsx",
+      "apps/web/src/app/staff/layout.tsx",
+      "apps/web/src/lib/auth/role-home.ts",
+      "apps/web/src/lib/auth/load-me.ts",
+      "apps/web/src/components/auth/staff-area-guard.tsx",
+      "apps/web/src/components/auth/login-form.tsx",
+      "apps/web/src/app/(auth)/dang-nhap/page.tsx",
+      "apps/web/src/app/(public)/layout.tsx",
+      "apps/web/src/app/auth/callback/route.ts",
+      "apps/web/src/proxy.ts"
+    ],
     "modules": [
       "auth",
-      "social",
-      "profile",
-      "chain",
-      "movie",
+      "admin",
+      "checkin",
       "cinema",
       "booking",
-      "payment",
-      "ticket",
-      "promo",
-      "checkin",
-      "admin",
+      "profile",
       "report",
-      "policy"
+      "policy",
+      "web-shell"
     ]
   },
   "impact": {
     "direct": [
-      "auth",
-      "social",
-      "profile",
-      "chain",
-      "movie",
-      "cinema",
-      "booking",
-      "payment",
-      "ticket",
-      "promo",
-      "checkin",
-      "admin",
-      "report",
-      "policy"
+      "auth.role-redirect — R-135: sau đăng nhập (mật khẩu + OAuth callback) ADMIN/MANAGER → /admin, STAFF → /staff/chon-rap, CUSTOMER → next hoặc /; nhiều vai trò ưu tiên ADMIN > MANAGER > STAFF",
+      "web.public-layout — R-135: nhân sự (ADMIN/MANAGER/STAFF) mở /, /phim, /rap, /dat-ve/... → chuyển về khu vực vai trò; /tai-khoan/* vẫn vào được",
+      "auth.login-page — R-135: /dang-nhap khi đã đăng nhập là nhân sự → khu vực vai trò; next vào /admin*, /staff*, /tai-khoan* được tôn trọng; next trang khách của nhân sự bị bỏ qua; chống open-redirect (//evil, https://evil, /\\evil, /admin/../phim)",
+      "admin.shell + staff.layout — R-135: nút Đăng xuất (topbar desktop, Sheet mobile, header /staff) → xoá phiên → /dang-nhap; vào lại /admin bị đẩy về đăng nhập",
+      "api.id-validation — z.uuid() → z.guid(): GET /cinemas/:id/rooms, /cinemas/:id/rooms/:roomId/seats, GET /showtimes/:id/seatmap, POST /bookings/holds, cancellation preview/cancel, pricing quote/rule, filter id ở admin/checkin/profile/orders/report nhận ID seed non-RFC (vd 20000000-…, 30000000-…, 50000000-…) → 200 thay vì 400; chuỗi rác `abc` vẫn 400"
     ],
     "dependents": [
       "cinema.seat-lock — R-55: ghế khoá không bán được trên web (bỏ vế POS)",
@@ -177,14 +187,24 @@
       "mail.cancel-showtime — R-109 + AC-24 (spec 3.0.0): email huỷ suất hướng dẫn khách liên hệ CSKH (hotline rạp; rạp chưa cấu hình → tổng đài mặc định 1900 0000) để hoàn tiền thủ công",
       "order.lifecycle — bảng chuyển trạng thái (spec 3.0.0): từ `affected` chỉ còn sang `refunded_manual`; trạng thái cuối: checked_in, refunded_manual, needs_manual_review, paid (suất kết thúc), cancelled",
       "report.cancelled-showtimes — R-119 (spec 3.0.0): số đơn ảnh hưởng, số đã hoàn tiền, tổng tiền hoàn thủ công",
-      "policy.exception — R-134 (spec 3.0.0): rạp huỷ suất → khách liên hệ CSKH để hoàn tiền thủ công"
+      "policy.exception — R-134 (spec 3.0.0): rạp huỷ suất → khách liên hệ CSKH để hoàn tiền thủ công",
+      "auth.rbac — R-135: ma trận phân quyền/RLS KHÔNG đổi; customer vào /admin hoặc /staff → /khong-co-quyen (không loop); API /admin, /staff vẫn tự kiểm quyền (fail-open khi /me lỗi chỉ hạ cánh ở trang khách)",
+      "web.proxy — header x-pathname do proxy.ts đặt (ghi đè giá trị client gửi) cho guard client của (public) layout",
+      "booking.seat-map / hold — R-62: giữ ghế với showtimeId/seatIds non-RFC (ID seed) không còn 400",
+      "admin.cancel-showtime / affected-orders — R-108/R-110: preview/cancel nhận showtimeIds/cinemaId non-RFC; :orderId vẫn chặt .uuid() (orders.id = gen_random_uuid())"
     ],
     "regression": [
       "pos — REMOVED ở spec 2.0.0 (R-111, R-120→R-130, AC-20→AC-23): mọi test POS (API /pos/v1/*, khoá API POS, POS giả lập, đơn kênh POS, đồng bộ web↔POS) chuyển n/a / xoá; KHÔNG viết test mới cho POS",
       "Lưu ý: DB hiện vẫn còn RPC confirm_pos_sale, bảng khoá/nhật ký API POS, nhánh POS trong hold_seats/cancel_showtimes — chờ task code riêng chặn entry point (scope sau sẽ liệt kê files); không test các đối tượng này",
       "Retest nhánh web sau khi task code chặn entry POS: booking.hold_seats, admin.cancel_showtimes, payment.confirm_paid (+ expire pending_payment)",
       "Spec 3.0.0 (CR remove-showtime-exchange): test case cũ kiểm tra phương án xử lý thứ hai cho đơn `affected` (ngoài hoàn tiền thủ công) chuyển n/a / xoá; KHÔNG viết test mới cho phương án đó",
-      "Lưu ý nợ kỹ thuật: DB as-built còn một giá trị enum trạng thái đơn không dùng nữa (không có trong spec 3.0.0) — API/Web không cung cấp thao tác tới trạng thái đó; không test đường đi này, chỉ assert API từ chối giá trị ngoài `refunded_manual`"
+      "Lưu ý nợ kỹ thuật: DB as-built còn một giá trị enum trạng thái đơn không dùng nữa (không có trong spec 3.0.0) — API/Web không cung cấp thao tác tới trạng thái đó; không test đường đi này, chỉ assert API từ chối giá trị ngoài `refunded_manual`",
+      "Đăng nhập từng vai trò (mật khẩu + OAuth Google/Facebook): admin@, manager.hn01@, staff.hn01@, customer@filmbooking.local → đích đúng (/admin, /admin, /staff/chon-rap, /)",
+      "Customer: R-16 quay về đúng trang/suất sau đăng nhập, đặt vé web bình thường (không bị chuyển hướng); trang khách không phát sinh redirect cho khách vãng lai",
+      "Đăng xuất ở /admin (desktop + mobile) và /staff; đăng xuất/xoá tài khoản khách (R-15, delete-account-dialog dùng cùng signOutAction) không hồi quy",
+      "Retest e2e hiện có: chạy `pnpm e2e` (luồng đăng nhập/đặt vé/admin) — tìm kỳ vọng cũ 'admin/staff đăng nhập xong về /' để cập nhật theo R-135",
+      "Retest API ID: mọi endpoint nhận id (cinemas/rooms/seats, showtimes, holds, orders, checkin, profile, pricing, cancellation, report) với ID non-RFC và chuỗi rác",
+      "Lưu ý nợ/ngoài phạm vi: cancellation.controller @Param(\"cinemaId\") ở 4 route (~dòng 102,123,165,187) và pricing.controller :id/:showtimeId (~123,134,142,150) chưa có pipe validate id (residual F3, cần triage riêng); identity.ts:57 authenticatedUserId vẫn .uuid() chặt (service bỏ qua giá trị) — không viết test kỳ vọng hai điểm này"
     ]
   },
   "acceptance": [
@@ -209,7 +229,13 @@
     "AC-19: Given Admin tạo rạp mới, phòng, sơ đồ ghế, suất qua quản trị Then rạp mới xuất hiện ở danh sách rạp và bán vé được ngay, không deploy. [nguồn BR-CHN-07; R-38; phase MVP]",
     "AC-24: Given suất có 10 đơn `paid` When Manager huỷ suất Then suất ngừng bán trên web; 10 đơn `affected`; vé không check-in được; 10 email gửi kèm hướng dẫn liên hệ CSKH để hoàn tiền; trạng thái gửi hiển thị trên màn Đơn bị ảnh hưởng. [nguồn BR-ADM-12/13; R-108, R-109, R-110; phase MVP]",
     "AC-25: Given một đơn `affected` When ghi nhận \"Đã hoàn tiền thủ công\" thiếu số tiền hoặc mã giao dịch ngân hàng Then chặn lưu; nhập đủ → đơn `refunded_manual` và xuất hiện trong báo cáo suất bị huỷ. [nguồn BR-ADM-14; R-110, R-119; phase MVP [cần xác nhận]]",
-    "AC-26: Given rạp HN03 còn 3 suất tương lai đã bán vé When Admin chuyển rạp sang \"Tạm đóng\" Then hệ thống yêu cầu huỷ hàng loạt 3 suất (kèm email) trước khi cho đổi trạng thái. [nguồn BR-CHN-02; R-33, R-108; phase MVP]"
+    "AC-26: Given rạp HN03 còn 3 suất tương lai đã bán vé When Admin chuyển rạp sang \"Tạm đóng\" Then hệ thống yêu cầu huỷ hàng loạt 3 suất (kèm email) trước khi cho đổi trạng thái. [nguồn BR-CHN-02; R-33, R-108; phase MVP]",
+    "CR admin-ux (R-135) A1: Given admin@filmbooking.local / manager.hn01@ When đăng nhập mật khẩu Then vào /admin; staff.hn01@ → /staff/chon-rap; customer@ → / (hoặc next). Cùng kết quả với OAuth callback.",
+    "CR admin-ux (R-135) A2: Given nhân sự đã đăng nhập When mở /, /phim, /rap, /dat-ve/<id> Then chuyển (307) về /admin (admin/manager) hoặc /staff/chon-rap (staff); mở /tai-khoan/bao-mat Then vào được, không chuyển hướng.",
+    "CR admin-ux (R-135) A3: Given nhân sự đã đăng nhập When mở /dang-nhap Then chuyển về khu vực vai trò; Given next=/admin/... hoặc /staff/... hoặc /tai-khoan/... Then tôn trọng; next=//evil.com, https://evil.com, /admin/../phim Then không chuyển ra ngoài / không tới trang khách của nhân sự.",
+    "CR admin-ux (R-135) A4: Given customer đăng nhập When mở /admin hoặc /staff Then /khong-co-quyen, không lặp chuyển hướng; Given khách chưa đăng nhập When mở /admin Then /dang-nhap?next=/admin.",
+    "CR admin-ux (R-135) A5: Given đang ở /admin (desktop + mobile) hoặc /staff When bấm Đăng xuất Then phiên bị xoá, về /dang-nhap; vào lại /admin bị đẩy về đăng nhập; lỗi đăng xuất → toast, nút dùng lại được.",
+    "CR admin-ux (ID) A6: Given admin When GET /cinemas/20000000-0000-0000-0000-000000000002/rooms và /rooms/<roomId seed>/seats Then 200 có phòng/ghế; GET /showtimes/50000000-0000-0000-0000-000000000001/seatmap Then 200; /cinemas/abc/rooms Then 400 VALIDATION_ERROR."
   ],
   "risk": "high"
 }

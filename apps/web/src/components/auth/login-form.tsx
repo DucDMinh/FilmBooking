@@ -16,6 +16,8 @@ import { TurnstileField } from "./turnstile-field";
 
 export interface LoginResult {
   success: boolean;
+  /** Đích sau đăng nhập do server tính theo vai trò; thiếu thì dùng `next`/`/`. */
+  redirectTo?: string;
   error?: {
     code: string;
     message: string;
@@ -122,7 +124,7 @@ export function LoginForm({ next, initialError, onLogin, turnstileRef }: Readonl
       });
 
       if (res.success) {
-        window.location.href = safeNext;
+        window.location.href = sanitizeNext(res.redirectTo) ?? safeNext;
         return;
       }
 

@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { fetchMeOrNull } from "@/lib/auth/load-me";
+import { resolvePostLoginTarget } from "@/lib/auth/role-home";
 import { sanitizeNext } from "@/lib/auth/safe-next";
 import { createServerSupabase } from "@/lib/supabase/server";
 
@@ -130,9 +132,12 @@ export async function GET(request: NextRequest) {
   // Nếu có code thì trao đổi code lấy session:
   if (code) {
     const supabase = await createServerSupabase();
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     if (!exchangeError) {
-      return NextResponse.redirect(new URL(next, request.url));
+      // Nhân sự về khu vực của vai trò; /me lỗi hoặc thiếu token → fail-open về `next` (layout (public) vẫn chuyển đi).
+      const accessToken = data.session?.access_token;
+      const me = accessToken ? await fetchMeOrNull(accessToken) : null;
+      return NextResponse.redirect(new URL(resolvePostLoginTarget({ next, me }), request.url));
     }
     const category = classifyOAuthError(null, null, null, exchangeError);
     return buildRedirectForError(category, next, request.url);
