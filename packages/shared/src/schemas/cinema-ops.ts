@@ -4,7 +4,7 @@ import { vnLocalToUtc } from "../time";
 
 /** DTO vận hành rạp (phòng, sơ đồ ghế, suất chiếu, khoá ghế, cấu hình rạp) — R-47..R-51, R-55, R-56. */
 
-export const uuidSchema = z.uuid();
+export const uuidSchema = z.guid();
 
 export const ROOM_STATUS_VALUES = ["ACTIVE", "MAINTENANCE"] as const;
 export const SHOWTIME_STATUS_VALUES = ["ON_SALE", "CLOSED", "CANCELLED"] as const;

@@ -5,7 +5,7 @@ import { z } from "zod";
  * (R-17, R-39, R-90, R-105, R-106, R-107, AC-16). Khớp migration core_identity_chain + booking_tables.
  */
 
-const uuidSchema = z.uuid();
+const uuidSchema = z.guid();
 
 // ── Người dùng & gán rạp ───────────────────────────────────────────────────
 export const STAFF_ASSIGNMENT_ROLES = ["STAFF", "MANAGER"] as const;

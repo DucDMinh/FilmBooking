@@ -45,6 +45,8 @@ interface HeaderSender {
 }
 
 const uuidParam = new ZodValidationPipe(z.string().uuid());
+/** ID rạp seed (20000000-…) không đúng version/variant RFC -> dùng GUID lỏng như các endpoint cinema khác. */
+const cinemaIdParam = new ZodValidationPipe(z.guid());
 
 /**
  * Pipe validate schema cho hoàn tiền thủ công:
@@ -131,7 +133,7 @@ export class CancellationController {
   @Roles("ADMIN")
   @Patch(["admin/cinemas/:cinemaId/status", "cinemas/:cinemaId/status"])
   async setStatusPatch(
-    @Param("cinemaId", uuidParam) cinemaId: string,
+    @Param("cinemaId", cinemaIdParam) cinemaId: string,
     @Body(new ZodValidationPipe(setCinemaStatusSchema)) body: SetCinemaStatusInput,
   ): Promise<{ success: boolean; cinemaId: string; status: string }> {
     return this.service.setCinemaStatus(cinemaId, body);
@@ -140,7 +142,7 @@ export class CancellationController {
   @Roles("ADMIN")
   @Post(["admin/cinemas/:cinemaId/status", "cinemas/:cinemaId/status"])
   async setStatusPost(
-    @Param("cinemaId", uuidParam) cinemaId: string,
+    @Param("cinemaId", cinemaIdParam) cinemaId: string,
     @Body(new ZodValidationPipe(setCinemaStatusSchema)) body: SetCinemaStatusInput,
   ): Promise<{ success: boolean; cinemaId: string; status: string }> {
     return this.service.setCinemaStatus(cinemaId, body);

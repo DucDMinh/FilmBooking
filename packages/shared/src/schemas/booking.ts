@@ -4,7 +4,8 @@ import { z } from "zod";
  * Schemas & DTOs cho API booking: sơ đồ ghế, giữ/nhả ghế, đơn hàng, tóm tắt, đồng ý điều khoản, voucher (R-05, R-59..R-71, R-94, R-95, R-131, R-133).
  */
 
-export const uuidSchema = z.string().uuid("Invalid UUID");
+/** GUID lỏng: ID đặt tay trong seed (suất demo 50000000-…, rạp, phòng…) không đúng version/variant RFC. */
+export const uuidSchema = z.guid("Invalid UUID");
 
 // ── Giữ ghế ─────────────────────────────────────────────────────────────
 export const holdSeatsSchema = z.object({

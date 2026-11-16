@@ -46,9 +46,9 @@ export type AvatarUploadInput = z.infer<typeof avatarUploadSchema>;
 export const updatePreferencesSchema = z.strictObject({ marketingOptIn: z.boolean() });
 export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 
-export const cinemaIdParamSchema = z.uuid();
+export const cinemaIdParamSchema = z.guid();
 
-export const updateProvinceSchema = z.strictObject({ provinceId: z.uuid().nullable() });
+export const updateProvinceSchema = z.strictObject({ provinceId: z.guid().nullable() });
 export type UpdateProvinceInput = z.infer<typeof updateProvinceSchema>;
 
 /**

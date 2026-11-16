@@ -51,8 +51,8 @@ export const priceAmountSchema = z
 export const createPriceRuleSchema = z
   .object({
     scope: priceScopeSchema,
-    cinemaId: z.string().uuid("Invalid cinema UUID").nullable().optional(),
-    showtimeId: z.string().uuid("Invalid showtime UUID").nullable().optional(),
+    cinemaId: z.guid("Invalid cinema UUID").nullable().optional(),
+    showtimeId: z.guid("Invalid showtime UUID").nullable().optional(),
     seatType: seatPricingTypeSchema,
     format: screenFormatPricingSchema.nullable().optional(),
     dayType: priceDayTypeSchema.nullable().optional(),
@@ -172,8 +172,8 @@ export type UpdatePriceRuleInput = z.infer<typeof updatePriceRuleSchema>;
 
 export const listPriceRulesQuerySchema = z.object({
   scope: priceScopeSchema.optional(),
-  cinemaId: z.string().uuid().optional(),
-  showtimeId: z.string().uuid().optional(),
+  cinemaId: z.guid().optional(),
+  showtimeId: z.guid().optional(),
 });
 export type ListPriceRulesQuery = z.infer<typeof listPriceRulesQuerySchema>;
 
@@ -193,7 +193,7 @@ export interface PriceRuleDto {
 
 // ── Báo giá suất chiếu & ghế ────────────────────────────────────────────────
 export const quoteSeatsBodySchema = z.object({
-  seatIds: z.array(z.string().uuid()).min(1, "At least one seat is required"),
+  seatIds: z.array(z.guid()).min(1, "At least one seat is required"),
 });
 export type QuoteSeatsBody = z.infer<typeof quoteSeatsBodySchema>;
 

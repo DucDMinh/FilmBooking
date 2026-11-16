@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ORDER_STATUSES, type OrderStatus } from "../enums";
 
-export const uuidSchema = z.string().uuid("UUID không hợp lệ");
+export const uuidSchema = z.guid("UUID không hợp lệ");
 
 // ── Search Orders ────────────────────────────────────────────────────────────
 export const searchOrdersQuerySchema = z.object({

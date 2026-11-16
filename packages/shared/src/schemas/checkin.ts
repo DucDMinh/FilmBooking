@@ -9,7 +9,7 @@ const MAX_CODE_LENGTH = 200;
 /** Đúng MỘT trong `token` (QR) hoặc `bookingCode` (nhập tay); nhân viên chỉ định rạp đang làm việc. */
 export const scanTicketSchema = z
   .object({
-    cinemaId: z.uuid(),
+    cinemaId: z.guid(),
     token: z.string().trim().min(1).max(MAX_CODE_LENGTH).optional(),
     bookingCode: z.string().trim().min(1).max(MAX_CODE_LENGTH).optional(),
   })

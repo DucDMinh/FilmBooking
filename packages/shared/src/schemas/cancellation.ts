@@ -7,7 +7,7 @@ import { cinemaStatusSchema } from "./catalog";
  * không có giá trị `exchanged` ở bất kỳ DTO nào.
  */
 
-const uuid = z.string().uuid();
+const uuid = z.guid();
 const MAX_CANCEL_SHOWTIMES = 500;
 const MAX_REASON_LENGTH = 500;
 const MAX_REFUND_REFERENCE_LENGTH = 100;

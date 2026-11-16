@@ -1,6 +1,6 @@
 {
   "mode": "initial-build",
-  "activeWorkItem": "build/build-filmbooking",
+  "activeWorkItem": "bug/admin-ux",
   "features": [
     {
       "id": "remove-pos",
@@ -43,6 +43,19 @@
     }
   ],
   "bugs": [
+    {
+      "id": "admin-ux/phase-1-task-01",
+      "title": "API từ chối ID không đúng chuẩn RFC (z.uuid -> z.guid): danh sách phòng, sơ đồ ghế, seatmap/hold suất demo",
+      "status": "done",
+      "severity": "high",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-admin-ux-phase-1-task-01-round-2-review.md"
+      },
+      "updatedAt": "2026-11-16T02:50:48.329Z"
+    },
     {
       "id": "layer5-review/phase-4-task-12",
       "title": "Progress Schema, Tooling & Layer Tag Remediation",
@@ -425,7 +438,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-16T00:45:22.127Z",
+  "lastUpdated": "2026-11-16T02:50:48.330Z",
   "inProgressTask": null,
   "completedTasks": [
     {
