@@ -36,3 +36,23 @@ export function assertLocalDbUrl(rawUrl) {
 export function sanitizedPsqlEnv(env) {
   return Object.fromEntries(Object.entries(env).filter(([key]) => !key.toUpperCase().startsWith('PG')));
 }
+
+/** Trả về origin (http/https) nếu URL API là loopback; ném Error nếu không. Dùng cho seed gọi REST/GoTrue local. */
+export function assertLocalHttpUrl(rawUrl) {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error('SEED_API_URL không hợp lệ.');
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error(`Từ chối seed demo: giao thức API "${url.protocol}" không được hỗ trợ.`);
+  }
+  if (url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== '') {
+    throw new Error('Từ chối seed demo: SEED_API_URL không được chứa userinfo, query string hoặc fragment.');
+  }
+  if (!LOCAL_HOSTS.has(url.hostname)) {
+    throw new Error(`Từ chối seed demo: host API "${url.hostname}" không phải local (127.0.0.1/localhost).`);
+  }
+  return url.origin;
+}

@@ -20,7 +20,8 @@
     "db:types": "node scripts/gen-types.mjs",
     "test:int": "pnpm -r --if-present test:int",
     "e2e": "playwright test",
-    "db:seed:demo": "node scripts/seed-demo.mjs"
+    "db:seed:demo": "node scripts/seed-demo.mjs",
+    "db:seed:orders": "node scripts/seed-orders-demo.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

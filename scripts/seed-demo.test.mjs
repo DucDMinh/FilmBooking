@@ -43,3 +43,16 @@ test('sanitizedPsqlEnv bỏ mọi biến PG* và giữ biến khác', () => {
   const env = sanitizedPsqlEnv({ PGHOST: 'x', PGHOSTADDR: 'y', PGSERVICE: 'z', pgservicefile: 'f', PATH: '/bin' });
   assert.deepEqual(env, { PATH: '/bin' });
 });
+
+import { assertLocalHttpUrl } from './seed-demo-guard.mjs';
+
+for (const url of ['https://abc.supabase.co', 'http://localhost.evil.com:54321', 'http://u:p@127.0.0.1:54321', 'http://127.0.0.1:54321?x=1', 'ftp://127.0.0.1', '']) {
+  test(`API guard từ chối: ${url || 'URL rỗng'}`, () => {
+    assert.throws(() => assertLocalHttpUrl(url));
+  });
+}
+
+test('API guard chấp nhận loopback và trả về origin', () => {
+  assert.equal(assertLocalHttpUrl('http://127.0.0.1:54321'), 'http://127.0.0.1:54321');
+  assert.equal(assertLocalHttpUrl('http://localhost:54321/'), 'http://localhost:54321');
+});

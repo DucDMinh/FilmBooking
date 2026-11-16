@@ -50,3 +50,24 @@ Chạy lại nhiều lần trên cùng một DB local là an toàn trong trườ
 - Suất chiếu "live" (mục 8.1) dùng `DO NOTHING`: chạy lại không dời giờ. Muốn có suất ON_SALE trong 2 giờ tới thì reset DB local rồi seed lại.
 - Nếu bạn tạo suất qua UI trong phòng của seed ở đúng khung 09:30/14:00/19:30, chạy lại có thể vướng ràng buộc exclusion chống chồng giờ (`23P01`).
 - DB local đã seed bằng bản cũ (trước khi công thức id suất 8.2 đổi sang giờ VN): reset DB local một lần bằng `supabase db reset --local` (`db:stop` + `db:start` KHÔNG xoá dữ liệu) rồi seed lại, nếu không id suất mới lệch id cũ và seed dừng vì `23P01`.
+
+---
+
+## 4. Seed đơn hàng demo (đơn `paid` + vé, rải ~30 ngày)
+
+Dùng để báo cáo doanh thu / "Vé của tôi" có số liệu. Cần DB + API local đang chạy và đã nạp seed demo (suất chiếu, phim, rạp, voucher).
+
+```bash
+pnpm db:seed:orders                       # tới ~300 đơn (mặc định), rải 30 ngày gần đây
+pnpm db:seed:orders --count 50 --days 14  # tuỳ chỉnh; --users N (số khách demo, tối đa 20), --seed N
+pnpm db:seed:orders --reset-orders-demo   # xoá đúng các đơn do script này tạo
+pnpm db:seed:orders --dry-run             # chỉ SELECT: mô phỏng chọn suất/ghế trong bộ nhớ, in số đơn xếp được, không ghi gì
+```
+
+Script dừng khi có >15 lỗi **liên tiếp** (lỗi lẻ được bỏ qua và thống kê cuối lần chạy). Đơn đã tạo luôn được lùi ngày (kể cả khi dừng vì lỗi/Ctrl+C); nếu tiến trình bị kill cứng, lần chạy sau tự lùi ngày các đơn demo còn mang mốc trong ~15 phút gần đây.
+
+- `scripts/seed-orders-demo.mjs` chỉ chạy với DB loopback (cùng guard với seed demo; thêm kiểm `API_URL` phải là loopback). Không có `psql` thì tự dùng `docker exec` vào container `supabase_db_filmbooking` (đổi bằng `SEED_DB_CONTAINER`). Khoá local lấy từ `pnpm exec supabase status -o env` (hoặc `SEED_API_URL`/`SEED_ANON_KEY`/`SEED_SERVICE_ROLE_KEY`).
+- Tạo `khach01..khach20@filmbooking.local` (mật khẩu `LocalDev@123!`, qua GoTrue Admin API, có ngày sinh người lớn); `customer@filmbooking.local` cũng có đơn (không dùng voucher để vẫn thử tay luồng voucher).
+- Mỗi đơn đi qua RPC thật: `hold_seats` (JWT khách) -> (tuỳ chọn `apply_voucher`) -> `confirm_paid` (service role, mô phỏng webhook PayOS). Sau đó mới lùi `created_at/paid_at` (orders, order_seats, showtime_seat_states, tickets, payments, voucher_redemptions, email_outbox) bằng UPDATE với `session_replication_role = replica`. **Chỉ DB local.** `audit_logs` (append-only) giữ mốc thời gian thật.
+- Đánh dấu đơn demo: `payments.transaction_ref LIKE 'DEMOSEED-%'`. `--count N` là **tổng** số đơn demo mong muốn: chạy lại chỉ bù phần thiếu (idempotent). `--reset-orders-demo` xoá đơn, vé, ghế, thanh toán, lượt voucher và dòng `email_outbox` của chúng; tài khoản khách demo được giữ.
+- Giới hạn: suất chiếu chỉ ở tương lai (RPC cấm giữ ghế suất đã qua), nên đơn "quá khứ" đặt cho suất sắp chiếu; không có vé `checked_in` (check-in có cửa sổ thời gian theo suất). Mỗi suất lấp tối đa ~40% ghế. Dòng `email_outbox` `TICKET_ISSUED` giữ nguyên trạng thái `PENDING` như RPC sinh ra.
