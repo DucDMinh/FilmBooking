@@ -33,3 +33,6 @@ packages/shared/src/*.tmp
 
 # Next.js (file tự sinh)
 next-env.d.ts
+
+# Next dev tự sinh file hướng dẫn cho agent; không commit
+apps/web/AGENTS.md
