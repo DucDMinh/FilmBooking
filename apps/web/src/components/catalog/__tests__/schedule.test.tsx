@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { MovieDto, ShowtimeDto } from "@filmbooking/shared/schemas/catalog";
 import { BookingStepper } from "@/components/booking/booking-stepper";
@@ -198,6 +198,44 @@ describe("ShowtimeSchedule (showtime-schedule.tsx)", () => {
     // Suất hết hạn không có link đặt vé và có nhãn "Mua tại quầy"
     expect(screen.queryByRole("link", { name: /Đặt vé suất 09:10/i })).not.toBeInTheDocument();
     expect(screen.getByText("Mua tại quầy")).toBeInTheDocument();
+  });
+
+  it("không truyền selectedDate thì bấm ngày đổi bằng state nội bộ (/phim/[slug])", () => {
+    render(<ShowtimeSchedule schedule={[]} now={fixedNow} />);
+    const days = screen.getAllByRole("button");
+    expect(days).toHaveLength(7);
+    expect(days[0]).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(days[3]!);
+    expect(screen.getAllByRole("button")[3]).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("button")[0]).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("hideDateStrip ẩn dải ngày nhưng vẫn lọc suất theo selectedDate", () => {
+    render(
+      <ShowtimeSchedule
+        schedule={[
+          {
+            cinema: { code: "HN01", name: "CINEMO Long Biên" },
+            showtimes: [
+              {
+                id: "st-today",
+                roomId: "room-1",
+                startsAt: "2026-11-15T08:00:00.000Z",
+                endsAt: "2026-11-15T10:18:00.000Z",
+                format: "2D",
+                languageMode: "SUBTITLED",
+                status: "ON_SALE",
+              },
+            ],
+          },
+        ]}
+        selectedDate={todayVnStr}
+        hideDateStrip
+        now={fixedNow}
+      />,
+    );
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
+    expect(screen.getByRole("link", { name: /Đặt vé suất 15:00/i })).toBeInTheDocument();
   });
 
   it("phim sắp chiếu chưa có suất hiển thị thông báo 'Sắp chiếu — Lịch chiếu sẽ được cập nhật sớm' (R-45)", () => {

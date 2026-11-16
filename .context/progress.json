@@ -44,6 +44,19 @@
   ],
   "bugs": [
     {
+      "id": "lich-chieu/phase-1-task-01",
+      "title": "/lich-chieu: bộ lọc không điều hướng, chỉ hiện 1 phim, không đổi được ngày; ?movie=. không còn 500",
+      "status": "done",
+      "severity": "high",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "NORMAL",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-lich-chieu-phase-1-task-01-round-2-review.md"
+      },
+      "updatedAt": "2026-11-16T07:18:00.107Z"
+    },
+    {
       "id": "admin-ux/phase-1-task-03",
       "title": "Chuyển hướng theo vai trò: nhân sự đăng nhập về khu vực của họ, không vào trang khách (spec R-135)",
       "status": "done",
@@ -464,7 +477,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-16T03:18:58.450Z",
+  "lastUpdated": "2026-11-16T07:18:00.108Z",
   "inProgressTask": null,
   "completedTasks": [
     {

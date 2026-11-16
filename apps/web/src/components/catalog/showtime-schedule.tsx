@@ -6,7 +6,7 @@ import { Calendar, Clock, MapPin } from "lucide-react";
 import { toVnParts } from "@filmbooking/shared";
 import type { MovieDto, ShowtimeDto } from "@filmbooking/shared/schemas/catalog";
 import { EmptyState } from "@/components/common/states";
-import { getVnDateString } from "@/lib/vn-date";
+import { getVnDateString, ONE_DAY_MS } from "@/lib/vn-date";
 import { cn } from "@/lib/utils";
 
 export interface CinemaScheduleGroup {
@@ -24,6 +24,8 @@ export interface ShowtimeScheduleProps {
   schedule: CinemaScheduleGroup[];
   selectedDate?: string;
   onDateChange?: (date: string) => void;
+  /** Ẩn dải 7 ngày khi trang cha đã tự hiển thị một dải dùng chung (vd /lich-chieu). Mặc định false. */
+  hideDateStrip?: boolean;
   onlineCutoffMinutes?: number;
   now?: Date;
   className?: string;
@@ -77,7 +79,6 @@ export function isShowtimeOnlineClosed(
 export function generateNext7Days(fromDate: Date = new Date()) {
   const days: Array<{ dateString: string; label: string; subLabel: string; isToday: boolean }> = [];
   const baseTime = fromDate.getTime();
-  const ONE_DAY_MS = 86_400_000;
 
   for (let i = 0; i < 7; i++) {
     const current = new Date(baseTime + i * ONE_DAY_MS);
@@ -96,11 +97,46 @@ export function generateNext7Days(fromDate: Date = new Date()) {
   return days;
 }
 
+export interface ScheduleDateStripProps {
+  selectedDate: string;
+  onSelect: (date: string) => void;
+  now?: Date;
+}
+
+/** Dải 7 ngày chọn lịch chiếu (controlled) — dùng chung cho ShowtimeSchedule và trang /lich-chieu. */
+export function ScheduleDateStrip({ selectedDate, onSelect, now = new Date() }: Readonly<ScheduleDateStripProps>) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+      {generateNext7Days(now).map((day) => {
+        const isSelected = day.dateString === selectedDate;
+        return (
+          <button
+            key={day.dateString}
+            type="button"
+            onClick={() => onSelect(day.dateString)}
+            className={cn(
+              "flex min-h-[44px] min-w-[88px] flex-col items-center justify-center rounded-sm px-3 py-2 text-center transition-colors focus-visible:outline-2 focus-visible:outline-brand",
+              isSelected
+                ? "bg-brand text-fg-on-brand font-semibold shadow-sm"
+                : "bg-surface-control text-fg-secondary hover:bg-surface-elevated hover:text-fg",
+            )}
+            aria-pressed={isSelected}
+          >
+            <span className="text-caption uppercase tracking-wider">{day.label}</span>
+            <span className="text-body font-bold">{day.subLabel}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ShowtimeSchedule({
   movie,
   schedule,
   selectedDate: propSelectedDate,
   onDateChange,
+  hideDateStrip = false,
   onlineCutoffMinutes = 15,
   now = new Date(),
   className,
@@ -157,29 +193,9 @@ export function ShowtimeSchedule({
 
   return (
     <div className={cn("w-full space-y-6", className)}>
-      {/* Dải 7 ngày chọn lịch chiếu */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {next7Days.map((day) => {
-          const isSelected = day.dateString === activeDate;
-          return (
-            <button
-              key={day.dateString}
-              type="button"
-              onClick={() => handleSelectDate(day.dateString)}
-              className={cn(
-                "flex min-w-[88px] flex-col items-center justify-center rounded-sm px-3 py-2 text-center transition-colors focus-visible:outline-2 focus-visible:outline-brand",
-                isSelected
-                  ? "bg-brand text-fg-on-brand font-semibold shadow-sm"
-                  : "bg-surface-control text-fg-secondary hover:bg-surface-elevated hover:text-fg",
-              )}
-              aria-pressed={isSelected}
-            >
-              <span className="text-caption uppercase tracking-wider">{day.label}</span>
-              <span className="text-body font-bold">{day.subLabel}</span>
-            </button>
-          );
-        })}
-      </div>
+      {hideDateStrip ? null : (
+        <ScheduleDateStrip selectedDate={activeDate} onSelect={handleSelectDate} now={now} />
+      )}
 
       {/* Danh sách rạp và suất chiếu */}
       {filteredSchedule.length === 0 ? (
