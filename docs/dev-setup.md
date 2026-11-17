@@ -28,7 +28,14 @@ Local không có cron gọi job, nên mail trong `email_outbox` chỉ đi khi g�
 curl -X POST http://localhost:3001/jobs/send-emails -H "x-job-secret: <JOB_SECRET>"
 ```
 
-Muốn pg_cron tự gọi mỗi phút, đặt Vault secret `api_base_url` (URL API mà container Postgres truy cập được) và `job_secret` (trùng `JOB_SECRET`).
+Muốn pg_cron tự gọi mỗi phút, đặt Vault secret `api_base_url` (URL API mà container Postgres truy cập được) và `job_secret` (trùng `JOB_SECRET`). **Chưa đặt thì cron vẫn báo `succeeded` nhưng bỏ qua im lặng mọi lượt, mail không bao giờ rời `email_outbox`.** Local (Docker Desktop), chạy một lần trong psql của container (`docker exec -i supabase_db_filmbooking psql -U postgres`, dán `JOB_SECRET` thay `<JOB_SECRET>`; secret nằm trong Vault, mất khi `supabase db reset`):
+
+```sql
+select vault.create_secret('http://host.docker.internal:3001', 'api_base_url');
+select vault.create_secret('<JOB_SECRET>', 'job_secret');
+```
+
+Kiểm tra sau ~1 phút: `select status_code, content from net._http_response order by created desc limit 1;` phải thấy `200` và `{"processed":…,"sent":…}`. API phải đang chạy ở cổng 3001 với `SMTP_*` (nhớ `pnpm --filter @filmbooking/api build` lại sau khi đổi code).
 
 ### SMTP cho Supabase Auth (local)
 
