@@ -4,7 +4,7 @@ import { buildCinemaPopup } from "../cinema-map-popup";
 
 const XSS_NAME = "<img src=x onerror=alert(1)>";
 const XSS_ADDRESS = '"><script>alert(2)</script>';
-const SAFE_URL = "https://www.openstreetmap.org/directions?to=10%2C106";
+const SAFE_URL = "https://www.google.com/maps/dir/?api=1&destination=10,106";
 
 // Mô phỏng cách Leaflet gắn nội dung: string -> innerHTML, HTMLElement -> appendChild.
 function mount(content: string | HTMLElement): HTMLElement {
@@ -35,6 +35,7 @@ describe("buildCinemaPopup (K6 XSS)", () => {
     const link = mount(buildCinemaPopup("Rạp A", "1 Lê Lợi", SAFE_URL)).querySelector("a");
     expect(link?.getAttribute("href")).toBe(SAFE_URL);
     expect(link?.getAttribute("rel")).toContain("noopener");
+    expect(link?.textContent).toBe("Chỉ đường trên Google Maps →");
   });
 
   it("chặn scheme javascript: ở href", () => {

@@ -36,7 +36,7 @@ export function buildCinemaPopup(
     link.href = directionsUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "Chỉ đường trên OpenStreetMap →";
+    link.textContent = "Chỉ đường trên Google Maps →";
     link.style.cssText =
       "display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; color: #F06D5B; text-decoration: underline;";
     root.append(link);

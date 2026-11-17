@@ -486,11 +486,24 @@
         "reportPath": ".context/review-reports/bug-phim-detail-phase-1-task-01-round-2-review.md"
       },
       "updatedAt": "2026-11-16T10:50:15.166Z"
+    },
+    {
+      "id": "cinema-map/phase-1-task-01",
+      "title": "Bản đồ vị trí rạp không hiển thị (nền xám): host openstreetmap.org bị DNS nhà mạng chặn; đổi tile sang OSM France + link chỉ đường sang Google Maps",
+      "status": "done",
+      "severity": "medium",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "NORMAL",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-cinema-map-phase-1-task-01-round-2-review.md"
+      },
+      "updatedAt": "2026-11-17T03:27:30.031Z"
     }
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-16T10:50:15.166Z",
+  "lastUpdated": "2026-11-17T03:27:30.032Z",
   "inProgressTask": null,
   "completedTasks": [
     {

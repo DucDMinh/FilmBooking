@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { PUBLIC_CACHE } from "@/lib/api/cache";
+import { buildDirectionsUrl } from "@/lib/map-links";
 import { buildCinemaJsonLd, serializeCinemaJsonLd } from "@/lib/seo/cinema-jsonld";
 import { getServerAccessToken } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -159,10 +160,12 @@ export default async function CinemaDetailPage({
 
   const days = getNext7DaysVn(todayVn);
 
-  const directionsUrl =
-    typeof cinema.latitude === "number" && typeof cinema.longitude === "number"
-      ? `https://www.openstreetmap.org/directions?to=${cinema.latitude}%2C${cinema.longitude}`
-      : `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${cinema.name} ${cinema.address}`)}`;
+  const directionsUrl = buildDirectionsUrl({
+    latitude: cinema.latitude,
+    longitude: cinema.longitude,
+    name: cinema.name,
+    address: cinema.address,
+  });
 
   return (
     <>
@@ -272,7 +275,7 @@ export default async function CinemaDetailPage({
           </div>
         </header>
 
-        {/* Bản đồ vị trí (Client-only lazy Leaflet OSM) */}
+        {/* Bản đồ vị trí (Client-only lazy Leaflet, tile OSM France) */}
         <section aria-labelledby="map-heading" className="space-y-3">
           <h2 id="map-heading" className="text-h3 font-bold text-fg">
             Vị trí trên bản đồ

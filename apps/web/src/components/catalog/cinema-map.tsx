@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { buildDirectionsUrl, hasValidCoordinates } from "@/lib/map-links";
 import { cn } from "@/lib/utils";
 
 import { buildCinemaPopup } from "./cinema-map-popup";
@@ -18,10 +19,10 @@ export interface CinemaMapProps {
 }
 
 /**
- * Bản đồ vị trí rạp chiếu OpenStreetMap / Leaflet (R-34, R-37).
+ * Bản đồ vị trí rạp chiếu Leaflet + tile OpenStreetMap France (R-34, R-37).
  * - Lazy load Leaflet ở phía client, không chạy khi SSR, không chặn LCP.
  * - TUYỆT ĐỐI KHÔNG gọi navigator.geolocation và không lưu toạ độ người dùng (NFR-08 / R-36).
- * - Cung cấp liên kết mở chỉ đường trực tiếp trên OpenStreetMap.
+ * - Cung cấp liên kết mở chỉ đường trực tiếp trên Google Maps.
  */
 export function CinemaMap({
   latitude,
@@ -35,16 +36,9 @@ export function CinemaMap({
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const hasCoords =
-    typeof latitude === "number" &&
-    typeof longitude === "number" &&
-    !Number.isNaN(latitude) &&
-    !Number.isNaN(longitude);
+  const hasCoords = hasValidCoordinates(latitude, longitude);
 
-  // Link chỉ đường tới toạ độ rạp trên OpenStreetMap
-  const directionsUrl = hasCoords
-    ? `https://www.openstreetmap.org/directions?to=${latitude}%2C${longitude}`
-    : `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${cinemaName} ${address}`)}`;
+  const directionsUrl = buildDirectionsUrl({ latitude, longitude, name: cinemaName, address });
 
   useEffect(() => {
     if (!hasCoords || !containerRef.current) return;
@@ -73,11 +67,12 @@ export function CinemaMap({
 
         mapInstanceRef.current = map;
 
-        // Thêm lớp bản đồ nền OpenStreetMap
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        // Tile OSM France: tile.openstreetmap.org bị DNS nhà mạng VN chặn, CARTO đóng dấu "API KEY REQUIRED"
+        L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
           attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
-          maxZoom: 19,
+            '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>, tiles by <a href="https://www.openstreetmap.fr/" target="_blank" rel="noopener noreferrer">OpenStreetMap France</a>',
+          subdomains: "abc",
+          maxZoom: 20,
         }).addTo(map);
 
         // Marker icon tùy biến dùng SVG màu brand CINEMO (#F06D5B), không bị phụ thuộc ảnh tĩnh của Leaflet
@@ -157,7 +152,7 @@ export function CinemaMap({
         <Button asChild variant="secondary" size="sm" className="mt-2">
           <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="size-4" aria-hidden="true" />
-            Tìm địa chỉ trên OpenStreetMap
+            Tìm địa chỉ trên Google Maps
           </a>
         </Button>
       </div>
@@ -187,7 +182,7 @@ export function CinemaMap({
         <Button asChild variant="secondary" size="sm" className="shrink-0">
           <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
             <Navigation className="size-4" aria-hidden="true" />
-            Mở chỉ đường (OpenStreetMap)
+            Mở chỉ đường (Google Maps)
           </a>
         </Button>
       </div>

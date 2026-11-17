@@ -174,10 +174,10 @@ describe("CinemaMap", () => {
     expect(screen.getByText("Vị trí rạp")).toBeInTheDocument();
     expect(screen.getByText("Số 99 Đường Test, Quận 1")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Tìm địa chỉ trên OpenStreetMap/i }),
+      screen.getByRole("link", { name: /Tìm địa chỉ trên Google Maps/i }),
     ).toHaveAttribute(
       "href",
-      expect.stringContaining("https://www.openstreetmap.org/search?query="),
+      expect.stringContaining("https://www.google.com/maps/search/?api=1&query="),
     );
   });
 });

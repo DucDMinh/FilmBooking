@@ -1,15 +1,12 @@
 {
   "specVersion": "3.1.0",
-  "scopeVersion": 19,
-  "generatedAt": "2026-11-16T17:48:43+07:00",
+  "scopeVersion": 20,
+  "generatedAt": "2026-11-17T12:00:00+07:00",
   "trigger": "bug-fix",
-  "workItem": "bug-phim-detail/phase-1-task-01",
+  "workItem": "bug-cinema-map/phase-1-task-01",
   "specRefs": [
-    "R-35",
-    "R-37",
-    "R-43",
-    "R-44",
-    "R-46"
+    "R-34",
+    "R-37"
   ],
   "changed": {
     "files": [
@@ -20,13 +17,24 @@
       "apps/web/src/app/(public)/phim/[slug]/page.tsx",
       "apps/web/src/components/catalog/movie-showtime-schedule.tsx",
       "apps/web/src/components/catalog/__tests__/movie-showtime-schedule.test.tsx",
-      "apps/web/src/app/(public)/phim/[slug]/__tests__/page.test.tsx"
+      "apps/web/src/app/(public)/phim/[slug]/__tests__/page.test.tsx",
+      "apps/web/src/components/catalog/cinema-map.tsx",
+      "apps/web/src/components/catalog/cinema-map-popup.ts",
+      "apps/web/src/lib/map-links.ts",
+      "apps/web/src/app/(public)/rap/page.tsx",
+      "apps/web/src/app/(public)/rap/[code]/page.tsx",
+      "apps/web/src/lib/__tests__/map-links.test.ts",
+      "apps/web/src/components/catalog/__tests__/cinema-map-tiles.test.tsx",
+      "apps/web/src/components/catalog/__tests__/cinemas.test.tsx",
+      "apps/web/src/components/catalog/__tests__/cinema-map-popup.test.ts"
     ],
     "modules": [
       "web-catalog",
       "web-lich-chieu",
       "showtime-schedule",
-      "web-phim-detail"
+      "web-phim-detail",
+      "web-cinema-map",
+      "web-rap"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -40,14 +48,27 @@
         "apps/web/src/components/catalog/movie-showtime-schedule.tsx",
         "apps/web/src/components/catalog/__tests__/movie-showtime-schedule.test.tsx",
         "apps/web/src/app/(public)/phim/[slug]/__tests__/page.test.tsx"
+      ],
+      "bug-cinema-map/phase-1-task-01": [
+        "apps/web/src/components/catalog/cinema-map.tsx",
+        "apps/web/src/components/catalog/cinema-map-popup.ts",
+        "apps/web/src/lib/map-links.ts",
+        "apps/web/src/app/(public)/rap/page.tsx",
+        "apps/web/src/app/(public)/rap/[code]/page.tsx",
+        "apps/web/src/lib/__tests__/map-links.test.ts",
+        "apps/web/src/components/catalog/__tests__/cinema-map-tiles.test.tsx",
+        "apps/web/src/components/catalog/__tests__/cinemas.test.tsx",
+        "apps/web/src/components/catalog/__tests__/cinema-map-popup.test.ts"
       ]
     }
   },
   "impact": {
     "direct": [
-      "web.phim-detail.date-strip — R-44, R-43: ở /phim/[slug], dải 7 ngày (hôm nay..+6) bấm ngày → URL đổi `?date=YYYY-MM-DD`, nút ngày được chọn đổi (aria-pressed), danh sách suất tải lại theo đúng ngày đó (page gọi API /movies/:slug?date=<ngày>[&province=]; trước fix chỉ hôm nay có suất, 6 ngày còn lại trống). Bấm ngày khi URL ĐÃ có `?date=` vẫn đổi được (trước fix selectedDate không đi kèm onDateChange nên đứng yên). Giữ `?province=` hiện có và giữ neo `#lich-chieu` (không cuộn lên đầu trang, scroll:false)",
-      "web.phim-detail.url-params — R-43: `?date=` rác (`abc`, `2030-01-01`, ngày không tồn tại như 2026-02-30), đã qua / ngoài hôm nay..+6 theo ngày VN, hoặc lặp / dạng mảng (`?date=a&date=b`, `date[]=`) → rơi về hôm nay, trang vẫn HTTP 200 (không 500, không 404); `?date=` hợp lệ hôm nay..+6 → hiển thị đúng ngày đó",
-      "web.phim-detail.server-render — R-46: /phim/[slug] vẫn render phía server (page.tsx là server component, suất của ngày đang chọn có trong HTML ban đầu); chỉ MovieShowtimeSchedule là client component, chỉ gọi router.push; JSON-LD ScreeningEvent lấy theo suất của ngày đang chọn; generateMetadata vẫn gọi API không kèm date"
+      "web.rap.map — R-34: /rap hiển thị bản đồ vị trí rạp có TILE ĐƯỜNG PHỐ thật (không còn nền xám): tile lấy từ `*.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` (subdomain a/b/c, maxZoom 20), KHÔNG còn request tới `*.openstreetmap.org`; không có watermark \"API KEY REQUIRED\"; có marker rạp, nút zoom, attribution \"© OpenStreetMap contributors, tiles by OpenStreetMap France\" (link tới openstreetmap.org/copyright + openstreetmap.fr). Tiêu đề phụ mục bản đồ là \"Bản đồ trực quan\" (không còn chữ \"OpenStreetMap\")",
+      "web.rap-detail.map — R-37: /rap/[code] (vd /rap/HN01) hiển thị bản đồ cùng tile osmfr + 1 marker đúng vị trí rạp; bấm marker mở popup (tên rạp + địa chỉ + link \"Chỉ đường trên Google Maps →\")",
+      "web.rap.directions-link — R-34, R-37: mọi link chỉ đường (nút \"Chỉ đường\", link trong popup, nút \"Mở chỉ đường (Google Maps)\" ở /rap/[code]) có toạ độ → `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>`; target=_blank, rel=\"noopener noreferrer\"; KHÔNG còn host `openstreetmap.org` (hết dạng `directions?to=`)",
+      "web.rap.no-coords-fallback — R-34, R-37: rạp thiếu toạ độ → không vẽ bản đồ; link \"Tìm địa chỉ trên Google Maps\" → `https://www.google.com/maps/search/?api=1&query=<tên + địa chỉ, encodeURIComponent>`",
+      "web.privacy.no-geolocation — NFR-08 (R-36 không đụng): bản đồ/popup/link chỉ đường KHÔNG gọi `navigator.geolocation`, không xin quyền vị trí, không lưu toạ độ khách"
     ],
     "dependents": [
       "web.showtime-schedule (dùng chung) — prop mới `hideDateStrip` (mặc định false) và `ONE_DAY_MS` dùng chung từ lib/vn-date: ảnh hưởng mọi nơi render ShowtimeSchedule (/lich-chieu, /phim/[slug])",
@@ -75,7 +96,14 @@
       "[v18 bug-lich-chieu, nay là vùng phụ thuộc] web.lich-chieu.by-cinema — R-37, R-43: chọn rạp → xem theo rạp (nguồn /cinemas/:code?date=), lọc thêm theo phim nếu có chọn phim",
       "[v18 bug-lich-chieu, nay là vùng phụ thuộc] web.lich-chieu.date-strip — R-44: dải 7 ngày (hôm nay..+6) dùng chung MỘT lần ở đầu kết quả; bấm ngày → URL `?date=YYYY-MM-DD` đổi, nút ngày đang chọn đổi (aria-pressed), suất tải lại theo ngày; giữ phim/rạp/tỉnh khi đổi ngày",
       "[v18 bug-lich-chieu, nay là vùng phụ thuộc] web.lich-chieu.url-params — tham số URL không hợp lệ KHÔNG gây lỗi 500: `movie`/`cinema`/`province` rỗng, `.`, `..`, `%2e`, `../../x`, chứa khoảng trắng, quá dài, hoặc lặp (?movie=a&movie=b) → coi như chưa chọn; `date` rác / đã qua / ngoài hôm nay..+6 (theo ngày VN) → rơi về hôm nay; payload API sai shape → bỏ khối hoặc EmptyState, trang vẫn 200",
-      "web.showtime-schedule + MovieShowtimeSchedule (bug-phim-detail, scope v19) — /phim/[slug] nay bọc ShowtimeSchedule qua client wrapper MovieShowtimeSchedule (truyền selectedDate + onDateChange → router.push `?date=[&province=]#lich-chieu`, scroll:false); ShowtimeSchedule KHÔNG đổi chữ ký/hành vi, retest cả /phim/[slug] và /lich-chieu"
+      "web.showtime-schedule + MovieShowtimeSchedule (bug-phim-detail, scope v19) — /phim/[slug] nay bọc ShowtimeSchedule qua client wrapper MovieShowtimeSchedule (truyền selectedDate + onDateChange → router.push `?date=[&province=]#lich-chieu`, scroll:false); ShowtimeSchedule KHÔNG đổi chữ ký/hành vi, retest cả /phim/[slug] và /lich-chieu",
+      "[v19 bug-phim-detail, nay là vùng phụ thuộc] web.phim-detail.date-strip — R-44, R-43: ở /phim/[slug], dải 7 ngày (hôm nay..+6) bấm ngày → URL đổi `?date=YYYY-MM-DD`, nút ngày được chọn đổi (aria-pressed), danh sách suất tải lại theo đúng ngày đó (page gọi API /movies/:slug?date=<ngày>[&province=]; trước fix chỉ hôm nay có suất, 6 ngày còn lại trống). Bấm ngày khi URL ĐÃ có `?date=` vẫn đổi được (trước fix selectedDate không đi kèm onDateChange nên đứng yên). Giữ `?province=` hiện có và giữ neo `#lich-chieu` (không cuộn lên đầu trang, scroll:false)",
+      "[v19 bug-phim-detail, nay là vùng phụ thuộc] web.phim-detail.url-params — R-43: `?date=` rác (`abc`, `2030-01-01`, ngày không tồn tại như 2026-02-30), đã qua / ngoài hôm nay..+6 theo ngày VN, hoặc lặp / dạng mảng (`?date=a&date=b`, `date[]=`) → rơi về hôm nay, trang vẫn HTTP 200 (không 500, không 404); `?date=` hợp lệ hôm nay..+6 → hiển thị đúng ngày đó",
+      "[v19 bug-phim-detail, nay là vùng phụ thuộc] web.phim-detail.server-render — R-46: /phim/[slug] vẫn render phía server (page.tsx là server component, suất của ngày đang chọn có trong HTML ban đầu); chỉ MovieShowtimeSchedule là client component, chỉ gọi router.push; JSON-LD ScreeningEvent lấy theo suất của ngày đang chọn; generateMetadata vẫn gọi API không kèm date",
+      "web.lib.map-links — hàm dùng chung mới `buildDirectionsUrl` (apps/web/src/lib/map-links.ts) thay hai bản lặp ở cinema-map.tsx và rap/[code]/page.tsx: mọi nơi dựng link bản đồ phải qua hàm này",
+      "web.catalog.cinemas — nhãn UI đổi (\"Mở chỉ đường (Google Maps)\", \"Tìm địa chỉ trên Google Maps\", \"Chỉ đường trên Google Maps →\") ảnh hưởng test/selector cũ dò chữ \"OpenStreetMap\"/\"Mở chỉ đường (OpenStreetMap)\"",
+      "web.seo.cinema-jsonld — /rap/[code] JSON-LD cinema (R-46) không đổi; retest /rap/[code] vẫn render phía server",
+      "web.schedule — danh sách rạp/lịch chiếu liên quan (/rap → \"Xem lịch chiếu\" R-34, lịch 7 ngày ở /rap/[code] R-37) không đổi hành vi; retest nhẹ"
     ],
     "regression": [
       "/lich-chieu: ma trận lọc — (không lọc), tỉnh, phim, rạp, phim+rạp, tỉnh+phim, tỉnh+rạp, kèm date hôm nay / +3 / +6; sau mỗi bước URL và nội dung khớp; đổi tỉnh khi đang chọn rạp → `cinema` bị xoá",
@@ -108,7 +136,13 @@
       "Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng) — D3: `?province=` sai/không tồn tại (kể cả lặp tham số `?province=a&province=b`) vẫn cho 404 vì API /movies/:slug trả lỗi; ngoài phạm vi task, cần triage riêng",
       "Residual đã biết (nợ chấp nhận, demo): dải 7 ngày ở client dùng `new Date()` (ScheduleDateNav) nên có thể lệch ngắn sát nửa đêm VN giữa server (resolveScheduleDate theo ngày VN) và client — không viết test cố định ở khung giờ 23:xx–00:xx giờ VN",
       "Residual nhỏ: generateMetadata gọi API không kèm date (thêm 1 lần gọi khi không cache, cache 60s); không có trạng thái loading khi đổi ngày (router.push) — không test",
-      "Lưu ý dữ liệu: ngày hôm nay có thể không có link đặt vé nếu chạy test sau giờ các suất đóng bán online (hiện 'Mua tại quầy') — chọn ngày +1..+6 khi cần assert link /dat-ve/"
+      "Lưu ý dữ liệu: ngày hôm nay có thể không có link đặt vé nếu chạy test sau giờ các suất đóng bán online (hiện 'Mua tại quầy') — chọn ngày +1..+6 khi cần assert link /dat-ve/",
+      "/rap và /rap/[code]: kiểm bản đồ bằng ẢNH CHỤP/quan sát thật (không chỉ `img.complete`): có tile đường phố, không nền xám, không đóng dấu \"API KEY REQUIRED\"; đếm `.leaflet-tile` tải được > 0 và mọi host tile = `*.tile.openstreetmap.fr`; không có request tới `*.openstreetmap.org` (network log)",
+      "LƯU Ý MẠNG: tile bản đồ lấy từ OSM France (bên thứ ba, fair-use, không SLA) → test E2E bản đồ cần chạy trên mạng có internet; mạng chặn `openstreetmap.fr` sẽ cho nền xám (không phải lỗi code). Test đơn vị đã mock leaflet (cinema-map-tiles) khoá URL/subdomains/maxZoom/attribution",
+      "/rap/[code] rạp không có toạ độ (tạo rạp thử bằng admin nếu cần): không vẽ bản đồ, hiện link \"Tìm địa chỉ trên Google Maps\" đúng URL search đã encode (dấu tiếng Việt, khoảng trắng)",
+      "/rap, /rap/[code] responsive: bản đồ không tràn ngang ở 360/768/1280 px; popup mở được trên mobile",
+      "Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng) — scan bug-cinema-map #1: /rap chỉ hiện 1 rạp trên bản đồ/danh sách; #2: z-index bản đồ Leaflet có thể đè header khi cuộn; #3: CSS động Leaflet; #4: thiếu test nhánh có toạ độ ở cinemas.test — các defect này chưa xử lý, cần triage riêng",
+      "Residual: web :3000 của người dùng có thể còn chạy bản build cũ → cần build/restart lại trước khi test thủ công; `pnpm build` web chưa chạy cho task này (chủ ý, tránh ghi đè .next đang dùng) — kiểm bằng typecheck + next dev"
     ]
   },
   "acceptance": [
@@ -149,7 +183,11 @@
     "CR phim-detail A2: Given đang ở /phim/<slug>?date=<ngày hợp lệ> When bấm ngày khác Then vẫn đổi ngày được (URL + nút + suất đổi). [R-44]",
     "CR phim-detail A3: Given đang ở /phim/<slug>?province=<tỉnh hợp lệ> When bấm đổi ngày Then URL giữ cả `province` và `date`, và neo `#lich-chieu`. [R-44, R-43]",
     "CR phim-detail A4: Given `?date=` rác / ngoài hôm nay..+6 (theo ngày VN) / lặp / dạng mảng When mở /phim/<slug> Then HTTP 200 và hiển thị ngày hôm nay. [R-43]",
-    "CR phim-detail A5: Given /phim/<slug> When tải trang Then nội dung lịch chiếu có trong HTML render phía server (SSR) và vẫn chọn suất → /dat-ve/<showtimeId> như trước. [R-46, R-44]"
+    "CR phim-detail A5: Given /phim/<slug> When tải trang Then nội dung lịch chiếu có trong HTML render phía server (SSR) và vẫn chọn suất → /dat-ve/<showtimeId> như trước. [R-46, R-44]",
+    "CR cinema-map A1: Given mở /rap trên mạng có internet (kể cả DNS nhà mạng VN chặn *.openstreetmap.org) When kéo tới mục vị trí rạp Then bản đồ hiện nền đường phố thật + marker, không nền xám, không watermark \"API KEY REQUIRED\"; tile tải từ *.tile.openstreetmap.fr. [R-34]",
+    "CR cinema-map A2: Given mở /rap/HN01 When bấm marker Then popup hiện tên + địa chỉ rạp + link \"Chỉ đường trên Google Maps →\". [R-37]",
+    "CR cinema-map A3: Given rạp có toạ độ When bấm \"Chỉ đường\" (nút/popup/\"Mở chỉ đường (Google Maps)\") Then mở https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng> ở tab mới (noopener noreferrer); rạp không có toạ độ → \"Tìm địa chỉ trên Google Maps\" mở maps/search/?api=1&query=<tên + địa chỉ>. [R-34, R-37]",
+    "CR cinema-map A4: Given mở /rap hoặc /rap/[code] Then không có request tới *.openstreetmap.org và không gọi navigator.geolocation; attribution OpenStreetMap contributors + OpenStreetMap France có mặt. [NFR-08]"
   ],
   "risk": "low"
 }

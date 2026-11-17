@@ -58,3 +58,9 @@ _Errors encountered during this project will be logged below._
 
 ### 2026-11-11 — agent-guard + Git Bash path
 - Reviewer bị chặn khi `cd "/e/FilmBooking/.worktrees/..."`: hook dùng path.resolve trên win32 → `E:\FilmBooking` ngoài .worktrees. Cách dùng đúng: `cd "E:/FilmBooking/.worktrees/<wt>" && <lệnh>`.
+
+### 2026-11-17 — bug-cinema-map attempt 1: chọn nhà cung cấp tile chỉ kiểm `Image.onload` → bỏ lọt tile bị watermark
+- **Triệu chứng:** thay tile OSM (host bị DNS VNPT chặn) bằng CARTO `rastertiles/voyager`; test đơn vị + `Image.onload` OK, nhưng chạy dev server thật thì 12/12 tile đều đóng dấu "API KEY REQUIRED" (carto.com/basemaps/apikey). Mọi biến thể (`voyager`, `light_all`, `dark_all`) đều bị.
+- **Root cause của lần sai:** coi "ảnh tải được" = "tile dùng được". CARTO đã yêu cầu API key cho raster tile công khai; ảnh vẫn trả 200 + 256px nên `onload` không phân biệt được.
+- **Cách kiểm đúng:** với bug hiển thị bản đồ/ảnh phải **nhìn ảnh thật** (screenshot trên app chạy code mới), không chỉ `onload`/status/naturalWidth. Chọn provider tile: thử nhiều nguồn, chụp từng tile, loại nguồn có watermark/đòi key.
+- **Nguồn đã thử trên mạng VNPT (2026-11-17):** hiện tile thật = Esri World_Street_Map, tile.openstreetmap.de, {a,b,c}.tile.openstreetmap.fr/osmfr. Chết/đòi key = tile.openstreetmap.org (NXDOMAIN), CARTO (watermark).

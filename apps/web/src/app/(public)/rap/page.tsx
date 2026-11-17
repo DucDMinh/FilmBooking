@@ -243,7 +243,7 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
               Vị trí rạp ({featuredCinema.name})
             </h2>
             <span className="text-body-sm text-fg-secondary">
-              Bản đồ trực quan OpenStreetMap
+              Bản đồ trực quan
             </span>
           </div>
           <CinemaMap
