@@ -7,7 +7,7 @@ import { AppModule } from "../../../src/app.module";
 import { configureApp } from "../../../src/config/configure-app";
 import { ENV, parseEnv } from "../../../src/config/env";
 import { TurnstileService } from "../../../src/modules/auth-ext/turnstile.service";
-import { RESEND_CLIENT } from "../../../src/modules/mail/mail.service";
+import { MAIL_TRANSPORT } from "../../../src/modules/mail/mail.service";
 import type { LocalSupabaseEnv } from "./supabase-test";
 
 export const JOB_SECRET = "it-job-secret";
@@ -20,19 +20,17 @@ export interface SentMail {
 
 export interface TestApp {
   app: INestApplication;
-  /** Mail mà Resend mock CỦA APP NÀY nhận được (job của builder khác có thể gửi hộ -> chỉ dùng để kiểm nội dung). */
+  /** Mail mà SMTP mock CỦA APP NÀY nhận được (job của builder khác có thể gửi hộ -> chỉ dùng để kiểm nội dung). */
   sentMails: SentMail[];
 }
 
-/** Nest app thật + Supabase local; chỉ thay biên provider: Resend (không gọi mạng) và Turnstile (luôn pass). */
+/** Nest app thật + Supabase local; chỉ thay biên provider: SMTP (không gọi mạng) và Turnstile (luôn pass). */
 export async function bootTestApp(env: LocalSupabaseEnv): Promise<TestApp> {
   const sentMails: SentMail[] = [];
-  const fakeResend = {
-    emails: {
-      send: async (payload: { to: string; subject: string; html: string }) => {
-        sentMails.push({ to: payload.to, subject: payload.subject, html: payload.html });
-        return { data: { id: `it-mail-${sentMails.length}` }, error: null };
-      },
+  const fakeTransport = {
+    sendMail: async (payload: { to: string; subject: string; html: string }) => {
+      sentMails.push({ to: payload.to, subject: payload.subject, html: payload.html });
+      return { messageId: `it-mail-${sentMails.length}` };
     },
   };
   const apiEnv = parseEnv({
@@ -49,8 +47,8 @@ export async function bootTestApp(env: LocalSupabaseEnv): Promise<TestApp> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(ENV)
     .useValue(apiEnv)
-    .overrideProvider(RESEND_CLIENT)
-    .useValue(fakeResend)
+    .overrideProvider(MAIL_TRANSPORT)
+    .useValue(fakeTransport)
     .overrideProvider(TurnstileService)
     .useValue({ verify: async () => true })
     .compile();

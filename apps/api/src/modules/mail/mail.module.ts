@@ -1,21 +1,18 @@
 import { Module } from "@nestjs/common";
-import { Resend } from "resend";
 import { AppConfigModule, ENV, type Env } from "../../config/env";
-import { MailService, RESEND_CLIENT } from "./mail.service";
+import { MAIL_TRANSPORT, MailService, type MailTransport } from "./mail.service";
+import { createMailTransport } from "./mail.transport";
 
 @Module({
   imports: [AppConfigModule],
   providers: [
     {
-      provide: RESEND_CLIENT,
+      provide: MAIL_TRANSPORT,
       inject: [ENV],
-      useFactory: (env: Env): Resend | null => {
-        if (!env.RESEND_API_KEY) return null;
-        return new Resend(env.RESEND_API_KEY);
-      },
+      useFactory: (env: Env): MailTransport | null => createMailTransport(env),
     },
     MailService,
   ],
-  exports: [MailService, RESEND_CLIENT],
+  exports: [MailService, MAIL_TRANSPORT],
 })
 export class MailModule {}

@@ -6,6 +6,47 @@
 - **Docker Desktop** đang chạy (Supabase local chạy bằng container). Không có Docker thì `pnpm db:*` không chạy được.
 - Supabase CLI không cần cài global: gọi qua script `pnpm db:*` (đã chốt ở root `package.json`).
 
+## Gửi mail thật (SMTP)
+
+Có hai đường gửi mail, cấu hình riêng:
+
+1. **Mail giao dịch của Nest** (vé, cảnh báo khoá tài khoản, huỷ suất, đặt mật khẩu…): API đọc `email_outbox` rồi gửi qua SMTP (nodemailer) khi job `POST /jobs/send-emails` chạy. Đặt trong `.env.local`: `SMTP_HOST`, `SMTP_PORT` (mặc định 465), `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` (tuỳ chọn). Thiếu `SMTP_HOST` thì job ghi `last_error` và retry (không mất mail).
+2. **Mail của Supabase Auth** (xác nhận đăng ký, quên mật khẩu): do GoTrue gửi, cấu hình ở `[auth.email.smtp]`.
+
+### Gmail (demo)
+
+1. Bật xác minh 2 bước cho tài khoản Google, tạo **App Password** (Tài khoản Google -> Bảo mật -> Mật khẩu ứng dụng).
+2. `.env.local`: `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER=<gmail của bạn>`, `SMTP_PASS=<App Password>`.
+3. Lưu ý: Gmail **ghi đè from** thành chính tài khoản đăng nhập (bỏ qua `SMTP_FROM`); giới hạn khoảng 500 mail/ngày; chỉ dùng cho demo, **không dùng cho production**.
+4. Resend hoặc SES qua SMTP vẫn dùng được, chỉ đổi biến: Resend = `smtp.resend.com` / 465 / user `resend` / pass = API key (`SMTP_FROM` phải thuộc domain đã xác minh).
+
+### Chạy job gửi mail ở local
+
+Local không có cron gọi job, nên mail trong `email_outbox` chỉ đi khi gọi tay (API chạy ở cổng 3001, `JOB_SECRET` lấy từ `.env.local`):
+
+```bash
+curl -X POST http://localhost:3001/jobs/send-emails -H "x-job-secret: <JOB_SECRET>"
+```
+
+Muốn pg_cron tự gọi mỗi phút, đặt Vault secret `api_base_url` (URL API mà container Postgres truy cập được) và `job_secret` (trùng `JOB_SECRET`).
+
+### SMTP cho Supabase Auth (local)
+
+Mặc định email Auth local rơi vào **Mailpit** `http://127.0.0.1:54324`, không phải hộp thư thật. Muốn gửi thật, sửa khối `[auth.email.smtp]` trong `supabase/config.toml` (để mật khẩu `pass` đọc qua `env(SMTP_PASS)` từ `supabase/.env`, không ghi thẳng vào file; host/user/admin_email điền giá trị literal):
+
+```toml
+[auth.email.smtp]
+enabled = true
+host = "smtp.gmail.com"
+port = 465
+user = "<gmail của bạn>"
+pass = "env(SMTP_PASS)"        # đặt SMTP_PASS=<App Password> trong supabase/.env (git ignore)
+admin_email = "<gmail của bạn>"
+sender_name = "CINEMO"
+```
+
+Rồi `pnpm db:stop && pnpm db:start` để GoTrue nạp lại. Dùng Resend thì `host = "smtp.resend.com"`, `user = "resend"`, `pass` = API key. Không commit thay đổi chứa tài khoản cá nhân của bạn vào `config.toml`.
+
 ## Lệnh DB (chỉ local)
 
 | Lệnh | Việc |
@@ -22,12 +63,12 @@ Sau `pnpm db:start`, CLI in URL/API key local (Studio `:54323`, API `:54321`, Po
 
 ## Điền `.env.local`
 
-1. Copy `.env.local.example` -> `.env.local` (đã được git ignore) và điền các biến app cần: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, `JOB_SECRET`, `PAYOS_*`. URL/key local lấy từ output của `pnpm db:start`.
+1. Copy `.env.local.example` -> `.env.local` (đã được git ignore) và điền các biến app cần: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `TURNSTILE_SECRET_KEY`, `SMTP_*` (xem "Gửi mail thật"), `JOB_SECRET`, `PAYOS_*`. URL/key local lấy từ output của `pnpm db:start`.
 2. `supabase/config.toml` chỉ tham chiếu `env(...)`, không chứa secret. Các biến config.toml đọc (đặt trong `supabase/.env` — đã git ignore — hoặc export vào shell trước `pnpm db:start`):
    - `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`, `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`
    - `SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID`, `SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET`
    - `TURNSTILE_SECRET_KEY` (local dùng secret test Cloudflare `1x0000000000000000000000000000000AA`)
-   - `RESEND_API_KEY` (chỉ cần khi bật SMTP; local mặc định dùng Mailpit)
+   - `SMTP_PASS` (chỉ cần khi bật SMTP cho Auth ở `[auth.email.smtp]`; local mặc định dùng Mailpit)
 
    Chưa đặt biến nào vẫn chạy được `pnpm db:start` (đã kiểm chứng; CI đặt giá trị giả cho chắc). Đăng nhập Google/Facebook thật cần credential thật.
 3. **Không commit** `.env.local`, `supabase/.env` hay bất kỳ secret nào.
@@ -46,7 +87,7 @@ Sau `pnpm db:start`, CLI in URL/API key local (Studio `:54323`, API `:54321`, Po
 
 `config.toml` chỉ áp dụng cho local. Trên project staging/prod phải đặt tay (secret nhập trong Dashboard, không commit):
 
-- **SMTP**: Authentication -> SMTP, host `smtp.resend.com`, port 465, user `resend`, pass = `RESEND_API_KEY`, sender `CINEMO`.
+- **SMTP**: Authentication -> SMTP, host/port/user/pass của nhà cung cấp (Gmail: `smtp.gmail.com` / 465 / Gmail / App Password; Resend qua SMTP: `smtp.resend.com` / 465 / `resend` / API key), sender `CINEMO`.
 - **OAuth providers**: bật Google và Facebook, điền client id/secret; Facebook cho phép thiếu email.
 - **Email**: bật xác nhận email; `otp_expiry` = 86400 (24h, R-04); độ trễ gửi lại tối thiểu 60s (R-06); mật khẩu tối thiểu 8 ký tự, yêu cầu chữ hoa/thường/số.
 - **URL Configuration**: Site URL và danh sách Redirect URLs của domain web staging/prod (dạng wildcard `https://<domain>/**`).

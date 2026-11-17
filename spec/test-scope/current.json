@@ -1,12 +1,15 @@
 {
   "specVersion": "3.1.0",
-  "scopeVersion": 20,
-  "generatedAt": "2026-11-17T12:00:00+07:00",
-  "trigger": "bug-fix",
-  "workItem": "bug-cinema-map/phase-1-task-01",
+  "scopeVersion": 21,
+  "generatedAt": "2026-11-17T15:04:35+07:00",
+  "trigger": "feature-update",
+  "workItem": "feature-mail-smtp/phase-1-task-01",
   "specRefs": [
-    "R-34",
-    "R-37"
+    "NFR-10",
+    "R-04",
+    "R-11",
+    "R-86",
+    "R-109"
   ],
   "changed": {
     "files": [
@@ -26,7 +29,22 @@
       "apps/web/src/lib/__tests__/map-links.test.ts",
       "apps/web/src/components/catalog/__tests__/cinema-map-tiles.test.tsx",
       "apps/web/src/components/catalog/__tests__/cinemas.test.tsx",
-      "apps/web/src/components/catalog/__tests__/cinema-map-popup.test.ts"
+      "apps/web/src/components/catalog/__tests__/cinema-map-popup.test.ts",
+      "apps/api/src/modules/mail/mail.service.ts",
+      "apps/api/src/modules/mail/mail.transport.ts",
+      "apps/api/src/modules/mail/mail.module.ts",
+      "apps/api/src/config/env.ts",
+      "apps/api/src/modules/jobs/jobs.controller.ts",
+      "apps/api/test/mail-service.spec.ts",
+      "apps/api/test/outbox-job.e2e-spec.ts",
+      "apps/api/test/integration/helpers/app-harness.ts",
+      "apps/api/test/integration/cancel-showtime.int-spec.ts",
+      "apps/api/package.json",
+      "pnpm-lock.yaml",
+      ".env.example",
+      "docs/dev-setup.md",
+      "docs/DESIGN.md",
+      "docs/API_SPEC.md"
     ],
     "modules": [
       "web-catalog",
@@ -34,7 +52,10 @@
       "showtime-schedule",
       "web-phim-detail",
       "web-cinema-map",
-      "web-rap"
+      "web-rap",
+      "api-mail",
+      "api-config",
+      "api-jobs"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -59,18 +80,46 @@
         "apps/web/src/components/catalog/__tests__/cinema-map-tiles.test.tsx",
         "apps/web/src/components/catalog/__tests__/cinemas.test.tsx",
         "apps/web/src/components/catalog/__tests__/cinema-map-popup.test.ts"
+      ],
+      "feature-mail-smtp/phase-1-task-01": [
+        "apps/api/src/modules/mail/mail.service.ts",
+        "apps/api/src/modules/mail/mail.transport.ts",
+        "apps/api/src/modules/mail/mail.module.ts",
+        "apps/api/src/config/env.ts",
+        "apps/api/src/modules/jobs/jobs.controller.ts",
+        "apps/api/test/mail-service.spec.ts",
+        "apps/api/test/outbox-job.e2e-spec.ts",
+        "apps/api/test/integration/helpers/app-harness.ts",
+        "apps/api/test/integration/cancel-showtime.int-spec.ts",
+        "apps/api/package.json",
+        "pnpm-lock.yaml",
+        ".env.example",
+        "docs/dev-setup.md",
+        "docs/DESIGN.md",
+        "docs/API_SPEC.md"
       ]
     }
   },
   "impact": {
     "direct": [
-      "web.rap.map — R-34: /rap hiển thị bản đồ vị trí rạp có TILE ĐƯỜNG PHỐ thật (không còn nền xám): tile lấy từ `*.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` (subdomain a/b/c, maxZoom 20), KHÔNG còn request tới `*.openstreetmap.org`; không có watermark \"API KEY REQUIRED\"; có marker rạp, nút zoom, attribution \"© OpenStreetMap contributors, tiles by OpenStreetMap France\" (link tới openstreetmap.org/copyright + openstreetmap.fr). Tiêu đề phụ mục bản đồ là \"Bản đồ trực quan\" (không còn chữ \"OpenStreetMap\")",
-      "web.rap-detail.map — R-37: /rap/[code] (vd /rap/HN01) hiển thị bản đồ cùng tile osmfr + 1 marker đúng vị trí rạp; bấm marker mở popup (tên rạp + địa chỉ + link \"Chỉ đường trên Google Maps →\")",
-      "web.rap.directions-link — R-34, R-37: mọi link chỉ đường (nút \"Chỉ đường\", link trong popup, nút \"Mở chỉ đường (Google Maps)\" ở /rap/[code]) có toạ độ → `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>`; target=_blank, rel=\"noopener noreferrer\"; KHÔNG còn host `openstreetmap.org` (hết dạng `directions?to=`)",
-      "web.rap.no-coords-fallback — R-34, R-37: rạp thiếu toạ độ → không vẽ bản đồ; link \"Tìm địa chỉ trên Google Maps\" → `https://www.google.com/maps/search/?api=1&query=<tên + địa chỉ, encodeURIComponent>`",
-      "web.privacy.no-geolocation — NFR-08 (R-36 không đụng): bản đồ/popup/link chỉ đường KHÔNG gọi `navigator.geolocation`, không xin quyền vị trí, không lưu toạ độ khách"
+      "api.mail.smtp-transport — NFR-10 (requirement KHÔNG đổi; chỉ đổi hiện thực): MailService gửi email giao dịch trong `email_outbox` qua SMTP (nodemailer, token `MAIL_TRANSPORT`, tạo bởi `createMailTransport(env)` trong mail.transport.ts) thay cho Resend SDK. Đặt `SMTP_HOST` (+ `SMTP_PORT` mặc định 465, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) → `sendMail` được gọi; secure=true khi port 465, false với port khác (vd 587); có auth khi có `SMTP_USER`; timeout kết nối 10s / greeting 10s / socket 20s",
+      "api.mail.from-address — from = options.from > `SMTP_FROM` > `FilmBooking <SMTP_USER>` > `FilmBooking <no-reply@filmbooking.local>` (giải quyết scan bug-register-email #4: from cứng onboarding@resend.dev). Gmail ghi đè from thành chính tài khoản đăng nhập, bỏ qua `SMTP_FROM` (không phải lỗi code)",
+      "api.mail.not-configured — thiếu `SMTP_HOST` ở môi trường KHÔNG phải test (production/development): MailService throw \"SMTP is not configured (SMTP_HOST)\" → outbox ghi `last_error`, retry tối đa 3 lần rồi FAILED; môi trường `NODE_ENV=test` vẫn trả id mock `mock-email-…` (không gửi thật)",
+      "api.mail.errors — lỗi SMTP → throw \"SMTP send failed: …\" (log lỗi, KHÔNG log SMTP_PASS); `rejected` chứa người nhận → throw; thiếu messageId → throw \"missing message ID\" như hành vi cũ",
+      "api.jobs.send-emails — `POST /jobs/send-emails` (header x-job-secret) gửi các email outbox đến hạn qua SMTP và đánh dấu SENT; comment controller đổi \"qua Resend\" → \"qua SMTP\", hành vi/response không đổi",
+      "api.config.env — `RESEND_API_KEY` bị gỡ khỏi envSchema; thêm `SMTP_HOST`, `SMTP_PORT` (số nguyên 1–65535), `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` đều optional; KHÔNG có ràng buộc bắt buộc ở production (nợ chấp nhận, scan #5)",
+      "auth.email-unchanged — email Auth (xác nhận đăng ký R-04, quên mật khẩu) KHÔNG đổi: vẫn do Supabase Auth (GoTrue) gửi qua SMTP riêng của GoTrue; local vào Mailpit http://127.0.0.1:54324, KHÔNG phải hộp thư thật. Thay đổi này không đụng `supabase/config.toml`"
     ],
     "dependents": [
+      "cancellation.resend-email — admin \"gửi lại email\" huỷ suất (R-109/R-110) đi qua cùng MailService/outbox: kết quả SENT/FAILED và trạng thái hiển thị ở màn Đơn bị ảnh hưởng phải đúng như trước",
+      "mail.outbox.retry-backoff — retry/backoff của outbox (tối đa 3 lần, `last_error`, FAILED) giữ nguyên, nay lỗi đến từ SMTP thay vì Resend",
+      "alert.email_failed — cảnh báo `email_failed` khi outbox gửi lỗi vẫn phát sinh với thông điệp lỗi SMTP mới (\"SMTP is not configured (SMTP_HOST)\" / \"SMTP send failed: …\")",
+      "mail.templates — nội dung/template email (templates.ts) KHÔNG đổi; chỉ kênh gửi đổi",
+      "[v20 bug-cinema-map, nay là vùng phụ thuộc] web.rap.map — R-34: /rap hiển thị bản đồ vị trí rạp có TILE ĐƯỜNG PHỐ thật (không còn nền xám): tile lấy từ `*.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` (subdomain a/b/c, maxZoom 20), KHÔNG còn request tới `*.openstreetmap.org`; không có watermark \"API KEY REQUIRED\"; có marker rạp, nút zoom, attribution \"© OpenStreetMap contributors, tiles by OpenStreetMap France\" (link tới openstreetmap.org/copyright + openstreetmap.fr). Tiêu đề phụ mục bản đồ là \"Bản đồ trực quan\" (không còn chữ \"OpenStreetMap\")",
+      "[v20 bug-cinema-map, nay là vùng phụ thuộc] web.rap-detail.map — R-37: /rap/[code] (vd /rap/HN01) hiển thị bản đồ cùng tile osmfr + 1 marker đúng vị trí rạp; bấm marker mở popup (tên rạp + địa chỉ + link \"Chỉ đường trên Google Maps →\")",
+      "[v20 bug-cinema-map, nay là vùng phụ thuộc] web.rap.directions-link — R-34, R-37: mọi link chỉ đường (nút \"Chỉ đường\", link trong popup, nút \"Mở chỉ đường (Google Maps)\" ở /rap/[code]) có toạ độ → `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>`; target=_blank, rel=\"noopener noreferrer\"; KHÔNG còn host `openstreetmap.org` (hết dạng `directions?to=`)",
+      "[v20 bug-cinema-map, nay là vùng phụ thuộc] web.rap.no-coords-fallback — R-34, R-37: rạp thiếu toạ độ → không vẽ bản đồ; link \"Tìm địa chỉ trên Google Maps\" → `https://www.google.com/maps/search/?api=1&query=<tên + địa chỉ, encodeURIComponent>`",
+      "[v20 bug-cinema-map, nay là vùng phụ thuộc] web.privacy.no-geolocation — NFR-08 (R-36 không đụng): bản đồ/popup/link chỉ đường KHÔNG gọi `navigator.geolocation`, không xin quyền vị trí, không lưu toạ độ khách",
       "web.showtime-schedule (dùng chung) — prop mới `hideDateStrip` (mặc định false) và `ONE_DAY_MS` dùng chung từ lib/vn-date: ảnh hưởng mọi nơi render ShowtimeSchedule (/lich-chieu, /phim/[slug])",
       "web.vn-date — lib/vn-date.ts thêm `resolveScheduleDate` + export `ONE_DAY_MS`: biên +6 nhận, +7 loại, nửa đêm VN (16:59Z vs 17:00Z), ngày không tồn tại (2026-02-30, 2026-13-45) → hôm nay",
       "web.seo — R-46: /lich-chieu vẫn render phía server (page.tsx là server component; chỉ bộ lọc + dải ngày là client component, chỉ gọi router.push)",
@@ -142,7 +191,16 @@
       "/rap/[code] rạp không có toạ độ (tạo rạp thử bằng admin nếu cần): không vẽ bản đồ, hiện link \"Tìm địa chỉ trên Google Maps\" đúng URL search đã encode (dấu tiếng Việt, khoảng trắng)",
       "/rap, /rap/[code] responsive: bản đồ không tràn ngang ở 360/768/1280 px; popup mở được trên mobile",
       "Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng) — scan bug-cinema-map #1: /rap chỉ hiện 1 rạp trên bản đồ/danh sách; #2: z-index bản đồ Leaflet có thể đè header khi cuộn; #3: CSS động Leaflet; #4: thiếu test nhánh có toạ độ ở cinemas.test — các defect này chưa xử lý, cần triage riêng",
-      "Residual: web :3000 của người dùng có thể còn chạy bản build cũ → cần build/restart lại trước khi test thủ công; `pnpm build` web chưa chạy cho task này (chủ ý, tránh ghi đè .next đang dùng) — kiểm bằng typecheck + next dev"
+      "Residual: web :3000 của người dùng có thể còn chạy bản build cũ → cần build/restart lại trước khi test thủ công; `pnpm build` web chưa chạy cho task này (chủ ý, tránh ghi đè .next đang dùng) — kiểm bằng typecheck + next dev",
+      "[scope v21 / feature-mail-smtp] Email vé sau thanh toán (R-86): paid → email vé vào outbox → job gửi qua SMTP → SENT; nội dung (mã đặt vé, QR, tên rạp + địa chỉ + link bản đồ + hotline, lưu ý) giống trước",
+      "[scope v21] ACCOUNT_LOCKED_ALERT (R-11): sai mật khẩu 5 lần → email cảnh báo tới chủ tài khoản vào outbox và gửi được qua SMTP",
+      "[scope v21] SHOWTIME_CANCELLED (R-109 + AC-24): huỷ suất → mỗi đơn affected có 1 email hướng dẫn liên hệ CSKH; trạng thái gửi hiển thị ở Đơn bị ảnh hưởng",
+      "[scope v21] Resend-email của admin (gửi lại email huỷ suất): bấm gửi lại → email gửi qua SMTP, trạng thái cập nhật",
+      "[scope v21] Các loại email outbox khác: password_set, OAuth, identity_linked / identity_unlinked vẫn render đúng template và gửi được qua cùng transport",
+      "[scope v21] Test chạy ở NODE_ENV=test KHÔNG gửi mail thật (MailService trả id mock khi không có transport); test tích hợp/e2e dùng MAIL_TRANSPORT giả với `sendMail`, không còn `RESEND_CLIENT`/`RESEND_API_KEY`",
+      "[scope v21] Email Auth (xác nhận đăng ký / quên mật khẩu) không hồi quy: vẫn tới Mailpit http://127.0.0.1:54324 ở local; luồng đăng ký → xác nhận (R-04) chạy như trước",
+      "[scope v21] LƯU Ý: gửi mail Gmail thật do USER tự kiểm bằng App Password (điền `SMTP_*` vào `.env.local`, gọi tay `POST /jobs/send-emails` với `x-job-secret`); môi trường builder/CI không dùng mạng nên KHÔNG viết test E2E gửi mail thật. Gmail giới hạn ~500 mail/ngày, chỉ dùng demo",
+      "[scope v21] Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng): thiếu `SMTP_*` ở production không bị chặn lúc khởi động (scan bug-register-email #5); `.github/workflows/ci.yml` và `e2e.yml` còn `RESEND_API_KEY: ci-placeholder` (biến thừa vô hại)"
     ]
   },
   "acceptance": [
@@ -187,7 +245,11 @@
     "CR cinema-map A1: Given mở /rap trên mạng có internet (kể cả DNS nhà mạng VN chặn *.openstreetmap.org) When kéo tới mục vị trí rạp Then bản đồ hiện nền đường phố thật + marker, không nền xám, không watermark \"API KEY REQUIRED\"; tile tải từ *.tile.openstreetmap.fr. [R-34]",
     "CR cinema-map A2: Given mở /rap/HN01 When bấm marker Then popup hiện tên + địa chỉ rạp + link \"Chỉ đường trên Google Maps →\". [R-37]",
     "CR cinema-map A3: Given rạp có toạ độ When bấm \"Chỉ đường\" (nút/popup/\"Mở chỉ đường (Google Maps)\") Then mở https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng> ở tab mới (noopener noreferrer); rạp không có toạ độ → \"Tìm địa chỉ trên Google Maps\" mở maps/search/?api=1&query=<tên + địa chỉ>. [R-34, R-37]",
-    "CR cinema-map A4: Given mở /rap hoặc /rap/[code] Then không có request tới *.openstreetmap.org và không gọi navigator.geolocation; attribution OpenStreetMap contributors + OpenStreetMap France có mặt. [NFR-08]"
+    "CR cinema-map A4: Given mở /rap hoặc /rap/[code] Then không có request tới *.openstreetmap.org và không gọi navigator.geolocation; attribution OpenStreetMap contributors + OpenStreetMap France có mặt. [NFR-08]",
+    "CR mail-smtp A1: Given đặt `SMTP_HOST` (+ `SMTP_USER`/`SMTP_PASS`/`SMTP_PORT`/`SMTP_FROM`) When gọi `POST /jobs/send-emails` với x-job-secret đúng Then email outbox đến hạn được gửi qua SMTP và đánh dấu SENT. [NFR-10; R-86, R-109]",
+    "CR mail-smtp A2: Given KHÔNG đặt `SMTP_HOST` ở môi trường không phải test When job gửi email chạy Then outbox ghi `last_error` \"SMTP is not configured\" và retry tối đa 3 lần rồi FAILED (cảnh báo email_failed). [NFR-10; R-109]",
+    "CR mail-smtp A3: Given email Auth (xác nhận đăng ký, quên mật khẩu) When thực hiện luồng đăng ký / quên mật khẩu Then KHÔNG đổi — vẫn do Supabase Auth gửi qua SMTP của GoTrue, local vào Mailpit http://127.0.0.1:54324. [R-04]",
+    "CR mail-smtp A4: Given email giao dịch ACCOUNT_LOCKED_ALERT / vé / SHOWTIME_CANCELLED When đến hạn gửi Then đi qua cùng transport SMTP, nội dung template không đổi; lỗi SMTP hoặc người nhận bị từ chối → throw lỗi để outbox retry. [R-11, R-86, R-109]"
   ],
   "risk": "low"
 }

@@ -257,7 +257,7 @@ Gọi bởi pg_cron/pg_net qua `public.call_nest_job(path)` (URL + secret từ V
 
 | Route | Guard | Ghi chú |
 |---|---|---|
-| `POST /jobs/send-emails` | JobSecret | Mỗi phút (`job-send-emails`). Worker gửi `email_outbox` qua Resend, retry khi lỗi |
+| `POST /jobs/send-emails` | JobSecret | Mỗi phút (`job-send-emails`). Worker gửi `email_outbox` qua SMTP (nodemailer), retry khi lỗi |
 | `POST /jobs/reconcile` | JobSecret | Mỗi 5 phút (`job-reconcile-payos`). Payment PENDING 2 phút–24h (<= 50) + EXPIRED <= 1h (<= 20): hỏi PayOS; PAID -> `handleWebhook` (idempotent với webhook thật); CANCELLED/EXPIRED -> `cancel_stale_payment`. Trả `{checked, paid, alreadyPaid, needsReview, cancelled, expired, skipped, errors}` |
 
 Mail (`MailModule`) và `ThrottlerModule` không có route.

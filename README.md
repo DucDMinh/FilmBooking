@@ -1,6 +1,6 @@
 # FilmBooking — web đặt vé xem phim
 
-Monorepo pnpm: `apps/web` (Next.js), `apps/api` (NestJS), `packages/shared` (zod schema, mã lỗi dùng chung), `supabase/` (migration, pgTAP, seed). Dữ liệu: Supabase (Postgres + Auth + Storage + Realtime). Thanh toán PayOS, email Resend, captcha Cloudflare Turnstile. Chỉ kênh **web** (POS đã gỡ, spec 2.0.0).
+Monorepo pnpm: `apps/web` (Next.js), `apps/api` (NestJS), `packages/shared` (zod schema, mã lỗi dùng chung), `supabase/` (migration, pgTAP, seed). Dữ liệu: Supabase (Postgres + Auth + Storage + Realtime). Thanh toán PayOS, email qua SMTP (Gmail/Resend/SES), captcha Cloudflare Turnstile. Chỉ kênh **web** (POS đã gỡ, spec 2.0.0).
 
 Tài liệu as-built: [`docs/API_SPEC.md`](docs/API_SPEC.md) · [`docs/ERD.md`](docs/ERD.md) · [`docs/DESIGN.md`](docs/DESIGN.md) · [`docs/dev-setup.md`](docs/dev-setup.md). Yêu cầu (intent): [`SPECIFICATIONS.md`](SPECIFICATIONS.md).
 
@@ -36,7 +36,7 @@ Danh sách đầy đủ ở [`.env.example`](.env.example); schema kiểm tra c�
 | `PORT` | api | không | Mặc định 3001 |
 | `TRUST_PROXY_HOPS` | api | không | Số proxy tin cậy (mặc định 1 ở production, 0 còn lại) |
 | `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` | api | production | Local có thể bỏ trống (không tạo được link thanh toán thật) |
-| `RESEND_API_KEY` | api | không | Gửi email giao dịch (`.env.example` có `RESEND_FROM_EMAIL` nhưng code API hiện không đọc) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | api | không | Gửi email giao dịch (outbox) qua SMTP (Gmail, Resend, SES…); thiếu `SMTP_HOST` = job gửi mail báo lỗi và retry (test thì mock). `SMTP_PORT` mặc định 465 (TLS), cổng khác dùng STARTTLS; `SMTP_FROM` trống = `FilmBooking <SMTP_USER>`. Xem `docs/dev-setup.md` |
 | `TURNSTILE_SECRET_KEY` | api | cho đăng ký/quên mật khẩu | Thiếu = từ chối (fail-closed); local dùng secret test Cloudflare |
 | `JOB_SECRET` | api | cho `/jobs/*` | Header `x-job-secret`; thiếu = `/jobs/*` luôn 401 |
 | `SENTRY_DSN` (api), `NEXT_PUBLIC_SENTRY_DSN` (web) | api, web | không | DSN Sentry (api: `SENTRY_DSN`, web: `NEXT_PUBLIC_SENTRY_DSN`); thiếu = tắt hoàn toàn (không gửi gì). Có DSN: gắn tag `cinema_id`, scrub PII trước khi gửi |

@@ -40,6 +40,20 @@
       "status": "done",
       "note": "docs/spec only; spec-validator bỏ qua theo chỉ đạo PO (dự án demo, giữ gọn); DB as-built còn enum exchanged = nợ kỹ thuật",
       "updatedAt": "2026-11-12T08:59:36.880Z"
+    },
+    {
+      "id": "mail-smtp/phase-1-task-01",
+      "title": "MailService (email outbox) chuyển từ Resend SDK sang SMTP/nodemailer, cấu hình SMTP_* qua env; spec không đổi (NFR-10 đã là SMTP riêng)",
+      "class": "MODIFY",
+      "status": "done",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/feature-mail-smtp-phase-1-task-01-round-1-review.md"
+      },
+      "note": "spec_version 3.1.0 không bump, scope v21. Chưa gửi mail Gmail thật (cần App Password của user). Residual: SMTP_* chưa bắt buộc ở production (scan #5); CI còn RESEND_API_KEY placeholder.",
+      "updatedAt": "2026-11-17T08:05:16.436Z"
     }
   ],
   "bugs": [
@@ -503,7 +517,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-17T03:27:30.032Z",
+  "lastUpdated": "2026-11-17T08:05:16.436Z",
   "inProgressTask": null,
   "completedTasks": [
     {

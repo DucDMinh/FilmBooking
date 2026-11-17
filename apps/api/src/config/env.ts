@@ -39,7 +39,12 @@ export const envSchema = z
     PAYOS_CLIENT_ID: optionalString,
     PAYOS_API_KEY: optionalString,
     PAYOS_CHECKSUM_KEY: optionalString,
-    RESEND_API_KEY: optionalString,
+    // SMTP gửi mail outbox (Gmail / Resend / SES…). Thiếu SMTP_HOST: test mock, môi trường khác báo lỗi khi gửi.
+    SMTP_HOST: optionalString,
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+    SMTP_USER: optionalString,
+    SMTP_PASS: optionalString,
+    SMTP_FROM: optionalString,
     TURNSTILE_SECRET_KEY: optionalString,
     JOB_SECRET: optionalString,
     SENTRY_DSN: optionalString,

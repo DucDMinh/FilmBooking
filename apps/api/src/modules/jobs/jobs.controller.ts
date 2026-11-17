@@ -125,7 +125,7 @@ export class JobsService {
 
   /**
    * Lấy batch PENDING từ email_outbox (SKIP LOCKED concurrency via RPC hoặc atomic claim),
-   * gửi email qua Resend, cập nhật trạng thái SENT hoặc FAILED kèm retry backoff và last_error.
+   * gửi email qua SMTP, cập nhật trạng thái SENT hoặc FAILED kèm retry backoff và last_error.
    */
   async processEmailOutbox(batchSize: number = 20): Promise<SendEmailsJobResult> {
     const admin = this.supabase.admin();

@@ -7,7 +7,7 @@ import { AllExceptionsFilter } from "../src/common/errors/all-exceptions.filter"
 import { SupabaseService } from "../src/common/supabase/supabase.service";
 import { ENV, parseEnv } from "../src/config/env";
 import { JobsController, JobsService, MAX_EMAIL_ATTEMPTS } from "../src/modules/jobs/jobs.controller";
-import { RESEND_CLIENT } from "../src/modules/mail/mail.service";
+import { MAIL_TRANSPORT } from "../src/modules/mail/mail.service";
 import { MailModule } from "../src/modules/mail/mail.module";
 import {
   DEFAULT_HOTLINE,
@@ -284,14 +284,10 @@ function createFakeSupabase() {
 describe("Outbox Job & Email Worker", () => {
   let app: INestApplication;
   const fakeDb = createFakeSupabase();
-  const resendSendMock = vi.fn();
+  const sendMailMock = vi.fn();
 
   beforeAll(async () => {
-    const fakeResend = {
-      emails: {
-        send: resendSendMock,
-      },
-    };
+    const fakeTransport = { sendMail: sendMailMock };
 
     const moduleRef = await Test.createTestingModule({
       imports: [MailModule],
@@ -304,8 +300,8 @@ describe("Outbox Job & Email Worker", () => {
     })
       .overrideProvider(ENV)
       .useValue(testEnv)
-      .overrideProvider(RESEND_CLIENT)
-      .useValue(fakeResend)
+      .overrideProvider(MAIL_TRANSPORT)
+      .useValue(fakeTransport)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -320,8 +316,8 @@ describe("Outbox Job & Email Worker", () => {
 
   beforeEach(() => {
     fakeDb.reset();
-    resendSendMock.mockReset();
-    resendSendMock.mockResolvedValue({ data: { id: "mock-resend-id-123" }, error: null });
+    sendMailMock.mockReset();
+    sendMailMock.mockResolvedValue({ messageId: "mock-smtp-id-123" });
   });
 
   describe("AC-23 & Bảo mật: JobSecretGuard", () => {
@@ -353,8 +349,8 @@ describe("Outbox Job & Email Worker", () => {
     });
   });
 
-  describe("Xử lý batch email PENDING -> SENT (Resend mock)", () => {
-    it("Outbox 3 email PENDING -> gọi job -> 3 SENT qua Resend", async () => {
+  describe("Xử lý batch email PENDING -> SENT (SMTP mock)", () => {
+    it("Outbox 3 email PENDING -> gọi job -> 3 SENT qua SMTP", async () => {
       const pastTime = new Date(Date.now() - 60000).toISOString();
       const mockRows: OutboxRow[] = [
         {
@@ -431,7 +427,7 @@ describe("Outbox Job & Email Worker", () => {
         skipped: 0,
       });
 
-      expect(resendSendMock).toHaveBeenCalledTimes(3);
+      expect(sendMailMock).toHaveBeenCalledTimes(3);
 
       const rows = fakeDb.getRows();
       expect(rows.every((r) => r.status === "SENT")).toBe(true);
@@ -520,9 +516,9 @@ describe("Outbox Job & Email Worker", () => {
       expect(res.status).toBe(200);
       expect(res.body.sent).toBe(1);
 
-      // Verify email được gửi qua Resend với đầy đủ QR token đầu tiên, địa chỉ và cả 2 ghế từ DB
-      expect(resendSendMock).toHaveBeenCalledTimes(1);
-      const callArgs = resendSendMock.mock.calls[0]![0];
+      // Verify email được gửi qua SMTP với đầy đủ QR token đầu tiên, địa chỉ và cả 2 ghế từ DB
+      expect(sendMailMock).toHaveBeenCalledTimes(1);
+      const callArgs = sendMailMock.mock.calls[0]![0];
       expect(callArgs.to).toBe("khach-enrich@example.com");
       expect(callArgs.html).toContain("qr-enriched-from-db-12345");
       expect(callArgs.html).toContain("54A Nguyễn Chí Thanh");
@@ -537,7 +533,7 @@ describe("Outbox Job & Email Worker", () => {
   });
 
   describe("Xử lý lỗi gửi, retry backoff và max attempts -> FAILED", () => {
-    it("Gặp lỗi Resend -> cập nhật attempts, last_error và chuyển FAILED sau max attempts", async () => {
+    it("Gặp lỗi SMTP -> cập nhật attempts, last_error và chuyển FAILED sau max attempts", async () => {
       const pastTime = new Date(Date.now() - 60000).toISOString();
       const mockRow: OutboxRow = {
         id: "email-fail",
@@ -555,8 +551,8 @@ describe("Outbox Job & Email Worker", () => {
 
       fakeDb.reset([mockRow]);
 
-      // Giả lập Resend trả lỗi
-      resendSendMock.mockRejectedValue(new Error("SMTP connection timeout"));
+      // Giả lập SMTP trả lỗi
+      sendMailMock.mockRejectedValue(new Error("SMTP connection timeout"));
 
       // Lần 1: attempts lên 1, status vẫn PENDING
       const res1 = await request(app.getHttpServer())
@@ -647,9 +643,9 @@ describe("Outbox Job & Email Worker", () => {
       fakeDb.reset(mockRows);
 
       // Thêm một độ trễ nhỏ giả lập thời gian gửi qua network để 2 request trùng thời điểm xử lý
-      resendSendMock.mockImplementation(async () => {
+      sendMailMock.mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
-        return { data: { id: "resend-mock-id" }, error: null };
+        return { messageId: "smtp-mock-id" };
       });
 
       const callJob = () =>
@@ -666,8 +662,8 @@ describe("Outbox Job & Email Worker", () => {
       const totalSent = resA.body.sent + resB.body.sent;
       expect(totalSent).toBe(3);
 
-      // Resend chỉ được gọi đúng 3 lần (không trùng email nào)
-      expect(resendSendMock).toHaveBeenCalledTimes(3);
+      // SMTP chỉ được gọi đúng 3 lần (không trùng email nào)
+      expect(sendMailMock).toHaveBeenCalledTimes(3);
 
       const rows = fakeDb.getRows();
       expect(rows.filter((r) => r.status === "SENT").length).toBe(3);
@@ -887,10 +883,10 @@ describe("Outbox Job & Email Worker", () => {
       expect(res.status).toBe(200);
       expect(res.body.sent).toBe(3);
 
-      expect(resendSendMock).toHaveBeenCalledTimes(3);
+      expect(sendMailMock).toHaveBeenCalledTimes(3);
 
       // Đảm bảo không cuộc gọi nào gửi JSON thô
-      for (const call of resendSendMock.mock.calls) {
+      for (const call of sendMailMock.mock.calls) {
         const { html, text } = call[0]!;
         expect(html).not.toContain("<pre>");
         expect(html).not.toContain('{"');
@@ -925,7 +921,7 @@ describe("Outbox Job & Email Worker", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.failed).toBe(1);
-      expect(resendSendMock).not.toHaveBeenCalled();
+      expect(sendMailMock).not.toHaveBeenCalled();
 
       const row = fakeDb.getRows().find((r) => r.id === "id-unknown-kind")!;
       expect(row.status).toBe("FAILED");

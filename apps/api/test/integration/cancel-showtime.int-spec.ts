@@ -231,7 +231,7 @@ describe.skipIf(!supabaseEnv)("integration: huỷ suất + email hàng loạt + 
       expect(checkedIn.data ?? []).toHaveLength(0);
     });
 
-    it("AC-24: mỗi đơn có đúng 1 email xếp hàng; job gửi (Resend mock) -> SENT; nội dung hướng dẫn liên hệ CSKH", async () => {
+    it("AC-24: mỗi đơn có đúng 1 email xếp hàng; job gửi (SMTP mock) -> SENT; nội dung hướng dẫn liên hệ CSKH", async () => {
       const rows = await outboxRowsFor(orders.map((o) => o.orderId));
       expect(rows).toHaveLength(orders.length);
       expect(new Set(rows.map((row) => row.to_email))).toEqual(new Set(orders.map((o) => o.email)));
@@ -279,7 +279,7 @@ describe.skipIf(!supabaseEnv)("integration: huỷ suất + email hàng loạt + 
       expect(blocked.status).toBe(409);
 
       const row = (await outboxRowsFor([target.orderId]))[0]!;
-      await admin.from("email_outbox").update({ status: "FAILED", last_error: "mô phỏng lỗi Resend" }).eq("id", row.id);
+      await admin.from("email_outbox").update({ status: "FAILED", last_error: "mô phỏng lỗi SMTP" }).eq("id", row.id);
       const resend = await request(server)
         .post(`/affected-orders/${target.orderId}/resend-email`)
         .set("Authorization", `Bearer ${manager.accessToken}`);
