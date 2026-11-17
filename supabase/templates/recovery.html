@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <title>Đặt lại mật khẩu</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F3F4F6;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:#F3F4F6;">Liên kết đặt lại mật khẩu CINEMO có hiệu lực trong 1 giờ.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F3F4F6" style="background-color:#F3F4F6;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#FFFFFF;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td bgcolor="#111620" style="background-color:#111620;padding:22px 32px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:4px;color:#F06D5B;">CINEMO</td>
+          </tr>
+          <tr>
+            <td style="padding:32px 32px 28px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111827;">
+              <h1 style="margin:0 0 16px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:22px;line-height:30px;font-weight:700;color:#111827;">Đặt lại mật khẩu</h1>
+              <p style="margin:0 0 12px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#374151;">Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản <strong>{{ .Email }}</strong>.</p>
+              <p style="margin:0 0 12px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#374151;">Liên kết chỉ dùng được một lần và <strong>hết hạn sau 1 giờ</strong>.</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 8px;">
+                <tr>
+                  <td align="center" bgcolor="#F06D5B" style="border-radius:8px;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;line-height:20px;color:#0B0D12;text-decoration:none;border-radius:8px;">Đặt lại mật khẩu</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:16px 0 0;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#6B7280;">Nếu nút không bấm được, hãy sao chép liên kết dưới đây và dán vào trình duyệt:</p>
+              <p style="margin:4px 0 0;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;word-break:break-all;"><a href="{{ .ConfirmationURL }}" target="_blank" style="color:#C2402E;text-decoration:underline;">{{ .ConfirmationURL }}</a></p>
+              <p style="margin:24px 0 0;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#6B7280;">Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này, mật khẩu hiện tại của bạn vẫn giữ nguyên.</p>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#F9FAFB" style="background-color:#F9FAFB;padding:16px 32px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#6B7280;border-top:1px solid #E5E7EB;">
+              Đây là email tự động từ CINEMO, vui lòng không trả lời thư này.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

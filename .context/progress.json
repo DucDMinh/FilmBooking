@@ -54,6 +54,20 @@
       },
       "note": "spec_version 3.1.0 không bump, scope v21. Chưa gửi mail Gmail thật (cần App Password của user). Residual: SMTP_* chưa bắt buộc ở production (scan #5); CI còn RESEND_API_KEY placeholder.",
       "updatedAt": "2026-11-17T08:05:16.436Z"
+    },
+    {
+      "id": "custom-mail-templates/phase-1",
+      "title": "Tùy biến mail đi: giao diện CINEMO + tiếng Việt (mail Auth 6 template + 10 kind mail giao dịch Nest)",
+      "class": "MODIFY",
+      "status": "done",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "NORMAL",
+        "rounds": 1,
+        "reportPath": ".context/review-reports/feature-custom-mail-templates-phase-1-round-1-review.md"
+      },
+      "note": "spec_version 3.1.0 không bump, scope v22. Template Auth qua config.toml chỉ áp dụng local; staging/prod dán vào Dashboard. Residual LOW: Outlook max-width, màu Nest/Auth lệch nhẹ, DEFAULT_WEB_ORIGIN=filmbooking.vn, PASSWORD_SET còn nút sau khi đã đặt; chưa kiểm client mail thật.",
+      "updatedAt": "2026-11-17T08:59:49.341Z"
     }
   ],
   "bugs": [
@@ -517,7 +531,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-17T08:05:16.436Z",
+  "lastUpdated": "2026-11-17T08:59:49.341Z",
   "inProgressTask": null,
   "completedTasks": [
     {

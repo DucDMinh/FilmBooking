@@ -47,6 +47,8 @@ sender_name = "CINEMO"
 
 Rồi `pnpm db:stop && pnpm db:start` để GoTrue nạp lại. Dùng Resend thì `host = "smtp.resend.com"`, `user = "resend"`, `pass` = API key. Không commit thay đổi chứa tài khoản cá nhân của bạn vào `config.toml`.
 
+**Template mail Auth (tiếng Việt, thương hiệu CINEMO):** 6 file HTML nằm ở `supabase/templates/` (`confirmation`, `recovery`, `magic_link`, `email_change`, `invite`, `reauthentication`), được nạp qua các khối `[auth.email.template.<tên>]` trong `supabase/config.toml`. Xem trước mail thật trong Mailpit `http://127.0.0.1:54324`. Sửa template xong chạy `pnpm db:stop && pnpm db:start` để GoTrue nạp lại. Chỉ dùng biến `{{ .ConfirmationURL }}`, `{{ .Token }}`, `{{ .Email }}`, `{{ .NewEmail }}`, `{{ .SiteURL }}` (test tĩnh `apps/api/test/auth-email-templates.spec.ts` kiểm tra).
+
 ## Lệnh DB (chỉ local)
 
 | Lệnh | Việc |

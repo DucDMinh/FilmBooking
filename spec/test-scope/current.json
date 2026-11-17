@@ -1,15 +1,20 @@
 {
   "specVersion": "3.1.0",
-  "scopeVersion": 21,
-  "generatedAt": "2026-11-17T15:04:35+07:00",
+  "scopeVersion": 22,
+  "generatedAt": "2026-11-17T15:58:15+07:00",
   "trigger": "feature-update",
-  "workItem": "feature-mail-smtp/phase-1-task-01",
+  "workItem": "feature-custom-mail-templates/phase-1",
   "specRefs": [
     "NFR-10",
     "R-04",
     "R-11",
+    "R-13",
+    "R-24",
+    "R-78",
     "R-86",
-    "R-109"
+    "R-109",
+    "R-133",
+    "AC-26"
   ],
   "changed": {
     "files": [
@@ -44,7 +49,17 @@
       ".env.example",
       "docs/dev-setup.md",
       "docs/DESIGN.md",
-      "docs/API_SPEC.md"
+      "docs/API_SPEC.md",
+      "apps/api/src/modules/mail/templates.ts",
+      "apps/api/test/mail-templates.spec.ts",
+      "supabase/templates/confirmation.html",
+      "supabase/templates/recovery.html",
+      "supabase/templates/magic_link.html",
+      "supabase/templates/email_change.html",
+      "supabase/templates/invite.html",
+      "supabase/templates/reauthentication.html",
+      "apps/api/test/auth-email-templates.spec.ts",
+      "supabase/config.toml"
     ],
     "modules": [
       "web-catalog",
@@ -55,7 +70,9 @@
       "web-rap",
       "api-mail",
       "api-config",
-      "api-jobs"
+      "api-jobs",
+      "api-mail-templates",
+      "supabase-auth-email-templates"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -97,24 +114,48 @@
         "docs/dev-setup.md",
         "docs/DESIGN.md",
         "docs/API_SPEC.md"
+      ],
+      "feature-custom-mail-templates/phase-1-task-01": [
+        "apps/api/src/modules/mail/templates.ts",
+        "apps/api/test/mail-templates.spec.ts",
+        "apps/api/test/outbox-job.e2e-spec.ts"
+      ],
+      "feature-custom-mail-templates/phase-1-task-02": [
+        "supabase/templates/confirmation.html",
+        "supabase/templates/recovery.html",
+        "supabase/templates/magic_link.html",
+        "supabase/templates/email_change.html",
+        "supabase/templates/invite.html",
+        "supabase/templates/reauthentication.html",
+        "apps/api/test/auth-email-templates.spec.ts",
+        "docs/dev-setup.md",
+        "supabase/config.toml"
       ]
     }
   },
   "impact": {
     "direct": [
+      "[scope v22 / custom-mail-templates] mail.nest.layout — MODIFY chỉ trình bày (requirement KHÔNG đổi, không bump spec_version): mọi mail giao dịch do Nest gửi (10 kind của `renderTemplate`: TICKET_ISSUED, ACCOUNT_LOCKED_ALERT, IDENTITY_LINKED, IDENTITY_UNLINKED, LATE_PAYMENT_MANUAL_REVIEW, AMOUNT_MISMATCH_MANUAL_REVIEW, SHOWTIME_CANCELLED, PASSWORD_SET, OAUTH_MISSING_EMAIL_COLLISION, OAUTH_MISSING_EMAIL_VERIFY) đổi giao diện sang thương hiệu CINEMO: bố cục bảng 600px + style inline (không `<style>`, không `display:flex`), `lang=\"vi\"`, preheader ẩn, header dải tối `#111620` + wordmark CINEMO `#F06D5B`, nút CTA nền `#F06D5B`, footer có hotline + câu \"email tự động, không trả lời\"",
+      "[scope v22] mail.nest.subject — subject mọi mail Nest đổi tiền tố `[FilmBooking]` → `[CINEMO]` (vd `[CINEMO] Vé điện tử …`); tên thương hiệu trong header/footer/phần `text` đổi \"FilmBooking\" → \"CINEMO\". Test/selector cũ dò `[FilmBooking]` phải cập nhật (đã sửa 3 assert ở outbox-job.e2e-spec.ts)",
+      "[scope v22] mail.ticket (R-86, R-133, AC-26) — nội dung vé GIỮ NGUYÊN, chỉ giao diện đổi: mã đặt vé, qr_token, tên rạp + địa chỉ + link bản đồ + hotline rạp, phim, phòng, suất, ghế, combo, tổng tiền VND; đủ 4 lưu ý (đến trước 15 phút, \"Vé chỉ dùng tại rạp ghi trên vé\", \"Vé không huỷ / không hoàn tiền\", giấy tờ tuỳ thân phim T13+) ở cả `html` lẫn `text`",
+      "[scope v22] mail.account-locked (R-11) — ACCOUNT_LOCKED_ALERT giữ nguyên \"5 lần liên tiếp\" + \"15 phút\"; mail.identity (R-24) — IDENTITY_LINKED/IDENTITY_UNLINKED giữ câu cảnh báo liên kết/huỷ liên kết; mail.late-payment (R-78) — LATE_PAYMENT_MANUAL_REVIEW/AMOUNT_MISMATCH_MANUAL_REVIEW giữ lý do, mã đặt vé/mã đơn/mã giao dịch/số tiền/rạp, hướng dẫn liên hệ hotline + hoàn tiền thủ công; mail.showtime-cancelled (R-109 + AC-24) — giữ hướng dẫn hoàn tiền thủ công + câu không hỗ trợ đổi suất; mail.password-set / OAuth (OAUTH_MISSING_EMAIL_COLLISION, OAUTH_MISSING_EMAIL_VERIFY) — giữ nội dung",
+      "[scope v22] mail.nest.escape — mọi giá trị động (tên phim/rạp, ghế, title, preheader, href) vẫn qua `escapeHtml`; payload chứa `<script>`, `<img onerror>`, dấu nháy kép → HTML không chứa thẻ thô",
+      "[scope v22] mail.auth.templates — 6 template Supabase Auth tiếng Việt có dấu, thương hiệu CINEMO tại `supabase/templates/*.html`, nạp qua 6 khối `[auth.email.template.<tên>]` trong `supabase/config.toml` (CHỈ áp dụng khi chạy Supabase local; staging/prod phải dán template vào Dashboard): `confirmation` (xác nhận đăng ký, R-04: link dùng một lần, hết hạn 24 giờ, chưa xác nhận không đặt vé được), `recovery` (đặt lại mật khẩu, R-13: hết hạn 1 giờ, dùng một lần, không yêu cầu thì bỏ qua), `magic_link`, `email_change` (xác nhận đổi từ `{{ .Email }}` sang `{{ .NewEmail }}`), `invite` (lời mời nhân sự), `reauthentication` (mã `{{ .Token }}` nổi bật, không chia sẻ). Biến Go template giữ nguyên (`.ConfirmationURL`, `.Token`, `.Email`, `.NewEmail`); không `<script`, không URL cứng",
+      "[scope v22] mail.auth.subject — subject mail Auth: `[CINEMO] Xác nhận email của bạn`, `[CINEMO] Đặt lại mật khẩu`, `[CINEMO] Liên kết đăng nhập`, `[CINEMO] Xác nhận đổi email`, `[CINEMO] Lời mời tham gia`, `[CINEMO] Mã xác thực`; link vẫn là `{{ .ConfirmationURL }}` nên luồng redirect/`auth/callback` (exchangeCodeForSession) KHÔNG đổi",
+      "[scope v22] mail.auth.notification-off — `[auth.email.notification.*]` vẫn TẮT (không gửi trùng mail \"đã đổi mật khẩu\" R-14 do Nest gửi); chỉ có 1 mail đổi mật khẩu",
       "api.mail.smtp-transport — NFR-10 (requirement KHÔNG đổi; chỉ đổi hiện thực): MailService gửi email giao dịch trong `email_outbox` qua SMTP (nodemailer, token `MAIL_TRANSPORT`, tạo bởi `createMailTransport(env)` trong mail.transport.ts) thay cho Resend SDK. Đặt `SMTP_HOST` (+ `SMTP_PORT` mặc định 465, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) → `sendMail` được gọi; secure=true khi port 465, false với port khác (vd 587); có auth khi có `SMTP_USER`; timeout kết nối 10s / greeting 10s / socket 20s",
       "api.mail.from-address — from = options.from > `SMTP_FROM` > `FilmBooking <SMTP_USER>` > `FilmBooking <no-reply@filmbooking.local>` (giải quyết scan bug-register-email #4: from cứng onboarding@resend.dev). Gmail ghi đè from thành chính tài khoản đăng nhập, bỏ qua `SMTP_FROM` (không phải lỗi code)",
       "api.mail.not-configured — thiếu `SMTP_HOST` ở môi trường KHÔNG phải test (production/development): MailService throw \"SMTP is not configured (SMTP_HOST)\" → outbox ghi `last_error`, retry tối đa 3 lần rồi FAILED; môi trường `NODE_ENV=test` vẫn trả id mock `mock-email-…` (không gửi thật)",
       "api.mail.errors — lỗi SMTP → throw \"SMTP send failed: …\" (log lỗi, KHÔNG log SMTP_PASS); `rejected` chứa người nhận → throw; thiếu messageId → throw \"missing message ID\" như hành vi cũ",
       "api.jobs.send-emails — `POST /jobs/send-emails` (header x-job-secret) gửi các email outbox đến hạn qua SMTP và đánh dấu SENT; comment controller đổi \"qua Resend\" → \"qua SMTP\", hành vi/response không đổi",
       "api.config.env — `RESEND_API_KEY` bị gỡ khỏi envSchema; thêm `SMTP_HOST`, `SMTP_PORT` (số nguyên 1–65535), `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` đều optional; KHÔNG có ràng buộc bắt buộc ở production (nợ chấp nhận, scan #5)",
-      "auth.email-unchanged — email Auth (xác nhận đăng ký R-04, quên mật khẩu) KHÔNG đổi: vẫn do Supabase Auth (GoTrue) gửi qua SMTP riêng của GoTrue; local vào Mailpit http://127.0.0.1:54324, KHÔNG phải hộp thư thật. Thay đổi này không đụng `supabase/config.toml`"
+      "auth.email-channel — [v21] email Auth (xác nhận đăng ký R-04, quên mật khẩu) vẫn do Supabase Auth (GoTrue) gửi qua SMTP riêng của GoTrue (kênh gửi không đổi); local vào Mailpit http://127.0.0.1:54324, KHÔNG phải hộp thư thật. [v22] riêng GIAO DIỆN/NGÔN NGỮ mail Auth đã đổi, xem mail.auth.templates"
     ],
     "dependents": [
       "cancellation.resend-email — admin \"gửi lại email\" huỷ suất (R-109/R-110) đi qua cùng MailService/outbox: kết quả SENT/FAILED và trạng thái hiển thị ở màn Đơn bị ảnh hưởng phải đúng như trước",
       "mail.outbox.retry-backoff — retry/backoff của outbox (tối đa 3 lần, `last_error`, FAILED) giữ nguyên, nay lỗi đến từ SMTP thay vì Resend",
       "alert.email_failed — cảnh báo `email_failed` khi outbox gửi lỗi vẫn phát sinh với thông điệp lỗi SMTP mới (\"SMTP is not configured (SMTP_HOST)\" / \"SMTP send failed: …\")",
-      "mail.templates — nội dung/template email (templates.ts) KHÔNG đổi; chỉ kênh gửi đổi",
+      "mail.templates — [v21] kênh gửi đổi sang SMTP; [v22] giao diện template email (templates.ts) đổi sang CINEMO, nội dung nghiệp vụ không đổi (xem impact.direct mail.nest.layout)",
       "[v20 bug-cinema-map, nay là vùng phụ thuộc] web.rap.map — R-34: /rap hiển thị bản đồ vị trí rạp có TILE ĐƯỜNG PHỐ thật (không còn nền xám): tile lấy từ `*.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` (subdomain a/b/c, maxZoom 20), KHÔNG còn request tới `*.openstreetmap.org`; không có watermark \"API KEY REQUIRED\"; có marker rạp, nút zoom, attribution \"© OpenStreetMap contributors, tiles by OpenStreetMap France\" (link tới openstreetmap.org/copyright + openstreetmap.fr). Tiêu đề phụ mục bản đồ là \"Bản đồ trực quan\" (không còn chữ \"OpenStreetMap\")",
       "[v20 bug-cinema-map, nay là vùng phụ thuộc] web.rap-detail.map — R-37: /rap/[code] (vd /rap/HN01) hiển thị bản đồ cùng tile osmfr + 1 marker đúng vị trí rạp; bấm marker mở popup (tên rạp + địa chỉ + link \"Chỉ đường trên Google Maps →\")",
       "[v20 bug-cinema-map, nay là vùng phụ thuộc] web.rap.directions-link — R-34, R-37: mọi link chỉ đường (nút \"Chỉ đường\", link trong popup, nút \"Mở chỉ đường (Google Maps)\" ở /rap/[code]) có toạ độ → `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>`; target=_blank, rel=\"noopener noreferrer\"; KHÔNG còn host `openstreetmap.org` (hết dạng `directions?to=`)",
@@ -200,7 +241,19 @@
       "[scope v21] Test chạy ở NODE_ENV=test KHÔNG gửi mail thật (MailService trả id mock khi không có transport); test tích hợp/e2e dùng MAIL_TRANSPORT giả với `sendMail`, không còn `RESEND_CLIENT`/`RESEND_API_KEY`",
       "[scope v21] Email Auth (xác nhận đăng ký / quên mật khẩu) không hồi quy: vẫn tới Mailpit http://127.0.0.1:54324 ở local; luồng đăng ký → xác nhận (R-04) chạy như trước",
       "[scope v21] LƯU Ý: gửi mail Gmail thật do USER tự kiểm bằng App Password (điền `SMTP_*` vào `.env.local`, gọi tay `POST /jobs/send-emails` với `x-job-secret`); môi trường builder/CI không dùng mạng nên KHÔNG viết test E2E gửi mail thật. Gmail giới hạn ~500 mail/ngày, chỉ dùng demo",
-      "[scope v21] Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng): thiếu `SMTP_*` ở production không bị chặn lúc khởi động (scan bug-register-email #5); `.github/workflows/ci.yml` và `e2e.yml` còn `RESEND_API_KEY: ci-placeholder` (biến thừa vô hại)"
+      "[scope v21] Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng): thiếu `SMTP_*` ở production không bị chặn lúc khởi động (scan bug-register-email #5); `.github/workflows/ci.yml` và `e2e.yml` còn `RESEND_API_KEY: ci-placeholder` (biến thừa vô hại)",
+      "[scope v22 / custom-mail-templates] Mail vé (R-86, R-133, AC-26): paid → email vé; nội dung phải GIỮ NGUYÊN (mã đặt vé, QR/qr_token, tên rạp + địa chỉ + link bản đồ + hotline, phim, suất, phòng, ghế, combo, tổng tiền, 4 lưu ý) — chỉ giao diện đổi; subject bắt đầu `[CINEMO]`; HTML dùng bảng + inline style, không phụ thuộc `<style>`/flex",
+      "[scope v22] Mail khoá tài khoản (R-11): sai mật khẩu 5 lần → email cảnh báo đủ \"5 lần liên tiếp\" + \"15 phút\", subject `[CINEMO] …`",
+      "[scope v22] Mail liên kết/huỷ liên kết MXH (R-24): link/unlink Google/Facebook → email thông báo đúng nội dung, giao diện CINEMO",
+      "[scope v22] Mail tiền về muộn (R-78): đơn `needs_manual_review` (ghế đã bán cho người khác / lệch số tiền) → email khách có lý do, mã đặt vé/mã đơn/mã giao dịch/số tiền/rạp + hướng dẫn liên hệ rạp/hoàn tiền thủ công",
+      "[scope v22] Mail huỷ suất (R-109, AC-24, AC-26): huỷ suất / chuyển rạp Tạm đóng → email hướng dẫn liên hệ CSKH hoàn tiền thủ công, không có phương án đổi suất; \"Gửi lại email\" của admin vẫn gửi được, hiển thị đúng",
+      "[scope v22] Mail đặt mật khẩu (PASSWORD_SET) và OAuth (OAUTH_MISSING_EMAIL_COLLISION, OAUTH_MISSING_EMAIL_VERIFY): render đúng, có nút CTA, giao diện CINEMO, link dự phòng dạng text dưới nút",
+      "[scope v22] Mail Supabase Auth (local, xem trong Mailpit http://127.0.0.1:54324 sau khi `pnpm db:stop && pnpm db:start` nạp config): đăng ký → mail `[CINEMO] Xác nhận email của bạn` tiếng Việt có dấu, nút/link `ConfirmationURL` bấm được → tài khoản đã xác nhận (R-04, hạn 24 giờ ghi trong mail); quên mật khẩu → `[CINEMO] Đặt lại mật khẩu`, ghi hạn 1 giờ (R-13), đặt lại thành công như trước",
+      "[scope v22] Mail Auth còn lại: magic link (`[CINEMO] Liên kết đăng nhập`), đổi email (`[CINEMO] Xác nhận đổi email`, hiển thị email cũ → mới), mời nhân sự (`[CINEMO] Lời mời tham gia`), xác thực lại (`[CINEMO] Mã xác thực`, mã `{{ .Token }}` hiển thị rõ). Khi tạo nhân sự/đổi email trên môi trường local mà luồng có gửi các mail này thì kiểm hiển thị trong Mailpit",
+      "[scope v22] Chỉ có MỘT mail khi đổi mật khẩu (R-14): `[auth.email.notification.password_changed]` KHÔNG bật; chỉ Nest gửi PASSWORD_SET/thông báo, không có mail trùng từ Supabase",
+      "[scope v22] Hiển thị đa client: xem mail trong Mailpit (HTML + Text); nếu có điều kiện, thử Gmail web/mobile. Bố cục bảng đúng, nút CTA bấm được, không vỡ ở 360px",
+      "[scope v22] LƯU Ý môi trường: template Auth qua `config.toml` CHỈ áp dụng local; staging/prod phải dán 6 template vào Supabase Dashboard (Authentication → Emails) — không có test tự động cho bước này. Không viết test kỳ vọng mail Auth tiếng Việt trên môi trường chưa dán template",
+      "[scope v22] Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng): (1) Outlook desktop (Word engine) bỏ qua `max-width` nên container 600px có thể giãn; (2) màu nền/link của mail Auth (`#F3F4F6`, `#C2402E`) lệch nhẹ so với mail Nest (`#EEF0F4`, `#C2410C`); (3) `DEFAULT_WEB_ORIGIN` còn `https://filmbooking.vn` khi thiếu `WEB_ORIGIN` nên link dự phòng hiển thị domain cũ; (4) mail PASSWORD_SET vẫn hiện nút \"Thiết lập mật khẩu\" và câu \"liên kết có hiệu lực…\" dù gửi sau khi đã đặt mật khẩu (lỗi có từ trước, cần backlog riêng); (5) chưa có test cho 6 khối `[auth.email.template.*]` trong config.toml"
     ]
   },
   "acceptance": [
@@ -249,7 +302,13 @@
     "CR mail-smtp A1: Given đặt `SMTP_HOST` (+ `SMTP_USER`/`SMTP_PASS`/`SMTP_PORT`/`SMTP_FROM`) When gọi `POST /jobs/send-emails` với x-job-secret đúng Then email outbox đến hạn được gửi qua SMTP và đánh dấu SENT. [NFR-10; R-86, R-109]",
     "CR mail-smtp A2: Given KHÔNG đặt `SMTP_HOST` ở môi trường không phải test When job gửi email chạy Then outbox ghi `last_error` \"SMTP is not configured\" và retry tối đa 3 lần rồi FAILED (cảnh báo email_failed). [NFR-10; R-109]",
     "CR mail-smtp A3: Given email Auth (xác nhận đăng ký, quên mật khẩu) When thực hiện luồng đăng ký / quên mật khẩu Then KHÔNG đổi — vẫn do Supabase Auth gửi qua SMTP của GoTrue, local vào Mailpit http://127.0.0.1:54324. [R-04]",
-    "CR mail-smtp A4: Given email giao dịch ACCOUNT_LOCKED_ALERT / vé / SHOWTIME_CANCELLED When đến hạn gửi Then đi qua cùng transport SMTP, nội dung template không đổi; lỗi SMTP hoặc người nhận bị từ chối → throw lỗi để outbox retry. [R-11, R-86, R-109]"
+    "CR mail-smtp A4: Given email giao dịch ACCOUNT_LOCKED_ALERT / vé / SHOWTIME_CANCELLED When đến hạn gửi Then đi qua cùng transport SMTP, nội dung nghiệp vụ không đổi (từ scope v22 giao diện/subject đổi sang CINEMO); lỗi SMTP hoặc người nhận bị từ chối → throw lỗi để outbox retry. [R-11, R-86, R-109]",
+    "CR custom-mail-templates A1: Given mọi kind mail Nest (vé, khoá tài khoản, liên kết/huỷ liên kết MXH, tiền về muộn/lệch tiền, huỷ suất, đặt mật khẩu, OAuth) When render Then HTML dùng bảng + inline style (không `<style>`, không flex), có \"CINEMO\", `lang=\"vi\"`, subject bắt đầu `[CINEMO]`, có nút CTA màu `#F06D5B` khi có link. [R-86, R-11, R-24, R-78, R-109]",
+    "CR custom-mail-templates A2: Given mail vé When nhận Then vẫn đủ mã đặt vé, qr_token, tên + địa chỉ rạp, \"chỉ dùng tại rạp ghi trên vé\", \"không huỷ/không hoàn\", đến trước 15 phút, ghế, tổng tiền (cả html và text). [R-86, R-133, AC-26]",
+    "CR custom-mail-templates A3: Given payload có `<script>`/dấu nháy trong tên phim/rạp When render Then HTML không chứa thẻ `<script>` thô (escape).",
+    "CR custom-mail-templates A4: Given đăng ký tài khoản mới (Supabase local) When xem Mailpit Then mail `[CINEMO] Xác nhận email của bạn` tiếng Việt có dấu, nêu link hết hạn sau 24 giờ, nút/link xác nhận hoạt động. [R-04, AC-01]",
+    "CR custom-mail-templates A5: Given quên mật khẩu When xem Mailpit Then mail `[CINEMO] Đặt lại mật khẩu` nêu link hết hạn 1 giờ, dùng một lần; đặt lại thành công như trước. [R-13]",
+    "CR custom-mail-templates A6: Given 6 template Auth (`confirmation`, `recovery`, `magic_link`, `email_change`, `invite`, `reauthentication`) Then đủ file, có \"CINEMO\", `lang=\"vi\"`, chỉ dùng biến `.ConfirmationURL/.Token/.Email/.NewEmail`, không `<script`; `[auth.email.notification.*]` không bật. [R-04, R-13, R-14]"
   ],
   "risk": "low"
 }

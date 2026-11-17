@@ -774,7 +774,7 @@ describe("Outbox Job & Email Worker", () => {
         web_origin: "https://filmbooking.example.com",
       });
 
-      expect(rendered.subject).toBe("[FilmBooking] Thiết lập mật khẩu tài khoản");
+      expect(rendered.subject).toBe("[CINEMO] Thiết lập mật khẩu tài khoản");
       expect(rendered.html).toContain("Thiết lập mật khẩu");
       expect(rendered.html).toContain("https://filmbooking.example.com/auth/set-password?token=pwd-token-abc-999");
       expect(rendered.html).not.toContain("secret-user-id-001");
@@ -790,7 +790,7 @@ describe("Outbox Job & Email Worker", () => {
         web_origin: "https://filmbooking.example.com",
       });
 
-      expect(rendered.subject).toBe("[FilmBooking] Phát hiện liên kết tài khoản trùng email");
+      expect(rendered.subject).toBe("[CINEMO] Phát hiện liên kết tài khoản trùng email");
       expect(rendered.html).toContain("FACEBOOK");
       expect(rendered.html).toContain("https://filmbooking.example.com/auth/login?redirect=/me/profile");
       expect(rendered.html).toContain("https://filmbooking.example.com/me/profile");
@@ -807,7 +807,7 @@ describe("Outbox Job & Email Worker", () => {
         web_origin: "https://filmbooking.example.com",
       });
 
-      expect(rendered.subject).toBe("[FilmBooking] Xác thực email bổ sung");
+      expect(rendered.subject).toBe("[CINEMO] Xác thực email bổ sung");
       expect(rendered.html).toContain("Xác thực email");
       expect(rendered.html).toContain("https://filmbooking.example.com/auth/oauth/verify-email?token=verify-token-xyz-888");
       expect(rendered.html).toContain("FACEBOOK");

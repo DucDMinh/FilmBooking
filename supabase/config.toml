@@ -265,6 +265,32 @@ pass = "env(RESEND_API_KEY)"
 admin_email = "no-reply@filmbooking.example"
 sender_name = "CINEMO"
 
+# Template mail Auth tiếng Việt, thương hiệu CINEMO (supabase/templates/*.html).
+# Không bật [auth.email.notification.*]: mail "đã đổi mật khẩu" (R-14) do Nest gửi, bật thêm sẽ trùng.
+[auth.email.template.confirmation]
+subject = "[CINEMO] Xác nhận email của bạn"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "[CINEMO] Đặt lại mật khẩu"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "[CINEMO] Liên kết đăng nhập"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "[CINEMO] Xác nhận đổi email"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.email.template.invite]
+subject = "[CINEMO] Lời mời tham gia"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.reauthentication]
+subject = "[CINEMO] Mã xác thực"
+content_path = "./supabase/templates/reauthentication.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

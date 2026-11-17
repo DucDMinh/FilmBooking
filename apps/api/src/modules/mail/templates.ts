@@ -1,5 +1,5 @@
 /**
- * Templates email tiếng Việt cho toàn hệ thống FilmBooking.
+ * Templates email tiếng Việt cho toàn hệ thống CINEMO.
  * Tuân thủ:
  * - R-86 & R-133: Email vé (mã đặt vé, qr_token, tên rạp, địa chỉ rạp, nhắc 'chỉ dùng tại rạp ghi trên vé', 'không huỷ/không hoàn', đến trước 15 phút).
  * - R-11: Cảnh báo khoá đăng nhập (5 lần sai, khoá 15 phút).
@@ -7,6 +7,9 @@
  * - R-78: Tiền về muộn / chênh lệch số tiền cần hướng dẫn liên hệ rạp.
  * - R-109: Huỷ suất chiếu (hướng dẫn liên hệ CSKH rạp, hotline mặc định 1900 0000 để hoàn tiền thủ công; không có đổi suất).
  * - AC-26: Template vé không chứa dữ liệu nhạy cảm ngoài cần thiết; QR là qr_token.
+ *
+ * Giao diện email-safe: bảng + inline style (Gmail/Outlook không hỗ trợ ổn định flex hoặc <style>),
+ * mọi giá trị động đi qua escapeHtml.
  */
 
 export interface RenderedEmail {
@@ -65,54 +68,153 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function wrapLayout(title: string, bodyHtml: string): string {
+// ── Thương hiệu CINEMO (đồng bộ với design tokens của web) ──
+const BRAND = {
+  accent: "#F06D5B",
+  onAccent: "#0B0D12",
+  header: "#111620",
+  pageBg: "#EEF0F4",
+  text: "#1B222E",
+  muted: "#6B7280",
+  line: "#E6E9EF",
+  cardBg: "#F7F8FA",
+  link: "#C2410C",
+};
+const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif`;
+
+interface LayoutOptions {
+  /** Dòng xem trước hiển thị cạnh tiêu đề trong hộp thư (ẩn trong nội dung). */
+  preheader?: string;
+}
+
+function wrapLayout(title: string, bodyHtml: string, opts: LayoutOptions = {}): string {
+  const preheader = opts.preheader
+    ? `<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:${BRAND.pageBg};">${escapeHtml(opts.preheader)}</div>`
+    : "";
   return `<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)}</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f7; color: #333333; margin: 0; padding: 20px; line-height: 1.6; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .header { background: #111827; color: #ffffff; padding: 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
-    .content { padding: 32px 24px; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 13px; font-weight: 600; background: #fee2e2; color: #b91c1c; }
-    .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 18px; margin: 18px 0; }
-    .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e5e7eb; }
-    .row:last-child { border-bottom: none; }
-    .label { color: #6b7280; font-size: 14px; }
-    .value { font-weight: 600; font-size: 14px; text-align: right; }
-    .alert-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 14px 16px; margin: 20px 0; border-radius: 0 4px 4px 0; font-size: 14px; color: #92400e; }
-    .danger-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 14px 16px; margin: 20px 0; border-radius: 0 4px 4px 0; font-size: 14px; color: #991b1b; }
-    .footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
-    .btn { display: inline-block; background: #2563eb; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; margin: 16px 0; text-align: center; }
-    .qr-text { font-family: monospace; font-size: 16px; letter-spacing: 2px; padding: 10px; background: #f3f4f6; display: inline-block; border-radius: 4px; font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(title)}</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>FilmBooking</h1>
-    </div>
-    <div class="content">
-      ${bodyHtml}
-    </div>
-    <div class="footer">
-      <p>Đây là email tự động từ hệ thống FilmBooking. Vui lòng không trả lời trực tiếp email này.</p>
-      <p>Tổng đài CSKH hỗ trợ: ${DEFAULT_HOTLINE} (8:00 - 22:00 hàng ngày)</p>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background-color:${BRAND.pageBg};">
+${preheader}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BRAND.pageBg}" style="background-color:${BRAND.pageBg};">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+        <tr>
+          <td align="center" bgcolor="${BRAND.header}" style="background-color:${BRAND.header};padding:22px 24px;border-radius:12px 12px 0 0;">
+            <span style="font-family:${FONT_STACK};font-size:26px;font-weight:800;letter-spacing:6px;color:${BRAND.accent};">CINEMO</span>
+          </td>
+        </tr>
+        <tr>
+          <td bgcolor="#FFFFFF" style="background-color:#FFFFFF;padding:32px 28px;font-family:${FONT_STACK};font-size:15px;line-height:1.6;color:${BRAND.text};">
+${bodyHtml}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};padding:20px 24px;border-top:1px solid ${BRAND.line};border-radius:0 0 12px 12px;font-family:${FONT_STACK};font-size:12px;line-height:1.6;color:${BRAND.muted};">
+            Đây là email tự động từ hệ thống CINEMO. Vui lòng không trả lời trực tiếp email này.<br>
+            Tổng đài CSKH hỗ trợ: <strong>${DEFAULT_HOTLINE}</strong> (8:00 - 22:00 hàng ngày)
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>`;
+}
+
+function heading(text: string, color: string = BRAND.text): string {
+  return `<h2 style="margin:0 0 16px 0;font-size:22px;line-height:1.3;font-weight:700;color:${color};">${escapeHtml(text)}</h2>`;
+}
+
+/** Đoạn văn; `html` là HTML đã được caller escape các giá trị động. */
+function paragraph(html: string): string {
+  return `<p style="margin:0 0 14px 0;">${html}</p>`;
+}
+
+/** Nút CTA dạng bảng (hiển thị tốt cả Outlook), nền accent + chữ tối. */
+function button(label: string, url: string): string {
+  const href = escapeHtml(url);
+  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:24px auto;">
+  <tr>
+    <td align="center" bgcolor="${BRAND.accent}" style="background-color:${BRAND.accent};border-radius:8px;">
+      <a href="${href}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:${FONT_STACK};font-size:16px;font-weight:700;line-height:1.2;color:${BRAND.onAccent};text-decoration:none;border-radius:8px;">${escapeHtml(label)}</a>
+    </td>
+  </tr>
+</table>`;
+}
+
+/** Dòng liên kết thuần dự phòng khi nút CTA không bấm được. */
+function fallbackLink(url: string, intro: string): string {
+  const href = escapeHtml(url);
+  return `<p style="margin:0 0 14px 0;font-size:13px;line-height:1.6;color:${BRAND.muted};word-break:break-all;">${intro}<br><a href="${href}" style="color:${BRAND.link};">${href}</a></p>`;
+}
+
+interface InfoRow {
+  label: string;
+  value: string;
+  valueColor?: string;
+  valueSize?: number;
+}
+
+/** Bảng thông tin nhãn/giá trị (thay các `.row` flex). Giá trị được escape tại đây. */
+function infoTable(rows: InfoRow[]): string {
+  const body = rows
+    .map((row, index) => {
+      const border = index === rows.length - 1 ? "" : `border-bottom:1px solid ${BRAND.line};`;
+      const color = row.valueColor ?? BRAND.text;
+      const size = row.valueSize ?? 14;
+      return `    <tr>
+      <td valign="top" style="padding:9px 0;${border}font-size:14px;color:${BRAND.muted};width:38%;">${escapeHtml(row.label)}</td>
+      <td valign="top" align="right" style="padding:9px 0;${border}font-size:${size}px;font-weight:600;color:${color};">${escapeHtml(row.value)}</td>
+    </tr>`;
+    })
+    .join("\n");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};border:1px solid ${BRAND.line};border-radius:8px;margin:18px 0;">
+  <tr>
+    <td style="padding:8px 18px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+${body}
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
+
+type NoteKind = "warning" | "danger";
+
+const NOTE_STYLES: Record<NoteKind, { bg: string; border: string; text: string }> = {
+  warning: { bg: "#FFF8EB", border: "#F59E0B", text: "#7A4A06" },
+  danger: { bg: "#FEF2F2", border: "#DC2626", text: "#991B1B" },
+};
+
+/** Hộp lưu ý (thay `.alert-box` / `.danger-box`); `html` do caller dựng, đã escape giá trị động. */
+function noteBox(kind: NoteKind, html: string): string {
+  const s = NOTE_STYLES[kind];
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+  <tr>
+    <td bgcolor="${s.bg}" style="background-color:${s.bg};border-left:4px solid ${s.border};padding:14px 16px;font-size:14px;line-height:1.6;color:${s.text};">
+${html}
+    </td>
+  </tr>
+</table>`;
+}
+
+function bulletList(items: string[], tag: "ul" | "ol" = "ul"): string {
+  const lis = items.map((item) => `<li style="margin:0 0 6px 0;">${item}</li>`).join("");
+  return `<${tag} style="margin:8px 0 0 0;padding-left:20px;">${lis}</${tag}>`;
 }
 
 /** 1. Email vé (TICKET_ISSUED) - R-86, R-133, AC-26 */
 export function renderTicketEmail(payload: Record<string, unknown>): RenderedEmail {
   const bookingCode = String(payload.booking_code ?? payload.bookingCode ?? "N/A");
   const qrToken = String(payload.qr_token ?? payload.qrToken ?? "");
-  const cinemaName = String(payload.cinema_name ?? payload.cinemaName ?? "Rạp FilmBooking");
+  const cinemaName = String(payload.cinema_name ?? payload.cinemaName ?? "Rạp CINEMO");
   const cinemaAddress = payload.cinema_address ? String(payload.cinema_address) : "";
   const hotline = String(payload.hotline ?? DEFAULT_HOTLINE);
   const movieTitle = String(payload.movie_title ?? payload.movieTitle ?? "Phim");
@@ -123,50 +225,59 @@ export function renderTicketEmail(payload: Record<string, unknown>): RenderedEma
   const combos = Array.isArray(payload.combos) ? payload.combos.join(", ") : (payload.combos ? String(payload.combos) : "");
   const totalAmount = formatCurrencyVND(payload.total_amount ?? payload.totalAmount);
 
-  const subject = `[FilmBooking] Vé xem phim của bạn - Mã đặt vé: ${bookingCode}`;
+  const subject = `[CINEMO] Vé xem phim của bạn - Mã đặt vé: ${bookingCode}`;
+
+  const rows: InfoRow[] = [
+    { label: "Phim", value: `${movieTitle}${ageRating ? ` (${ageRating})` : ""}` },
+    { label: "Rạp chiếu", value: cinemaName },
+  ];
+  if (cinemaAddress) rows.push({ label: "Địa chỉ", value: cinemaAddress });
+  rows.push(
+    { label: "Hotline rạp", value: hotline },
+    { label: "Phòng chiếu", value: roomName },
+    { label: "Suất chiếu", value: startsAt },
+  );
+  if (seats) rows.push({ label: "Ghế", value: seats });
+  if (combos) rows.push({ label: "Bắp nước", value: combos });
+  rows.push({ label: "Tổng thanh toán", value: totalAmount, valueColor: "#059669", valueSize: 16 });
+
+  const qrBlock = qrToken
+    ? `<p style="margin:16px 0 0 0;font-size:12px;letter-spacing:1px;color:${BRAND.muted};">MÃ QUÉT SOÁT VÉ (QR TOKEN)</p>
+        <p style="margin:6px 0 0 0;"><span style="display:inline-block;padding:10px 14px;background-color:#FFFFFF;border:1px solid ${BRAND.line};border-radius:6px;font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;letter-spacing:2px;color:${BRAND.text};">${escapeHtml(qrToken)}</span></p>`
+    : "";
+
+  const ticketCode = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};border:1px solid ${BRAND.line};border-top:4px solid ${BRAND.accent};border-radius:8px;margin:18px 0 0 0;">
+  <tr>
+    <td align="center" style="padding:20px 18px;">
+      <p style="margin:0;font-size:12px;letter-spacing:1px;color:${BRAND.muted};">MÃ ĐẶT VÉ</p>
+      <p style="margin:6px 0 0 0;font-size:28px;line-height:1.2;font-weight:800;letter-spacing:2px;color:${BRAND.text};">${escapeHtml(bookingCode)}</p>
+      ${qrBlock}
+    </td>
+  </tr>
+</table>`;
+
+  const notes = noteBox(
+    "warning",
+    `<strong>Lưu ý quan trọng khi xem phim:</strong>
+${bulletList([
+  `Vui lòng có mặt tại rạp <strong>trước giờ chiếu tối thiểu 15 phút</strong> để làm thủ tục soát vé và nhận combo.`,
+  `<strong>Vé chỉ dùng tại rạp ghi trên vé</strong> (<em>${escapeHtml(cinemaName)}</em>). Khách đến nhầm rạp sẽ không thể check-in.`,
+  `<strong>Vé không huỷ / không hoàn tiền</strong> dưới bất kỳ hình thức nào sau khi đã thanh toán thành công (R-131, R-133).`,
+  `Vui lòng mang theo giấy tờ tuỳ thân chứng minh độ tuổi (CCCD/Thẻ học sinh) đối với các phim có nhãn tuổi (T13, T16, T18).`,
+])}`,
+  );
 
   const html = wrapLayout(
     subject,
-    `
-    <h2 style="margin-top:0; color:#111827;">Xác nhận đặt vé thành công!</h2>
-    <p>Cảm ơn bạn đã đặt vé xem phim tại <strong>${escapeHtml(cinemaName)}</strong>. Dưới đây là thông tin vé của bạn:</p>
-
-    <div class="card">
-      <div style="text-align:center; margin-bottom:16px;">
-        <span class="label">MÃ ĐẶT VÉ</span><br>
-        <span style="font-size:24px; font-weight:800; color:#2563eb; letter-spacing:1px;">${escapeHtml(bookingCode)}</span>
-      </div>
-
-      ${qrToken ? `
-      <div style="text-align:center; margin-bottom:16px;">
-        <span class="label">MÃ QUÉT SOÁT VÉ (QR TOKEN)</span><br>
-        <span class="qr-text">${escapeHtml(qrToken)}</span>
-      </div>` : ""}
-
-      <div class="row"><span class="label">Phim</span><span class="value">${escapeHtml(movieTitle)} ${ageRating ? `(${escapeHtml(ageRating)})` : ""}</span></div>
-      <div class="row"><span class="label">Rạp chiếu</span><span class="value">${escapeHtml(cinemaName)}</span></div>
-      ${cinemaAddress ? `<div class="row"><span class="label">Địa chỉ</span><span class="value">${escapeHtml(cinemaAddress)}</span></div>` : ""}
-      <div class="row"><span class="label">Hotline rạp</span><span class="value">${escapeHtml(hotline)}</span></div>
-      <div class="row"><span class="label">Phòng chiếu</span><span class="value">${escapeHtml(roomName)}</span></div>
-      <div class="row"><span class="label">Suất chiếu</span><span class="value">${escapeHtml(startsAt)}</span></div>
-      ${seats ? `<div class="row"><span class="label">Ghế</span><span class="value">${escapeHtml(seats)}</span></div>` : ""}
-      ${combos ? `<div class="row"><span class="label">Bắp nước</span><span class="value">${escapeHtml(combos)}</span></div>` : ""}
-      <div class="row"><span class="label">Tổng thanh toán</span><span class="value" style="color:#059669; font-size:16px;">${escapeHtml(totalAmount)}</span></div>
-    </div>
-
-    <div class="alert-box">
-      <strong>Lưu ý quan trọng khi xem phim:</strong>
-      <ul style="margin:8px 0 0 0; padding-left:20px;">
-        <li>Vui lòng có mặt tại rạp <strong>trước giờ chiếu tối thiểu 15 phút</strong> để làm thủ tục soát vé và nhận combo.</li>
-        <li><strong>Vé chỉ dùng tại rạp ghi trên vé</strong> (<em>${escapeHtml(cinemaName)}</em>). Khách đến nhầm rạp sẽ không thể check-in.</li>
-        <li><strong>Vé không huỷ / không hoàn tiền</strong> dưới bất kỳ hình thức nào sau khi đã thanh toán thành công (R-131, R-133).</li>
-        <li>Vui lòng mang theo giấy tờ tuỳ thân chứng minh độ tuổi (CCCD/Thẻ học sinh) đối với các phim có nhãn tuổi (T13, T16, T18).</li>
-      </ul>
-    </div>
-    `,
+    `${heading("Xác nhận đặt vé thành công!")}
+${paragraph(`Cảm ơn bạn đã đặt vé xem phim tại <strong>${escapeHtml(cinemaName)}</strong>. Dưới đây là thông tin vé của bạn:`)}
+${ticketCode}
+${infoTable(rows)}
+${notes}`,
+    { preheader: `Mã đặt vé ${bookingCode} - ${movieTitle} tại ${cinemaName}. Vui lòng đến rạp trước giờ chiếu 15 phút.` },
   );
 
-  const text = `XÁC NHẬN ĐẶT VÉ THÀNH CÔNG - FILMBOOKING
+  const text = `XÁC NHẬN ĐẶT VÉ THÀNH CÔNG - CINEMO
 Mã đặt vé: ${bookingCode}
 ${qrToken ? `QR Token: ${qrToken}\n` : ""}
 Phim: ${movieTitle} ${ageRating ? `(${ageRating})` : ""}
@@ -190,21 +301,16 @@ export function renderAccountLockedAlertEmail(payload: Record<string, unknown>):
   const lockMinutes = Number(payload.lockMinutes ?? 15);
   const lockedUntil = payload.lockedUntil ? formatDateTimeVN(String(payload.lockedUntil)) : `${lockMinutes} phút`;
 
-  const subject = "[FilmBooking] Cảnh báo bảo mật: Tài khoản của bạn bị tạm khoá đăng nhập";
+  const subject = "[CINEMO] Cảnh báo bảo mật: Tài khoản của bạn bị tạm khoá đăng nhập";
 
   const html = wrapLayout(
     subject,
-    `
-    <h2 style="margin-top:0; color:#b91c1c;">Cảnh báo khoá đăng nhập</h2>
-    <p>Hệ thống FilmBooking phát hiện tài khoản của bạn đã bị <strong>nhập sai mật khẩu 5 lần liên tiếp</strong>.</p>
-    
-    <div class="danger-box">
-      Để bảo vệ an toàn cho tài khoản, tính năng đăng nhập bằng mật khẩu đã bị tạm khoá trong <strong>${lockMinutes} phút</strong> (đến <strong>${escapeHtml(lockedUntil)}</strong>).
-    </div>
-
-    <p>Nếu bạn là người thực hiện, vui lòng chờ hết thời gian tạm khoá hoặc sử dụng tính năng <em>Quên mật khẩu</em> trên ứng dụng/website để thiết lập lại mật khẩu mới.</p>
-    <p>Nếu bạn <strong>không</strong> thực hiện các lần đăng nhập này, rất có thể tài khoản của bạn đang bị dò mật khẩu trái phép. Vui lòng đổi mật khẩu ngay sau khi tài khoản được mở khoá để đảm bảo an toàn.</p>
-    `,
+    `${heading("Cảnh báo khoá đăng nhập", "#B91C1C")}
+${paragraph(`Hệ thống CINEMO phát hiện tài khoản của bạn đã bị <strong>nhập sai mật khẩu 5 lần liên tiếp</strong>.`)}
+${noteBox("danger", `Để bảo vệ an toàn cho tài khoản, tính năng đăng nhập bằng mật khẩu đã bị tạm khoá trong <strong>${escapeHtml(String(lockMinutes))} phút</strong> (đến <strong>${escapeHtml(lockedUntil)}</strong>).`)}
+${paragraph(`Nếu bạn là người thực hiện, vui lòng chờ hết thời gian tạm khoá hoặc sử dụng tính năng <em>Quên mật khẩu</em> trên ứng dụng/website để thiết lập lại mật khẩu mới.`)}
+${paragraph(`Nếu bạn <strong>không</strong> thực hiện các lần đăng nhập này, rất có thể tài khoản của bạn đang bị dò mật khẩu trái phép. Vui lòng đổi mật khẩu ngay sau khi tài khoản được mở khoá để đảm bảo an toàn.`)}`,
+    { preheader: `Tài khoản của bạn bị tạm khoá đăng nhập ${lockMinutes} phút do nhập sai mật khẩu 5 lần liên tiếp.` },
   );
 
   const text = `CẢNH BÁO BẢO MẬT: TÀI KHOẢN BỊ TẠM KHOÁ ĐĂNG NHẬP
@@ -222,25 +328,23 @@ export function renderIdentityChangeEmail(payload: Record<string, unknown>, isUn
   const time = formatDateTimeVN(new Date().toISOString());
 
   const subject = isUnlinked
-    ? `[FilmBooking] Thông báo huỷ liên kết phương thức đăng nhập ${provider}`
-    : `[FilmBooking] Thông báo liên kết thành công phương thức đăng nhập ${provider}`;
+    ? `[CINEMO] Thông báo huỷ liên kết phương thức đăng nhập ${provider}`
+    : `[CINEMO] Thông báo liên kết thành công phương thức đăng nhập ${provider}`;
+
+  const warning = isUnlinked
+    ? "Nếu bạn không thực hiện việc huỷ liên kết này, vui lòng đăng nhập vào tài khoản ngay và liên hệ CSKH để kiểm tra an toàn."
+    : "Nếu bạn không thực hiện việc liên kết này, vui lòng đăng nhập để gỡ bỏ liên kết và đổi mật khẩu tài khoản ngay lập tức.";
 
   const html = wrapLayout(
     subject,
-    `
-    <h2 style="margin-top:0; color:#111827;">${isUnlinked ? "Huỷ liên kết tài khoản" : "Liên kết tài khoản thành công"}</h2>
-    <p>Phương thức đăng nhập <strong>${escapeHtml(provider)}</strong> đã được ${isUnlinked ? "huỷ liên kết khỏi" : "liên kết thành công với"} tài khoản FilmBooking của bạn vào lúc <strong>${escapeHtml(time)}</strong>.</p>
-
-    <div class="alert-box">
-      ${isUnlinked
-        ? "Nếu bạn không thực hiện việc huỷ liên kết này, vui lòng đăng nhập vào tài khoản ngay và liên hệ CSKH để kiểm tra an toàn."
-        : "Nếu bạn không thực hiện việc liên kết này, vui lòng đăng nhập để gỡ bỏ liên kết và đổi mật khẩu tài khoản ngay lập tức."}
-    </div>
-    `,
+    `${heading(isUnlinked ? "Huỷ liên kết tài khoản" : "Liên kết tài khoản thành công")}
+${paragraph(`Phương thức đăng nhập <strong>${escapeHtml(provider)}</strong> đã được ${isUnlinked ? "huỷ liên kết khỏi" : "liên kết thành công với"} tài khoản CINEMO của bạn vào lúc <strong>${escapeHtml(time)}</strong>.`)}
+${noteBox("warning", escapeHtml(warning))}`,
+    { preheader: `Phương thức đăng nhập ${provider} đã được ${isUnlinked ? "huỷ liên kết khỏi" : "liên kết với"} tài khoản của bạn.` },
   );
 
   const text = `${isUnlinked ? "HUỶ LIÊN KẾT TÀI KHOẢN" : "LIÊN KẾT TÀI KHOẢN THÀNH CÔNG"}
-Phương thức đăng nhập ${provider} đã được ${isUnlinked ? "huỷ liên kết khỏi" : "liên kết với"} tài khoản FilmBooking vào lúc ${time}.
+Phương thức đăng nhập ${provider} đã được ${isUnlinked ? "huỷ liên kết khỏi" : "liên kết với"} tài khoản CINEMO vào lúc ${time}.
 Nếu bạn không thực hiện việc này, vui lòng liên hệ CSKH hoặc đổi mật khẩu ngay.`;
 
   return { subject, html, text };
@@ -250,7 +354,7 @@ Nếu bạn không thực hiện việc này, vui lòng liên hệ CSKH hoặc �
 export function renderLatePaymentEmail(payload: Record<string, unknown>): RenderedEmail {
   const orderId = String(payload.order_id ?? payload.orderId ?? "");
   const bookingCode = String(payload.booking_code ?? payload.bookingCode ?? "");
-  const cinemaName = String(payload.cinema_name ?? payload.cinemaName ?? "Rạp FilmBooking");
+  const cinemaName = String(payload.cinema_name ?? payload.cinemaName ?? "Rạp CINEMO");
   const movieTitle = String(payload.movie_title ?? payload.movieTitle ?? "Phim");
   const amount = formatCurrencyVND(payload.amount ?? payload.received_amount ?? payload.receivedAmount);
   const transactionRef = String(payload.transaction_ref ?? payload.transactionRef ?? "N/A");
@@ -258,36 +362,31 @@ export function renderLatePaymentEmail(payload: Record<string, unknown>): Render
   const hotline = String(payload.hotline ?? DEFAULT_HOTLINE);
 
   const isAmountMismatch = reason === "AMOUNT_MISMATCH";
-  const subject = `[FilmBooking] Hướng dẫn xử lý thanh toán đơn hàng ${bookingCode || orderId}`;
+  const subject = `[CINEMO] Hướng dẫn xử lý thanh toán đơn hàng ${bookingCode || orderId}`;
 
   const reasonText = isAmountMismatch
     ? "Số tiền thanh toán nhận được không khớp với tổng tiền đơn hàng."
     : "Thanh toán nhận được sau khi thời gian giữ ghế đã hết hạn và ghế đã được bán cho khách hàng khác.";
 
+  const rows: InfoRow[] = [];
+  if (bookingCode) rows.push({ label: "Mã đặt vé", value: bookingCode });
+  if (orderId) rows.push({ label: "Mã đơn hàng", value: orderId });
+  rows.push(
+    { label: "Mã giao dịch", value: transactionRef },
+    { label: "Số tiền", value: amount },
+    { label: "Rạp chiếu", value: cinemaName },
+  );
+
   const html = wrapLayout(
     subject,
-    `
-    <h2 style="margin-top:0; color:#d97706;">Thông báo cần hỗ trợ đối soát đơn hàng</h2>
-    <p>Chào bạn, hệ thống ghi nhận giao dịch thanh toán cho đơn hàng xem phim <strong>${escapeHtml(movieTitle)}</strong> tại <strong>${escapeHtml(cinemaName)}</strong> của bạn.</p>
-
-    <div class="danger-box">
-      <strong>Lý do đơn hàng chưa thể tự động hoàn tất:</strong><br>
-      ${escapeHtml(reasonText)}
-    </div>
-
-    <div class="card">
-      ${bookingCode ? `<div class="row"><span class="label">Mã đặt vé</span><span class="value">${escapeHtml(bookingCode)}</span></div>` : ""}
-      ${orderId ? `<div class="row"><span class="label">Mã đơn hàng</span><span class="value">${escapeHtml(orderId)}</span></div>` : ""}
-      <div class="row"><span class="label">Mã giao dịch</span><span class="value">${escapeHtml(transactionRef)}</span></div>
-      <div class="row"><span class="label">Số tiền</span><span class="value">${escapeHtml(amount)}</span></div>
-      <div class="row"><span class="label">Rạp chiếu</span><span class="value">${escapeHtml(cinemaName)}</span></div>
-    </div>
-
-    <div class="alert-box">
-      <strong>Hướng dẫn xử lý:</strong><br>
-      Vui lòng liên hệ với bộ phận CSKH của rạp qua hotline: <strong>${escapeHtml(hotline)}</strong> hoặc đến trực tiếp quầy vé tại <em>${escapeHtml(cinemaName)}</em> để nhân viên hỗ trợ kiểm tra và hoàn tiền thủ công cho bạn.
-    </div>
-    `,
+    `${heading("Thông báo cần hỗ trợ đối soát đơn hàng", "#B45309")}
+${paragraph(`Chào bạn, hệ thống ghi nhận giao dịch thanh toán cho đơn hàng xem phim <strong>${escapeHtml(movieTitle)}</strong> tại <strong>${escapeHtml(cinemaName)}</strong> của bạn.`)}
+${noteBox("danger", `<strong>Lý do đơn hàng chưa thể tự động hoàn tất:</strong><br>
+${escapeHtml(reasonText)}`)}
+${infoTable(rows)}
+${noteBox("warning", `<strong>Hướng dẫn xử lý:</strong><br>
+Vui lòng liên hệ với bộ phận CSKH của rạp qua hotline: <strong>${escapeHtml(hotline)}</strong> hoặc đến trực tiếp quầy vé tại <em>${escapeHtml(cinemaName)}</em> để nhân viên hỗ trợ kiểm tra và hoàn tiền thủ công cho bạn.`)}`,
+    { preheader: `Đơn hàng ${bookingCode || orderId} cần hỗ trợ đối soát. Vui lòng liên hệ CSKH rạp qua hotline ${hotline}.` },
   );
 
   const text = `HƯỚNG DẪN XỬ LÝ THANH TOÁN ĐƠN HÀNG ${bookingCode || orderId}
@@ -303,36 +402,33 @@ Hướng dẫn: Vui lòng liên hệ hotline ${hotline} hoặc đến quầy vé
 /** 5. Huỷ suất chiếu (showtime_cancelled) - R-109 (Scope change: chỉ hoàn tiền thủ công, không có đổi suất) */
 export function renderShowtimeCancelledEmail(payload: Record<string, unknown>): RenderedEmail {
   const bookingCode = String(payload.booking_code ?? payload.bookingCode ?? "N/A");
-  const cinemaName = String(payload.cinema_name ?? payload.cinemaName ?? "Rạp FilmBooking");
+  const cinemaName = String(payload.cinema_name ?? payload.cinemaName ?? "Rạp CINEMO");
   const movieTitle = String(payload.movie_title ?? payload.movieTitle ?? "Phim");
   const roomName = String(payload.room_name ?? payload.roomName ?? "Phòng chiếu");
   const startsAt = formatDateTimeVN(String(payload.showtime_starts_at ?? payload.showtimeStartsAt ?? ""));
   const reason = String(payload.reason ?? "Lý do kỹ thuật / Vận hành");
   const hotline = String(payload.hotline ?? DEFAULT_HOTLINE);
 
-  const subject = `[FilmBooking] Thông báo huỷ suất chiếu - Mã đặt vé: ${bookingCode}`;
+  const subject = `[CINEMO] Thông báo huỷ suất chiếu - Mã đặt vé: ${bookingCode}`;
+
+  const rows: InfoRow[] = [
+    { label: "Mã đặt vé", value: bookingCode },
+    { label: "Phim", value: movieTitle },
+    { label: "Rạp", value: cinemaName },
+    { label: "Phòng", value: roomName },
+    { label: "Suất chiếu dự kiến", value: startsAt },
+    { label: "Lý do huỷ", value: reason, valueColor: "#B91C1C" },
+  ];
 
   const html = wrapLayout(
     subject,
-    `
-    <h2 style="margin-top:0; color:#b91c1c;">Thông báo huỷ suất chiếu</h2>
-    <p>Rất tiếc, FilmBooking xin thông báo suất chiếu bạn đã đặt vé buộc phải huỷ do sự cố bất khả kháng:</p>
-
-    <div class="card">
-      <div class="row"><span class="label">Mã đặt vé</span><span class="value">${escapeHtml(bookingCode)}</span></div>
-      <div class="row"><span class="label">Phim</span><span class="value">${escapeHtml(movieTitle)}</span></div>
-      <div class="row"><span class="label">Rạp</span><span class="value">${escapeHtml(cinemaName)}</span></div>
-      <div class="row"><span class="label">Phòng</span><span class="value">${escapeHtml(roomName)}</span></div>
-      <div class="row"><span class="label">Suất chiếu dự kiến</span><span class="value">${escapeHtml(startsAt)}</span></div>
-      <div class="row"><span class="label">Lý do huỷ</span><span class="value" style="color:#b91c1c;">${escapeHtml(reason)}</span></div>
-    </div>
-
-    <div class="alert-box">
-      <strong>Hướng dẫn nhận hoàn tiền thủ công (R-109):</strong><br>
-      Quý khách vui lòng liên hệ với bộ phận CSKH của rạp qua hotline: <strong>${escapeHtml(hotline)}</strong> (hoặc đến trực tiếp quầy vé tại <em>${escapeHtml(cinemaName)}</em>) để nhân viên hỗ trợ hoàn tiền vé thủ công.<br>
-      <small style="color:#6b7280; display:block; margin-top:6px;">* Lưu ý: Hệ thống hiện không hỗ trợ đổi sang suất chiếu khác, rạp sẽ thực hiện hoàn trả tiền vé trực tiếp cho quý khách.</small>
-    </div>
-    `,
+    `${heading("Thông báo huỷ suất chiếu", "#B91C1C")}
+${paragraph("Rất tiếc, CINEMO xin thông báo suất chiếu bạn đã đặt vé buộc phải huỷ do sự cố bất khả kháng:")}
+${infoTable(rows)}
+${noteBox("warning", `<strong>Hướng dẫn nhận hoàn tiền thủ công (R-109):</strong><br>
+Quý khách vui lòng liên hệ với bộ phận CSKH của rạp qua hotline: <strong>${escapeHtml(hotline)}</strong> (hoặc đến trực tiếp quầy vé tại <em>${escapeHtml(cinemaName)}</em>) để nhân viên hỗ trợ hoàn tiền vé thủ công.<br>
+<span style="display:block;margin-top:6px;font-size:13px;color:${BRAND.muted};">* Lưu ý: Hệ thống hiện không hỗ trợ đổi sang suất chiếu khác, rạp sẽ thực hiện hoàn trả tiền vé trực tiếp cho quý khách.</span>`)}`,
+    { preheader: `Suất chiếu ${movieTitle} tại ${cinemaName} đã bị huỷ. Liên hệ CSKH rạp ${hotline} để được hoàn tiền thủ công.` },
   );
 
   const text = `THÔNG BÁO HUỶ SUẤT CHIẾU - MÃ ĐẶT VÉ: ${bookingCode}
@@ -359,39 +455,28 @@ export function renderPasswordSetEmail(payload: Record<string, unknown>): Render
       : `${origin}/auth/set-password`;
   const message = payload.message ? String(payload.message) : "";
 
-  const subject = "[FilmBooking] Thiết lập mật khẩu tài khoản";
+  const subject = "[CINEMO] Thiết lập mật khẩu tài khoản";
 
   const html = wrapLayout(
     subject,
-    `
-    <h2 style="margin-top:0; color:#111827;">Thiết lập mật khẩu tài khoản</h2>
-    <p>Chào bạn,</p>
-    <p>${escapeHtml(message || "Hệ thống FilmBooking nhận được yêu cầu thiết lập mật khẩu cho tài khoản của bạn. Vui lòng bấm vào nút bên dưới để tạo mật khẩu mới:")}</p>
-
-    <div style="text-align:center; margin: 28px 0;">
-      <a href="${escapeHtml(setPasswordUrl)}" class="btn">Thiết lập mật khẩu</a>
-    </div>
-
-    <div class="alert-box">
-      <strong>Lưu ý bảo mật:</strong>
-      <ul style="margin:8px 0 0 0; padding-left:20px;">
-        <li>Liên kết thiết lập mật khẩu chỉ có hiệu lực trong thời gian quy định và chỉ dùng được một lần.</li>
-        <li>Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email và kiểm tra lại bảo mật tài khoản.</li>
-        <li>Tuyệt đối không chia sẻ liên kết này cho bất kỳ ai khác.</li>
-      </ul>
-    </div>
-
-    <p style="word-break: break-all; font-size: 13px; color: #6b7280; margin-top:20px;">
-      Nếu nút bấm phía trên không hoạt động, bạn có thể sao chép liên kết sau vào trình duyệt:<br>
-      <a href="${escapeHtml(setPasswordUrl)}" style="color:#2563eb;">${escapeHtml(setPasswordUrl)}</a>
-    </p>
-    `,
+    `${heading("Thiết lập mật khẩu tài khoản")}
+${paragraph("Chào bạn,")}
+${paragraph(escapeHtml(message || "Hệ thống CINEMO nhận được yêu cầu thiết lập mật khẩu cho tài khoản của bạn. Vui lòng bấm vào nút bên dưới để tạo mật khẩu mới:"))}
+${button("Thiết lập mật khẩu", setPasswordUrl)}
+${noteBox("warning", `<strong>Lưu ý bảo mật:</strong>
+${bulletList([
+  "Liên kết thiết lập mật khẩu chỉ có hiệu lực trong thời gian quy định và chỉ dùng được một lần.",
+  "Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email và kiểm tra lại bảo mật tài khoản.",
+  "Tuyệt đối không chia sẻ liên kết này cho bất kỳ ai khác.",
+])}`)}
+${fallbackLink(setPasswordUrl, "Nếu nút bấm phía trên không hoạt động, bạn có thể sao chép liên kết sau vào trình duyệt:")}`,
+    { preheader: "Bấm vào nút để thiết lập mật khẩu cho tài khoản CINEMO của bạn." },
   );
 
-  const text = `THIẾT LẬP MẬT KHẨU TÀI KHOẢN - FILMBOOKING
+  const text = `THIẾT LẬP MẬT KHẨU TÀI KHOẢN - CINEMO
 
 Chào bạn,
-${message || "Hệ thống FilmBooking nhận được yêu cầu thiết lập mật khẩu cho tài khoản của bạn."}
+${message || "Hệ thống CINEMO nhận được yêu cầu thiết lập mật khẩu cho tài khoản của bạn."}
 
 Vui lòng truy cập liên kết sau để thiết lập mật khẩu:
 ${setPasswordUrl}
@@ -411,40 +496,29 @@ export function renderOAuthMissingEmailCollisionEmail(payload: Record<string, un
   const loginUrl = payload.url ? String(payload.url) : `${origin}/auth/login?redirect=/me/profile`;
   const profileUrl = `${origin}/me/profile`;
 
-  const subject = "[FilmBooking] Phát hiện liên kết tài khoản trùng email";
+  const subject = "[CINEMO] Phát hiện liên kết tài khoản trùng email";
 
   const html = wrapLayout(
     subject,
-    `
-    <h2 style="margin-top:0; color:#d97706;">Phát hiện liên kết tài khoản trùng email</h2>
-    <p>Chào bạn,</p>
-    <p>Hệ thống FilmBooking phát hiện bạn vừa sử dụng phương thức đăng nhập <strong>${escapeHtml(provider)}</strong> với địa chỉ email đã được đăng ký cho một tài khoản trước đó trên FilmBooking.</p>
-
-    <div class="alert-box">
-      <strong>Hướng dẫn liên kết an toàn:</strong><br>
-      Để bảo vệ an toàn cho tài khoản và tránh trùng lặp dữ liệu:
-      <ol style="margin:8px 0 0 0; padding-left:20px;">
-        <li>Vui lòng đăng nhập vào FilmBooking bằng phương thức cũ (email/mật khẩu hoặc nhà cung cấp đã liên kết trước đó).</li>
-        <li>Sau khi đăng nhập thành công, truy cập vào mục <strong>Hồ sơ / Cài đặt tài khoản</strong>.</li>
-        <li>Tại phần <em>Phương thức đăng nhập</em>, bấm chọn <strong>Liên kết ${escapeHtml(provider)}</strong> để hoàn tất đồng bộ.</li>
-      </ol>
-    </div>
-
-    <div style="text-align:center; margin: 28px 0;">
-      <a href="${escapeHtml(loginUrl)}" class="btn">Đăng nhập để liên kết tài khoản</a>
-    </div>
-
-    <p style="word-break: break-all; font-size: 13px; color: #6b7280; margin-top:20px;">
-      Bạn cũng có thể vào trực tiếp trang quản lý hồ sơ tại:<br>
-      <a href="${escapeHtml(profileUrl)}" style="color:#2563eb;">${escapeHtml(profileUrl)}</a>
-    </p>
-    `,
+    `${heading("Phát hiện liên kết tài khoản trùng email", "#B45309")}
+${paragraph("Chào bạn,")}
+${paragraph(`Hệ thống CINEMO phát hiện bạn vừa sử dụng phương thức đăng nhập <strong>${escapeHtml(provider)}</strong> với địa chỉ email đã được đăng ký cho một tài khoản trước đó trên CINEMO.`)}
+${noteBox("warning", `<strong>Hướng dẫn liên kết an toàn:</strong><br>
+Để bảo vệ an toàn cho tài khoản và tránh trùng lặp dữ liệu:
+${bulletList([
+  "Vui lòng đăng nhập vào CINEMO bằng phương thức cũ (email/mật khẩu hoặc nhà cung cấp đã liên kết trước đó).",
+  "Sau khi đăng nhập thành công, truy cập vào mục <strong>Hồ sơ / Cài đặt tài khoản</strong>.",
+  `Tại phần <em>Phương thức đăng nhập</em>, bấm chọn <strong>Liên kết ${escapeHtml(provider)}</strong> để hoàn tất đồng bộ.`,
+], "ol")}`)}
+${button("Đăng nhập để liên kết tài khoản", loginUrl)}
+${fallbackLink(profileUrl, "Bạn cũng có thể vào trực tiếp trang quản lý hồ sơ tại:")}`,
+    { preheader: `Email của bạn đã có tài khoản CINEMO. Đăng nhập bằng phương thức cũ rồi liên kết ${provider}.` },
   );
 
-  const text = `PHÁT HIỆN LIÊN KẾT TÀI KHOẢN TRÙNG EMAIL - FILMBOOKING
+  const text = `PHÁT HIỆN LIÊN KẾT TÀI KHOẢN TRÙNG EMAIL - CINEMO
 
 Chào bạn,
-Hệ thống phát hiện bạn vừa đăng nhập bằng ${provider} với email đã tồn tại trên FilmBooking.
+Hệ thống phát hiện bạn vừa đăng nhập bằng ${provider} với email đã tồn tại trên CINEMO.
 
 Hướng dẫn liên kết an toàn:
 1. Đăng nhập bằng phương thức cũ (mật khẩu hoặc mạng xã hội đã đăng ký ban đầu).
@@ -466,39 +540,28 @@ export function renderOAuthMissingEmailVerifyEmail(payload: Record<string, unkno
     : `${origin}/auth/oauth/verify-email?token=${encodeURIComponent(token)}`;
   const message = payload.message ? String(payload.message) : "";
 
-  const subject = "[FilmBooking] Xác thực email bổ sung";
+  const subject = "[CINEMO] Xác thực email bổ sung";
 
   const html = wrapLayout(
     subject,
-    `
-    <h2 style="margin-top:0; color:#111827;">Xác thực email bổ sung</h2>
-    <p>Chào bạn,</p>
-    <p>${escapeHtml(message || `Bạn vừa đăng nhập FilmBooking bằng ${provider}. Để hoàn tất đăng ký tài khoản, vui lòng xác thực địa chỉ email này bằng cách nhấn vào nút bên dưới:`)}</p>
-
-    <div style="text-align:center; margin: 28px 0;">
-      <a href="${escapeHtml(verifyUrl)}" class="btn">Xác thực email</a>
-    </div>
-
-    <div class="alert-box">
-      <strong>Lưu ý quan trọng:</strong>
-      <ul style="margin:8px 0 0 0; padding-left:20px;">
-        <li>Liên kết xác thực chỉ có hiệu lực một lần trong vòng 15 phút.</li>
-        <li>Sau khi xác thực, tài khoản ${escapeHtml(provider)} sẽ được liên kết chính thức với email này.</li>
-        <li>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.</li>
-      </ul>
-    </div>
-
-    <p style="word-break: break-all; font-size: 13px; color: #6b7280; margin-top:20px;">
-      Nếu nút bấm phía trên không hoạt động, bạn có thể sao chép liên kết sau vào trình duyệt:<br>
-      <a href="${escapeHtml(verifyUrl)}" style="color:#2563eb;">${escapeHtml(verifyUrl)}</a>
-    </p>
-    `,
+    `${heading("Xác thực email bổ sung")}
+${paragraph("Chào bạn,")}
+${paragraph(escapeHtml(message || `Bạn vừa đăng nhập CINEMO bằng ${provider}. Để hoàn tất đăng ký tài khoản, vui lòng xác thực địa chỉ email này bằng cách nhấn vào nút bên dưới:`))}
+${button("Xác thực email", verifyUrl)}
+${noteBox("warning", `<strong>Lưu ý quan trọng:</strong>
+${bulletList([
+  "Liên kết xác thực chỉ có hiệu lực một lần trong vòng 15 phút.",
+  `Sau khi xác thực, tài khoản ${escapeHtml(provider)} sẽ được liên kết chính thức với email này.`,
+  "Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.",
+])}`)}
+${fallbackLink(verifyUrl, "Nếu nút bấm phía trên không hoạt động, bạn có thể sao chép liên kết sau vào trình duyệt:")}`,
+    { preheader: "Bấm vào nút để xác thực email và hoàn tất đăng nhập CINEMO (hiệu lực 15 phút)." },
   );
 
-  const text = `XÁC THỰC EMAIL BỔ SUNG - FILMBOOKING
+  const text = `XÁC THỰC EMAIL BỔ SUNG - CINEMO
 
 Chào bạn,
-${message || `Bạn vừa đăng nhập FilmBooking bằng ${provider}.`}
+${message || `Bạn vừa đăng nhập CINEMO bằng ${provider}.`}
 
 Vui lòng truy cập liên kết sau để xác thực địa chỉ email:
 ${verifyUrl}
