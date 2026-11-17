@@ -1,7 +1,7 @@
 ---
-spec_version: 3.1.0
-updated_at: 2026-11-16
-source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + change remove-pos 2026-11-12 (spec/changes/2026-11-12-remove-pos.md) + change remove-showtime-exchange 2026-11-12 (spec/changes/2026-11-12-remove-showtime-exchange.md) + change admin-ux 2026-11-16 (tasks/bug-admin-ux, user duyệt điều hướng theo vai trò)
+spec_version: 3.2.0
+updated_at: 2026-11-17
+source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + change remove-pos 2026-11-12 (spec/changes/2026-11-12-remove-pos.md) + change remove-showtime-exchange 2026-11-12 (spec/changes/2026-11-12-remove-showtime-exchange.md) + change admin-ux 2026-11-16 (tasks/bug-admin-ux, user duyệt điều hướng theo vai trò) + change confirm-email-auto-login 2026-11-17 (spec/changes/2026-11-17-confirm-email-auto-login.md, user duyệt R-04 đăng nhập luôn sau xác nhận)
 ---
 
 # SPECIFICATIONS.md — Hệ thống Đặt vé Xem phim Online (Chuỗi rạp)
@@ -77,7 +77,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + 
 | R-01 | Đăng ký email + mật khẩu | Form đăng ký nhận **email + mật khẩu + họ tên**. Email duy nhất trong hệ thống, **so sánh không phân biệt hoa/thường** (đăng ký `A@x.com` khi đã có `a@x.com` → không tạo tài khoản mới). | BR-AUTH-01 (M) | M | MVP |
 | R-02 | Chính sách mật khẩu | Mật khẩu **≥ 8 ký tự**, **≤ 72 ký tự**, bắt buộc có **chữ hoa, chữ thường và chữ số**; vi phạm → từ chối. Hiển thị **thanh độ mạnh mật khẩu**. | BR-AUTH-02 (M) | M | MVP |
 | R-03 | Đồng ý điều khoản khi đăng ký | Bắt buộc tick đồng ý **Điều khoản sử dụng** và **Chính sách bảo mật**; chưa tick → không đăng ký được. Lưu **thời điểm + phiên bản điều khoản** đã đồng ý. | BR-AUTH-03 (M) | M | MVP |
-| R-04 | Email xác nhận tài khoản | Sau đăng ký, tài khoản ở trạng thái **chưa xác nhận** và hệ thống gửi email chứa **link xác nhận dùng một lần**, **hết hạn sau 24 giờ**. Bấm link hợp lệ → tài khoản **đã xác nhận**; link đã dùng/hết hạn → không xác nhận được. | BR-AUTH-04 (M), §8.1 | M | MVP |
+| R-04 | Email xác nhận tài khoản | Sau đăng ký, tài khoản ở trạng thái **chưa xác nhận** và hệ thống gửi email chứa **link xác nhận dùng một lần**, **hết hạn sau 24 giờ**. Bấm link hợp lệ → tài khoản **đã xác nhận** và **được đăng nhập luôn** trên trình duyệt vừa bấm link (không phải nhập lại email/mật khẩu; kể cả khi mở link ở thiết bị khác với nơi đăng ký), rồi chuyển về web; phiên mặc định **hết khi đóng trình duyệt** (R-15). Link đã dùng/hết hạn/sai → không xác nhận cũng không đăng nhập được, chuyển tới màn "Liên kết hết hạn" kèm nút gửi lại. | BR-AUTH-04 (M), §8.1 | M | MVP |
 | R-05 | Chặn đặt vé khi chưa xác nhận email | Tài khoản chưa xác nhận **không được giữ ghế / đặt vé** (chặn ở server); giao diện hiển thị **banner nhắc xác nhận** + nút **"Gửi lại email"**. | BR-AUTH-05 (M) | M | MVP |
 | R-06 | Gửi lại email xác nhận có giới hạn | Khoảng cách tối thiểu **60 giây** giữa 2 lần gửi; tối đa **5 lần/giờ** cho mỗi email. Trong 60 giây: nút vô hiệu kèm **đồng hồ đếm ngược**, không email nào được gửi thêm. | BR-AUTH-06 (M) | M | MVP |
 | R-07 | CAPTCHA | CAPTCHA (Cloudflare Turnstile hoặc tương đương) **bắt buộc** ở form **đăng ký**, **quên mật khẩu**, và ở form **đăng nhập sau 3 lần sai liên tiếp**. | BR-AUTH-07 (M) | M | MVP |
@@ -515,7 +515,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + 
 | POLICY | §7.1→R-131, R-132, R-134 · §7.2→R-133 · §7.3→R-132, R-134 |
 | CR admin-ux (2026-11-16) | không có mã BR gốc → R-135 (điều hướng theo vai trò + đăng xuất của nhân sự; liên quan BR-AUTH-17/18, §5.3) |
 
-**Tổng (spec 3.1.0):** 135 mã requirement (R-01…R-135), trong đó **12 REMOVED** (R-111, R-120…R-130) → **123 còn hiệu lực** — **110 MVP** (trong đó 10 gắn phase `[cần xác nhận]`), **13 GĐ2** (trong đó 1 gắn phase `[cần xác nhận]`). Phủ **128/128** mã BR còn hiệu lực (12 mã BR-POS-01…11, BR-ADM-15 REMOVED), **18/18** NFR, **22/22** AC còn hiệu lực (AC-20…AC-23 REMOVED).
+**Tổng (spec 3.2.0):** 135 mã requirement (R-01…R-135), trong đó **12 REMOVED** (R-111, R-120…R-130) → **123 còn hiệu lực** — **110 MVP** (trong đó 10 gắn phase `[cần xác nhận]`), **13 GĐ2** (trong đó 1 gắn phase `[cần xác nhận]`). Phủ **128/128** mã BR còn hiệu lực (12 mã BR-POS-01…11, BR-ADM-15 REMOVED), **18/18** NFR, **22/22** AC còn hiệu lực (AC-20…AC-23 REMOVED).
 
 ## Điểm cần xác nhận
 

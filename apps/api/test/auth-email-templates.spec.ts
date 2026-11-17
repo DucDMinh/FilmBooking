@@ -5,10 +5,13 @@ import { describe, expect, it } from "vitest";
 // Template mail Supabase Auth (GoTrue) nằm ngoài apps/api: kiểm tra tĩnh để không lệch thương hiệu/biến.
 const templatesDir = fileURLToPath(new URL("../../../supabase/templates/", import.meta.url));
 
-const ALLOWED_VARIABLES = new Set([".ConfirmationURL", ".Token", ".Email", ".NewEmail", ".SiteURL"]);
+const ALLOWED_VARIABLES = new Set([".ConfirmationURL", ".Token", ".TokenHash", ".Email", ".NewEmail", ".SiteURL"]);
+
+// Link xác nhận đăng ký trỏ thẳng web để server đổi token_hash lấy phiên (không dùng .ConfirmationURL, token sẽ nằm ở fragment).
+const CONFIRM_LINK = "{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}";
 
 const templates: Record<string, { required: string[]; mustMention?: string[] }> = {
-  confirmation: { required: [".ConfirmationURL"], mustMention: ["24 giờ"] },
+  confirmation: { required: [".SiteURL", ".TokenHash"], mustMention: ["24 giờ"] },
   recovery: { required: [".ConfirmationURL"], mustMention: ["1 giờ"] },
   magic_link: { required: [".ConfirmationURL"] },
   email_change: { required: [".ConfirmationURL", ".Email", ".NewEmail"] },
@@ -60,9 +63,31 @@ describe("template mail Supabase Auth", () => {
   }
 
   it("link dự phòng dạng text bên dưới nút CTA (mọi mail có link)", () => {
-    for (const name of ["confirmation", "recovery", "magic_link", "email_change", "invite"]) {
-      const occurrences = load(name).split("{{ .ConfirmationURL }}").length - 1;
+    const linkByTemplate: Record<string, string> = {
+      confirmation: CONFIRM_LINK,
+      recovery: "{{ .ConfirmationURL }}",
+      magic_link: "{{ .ConfirmationURL }}",
+      email_change: "{{ .ConfirmationURL }}",
+      invite: "{{ .ConfirmationURL }}",
+    };
+    for (const [name, link] of Object.entries(linkByTemplate)) {
+      const occurrences = load(name).split(link).length - 1;
       expect(occurrences, name).toBeGreaterThanOrEqual(3); // href nút + href text + text hiển thị
+    }
+  });
+
+  it("confirmation: link đăng nhập luôn qua /auth/confirm, đúng type=signup, không còn .ConfirmationURL", () => {
+    const html = load("confirmation");
+    expect(html).toContain(CONFIRM_LINK);
+    expect(html).toMatch(/token_hash=\{\{ \.TokenHash \}\}&amp;type=signup&amp;next=\//);
+    expect(html).not.toContain(".ConfirmationURL");
+  });
+
+  it("4 template còn lại (recovery, magic_link, email_change, invite) vẫn dùng .ConfirmationURL, không đổi sang /auth/confirm", () => {
+    for (const name of ["recovery", "magic_link", "email_change", "invite"]) {
+      const html = load(name);
+      expect(html, name).toContain("{{ .ConfirmationURL }}");
+      expect(html, name).not.toContain("/auth/confirm");
     }
   });
 });

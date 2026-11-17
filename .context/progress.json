@@ -68,6 +68,20 @@
       },
       "note": "spec_version 3.1.0 không bump, scope v22. Template Auth qua config.toml chỉ áp dụng local; staging/prod dán vào Dashboard. Residual LOW: Outlook max-width, màu Nest/Auth lệch nhẹ, DEFAULT_WEB_ORIGIN=filmbooking.vn, PASSWORD_SET còn nút sau khi đã đặt; chưa kiểm client mail thật.",
       "updatedAt": "2026-11-17T08:59:49.341Z"
+    },
+    {
+      "id": "confirm-email-auto-login/phase-1-task-01",
+      "title": "Bấm link xác nhận email → đăng nhập luôn (token_hash + verifyOtp tại /auth/confirm), sửa R-04",
+      "class": "MODIFY",
+      "status": "done",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "STRICT",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/feature-confirm-email-auto-login-phase-1-task-01-round-2-review.md"
+      },
+      "note": "spec_version 3.2.0, scope v23. Round 1 FAIL (fb-remember cũ => phiên 30 ngày) đã sửa. Verify live trên stack local PASS. Residual: login-CSRF/tráo phiên, scanner email dùng mất token, template qua config.toml chỉ local (staging/prod dán Dashboard, Site URL không có / cuối).",
+      "updatedAt": "2026-11-17T09:30:59.976Z"
     }
   ],
   "bugs": [
@@ -531,7 +545,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-17T08:59:49.341Z",
+  "lastUpdated": "2026-11-17T09:30:59.976Z",
   "inProgressTask": null,
   "completedTasks": [
     {

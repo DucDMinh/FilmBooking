@@ -1,9 +1,9 @@
 {
-  "specVersion": "3.1.0",
-  "scopeVersion": 22,
-  "generatedAt": "2026-11-17T15:58:15+07:00",
+  "specVersion": "3.2.0",
+  "scopeVersion": 23,
+  "generatedAt": "2026-11-17T17:30:00+07:00",
   "trigger": "feature-update",
-  "workItem": "feature-custom-mail-templates/phase-1",
+  "workItem": "feature-confirm-email-auto-login/phase-1-task-01",
   "specRefs": [
     "NFR-10",
     "R-04",
@@ -14,7 +14,12 @@
     "R-86",
     "R-109",
     "R-133",
-    "AC-26"
+    "AC-26",
+    "R-05",
+    "R-06",
+    "R-12",
+    "R-15",
+    "R-135"
   ],
   "changed": {
     "files": [
@@ -59,7 +64,9 @@
       "supabase/templates/invite.html",
       "supabase/templates/reauthentication.html",
       "apps/api/test/auth-email-templates.spec.ts",
-      "supabase/config.toml"
+      "supabase/config.toml",
+      "apps/web/src/app/auth/confirm/route.ts",
+      "apps/web/src/app/auth/confirm/__tests__/route.test.ts"
     ],
     "modules": [
       "web-catalog",
@@ -72,7 +79,9 @@
       "api-config",
       "api-jobs",
       "api-mail-templates",
-      "supabase-auth-email-templates"
+      "supabase-auth-email-templates",
+      "web-auth-confirm",
+      "web-xac-nhan-email"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -130,18 +139,31 @@
         "apps/api/test/auth-email-templates.spec.ts",
         "docs/dev-setup.md",
         "supabase/config.toml"
+      ],
+      "feature-confirm-email-auto-login/phase-1-task-01": [
+        "apps/web/src/app/auth/confirm/route.ts",
+        "apps/web/src/app/auth/confirm/__tests__/route.test.ts",
+        "supabase/templates/confirmation.html",
+        "apps/api/test/auth-email-templates.spec.ts",
+        "docs/dev-setup.md"
       ]
     }
   },
   "impact": {
     "direct": [
+      "[scope v23 / confirm-email-auto-login] auth.confirm.route (R-04, R-15) — MODIFY: route mới `GET /auth/confirm?token_hash=…&type=signup&next=…` (apps/web/src/app/auth/confirm/route.ts) gọi `verifyOtp({type, token_hash})` phía server. Hợp lệ → `email_confirmed_at` được set + đặt cookie phiên + redirect `/xac-nhan-email?status=success` (đã đăng nhập, nút \"Tiếp tục đặt vé\" dùng được ngay, không phải nhập lại email/mật khẩu); hoạt động cả khi mở link ở thiết bị/trình duyệt khác với nơi đăng ký (không cần code_verifier/PKCE)",
+      "[scope v23] auth.confirm.invalid-link (R-04) — link đã dùng / hết hạn (24 giờ) / `token_hash` sai / thiếu `token_hash` / thiếu `type` / `type` ≠ `signup` (vd `recovery`, `magic_link`, `email_change`) / `verifyOtp` lỗi hoặc throw → KHÔNG có phiên, KHÔNG Set-Cookie, redirect `/xac-nhan-email?status=expired` (màn \"Liên kết hết hạn\" + nút gửi lại); không lộ chi tiết lỗi; `type` sai thì KHÔNG gọi verifyOtp",
+      "[scope v23] auth.confirm.next (R-04, R-135) — `next` luôn qua `sanitizeNext`: `//evil.com`, `https://evil.com`, `/admin/../phim` bị loại → về `/`; thiếu `next` → `/`. Nhân sự (admin/manager/staff) xác nhận qua đường này → `resolvePostLoginTarget` đưa về khu vực vai trò (`/admin`, `/staff/chon-rap`) thay vì trang success của khách",
+      "[scope v23] auth.confirm.session-cookie (R-15) — phiên tạo từ link xác nhận là phiên trình duyệt: cookie `sb-<ref>-auth-token*` (HttpOnly, SameSite=Lax, Path=/, Secure ở production) KHÔNG có Max-Age/Expires → hết khi đóng trình duyệt; cờ `fb-remember` được ghim `0` KỂ CẢ khi trình duyệt đó từng bật \"Ghi nhớ đăng nhập\" (`fb-remember=1` trước đó) → sau khi gia hạn ngầm qua `proxy.ts` vẫn không nâng lên 30 ngày. Chỉ ghim khi verify thành công; verify lỗi không đụng cookie/phiên hiện có",
+      "[scope v23] mail.auth.confirmation-link (R-04) — template Auth `confirmation` (supabase/templates/confirmation.html): nút \"Xác nhận email\", link dự phòng và text hiển thị đều dùng `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next=/` (trong HTML `&amp;`), KHÔNG còn `{{ .ConfirmationURL }}`; vẫn nêu \"24 giờ\", dùng một lần, giao diện CINEMO tiếng Việt; biến cho phép thêm `.TokenHash`, `.SiteURL`. Mail gửi lại (R-06, auth-ext `resend` anon phía server, không code_verifier) cũng dùng link `/auth/confirm`",
+      "[scope v23] auth.confirm.config — link phụ thuộc `site_url` của Supabase Auth: local `http://localhost:3000`; staging/prod phải dán template `confirmation` vào Supabase Dashboard và đặt Site URL đúng domain web, KHÔNG có `/` ở cuối (nếu không link thành `//auth/confirm`). Template qua `supabase/config.toml` chỉ áp dụng local (cần `pnpm db:stop && pnpm db:start` để nạp)",
       "[scope v22 / custom-mail-templates] mail.nest.layout — MODIFY chỉ trình bày (requirement KHÔNG đổi, không bump spec_version): mọi mail giao dịch do Nest gửi (10 kind của `renderTemplate`: TICKET_ISSUED, ACCOUNT_LOCKED_ALERT, IDENTITY_LINKED, IDENTITY_UNLINKED, LATE_PAYMENT_MANUAL_REVIEW, AMOUNT_MISMATCH_MANUAL_REVIEW, SHOWTIME_CANCELLED, PASSWORD_SET, OAUTH_MISSING_EMAIL_COLLISION, OAUTH_MISSING_EMAIL_VERIFY) đổi giao diện sang thương hiệu CINEMO: bố cục bảng 600px + style inline (không `<style>`, không `display:flex`), `lang=\"vi\"`, preheader ẩn, header dải tối `#111620` + wordmark CINEMO `#F06D5B`, nút CTA nền `#F06D5B`, footer có hotline + câu \"email tự động, không trả lời\"",
       "[scope v22] mail.nest.subject — subject mọi mail Nest đổi tiền tố `[FilmBooking]` → `[CINEMO]` (vd `[CINEMO] Vé điện tử …`); tên thương hiệu trong header/footer/phần `text` đổi \"FilmBooking\" → \"CINEMO\". Test/selector cũ dò `[FilmBooking]` phải cập nhật (đã sửa 3 assert ở outbox-job.e2e-spec.ts)",
       "[scope v22] mail.ticket (R-86, R-133, AC-26) — nội dung vé GIỮ NGUYÊN, chỉ giao diện đổi: mã đặt vé, qr_token, tên rạp + địa chỉ + link bản đồ + hotline rạp, phim, phòng, suất, ghế, combo, tổng tiền VND; đủ 4 lưu ý (đến trước 15 phút, \"Vé chỉ dùng tại rạp ghi trên vé\", \"Vé không huỷ / không hoàn tiền\", giấy tờ tuỳ thân phim T13+) ở cả `html` lẫn `text`",
       "[scope v22] mail.account-locked (R-11) — ACCOUNT_LOCKED_ALERT giữ nguyên \"5 lần liên tiếp\" + \"15 phút\"; mail.identity (R-24) — IDENTITY_LINKED/IDENTITY_UNLINKED giữ câu cảnh báo liên kết/huỷ liên kết; mail.late-payment (R-78) — LATE_PAYMENT_MANUAL_REVIEW/AMOUNT_MISMATCH_MANUAL_REVIEW giữ lý do, mã đặt vé/mã đơn/mã giao dịch/số tiền/rạp, hướng dẫn liên hệ hotline + hoàn tiền thủ công; mail.showtime-cancelled (R-109 + AC-24) — giữ hướng dẫn hoàn tiền thủ công + câu không hỗ trợ đổi suất; mail.password-set / OAuth (OAUTH_MISSING_EMAIL_COLLISION, OAUTH_MISSING_EMAIL_VERIFY) — giữ nội dung",
       "[scope v22] mail.nest.escape — mọi giá trị động (tên phim/rạp, ghế, title, preheader, href) vẫn qua `escapeHtml`; payload chứa `<script>`, `<img onerror>`, dấu nháy kép → HTML không chứa thẻ thô",
-      "[scope v22] mail.auth.templates — 6 template Supabase Auth tiếng Việt có dấu, thương hiệu CINEMO tại `supabase/templates/*.html`, nạp qua 6 khối `[auth.email.template.<tên>]` trong `supabase/config.toml` (CHỈ áp dụng khi chạy Supabase local; staging/prod phải dán template vào Dashboard): `confirmation` (xác nhận đăng ký, R-04: link dùng một lần, hết hạn 24 giờ, chưa xác nhận không đặt vé được), `recovery` (đặt lại mật khẩu, R-13: hết hạn 1 giờ, dùng một lần, không yêu cầu thì bỏ qua), `magic_link`, `email_change` (xác nhận đổi từ `{{ .Email }}` sang `{{ .NewEmail }}`), `invite` (lời mời nhân sự), `reauthentication` (mã `{{ .Token }}` nổi bật, không chia sẻ). Biến Go template giữ nguyên (`.ConfirmationURL`, `.Token`, `.Email`, `.NewEmail`); không `<script`, không URL cứng",
-      "[scope v22] mail.auth.subject — subject mail Auth: `[CINEMO] Xác nhận email của bạn`, `[CINEMO] Đặt lại mật khẩu`, `[CINEMO] Liên kết đăng nhập`, `[CINEMO] Xác nhận đổi email`, `[CINEMO] Lời mời tham gia`, `[CINEMO] Mã xác thực`; link vẫn là `{{ .ConfirmationURL }}` nên luồng redirect/`auth/callback` (exchangeCodeForSession) KHÔNG đổi",
+      "[scope v22] mail.auth.templates — 6 template Supabase Auth tiếng Việt có dấu, thương hiệu CINEMO tại `supabase/templates/*.html`, nạp qua 6 khối `[auth.email.template.<tên>]` trong `supabase/config.toml` (CHỈ áp dụng khi chạy Supabase local; staging/prod phải dán template vào Dashboard): `confirmation` (xác nhận đăng ký, R-04: link dùng một lần, hết hạn 24 giờ, chưa xác nhận không đặt vé được), `recovery` (đặt lại mật khẩu, R-13: hết hạn 1 giờ, dùng một lần, không yêu cầu thì bỏ qua), `magic_link`, `email_change` (xác nhận đổi từ `{{ .Email }}` sang `{{ .NewEmail }}`), `invite` (lời mời nhân sự), `reauthentication` (mã `{{ .Token }}` nổi bật, không chia sẻ). Biến Go template giữ nguyên (`.ConfirmationURL`, `.Token`, `.Email`, `.NewEmail`); không `<script`, không URL cứng [ĐÃ ĐỔI ở scope v23 — riêng template `confirmation` nay dùng `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next=/` thay `{{ .ConfirmationURL }}`, xem scope v23 mail.auth.confirmation-link; 5 template còn lại không đổi]",
+      "[scope v22] mail.auth.subject — subject mail Auth: `[CINEMO] Xác nhận email của bạn`, `[CINEMO] Đặt lại mật khẩu`, `[CINEMO] Liên kết đăng nhập`, `[CINEMO] Xác nhận đổi email`, `[CINEMO] Lời mời tham gia`, `[CINEMO] Mã xác thực`; link vẫn là `{{ .ConfirmationURL }}` nên luồng redirect/`auth/callback` (exchangeCodeForSession) KHÔNG đổi [scope v23: link của mail `confirmation` không còn là ConfirmationURL; luồng recovery/magic_link/email_change/invite vẫn ConfirmationURL + `auth/callback`]",
       "[scope v22] mail.auth.notification-off — `[auth.email.notification.*]` vẫn TẮT (không gửi trùng mail \"đã đổi mật khẩu\" R-14 do Nest gửi); chỉ có 1 mail đổi mật khẩu",
       "api.mail.smtp-transport — NFR-10 (requirement KHÔNG đổi; chỉ đổi hiện thực): MailService gửi email giao dịch trong `email_outbox` qua SMTP (nodemailer, token `MAIL_TRANSPORT`, tạo bởi `createMailTransport(env)` trong mail.transport.ts) thay cho Resend SDK. Đặt `SMTP_HOST` (+ `SMTP_PORT` mặc định 465, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) → `sendMail` được gọi; secure=true khi port 465, false với port khác (vd 587); có auth khi có `SMTP_USER`; timeout kết nối 10s / greeting 10s / socket 20s",
       "api.mail.from-address — from = options.from > `SMTP_FROM` > `FilmBooking <SMTP_USER>` > `FilmBooking <no-reply@filmbooking.local>` (giải quyết scan bug-register-email #4: from cứng onboarding@resend.dev). Gmail ghi đè from thành chính tài khoản đăng nhập, bỏ qua `SMTP_FROM` (không phải lỗi code)",
@@ -152,6 +174,14 @@
       "auth.email-channel — [v21] email Auth (xác nhận đăng ký R-04, quên mật khẩu) vẫn do Supabase Auth (GoTrue) gửi qua SMTP riêng của GoTrue (kênh gửi không đổi); local vào Mailpit http://127.0.0.1:54324, KHÔNG phải hộp thư thật. [v22] riêng GIAO DIỆN/NGÔN NGỮ mail Auth đã đổi, xem mail.auth.templates"
     ],
     "dependents": [
+      "[scope v23] auth.email-confirmation-gate — R-05: tài khoản CHƯA xác nhận vẫn không giữ ghế/đặt vé (chặn ở server) + banner nhắc + nút \"Gửi lại email\"; SAU khi bấm link xác nhận (cùng trình duyệt) khách vào `/xac-nhan-email?status=success` đã đăng nhập và giữ ghế/đặt vé được NGAY, không đăng nhập lại",
+      "[scope v23] auth.resend-confirmation — R-06: gửi lại email xác nhận (khoảng cách 60 giây, tối đa 5 lần/giờ, đếm ngược, không email thừa) không đổi hành vi; mail gửi lại cũng mang link `/auth/confirm?token_hash=…`. Link của lần gửi trước còn hiệu lực hay không là do GoTrue quyết định — ghi nhận kết quả thật, không giả định",
+      "[scope v23] auth.no-enumeration — R-12: không tiết lộ tồn tại email — đăng ký trùng email, quên mật khẩu, lỗi đăng nhập giữ thông báo chung; màn `?status=expired` không phân biệt \"sai token\" với \"đã dùng\" / \"hết hạn\" (không lộ thông tin tài khoản)",
+      "[scope v23] auth.session-management — R-15: \"Ghi nhớ đăng nhập\" (30 ngày) vs phiên hết khi đóng trình duyệt cho ĐĂNG NHẬP thường không đổi; xác nhận email là đường mới tạo phiên (luôn phiên trình duyệt). \"Đăng xuất khỏi mọi thiết bị\" vẫn huỷ phiên tạo từ link xác nhận",
+      "[scope v23] auth.post-login-redirect — R-135: `resolvePostLoginTarget` được dùng thêm ở `/auth/confirm` (trước chỉ ở đăng nhập mật khẩu + `/auth/callback`); ma trận phân quyền/RLS không đổi",
+      "[scope v23] auth.oauth-callback — `/auth/callback` (OAuth Google/Facebook, `?code=` exchangeCodeForSession) KHÔNG đổi, vẫn phục vụ OAuth; `/auth/confirm` là route riêng, khách chưa đăng nhập truy cập được (proxy.ts không sửa)",
+      "[scope v23] auth.other-email-links — recovery (R-13), magic_link, email_change, invite VẪN dùng `{{ .ConfirmationURL }}` → luồng redirect/`auth/callback` cũ không đổi; 5 template này không bị sửa",
+      "[scope v23] web.xac-nhan-email — trang `/xac-nhan-email` (status=success | expired) KHÔNG đổi code, nay là đích của route mới: success hiển thị trạng thái đã đăng nhập + nút \"Tiếp tục đặt vé\"; expired hiển thị \"Liên kết hết hạn\" + gửi lại",
       "cancellation.resend-email — admin \"gửi lại email\" huỷ suất (R-109/R-110) đi qua cùng MailService/outbox: kết quả SENT/FAILED và trạng thái hiển thị ở màn Đơn bị ảnh hưởng phải đúng như trước",
       "mail.outbox.retry-backoff — retry/backoff của outbox (tối đa 3 lần, `last_error`, FAILED) giữ nguyên, nay lỗi đến từ SMTP thay vì Resend",
       "alert.email_failed — cảnh báo `email_failed` khi outbox gửi lỗi vẫn phát sinh với thông điệp lỗi SMTP mới (\"SMTP is not configured (SMTP_HOST)\" / \"SMTP send failed: …\")",
@@ -196,6 +226,22 @@
       "web.schedule — danh sách rạp/lịch chiếu liên quan (/rap → \"Xem lịch chiếu\" R-34, lịch 7 ngày ở /rap/[code] R-37) không đổi hành vi; retest nhẹ"
     ],
     "regression": [
+      "[scope v23 / confirm-email-auto-login] Luồng chính CÙNG thiết bị: đăng ký email+mật khẩu mới (local) → mở mail trong Mailpit http://127.0.0.1:54324 → bấm \"Xác nhận email\" → về `/xac-nhan-email?status=success` ĐÃ đăng nhập (header hiện tài khoản, `GET /me` 200, `auth.users.email_confirmed_at` được set), bấm \"Tiếp tục đặt vé\" giữ ghế được ngay không phải đăng nhập lại (R-04, R-05)",
+      "[scope v23] KHÁC thiết bị/trình duyệt: đăng ký ở trình duyệt A, mở link trong mail ở trình duyệt B (profile khác / ẩn danh) → B đăng nhập luôn (không cần code_verifier); A vẫn chưa có phiên (R-04)",
+      "[scope v23] Một lần dùng: bấm lại CÙNG link lần 2 → `/xac-nhan-email?status=expired`, không Set-Cookie, không đổi phiên hiện có; link sai/cắt ngắn (vd `token_hash` 22 ký tự), thiếu `token_hash`, `type=recovery|magic_link|email_change|invite`, `type` rỗng → `?status=expired`",
+      "[scope v23] Hết hạn 24 giờ: link quá 24 giờ → `?status=expired` + nút gửi lại hoạt động; gửi lại → mail mới → bấm link mới → success (R-04, R-06). Không có cách nhanh để chờ 24 giờ — dùng token đã hết hạn do GoTrue tạo hoặc chỉnh `otp_expiry` ở môi trường local riêng (KHÔNG sửa `supabase/config.toml` của repo cho việc này)",
+      "[scope v23] Chưa xác nhận → không đặt vé: tài khoản mới, CHƯA bấm link, mở /dat-ve/<showtimeId> giữ ghế → bị chặn + banner + \"Gửi lại email\" (R-05); gửi lại 2 lần trong 60 giây → lần 2 nút vô hiệu có đếm ngược (AC-01, AC-02, R-06)",
+      "[scope v23] Phiên hết khi đóng trình duyệt (R-15): sau khi xác nhận, cookie `sb-*-auth-token*` KHÔNG có Max-Age/Expires (DevTools) và đóng/mở lại trình duyệt → chưa đăng nhập. Ca đặc biệt: trước đó đã đăng nhập với \"Ghi nhớ\" (cookie `fb-remember=1`, phiên 30 ngày) rồi bấm link xác nhận → `fb-remember=0` và cookie phiên không Max-Age; sau vài lần điều hướng (gia hạn ngầm) vẫn không thành 30 ngày",
+      "[scope v23] Chuyển hướng nhân sự (R-135): tài khoản admin/manager/staff mà đi qua `/auth/confirm` với token hợp lệ (tạo bằng admin `generate_link` ở local) → về `/admin` hoặc `/staff/chon-rap`, KHÔNG về trang khách; customer → `/xac-nhan-email?status=success`",
+      "[scope v23] `next` độc hại ở `/auth/confirm?...&next=//evil.com`, `next=https://evil.com`, `next=/admin/../phim`, `next=javascript:alert(1)` → redirect nội bộ (về `/` hoặc trang success), KHÔNG ra domain ngoài (chống open-redirect)",
+      "[scope v23] REGRESSION template Auth: `confirmation` dùng `/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup&amp;next=/` ở nút + link dự phòng + text, KHÔNG còn `.ConfirmationURL`; `recovery`/`magic_link`/`email_change`/`invite` vẫn dùng `{{ .ConfirmationURL }}`; `reauthentication` vẫn mã `{{ .Token }}`; mọi template: chỉ biến cho phép (`.ConfirmationURL/.Token/.Email/.NewEmail/.TokenHash/.SiteURL`), không `<script`, `lang=\"vi\"`, có CINEMO",
+      "[scope v23] REGRESSION OAuth: đăng nhập Google/Facebook → `/auth/callback?code=…` (exchangeCodeForSession) vẫn hoạt động, đích đúng theo vai trò; liên kết/huỷ liên kết MXH không đổi (R-20, R-21, AC-04, AC-05)",
+      "[scope v23] REGRESSION quên mật khẩu (R-13): mail `[CINEMO] Đặt lại mật khẩu` vẫn dùng ConfirmationURL, hết hạn 1 giờ, dùng một lần, đặt lại thành công như trước; đổi email / magic link / mời nhân sự (nếu luồng có gửi) vẫn bấm được link `ConfirmationURL`",
+      "[scope v23] REGRESSION đăng nhập mật khẩu 4 vai trò (admin@, manager.hn01@, staff.hn01@, customer@filmbooking.local) + \"Ghi nhớ đăng nhập\" bật/tắt: phiên 30 ngày vs phiên trình duyệt đúng như trước (R-15); đăng xuất ở /admin và /staff không đổi",
+      "[scope v23] LƯU Ý môi trường: template Auth qua `supabase/config.toml` CHỈ áp dụng khi chạy Supabase local (cần `pnpm db:stop && pnpm db:start` để nạp lại); staging/prod phải dán template `confirmation` mới vào Supabase Dashboard (Authentication → Emails) và đặt Site URL đúng domain web KHÔNG có `/` cuối — không có test tự động cho bước này, không viết test kỳ vọng link `/auth/confirm` trên môi trường chưa dán template. Web :3000 của người dùng có thể còn chạy bản cũ → restart/build trước khi test thủ công",
+      "[scope v23] Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng) — R1 login-CSRF / tráo phiên: kẻ tấn công đăng ký bằng email của nạn nhân (hoặc đưa link do mình kiểm soát) rồi lừa nạn nhân bấm → trình duyệt nạn nhân đăng nhập vào tài khoản của kẻ tấn công; bấm link thành công còn thay phiên đang đăng nhập khác trên trình duyệt đó và hạ cờ \"Ghi nhớ\" về 0 (đã ghi `.context/decisions.md`; hướng sửa sau: trang trung gian bấm nút POST). Chấp nhận cho demo",
+      "[scope v23] Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng) — R2 scanner email (Outlook SafeLinks, Gmail, antivirus) có thể mở link GET trước người dùng và dùng mất `token_hash` → người dùng thấy \"Liên kết hết hạn\" dù email đã được xác nhận (đăng nhập thường vẫn được; có nút gửi lại). Hướng giảm sau: trang trung gian POST",
+      "[scope v23] Residual nhỏ (KHÔNG viết test kỳ vọng hành vi đúng) — R3: `route.ts` có thể ghi lại cookie chunk đã bị xoá thành giá trị rỗng không Max-Age khi phiên mới cần ít chunk hơn phiên cũ (LOW, không ảnh hưởng đọc phiên); R4: chưa có test tự động trên GoTrue thật (chỉ live verify thủ công); R5: `site_url` có `/` cuối làm link thành `//auth/confirm`",
       "/lich-chieu: ma trận lọc — (không lọc), tỉnh, phim, rạp, phim+rạp, tỉnh+phim, tỉnh+rạp, kèm date hôm nay / +3 / +6; sau mỗi bước URL và nội dung khớp; đổi tỉnh khi đang chọn rạp → `cinema` bị xoá",
       "/lich-chieu tham số độc hại: `?movie=.`, `?cinema=.`, `?movie=%2e`, `?movie=..&cinema=..`, `?movie=../../x`, `?province=.`, `?date=2026-02-30`, `?date=` quá khứ/+7 → HTTP 200, không 500, hiển thị như chưa chọn / hôm nay",
       "/lich-chieu nhiều phim: dữ liệu seed có 4 phim đang chiếu → mặc định hiện 4 khối phim (Người Nhện, Doraemon, Hành Tinh Cát: Phần Hai, Mai) khi có suất trong ngày; ngày không có suất → EmptyState",
@@ -248,7 +294,7 @@
       "[scope v22] Mail tiền về muộn (R-78): đơn `needs_manual_review` (ghế đã bán cho người khác / lệch số tiền) → email khách có lý do, mã đặt vé/mã đơn/mã giao dịch/số tiền/rạp + hướng dẫn liên hệ rạp/hoàn tiền thủ công",
       "[scope v22] Mail huỷ suất (R-109, AC-24, AC-26): huỷ suất / chuyển rạp Tạm đóng → email hướng dẫn liên hệ CSKH hoàn tiền thủ công, không có phương án đổi suất; \"Gửi lại email\" của admin vẫn gửi được, hiển thị đúng",
       "[scope v22] Mail đặt mật khẩu (PASSWORD_SET) và OAuth (OAUTH_MISSING_EMAIL_COLLISION, OAUTH_MISSING_EMAIL_VERIFY): render đúng, có nút CTA, giao diện CINEMO, link dự phòng dạng text dưới nút",
-      "[scope v22] Mail Supabase Auth (local, xem trong Mailpit http://127.0.0.1:54324 sau khi `pnpm db:stop && pnpm db:start` nạp config): đăng ký → mail `[CINEMO] Xác nhận email của bạn` tiếng Việt có dấu, nút/link `ConfirmationURL` bấm được → tài khoản đã xác nhận (R-04, hạn 24 giờ ghi trong mail); quên mật khẩu → `[CINEMO] Đặt lại mật khẩu`, ghi hạn 1 giờ (R-13), đặt lại thành công như trước",
+      "[scope v22] Mail Supabase Auth (local, xem trong Mailpit http://127.0.0.1:54324 sau khi `pnpm db:stop && pnpm db:start` nạp config): đăng ký → mail `[CINEMO] Xác nhận email của bạn` tiếng Việt có dấu, nút/link `ConfirmationURL` bấm được → tài khoản đã xác nhận (R-04, hạn 24 giờ ghi trong mail); quên mật khẩu → `[CINEMO] Đặt lại mật khẩu`, ghi hạn 1 giờ (R-13), đặt lại thành công như trước [ĐÃ ĐỔI ở scope v23 cho mail xác nhận đăng ký: nút/link KHÔNG còn là `ConfirmationURL` mà là `/auth/confirm?token_hash=…`, bấm → đăng nhập luôn (xem acceptance CR confirm-email-auto-login A1); phần quên mật khẩu (R-13) không đổi]",
       "[scope v22] Mail Auth còn lại: magic link (`[CINEMO] Liên kết đăng nhập`), đổi email (`[CINEMO] Xác nhận đổi email`, hiển thị email cũ → mới), mời nhân sự (`[CINEMO] Lời mời tham gia`), xác thực lại (`[CINEMO] Mã xác thực`, mã `{{ .Token }}` hiển thị rõ). Khi tạo nhân sự/đổi email trên môi trường local mà luồng có gửi các mail này thì kiểm hiển thị trong Mailpit",
       "[scope v22] Chỉ có MỘT mail khi đổi mật khẩu (R-14): `[auth.email.notification.password_changed]` KHÔNG bật; chỉ Nest gửi PASSWORD_SET/thông báo, không có mail trùng từ Supabase",
       "[scope v22] Hiển thị đa client: xem mail trong Mailpit (HTML + Text); nếu có điều kiện, thử Gmail web/mobile. Bố cục bảng đúng, nút CTA bấm được, không vỡ ở 360px",
@@ -257,6 +303,12 @@
     ]
   },
   "acceptance": [
+    "CR confirm-email-auto-login A1: Given khách vừa đăng ký email/mật khẩu When bấm link xác nhận hợp lệ trong mail (cùng thiết bị HOẶC khác thiết bị) Then `email_confirmed_at` được set, trình duyệt có cookie phiên, redirect `/xac-nhan-email?status=success` ĐÃ đăng nhập, nút \"Tiếp tục đặt vé\" dùng được ngay, không phải nhập lại email/mật khẩu. [R-04, R-05]",
+    "CR confirm-email-auto-login A2: Given link đã dùng / quá 24 giờ / `token_hash` sai / thiếu `token_hash` / `type` ≠ `signup` When mở `/auth/confirm` Then KHÔNG có phiên (không Set-Cookie), redirect `/xac-nhan-email?status=expired` (màn \"Liên kết hết hạn\" + gửi lại); với `type` sai thì không gọi verify. [R-04, R-12]",
+    "CR confirm-email-auto-login A3: Given `next` bất kỳ When mở `/auth/confirm` Then `next` luôn qua sanitizeNext (`//evil.com`, `https://evil.com`, `/admin/../phim` → `/`; thiếu → `/`); nhân sự xác nhận qua đường này → khu vực vai trò (`/admin`, `/staff/chon-rap`). [R-04, R-135]",
+    "CR confirm-email-auto-login A4: Given xác nhận thành công (kể cả khi trình duyệt từng bật \"Ghi nhớ đăng nhập\") Then phiên mặc định hết khi đóng trình duyệt (cookie phiên không Max-Age/Expires, `fb-remember=0`) như đăng nhập không \"Ghi nhớ\". [R-15]",
+    "CR confirm-email-auto-login A5: Given tài khoản chưa xác nhận When giữ ghế/đặt vé Then vẫn bị chặn (banner + gửi lại, giới hạn 60 giây); sau khi bấm link xác nhận Then đặt vé được ngay. [R-05, R-06, AC-01, AC-02]",
+    "CR confirm-email-auto-login A6: Given template Auth `confirmation` When render Then nút + link dự phòng + text dùng `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next=/`, không còn `{{ .ConfirmationURL }}`; `recovery`/`magic_link`/`email_change`/`invite` vẫn dùng `{{ .ConfirmationURL }}`; OAuth `/auth/callback` không đổi. [R-04, R-13]",
     "CR lich-chieu A1: Given mở /lich-chieu When đổi Khu vực / Phim / Rạp Then URL đổi (province/movie/cinema, giữ date) và danh sách suất đổi tương ứng; đổi tỉnh → cinema bị xoá. [R-35, R-43]",
     "CR lich-chieu A2: Given không có tham số When mở /lich-chieu Then hiện mọi phim đang chiếu có suất trong ngày (nhiều hơn 1 phim nếu seed có), mỗi phim 1 khối; chọn 1 phim → chỉ phim đó. [R-44, R-43]",
     "CR lich-chieu A3: Given dải 7 ngày When bấm một ngày khác Then URL `?date=` đổi, nút ngày được chọn đổi, suất hiển thị theo ngày đó; chỉ có MỘT dải ngày trên trang. [R-44]",
@@ -306,9 +358,9 @@
     "CR custom-mail-templates A1: Given mọi kind mail Nest (vé, khoá tài khoản, liên kết/huỷ liên kết MXH, tiền về muộn/lệch tiền, huỷ suất, đặt mật khẩu, OAuth) When render Then HTML dùng bảng + inline style (không `<style>`, không flex), có \"CINEMO\", `lang=\"vi\"`, subject bắt đầu `[CINEMO]`, có nút CTA màu `#F06D5B` khi có link. [R-86, R-11, R-24, R-78, R-109]",
     "CR custom-mail-templates A2: Given mail vé When nhận Then vẫn đủ mã đặt vé, qr_token, tên + địa chỉ rạp, \"chỉ dùng tại rạp ghi trên vé\", \"không huỷ/không hoàn\", đến trước 15 phút, ghế, tổng tiền (cả html và text). [R-86, R-133, AC-26]",
     "CR custom-mail-templates A3: Given payload có `<script>`/dấu nháy trong tên phim/rạp When render Then HTML không chứa thẻ `<script>` thô (escape).",
-    "CR custom-mail-templates A4: Given đăng ký tài khoản mới (Supabase local) When xem Mailpit Then mail `[CINEMO] Xác nhận email của bạn` tiếng Việt có dấu, nêu link hết hạn sau 24 giờ, nút/link xác nhận hoạt động. [R-04, AC-01]",
+    "CR custom-mail-templates A4: Given đăng ký tài khoản mới (Supabase local) When xem Mailpit Then mail `[CINEMO] Xác nhận email của bạn` tiếng Việt có dấu, nêu link hết hạn sau 24 giờ, nút/link xác nhận hoạt động. [R-04, AC-01] [scope v23: nút/link xác nhận nay dẫn tới `/auth/confirm` và đăng nhập luôn — xem CR confirm-email-auto-login]",
     "CR custom-mail-templates A5: Given quên mật khẩu When xem Mailpit Then mail `[CINEMO] Đặt lại mật khẩu` nêu link hết hạn 1 giờ, dùng một lần; đặt lại thành công như trước. [R-13]",
     "CR custom-mail-templates A6: Given 6 template Auth (`confirmation`, `recovery`, `magic_link`, `email_change`, `invite`, `reauthentication`) Then đủ file, có \"CINEMO\", `lang=\"vi\"`, chỉ dùng biến `.ConfirmationURL/.Token/.Email/.NewEmail`, không `<script`; `[auth.email.notification.*]` không bật. [R-04, R-13, R-14]"
   ],
-  "risk": "low"
+  "risk": "high"
 }
