@@ -28,6 +28,8 @@ interface CinemaFixture {
   bookingCode: string;
   ticketId: string;
   qrToken: string;
+  /** orders.qr_token (QR cấp đơn). */
+  orderQrToken: string;
   /** Chuỗi chỉ xuất hiện trong dữ liệu khách của rạp này — dùng để dò rò rỉ PII. */
   piiMarker: string;
 }
@@ -74,7 +76,7 @@ describe.skipIf(!supabaseEnv)("RLS + Nest guard: cách ly theo rạp & dữ li�
         contact_email: `${piiMarker}@example.com`,
         contact_phone: "0900000000",
       })
-      .select("id")
+      .select("id, qr_token")
       .single();
     if (order.error) throw new Error(`tạo đơn ${label}: ${order.error.message}`);
     const orderId = order.data.id as string;
@@ -112,6 +114,7 @@ describe.skipIf(!supabaseEnv)("RLS + Nest guard: cách ly theo rạp & dữ li�
       bookingCode,
       ticketId: ticket.data.id as string,
       qrToken: ticket.data.qr_token as string,
+      orderQrToken: order.data.qr_token as string,
       piiMarker,
     };
   }
@@ -473,6 +476,67 @@ describe.skipIf(!supabaseEnv)("RLS + Nest guard: cách ly theo rạp & dữ li�
   });
 
   // ---------------------------------------------------------------------------
+  // QR cấp đơn: quét orders.qr_token đúng rạp -> soát cả đơn trong 1 lần (R-86 / order-level-qr)
+  // ---------------------------------------------------------------------------
+  describe("QR cấp đơn: quét orders.qr_token soát cả đơn", () => {
+    it("đơn 3 ghế quét 1 lần -> OK, order.seats đủ 3 ghế, mọi vé có checked_in_at; quét lần 2 -> USED", async () => {
+      const cinema = await factories.createCinema();
+      const showtime = await factories.createShowtime({ cinemaId: cinema.id, startsInHours: 0.1 });
+      const staff = await factories.createStaffUser(cinema.id, "STAFF");
+      const customer = await factories.createUser("custq");
+      const seatLabels = ["A1", "A2", "A10"];
+      const order = await admin
+        .from("orders")
+        .insert({
+          channel: "WEB",
+          showtime_id: showtime.id,
+          user_id: customer.id,
+          status: "paid",
+          subtotal_amount: 300000,
+          total_amount: 300000,
+          booking_code: `${cinema.code}-${scope.runId.toUpperCase()}`,
+          contact_email: `${scope.prefix}pii_q@example.com`,
+        })
+        .select("id, qr_token")
+        .single();
+      if (order.error) throw new Error(`tạo đơn QR cấp đơn: ${order.error.message}`);
+      const orderId = order.data.id as string;
+      const orderQrToken = order.data.qr_token as string;
+      for (const [index, seatLabel] of seatLabels.entries()) {
+        const orderSeat = await admin
+          .from("order_seats")
+          .insert({ order_id: orderId, seat_id: showtime.seatIds[index]!, seat_label: seatLabel, seat_type: "NORMAL", price_amount: 100000 })
+          .select("id")
+          .single();
+        if (orderSeat.error) throw new Error(`tạo order_seat ${seatLabel}: ${orderSeat.error.message}`);
+        const ticket = await admin.from("tickets").insert({ order_id: orderId, order_seat_id: orderSeat.data.id, showtime_id: showtime.id });
+        if (ticket.error) throw new Error(`tạo vé ${seatLabel}: ${ticket.error.message}`);
+      }
+
+      const res = await http()
+        .post("/checkin/scan")
+        .set("Authorization", asUser(staff))
+        .send({ cinemaId: cinema.id, token: orderQrToken });
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe("OK");
+      expect(res.body.order.seats).toEqual(seatLabels);
+      expect(res.body.order.seatCount).toBe(3);
+      expect(res.body.ticket).toBeUndefined();
+      expect(JSON.stringify(res.body)).not.toContain(orderQrToken);
+
+      const tickets = await admin.from("tickets").select("checked_in_at").eq("order_id", orderId);
+      expect(tickets.data).toHaveLength(3);
+      expect(tickets.data?.every((row) => row.checked_in_at !== null)).toBe(true);
+
+      const again = await http()
+        .post("/checkin/scan")
+        .set("Authorization", asUser(staff))
+        .send({ cinemaId: cinema.id, token: orderQrToken });
+      expect(again.body.result).toBe("USED");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // AC-13 — soát vé sai rạp: WRONG_CINEMA, không lộ PII
   // ---------------------------------------------------------------------------
   describe("AC-13: Staff rạp B quét vé rạp A", () => {
@@ -485,8 +549,9 @@ describe.skipIf(!supabaseEnv)("RLS + Nest guard: cách ly theo rạp & dữ li�
       expect(res.body.result).toBe("WRONG_CINEMA");
       expect(res.body.correctCinema).toMatchObject({ id: a.cinema.id, code: a.cinema.code });
       expect(res.body.ticket).toBeUndefined();
+      expect(res.body.order).toBeUndefined();
       const raw = JSON.stringify(res.body);
-      for (const secret of [a.piiMarker, a.customer.email, a.bookingCode, a.qrToken, a.ticketId, a.orderId, "0900000000"]) {
+      for (const secret of [a.piiMarker, a.customer.email, a.bookingCode, a.qrToken, a.orderQrToken, a.ticketId, a.orderId, "0900000000"]) {
         expect(raw, `không được lộ ${secret}`).not.toContain(secret);
       }
     });

@@ -171,27 +171,61 @@ describe("checkin API", () => {
   });
 
   describe("kết quả màu (AC-12, AC-13)", () => {
-    it("OK (xanh): trả thông tin vé hợp lệ", async () => {
+    it("OK (xanh): trả cả đơn với đủ N ghế và seatCount (QR cấp đơn)", async () => {
       rpcPayload = {
         status: "OK",
+        result: "SUCCESS",
         message: "Soát vé thành công",
-        ticket_id: uuid(90),
+        order_id: uuid(90),
         booking_code: "ABC123",
         movie_title: "Phim",
         cinema_name: "Rạp 1",
         room_name: "P1",
-        seat_label: "A1",
-        seat_type: "NORMAL",
+        seats: ["A1", "A2", "A10"],
+        seat_count: 3,
         starts_at: "2026-12-01T12:00:00Z",
         checked_in_at: "2026-12-01T11:50:00Z",
         customer_name: "Nguyen Van A",
         customer_email: "a@x.vn",
+        ticket_id: uuid(91),
       };
       const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
       expect(res.status).toBe(200);
       expect(parsed(res)).toMatchObject({ result: "OK", color: "green" });
-      expect(parsed(res).ticket).toMatchObject({ bookingCode: "ABC123", seatLabel: "A1", movieTitle: "Phim" });
-      expect(JSON.stringify(res.body)).not.toMatch(/Nguyen|a@x\.vn|customer/);
+      expect(parsed(res).order).toEqual({
+        orderId: uuid(90),
+        bookingCode: "ABC123",
+        movieTitle: "Phim",
+        cinemaName: "Rạp 1",
+        roomName: "P1",
+        seats: ["A1", "A2", "A10"],
+        seatCount: 3,
+        startsAt: "2026-12-01T12:00:00Z",
+        checkedInAt: "2026-12-01T11:50:00Z",
+      });
+      expect(res.body.ticket).toBeUndefined();
+      expect(JSON.stringify(res.body)).not.toMatch(/Nguyen|a@x\.vn|customer|ticket_id|ticketId/);
+    });
+
+    it("OK: seats có phần tử không phải chuỗi bị lọc; seatCount luôn = số ghế đã lọc (bỏ qua seat_count của RPC)", async () => {
+      rpcPayload = {
+        status: "OK",
+        message: "m",
+        order_id: uuid(90),
+        booking_code: "ABC123",
+        seats: ["A1", 7, null, "A2"],
+        seat_count: "2",
+      };
+      const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
+      expect(parsed(res).order?.seats).toEqual(["A1", "A2"]);
+      expect(parsed(res).order?.seatCount).toBe(2);
+    });
+
+    it("OK: seats không phải mảng -> seats rỗng, seatCount 0", async () => {
+      rpcPayload = { status: "OK", message: "m", order_id: uuid(90), seats: "A1", seat_count: 1 };
+      const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
+      expect(parsed(res).order?.seats).toEqual([]);
+      expect(parsed(res).order?.seatCount).toBe(0);
     });
 
     it("USED (đỏ): quét lần hai báo giờ và nhân viên đã soát lần đầu (AC-12)", async () => {
@@ -200,6 +234,8 @@ describe("checkin API", () => {
         message: "Vé đã được sử dụng",
         checked_in_at: "2026-12-01T11:50:00Z",
         staff_name: "Lan",
+        seats: ["A1", "A2"],
+        seat_count: 2,
         ...PII,
       };
       const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
@@ -238,6 +274,9 @@ describe("checkin API", () => {
         ...PII,
         movie_title: "Phim bí mật",
         booking_code: "ABC123",
+        order_id: uuid(90),
+        seats: ["A1", "A2"],
+        seat_count: 2,
       };
       const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
       expect(res.status).toBe(200);
@@ -247,7 +286,8 @@ describe("checkin API", () => {
         message: "Vé thuộc rạp khác",
         correctCinema: { id: HN02, code: "HN02", name: "Rạp Hai", address: "1 Phố A" },
       });
-      expect(JSON.stringify(res.body)).not.toMatch(/Nguyen|a@x\.vn|"A1"|bí mật|ABC123/);
+      expect(JSON.stringify(res.body)).not.toMatch(/Nguyen|a@x\.vn|"A1"|"A2"|seat|bí mật|ABC123/i);
+      expect(JSON.stringify(res.body)).not.toContain(uuid(90));
     });
 
     it.each([

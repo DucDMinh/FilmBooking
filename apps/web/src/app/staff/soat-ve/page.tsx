@@ -20,9 +20,9 @@ interface HistoryEntry {
   result: ScanTicketResponse["result"];
 }
 
-/** Lịch sử không bao giờ hiện qr_token (là credential của vé). */
+/** Lịch sử không bao giờ hiện qr_token (là credential của đơn). */
 function displayCode(kind: "token" | "bookingCode", value: string, response: ScanTicketResponse): string {
-  if (response.ticket?.bookingCode) return response.ticket.bookingCode;
+  if (response.order?.bookingCode) return response.order.bookingCode;
   return kind === "bookingCode" ? value : "Mã QR";
 }
 

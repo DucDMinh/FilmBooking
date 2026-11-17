@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import QRCode from "qrcode";
 import { ENV, type Env } from "../../config/env";
-import { extractTicketQrs, renderTemplate, type RenderedEmail, type TicketQr } from "./templates";
+import { extractTicketQrToken, renderTemplate, type RenderedEmail } from "./templates";
 
 /** Injection token cho transport gửi mail (SMTP); cho phép mock linh hoạt trong test. */
 export const MAIL_TRANSPORT = Symbol("MAIL_TRANSPORT");
@@ -13,12 +13,6 @@ export interface MailAttachment {
   cid: string;
   contentType: string;
 }
-
-/**
- * Trần số ảnh QR đính kèm mỗi mail vé (giữ mail nhẹ, tránh đơn quá nhiều ghế làm nặng batch);
- * vé vượt trần vẫn có chữ qr_token trong mail.
- */
-export const MAX_TICKET_QR_IMAGES = 10;
 
 /** Phần tối thiểu của nodemailer Transporter mà MailService dùng, để test không phụ thuộc nodemailer. */
 export interface MailTransport {
@@ -106,49 +100,44 @@ export class MailService {
 
   /**
    * Render template từ kind + payload và gửi email.
-   * Mail vé kèm mỗi ghế một ảnh QR (PNG inline) để staff quét từng vé; vé nào tạo ảnh lỗi thì chỉ có chữ qr_token.
+   * Mail vé kèm MỘT ảnh QR (PNG inline) của cả đơn để staff quét; tạo ảnh lỗi thì mail chỉ có chữ qr_token.
    */
   async sendOutboxEmail(
     to: string,
     kind: string,
     payload: Record<string, unknown>,
   ): Promise<{ id: string; rendered: RenderedEmail }> {
-    const tickets = extractTicketQrs(kind, payload).slice(0, MAX_TICKET_QR_IMAGES);
-    const qrImages = await Promise.all(tickets.map((ticket, index) => this.buildTicketQrAttachment(ticket, index)));
-    const rendered = renderTemplate(kind, payload, { qrImageCids: qrImages.map((image) => image?.cid ?? null) });
+    const token = extractTicketQrToken(kind, payload);
+    const qrImage = token ? await this.buildOrderQrAttachment(token) : null;
+    const rendered = renderTemplate(kind, payload, qrImage ? { qrImageCid: qrImage.cid } : {});
 
-    const attachments: MailAttachment[] = [];
-    for (const image of qrImages) {
-      if (image) attachments.push(image);
-    }
     const result = await this.sendEmail({
       to,
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
-      ...(attachments.length > 0 ? { attachments } : {}),
+      ...(qrImage ? { attachments: [qrImage] } : {}),
     });
     return { id: result.id, rendered };
   }
 
   /**
-   * PNG của QR một vé = nguyên chuỗi qr_token, mức sửa lỗi M (khớp trang vé web và máy quét staff).
-   * Content-ID `ticket-qr-<n>` (n từ 1): Gmail/Outlook chặn `data:` URI nên dùng đính kèm inline.
+   * PNG của QR đơn = nguyên chuỗi orders.qr_token, mức sửa lỗi M (khớp trang vé web và máy quét staff).
+   * Content-ID `ticket-qr`: Gmail/Outlook chặn `data:` URI nên dùng đính kèm inline.
    * Trả null khi tạo ảnh lỗi; KHÔNG log token (credential vào rạp).
    */
-  private async buildTicketQrAttachment(ticket: TicketQr, index: number): Promise<MailAttachment | null> {
-    const position = index + 1;
+  private async buildOrderQrAttachment(token: string): Promise<MailAttachment | null> {
     try {
-      const content = await QRCode.toBuffer(ticket.token, {
+      const content = await QRCode.toBuffer(token, {
         type: "png",
         errorCorrectionLevel: "M",
         margin: 1,
         width: 440,
       });
-      return { filename: `ve-qr-${position}.png`, content, cid: `ticket-qr-${position}`, contentType: "image/png" };
+      return { filename: "ve-qr.png", content, cid: "ticket-qr", contentType: "image/png" };
     } catch (error) {
       const msg = error instanceof Error ? error.message : "unknown error";
-      this.logger.warn(`Không tạo được ảnh QR cho vé thứ ${position} của mail vé, chỉ gửi chữ: ${msg}`);
+      this.logger.warn(`Không tạo được ảnh QR của đơn trong mail vé, chỉ gửi chữ: ${msg}`);
       return null;
     }
   }

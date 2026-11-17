@@ -15,6 +15,10 @@ type RpcPayload = Record<string, unknown>;
 
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 
+/** Chỉ giữ phần tử chuỗi: payload RPC là jsonb tự do, không tin kiểu của nó. */
+const textList = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+
 /** Đổi `status` của RPC sang kết quả API. RPC gộp "không thấy vé" và "đơn chưa thanh toán" dưới INVALID. */
 function toScanResult(payload: RpcPayload): ScanResult {
   switch (payload.status) {
@@ -42,21 +46,23 @@ function toResponse(payload: RpcPayload): ScanTicketResponse {
   const result = toScanResult(payload);
   const base = { result, color: SCAN_RESULT_COLOR[result], message: text(payload.message) };
   switch (result) {
-    case "OK":
+    case "OK": {
+      const seats = textList(payload.seats);
       return {
         ...base,
-        ticket: {
-          ticketId: text(payload.ticket_id),
+        order: {
+          orderId: text(payload.order_id),
           bookingCode: text(payload.booking_code),
           movieTitle: text(payload.movie_title),
           cinemaName: text(payload.cinema_name),
           roomName: text(payload.room_name),
-          seatLabel: text(payload.seat_label),
-          seatType: text(payload.seat_type),
+          seats,
+          seatCount: seats.length,
           startsAt: text(payload.starts_at),
           checkedInAt: text(payload.checked_in_at),
         },
       };
+    }
     case "USED":
       return {
         ...base,

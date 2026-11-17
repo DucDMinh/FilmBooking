@@ -159,7 +159,7 @@ export class OrdersService {
         seatLabel: seat?.seat_label ?? t.seat_label ?? "",
         seatType: seat?.seat_type ?? t.seat_type ?? "",
         priceAmount: seat?.price_amount ?? t.price_amount ?? 0,
-        qrToken: t.qr_token ?? "",
+        checkedIn: t.checked_in_at != null,
         checkedInAt: t.checked_in_at ?? null,
         checkedInByName: null,
       };

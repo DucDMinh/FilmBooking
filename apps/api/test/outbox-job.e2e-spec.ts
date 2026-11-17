@@ -48,11 +48,9 @@ interface OutboxRow {
   sent_at: string | null;
 }
 
-interface FakeTicket {
-  order_id: string;
+interface FakeOrder {
+  id: string;
   qr_token: string;
-  /** Nhãn ghế của vé (PostgREST embed `order_seats(seat_label)`); bỏ trống = không join được ghế. */
-  seat_label?: string;
 }
 
 interface FakeCinema {
@@ -67,20 +65,22 @@ interface FakeOrderSeat {
 
 function createFakeSupabase() {
   const outbox = new Map<string, OutboxRow>();
-  const tickets = new Map<string, FakeTicket[]>();
+  const orders = new Map<string, FakeOrder>();
   const cinemas = new Map<string, FakeCinema>();
   const orderSeats = new Map<string, FakeOrderSeat[]>();
-  const ticketSelects: string[] = [];
+  const orderSelects: string[] = [];
+  const tablesQueried: string[] = [];
 
   const reset = (rows: OutboxRow[] = []) => {
     outbox.clear();
     for (const r of rows) {
       outbox.set(r.id, { ...r });
     }
-    tickets.clear();
+    orders.clear();
     cinemas.clear();
     orderSeats.clear();
-    ticketSelects.length = 0;
+    orderSelects.length = 0;
+    tablesQueried.length = 0;
   };
 
   const adminClient = {
@@ -92,23 +92,18 @@ function createFakeSupabase() {
       return { data: null, error: null };
     }),
     from: (table: string) => {
-      if (table === "tickets") {
+      tablesQueried.push(table);
+
+      if (table === "orders") {
         return {
-          // Chỉ hỗ trợ đúng truy vấn mong muốn: lấy TẤT CẢ vé của đơn (select + eq, await trực tiếp),
-          // không limit/maybeSingle -> code gọi limit(1) sẽ ném TypeError và không enrich được token.
+          // Chỉ hỗ trợ đúng truy vấn mong muốn: orders.select("qr_token").eq("id", ...).maybeSingle().
           select: (columns: string) => {
-            ticketSelects.push(columns);
+            orderSelects.push(columns);
             return {
               eq: (_col: string, val: unknown) => ({
-                then: (resolve: (val: { data: unknown; error: null }) => void) => {
-                  const list = tickets.get(String(val)) ?? [];
-                  resolve({
-                    data: list.map((t) => ({
-                      qr_token: t.qr_token,
-                      order_seats: t.seat_label ? { seat_label: t.seat_label } : null,
-                    })),
-                    error: null,
-                  });
+                maybeSingle: async () => {
+                  const order = orders.get(String(val));
+                  return { data: order ? { qr_token: order.qr_token } : null, error: null };
                 },
               }),
             };
@@ -240,14 +235,11 @@ function createFakeSupabase() {
   return {
     admin: () => adminClient,
     getRows: () => [...outbox.values()],
-    ticketSelects,
+    orderSelects,
+    tablesQueried,
     reset,
-    setTickets: (items: FakeTicket[]) => {
-      for (const t of items) {
-        const list = tickets.get(t.order_id) ?? [];
-        list.push(t);
-        tickets.set(t.order_id, list);
-      }
+    setOrders: (items: FakeOrder[]) => {
+      for (const o of items) orders.set(o.id, o);
     },
     setCinemas: (items: FakeCinema[]) => {
       for (const c of items) cinemas.set(c.id, c);
@@ -451,15 +443,11 @@ describe("Outbox Job & Email Worker", () => {
       return res;
     }
 
-    it("B/M5: đơn 3 ghế (nhãn lộn xộn) -> enrich lấy TẤT CẢ vé, sắp xếp tự nhiên (A2 trước A10), mỗi ghế một QR", async () => {
+    it("B/M5: đơn nhiều ghế -> enrich lấy qr_token của ĐƠN (orders), 1 ảnh QR duy nhất, đủ ghế, không truy vấn tickets", async () => {
       const orderId = "order-uuid-enrich-01";
       const cinemaId = "cinema-uuid-enrich-01";
       fakeDb.reset([ticketIssuedRow("email-ticket-enrich", orderId, cinemaId)]);
-      fakeDb.setTickets([
-        { order_id: orderId, qr_token: "qr-token-seat-a10", seat_label: "A10" },
-        { order_id: orderId, qr_token: "qr-token-seat-a2", seat_label: "A2" },
-        { order_id: orderId, qr_token: "qr-token-seat-b1", seat_label: "B1" },
-      ]);
+      fakeDb.setOrders([{ id: orderId, qr_token: "qr-token-order-level-01" }]);
       fakeDb.setCinemas([{ id: cinemaId, address: "Tầng 5, TTTM Vincom, 54A Nguyễn Chí Thanh, Hà Nội" }]);
       fakeDb.setOrderSeats([
         { order_id: orderId, seat_label: "A10" },
@@ -470,80 +458,92 @@ describe("Outbox Job & Email Worker", () => {
       const res = await runSendEmails();
 
       expect(res.body.sent).toBe(1);
-      expect(fakeDb.ticketSelects).toEqual(["qr_token, order_seats(seat_label)"]);
+      expect(fakeDb.orderSelects).toEqual(["qr_token"]);
+      expect(fakeDb.tablesQueried).not.toContain("tickets");
       expect(sendMailMock).toHaveBeenCalledTimes(1);
       const callArgs = sendMailMock.mock.calls[0]![0];
       expect(callArgs.to).toBe("khach-enrich@example.com");
       expect(callArgs.html).toContain("54A Nguyễn Chí Thanh");
       expect(callArgs.text).toContain("54A Nguyễn Chí Thanh");
 
-      // Thứ tự tự nhiên: A2, A10, B1 — mỗi vé một ảnh + token đúng ghế
-      const order = ["Ghế A2", "qr-token-seat-a2", "Ghế A10", "qr-token-seat-a10", "Ghế B1", "qr-token-seat-b1"];
-      const positions = order.map((needle) => (callArgs.html as string).indexOf(needle));
-      expect(positions.every((pos) => pos >= 0)).toBe(true);
-      expect([...positions].sort((x, y) => x - y)).toEqual(positions);
-      expect((callArgs.attachments as { cid: string }[]).map((att) => att.cid)).toEqual([
-        "ticket-qr-1",
-        "ticket-qr-2",
-        "ticket-qr-3",
-      ]);
-      expect(callArgs.text).toContain("Ghế A2: qr-token-seat-a2");
-      expect(callArgs.text).toContain("Ghế A10: qr-token-seat-a10");
-      expect(callArgs.text).toContain("Ghế B1: qr-token-seat-b1");
+      expect((callArgs.attachments as { cid: string }[]).map((att) => att.cid)).toEqual(["ticket-qr"]);
+      expect((callArgs.html as string).match(/<img src="cid:/g)).toHaveLength(1);
+      expect(callArgs.html).toContain("qr-token-order-level-01");
+      // Thứ tự tự nhiên (A2 trước A10), khớp RPC soát vé và trang vé web.
+      expect(callArgs.html).toContain("A2, A10, B1");
+      expect(callArgs.text).toContain("A2, A10, B1");
+      expect(callArgs.html).toContain("Một mã QR cho cả đơn");
+      expect(callArgs.html).not.toContain("Mỗi ghế có một mã QR riêng");
+      expect(callArgs.text).toContain("QR Token: qr-token-order-level-01");
 
       const row = fakeDb.getRows().find((r) => r.id === "email-ticket-enrich")!;
       expect(row.status).toBe("SENT");
     });
 
-    it("B/M5: đơn 1 ghế -> 1 vé, 1 ảnh QR, không có câu 'mỗi ghế một mã QR'", async () => {
-      const orderId = "order-uuid-enrich-single";
-      const cinemaId = "cinema-uuid-enrich-single";
-      fakeDb.reset([ticketIssuedRow("email-ticket-single", orderId, cinemaId)]);
-      fakeDb.setTickets([{ order_id: orderId, qr_token: "qr-token-only-seat", seat_label: "C3" }]);
+    it("B/M5: ghế lộn xộn từ DB -> email xếp tự nhiên theo hàng rồi số (A2 < A10 < B1 < B3 < C12)", async () => {
+      const orderId = "order-uuid-enrich-seat-order";
+      const cinemaId = "cinema-uuid-enrich-seat-order";
+      fakeDb.reset([ticketIssuedRow("email-ticket-seat-order", orderId, cinemaId)]);
+      fakeDb.setOrders([{ id: orderId, qr_token: "qr-token-order-seat-order" }]);
       fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
-      fakeDb.setOrderSeats([{ order_id: orderId, seat_label: "C3" }]);
+      fakeDb.setOrderSeats(
+        ["C12", "A10", "B3", "A2", "C2", "B1"].map((seat_label) => ({ order_id: orderId, seat_label })),
+      );
 
       await runSendEmails();
 
       const callArgs = sendMailMock.mock.calls[0]![0];
-      expect(callArgs.attachments).toHaveLength(1);
-      expect(callArgs.html).toContain("qr-token-only-seat");
-      expect(callArgs.html).not.toContain("Mỗi ghế có một mã QR riêng");
+      expect(callArgs.html).toContain("A2, A10, B1, B3, C2, C12");
+      expect(callArgs.text).toContain("A2, A10, B1, B3, C2, C12");
     });
 
-    it("B/M5: payload đã có sẵn qr_token đơn lẻ (outbox cũ) -> không truy vấn tickets, giữ nguyên token", async () => {
+    it("B/M5: payload đã có sẵn qr_token (outbox cũ) -> không truy vấn orders, giữ nguyên token", async () => {
       const orderId = "order-uuid-enrich-legacy";
       const cinemaId = "cinema-uuid-enrich-legacy";
       fakeDb.reset([ticketIssuedRow("email-ticket-legacy", orderId, cinemaId, { qr_token: "qr-token-from-payload" })]);
-      fakeDb.setTickets([{ order_id: orderId, qr_token: "qr-token-from-db", seat_label: "A1" }]);
+      fakeDb.setOrders([{ id: orderId, qr_token: "qr-token-from-db" }]);
       fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
 
       await runSendEmails();
 
-      expect(fakeDb.ticketSelects).toEqual([]);
+      expect(fakeDb.orderSelects).toEqual([]);
       const callArgs = sendMailMock.mock.calls[0]![0];
       expect(callArgs.html).toContain("qr-token-from-payload");
       expect(callArgs.html).not.toContain("qr-token-from-db");
       expect(callArgs.attachments).toHaveLength(1);
     });
 
-    it("B/M5: vé không join được nhãn ghế vẫn có QR (xếp sau các vé có nhãn)", async () => {
-      const orderId = "order-uuid-enrich-nolabel";
-      const cinemaId = "cinema-uuid-enrich-nolabel";
-      fakeDb.reset([ticketIssuedRow("email-ticket-nolabel", orderId, cinemaId)]);
-      fakeDb.setTickets([
-        { order_id: orderId, qr_token: "qr-token-no-label" },
-        { order_id: orderId, qr_token: "qr-token-b2", seat_label: "B2" },
+    it("B/M5: payload cũ per-ticket (có tickets[] nhưng không qr_token) -> vẫn lấy token của đơn, bỏ tickets[]", async () => {
+      const orderId = "order-uuid-enrich-oldlist";
+      const cinemaId = "cinema-uuid-enrich-oldlist";
+      fakeDb.reset([
+        ticketIssuedRow("email-ticket-oldlist", orderId, cinemaId, {
+          tickets: [{ seat_label: "A1", qr_token: "qr-token-per-ticket-cu" }],
+        }),
       ]);
+      fakeDb.setOrders([{ id: orderId, qr_token: "qr-token-order-level-02" }]);
       fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
 
       await runSendEmails();
 
       const callArgs = sendMailMock.mock.calls[0]![0];
-      expect(callArgs.attachments).toHaveLength(2);
-      expect((callArgs.html as string).indexOf("qr-token-b2")).toBeLessThan(
-        (callArgs.html as string).indexOf("qr-token-no-label"),
-      );
+      expect(callArgs.attachments).toHaveLength(1);
+      expect(callArgs.html).toContain("qr-token-order-level-02");
+      expect(callArgs.html).not.toContain("qr-token-per-ticket-cu");
+    });
+
+    it("B/M5: không đọc được orders.qr_token (đơn không tồn tại) -> vẫn gửi mail không có QR", async () => {
+      const orderId = "order-uuid-enrich-missing";
+      const cinemaId = "cinema-uuid-enrich-missing";
+      fakeDb.reset([ticketIssuedRow("email-ticket-missing", orderId, cinemaId)]);
+      fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
+
+      const res = await runSendEmails();
+
+      expect(res.body.sent).toBe(1);
+      const callArgs = sendMailMock.mock.calls[0]![0];
+      expect(callArgs.attachments).toBeUndefined();
+      expect(callArgs.html).not.toContain('<img src="cid:');
     });
   });
 

@@ -32,7 +32,6 @@ export interface OrderDbRow {
     order_seat_id?: string;
     showtime_id?: string;
     cinema_id?: string;
-    qr_token?: string;
     checked_in_at?: string | null;
     checked_in_by?: string | null;
     seat_label?: string;
@@ -78,7 +77,6 @@ export interface TicketDbRow {
   order_seat_id?: string;
   showtime_id?: string;
   cinema_id?: string;
-  qr_token?: string;
   checked_in_at?: string | null;
   checked_in_by?: string | null;
   seat_label?: string;

@@ -1,7 +1,7 @@
 ---
-spec_version: 3.2.0
-updated_at: 2026-11-17
-source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + change remove-pos 2026-11-12 (spec/changes/2026-11-12-remove-pos.md) + change remove-showtime-exchange 2026-11-12 (spec/changes/2026-11-12-remove-showtime-exchange.md) + change admin-ux 2026-11-16 (tasks/bug-admin-ux, user duyệt điều hướng theo vai trò) + change confirm-email-auto-login 2026-11-17 (spec/changes/2026-11-17-confirm-email-auto-login.md, user duyệt R-04 đăng nhập luôn sau xác nhận)
+spec_version: 3.3.0
+updated_at: 2026-11-18
+source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + change remove-pos 2026-11-12 (spec/changes/2026-11-12-remove-pos.md) + change remove-showtime-exchange 2026-11-12 (spec/changes/2026-11-12-remove-showtime-exchange.md) + change admin-ux 2026-11-16 (tasks/bug-admin-ux, user duyệt điều hướng theo vai trò) + change confirm-email-auto-login 2026-11-17 (spec/changes/2026-11-17-confirm-email-auto-login.md, user duyệt R-04 đăng nhập luôn sau xác nhận) + change order-level-qr 2026-11-17 (spec/changes/2026-11-17-order-level-qr.md, user duyệt một QR cho cả đơn, soát vé theo đơn)
 ---
 
 # SPECIFICATIONS.md — Hệ thống Đặt vé Xem phim Online (Chuỗi rạp)
@@ -201,9 +201,9 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + 
 
 | Mã | Tiêu đề | Hành vi mong đợi | Nguồn BRD | Ưu tiên | Phase |
 |---|---|---|---|:-:|:-:|
-| R-85 | Mã đặt vé & QR | Mỗi đơn đã thanh toán có **mã đặt vé** ngắn, dễ đọc, **có tiền tố mã rạp** (vd `HN01-7K3P9Q`), và **mã QR** chứa **token ngẫu nhiên không đoán được**, **không chứa thông tin cá nhân**. | BR-TKT-01 (M) | M | MVP |
+| R-85 | Mã đặt vé & QR | Mỗi đơn đã thanh toán có **mã đặt vé** ngắn, dễ đọc, **có tiền tố mã rạp** (vd `HN01-7K3P9Q`), và **một mã QR duy nhất cho cả đơn** (mọi ghế dùng chung một mã; không có QR từng ghế). QR chỉ chứa **token ngẫu nhiên không đoán được** của đơn, **không chứa thông tin cá nhân** và không nhúng nội dung đơn; thông tin đơn (phim, suất, phòng, toàn bộ ghế, combo) hiện khi quét. | BR-TKT-01 (M) | M | MVP |
 | R-86 | Email vé | Email gồm: mã đặt vé, QR, **tên rạp + địa chỉ + link bản đồ + hotline rạp**, phim, nhãn tuổi, suất, phòng, ghế, combo, tổng tiền, lưu ý (**đến trước 15 phút**, **vé chỉ dùng tại rạp ghi trên vé**, **vé không huỷ/không hoàn**, yêu cầu giấy tờ với phim T13+). | BR-TKT-02 (M), §7.2 | M | MVP |
-| R-87 | Trang "Vé của tôi" | Tab **Sắp tới / Đã xem**; hiển thị rõ rạp; xem lại QR (**tăng độ sáng màn hình tối đa** khi mở QR); trang chi tiết vé nhắc lại chính sách không huỷ/không hoàn (§7.2). Customer chưa xác nhận thấy danh sách rỗng (§5.3). | BR-TKT-03 (M), §7.2, §5.3 | M | MVP |
+| R-87 | Trang "Vé của tôi" | Tab **Sắp tới / Đã xem**; hiển thị rõ rạp; xem lại QR của đơn (**tăng độ sáng màn hình tối đa** khi mở QR); trang chi tiết vé nhắc lại chính sách không huỷ/không hoàn (§7.2). Customer chưa xác nhận thấy danh sách rỗng (§5.3). | BR-TKT-03 (M), §7.2, §5.3 | M | MVP |
 | R-88 | Email nhắc lịch | Gửi email nhắc **2 giờ trước giờ chiếu**, kèm địa chỉ rạp. | BR-TKT-04 (C) | C | GĐ2 |
 | R-89 | Thêm vào lịch | Nút **"Thêm vào lịch"** tải file **`.ics`**, địa điểm = **địa chỉ rạp**. | BR-TKT-05 (C) | C | GĐ2 |
 
@@ -224,8 +224,8 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + 
 | Mã | Tiêu đề | Hành vi mong đợi | Nguồn BRD | Ưu tiên | Phase |
 |---|---|---|---|:-:|:-:|
 | R-97 | Màn soát vé | Staff đăng nhập web trên điện thoại, **chọn rạp đang làm việc** (nếu gán nhiều rạp), mở màn **Soát vé**, quét QR bằng camera hoặc **nhập mã đặt vé thủ công**. Cinema Manager (rạp mình) và Admin cũng được soát (§5.3). | BR-CHK-01 (M), §5.3 | M | MVP |
-| R-98 | Kết quả soát vé | Kết quả màu rõ ràng: ✅ **Hợp lệ** (phim, suất, phòng, ghế, combo, nhãn tuổi); ❌ **Đã sử dụng** (kèm **thời điểm + người soát lần trước**); ❌ **Sai rạp** (tên + địa chỉ rạp đúng); ❌ **Sai suất / chưa tới giờ / suất đã kết thúc**; ❌ **Không tồn tại / chưa thanh toán**. | BR-CHK-02 (M) | M | MVP |
-| R-99 | Quy tắc check-in | Mỗi vé **check-in một lần**, **chỉ tại rạp của suất**, trong cửa sổ **từ 30 phút trước giờ chiếu đến giờ kết thúc phim**. Check-in thành công → đơn `checked_in`. Vé của suất bị huỷ (`affected`) không check-in được. | BR-CHK-03 (M), BR-ADM-12, §8.5 | M | MVP |
+| R-98 | Kết quả soát vé | Kết quả màu rõ ràng: ✅ **Hợp lệ** (phim, suất, phòng, **toàn bộ ghế của đơn**, combo, nhãn tuổi); ❌ **Đã sử dụng** (kèm **thời điểm + người soát lần trước**); ❌ **Sai rạp** (tên + địa chỉ rạp đúng); ❌ **Sai suất / chưa tới giờ / suất đã kết thúc**; ❌ **Không tồn tại / chưa thanh toán**. | BR-CHK-02 (M) | M | MVP |
+| R-99 | Quy tắc check-in | Mỗi đơn **check-in một lần** (một lần quét QR hoặc nhập mã đặt vé soát **tất cả ghế** của đơn), **chỉ tại rạp của suất**, trong cửa sổ **từ 30 phút trước giờ chiếu đến giờ kết thúc phim**. Check-in thành công → đơn `checked_in`. Vé của suất bị huỷ (`affected`) không check-in được. | BR-CHK-03 (M), BR-ADM-12, §8.5 | M | MVP |
 | R-100 | Đánh dấu đã nhận combo | Đánh dấu riêng **đã nhận combo** tại quầy bắp nước **của đúng rạp**. | BR-CHK-04 (S) | S | GĐ2 |
 | R-101 | Log lượt quét | Ghi log **mọi lượt quét**: staff, rạp, thời điểm, kết quả. | BR-CHK-05 (M) | M | MVP |
 | R-102 | Không lộ dữ liệu vé rạp khác | Staff **không xem được chi tiết** (tên khách, ghế…) vé thuộc rạp khác; màn "Sai rạp" **chỉ hiển thị tên và địa chỉ rạp đúng**; vé **không bị đánh dấu check-in**. | BR-CHK-06 (M) | M | MVP |
@@ -373,7 +373,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + 
 | AC-09 | BR-PAY-03 | **G** webhook giả mạo chữ ký sai **W** gửi tới endpoint webhook **T** đơn không đổi trạng thái + log cảnh báo. | R-74 | MVP |
 | AC-10 | BR-PAY-04 | **G** PayOS gửi cùng webhook thành công 3 lần **T** đơn chỉ ghi nhận thanh toán 1 lần, chỉ 1 email vé. | R-75, R-76 | MVP |
 | AC-11 | BR-PAY-07 | **G** đơn `expired`, ghế đã bán cho khách khác **W** tiền đơn cũ về **T** đơn `needs_manual_review`; Admin + Manager rạp đó thấy trong danh sách cần xử lý; khách nhận email hướng dẫn liên hệ rạp. | R-78, R-104 | MVP |
-| AC-12 | BR-CHK-03 | **G** vé đã check-in **W** quét lại **T** báo đỏ "Đã sử dụng" kèm thời điểm + người soát lần đầu. | R-99, R-98 | MVP |
+| AC-12 | BR-CHK-03 | **G** đơn đã check-in **W** quét lại QR **T** báo đỏ "Đã sử dụng" kèm thời điểm + người soát lần đầu. | R-99, R-98 | MVP |
 | AC-13 | BR-CHK-02/06 | **G** vé rạp HN01 **W** Staff làm việc tại HN02 quét QR **T** báo đỏ "Sai rạp" kèm tên + địa chỉ HN01, không hiện tên khách/ghế, vé không bị check-in. | R-98, R-102, R-132 | MVP |
 | AC-14 | BR-CIN-04 | **G** phòng 1 HN01 có suất 19:00–21:15 (gồm dọn phòng) **W** tạo suất 21:00 phòng 1 HN01 **T** bị chặn, báo trùng lịch; tạo 21:00 phòng 1 HN02 → được phép. | R-50, R-49 | MVP |
 | AC-15 | BR-CIN-05 | **G** giá mặc định VIP 2D tối cuối tuần 120.000đ, HN02 ghi đè 100.000đ **W** khách chọn VIP suất 2D tối thứ Bảy **T** tại HN02 giá hiển thị & chốt 100.000đ; tại HN01 (không ghi đè) 120.000đ. | R-52, R-72 | MVP |
@@ -515,7 +515,7 @@ source: docs/BRD.md v0.3 + brainstorm 2026-11-10 (.context/brainstorm-log.md) + 
 | POLICY | §7.1→R-131, R-132, R-134 · §7.2→R-133 · §7.3→R-132, R-134 |
 | CR admin-ux (2026-11-16) | không có mã BR gốc → R-135 (điều hướng theo vai trò + đăng xuất của nhân sự; liên quan BR-AUTH-17/18, §5.3) |
 
-**Tổng (spec 3.2.0):** 135 mã requirement (R-01…R-135), trong đó **12 REMOVED** (R-111, R-120…R-130) → **123 còn hiệu lực** — **110 MVP** (trong đó 10 gắn phase `[cần xác nhận]`), **13 GĐ2** (trong đó 1 gắn phase `[cần xác nhận]`). Phủ **128/128** mã BR còn hiệu lực (12 mã BR-POS-01…11, BR-ADM-15 REMOVED), **18/18** NFR, **22/22** AC còn hiệu lực (AC-20…AC-23 REMOVED).
+**Tổng (spec 3.3.0):** 135 mã requirement (R-01…R-135), trong đó **12 REMOVED** (R-111, R-120…R-130) → **123 còn hiệu lực** — **110 MVP** (trong đó 10 gắn phase `[cần xác nhận]`), **13 GĐ2** (trong đó 1 gắn phase `[cần xác nhận]`). Phủ **128/128** mã BR còn hiệu lực (12 mã BR-POS-01…11, BR-ADM-15 REMOVED), **18/18** NFR, **22/22** AC còn hiệu lực (AC-20…AC-23 REMOVED).
 
 ## Điểm cần xác nhận
 

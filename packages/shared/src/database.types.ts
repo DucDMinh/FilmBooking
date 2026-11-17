@@ -383,14 +383,14 @@ isOneToOne: false
                   ]
                 },"orders": {
                   Row: {
-                    "age_confirmed": boolean,"booking_code": string | null,"cancel_reason": string | null,"cancelled_at": string | null,"channel": Database["public"]['Enums']["order_channel"],"cinema_code": string,"cinema_id": string,"cinema_name": string,"consent_at": string | null,"contact_email": string | null,"contact_phone": string | null,"counter_contact": boolean,"created_at": string,"discount_amount": number,"hold_expires_at": string | null,"id": string,"manual_review_resolved_at": string | null,"movie_title": string,"room_name": string,"showtime_ends_at": string,"showtime_id": string,"showtime_starts_at": string,"status": Database["public"]['Enums']["order_status"],"subtotal_amount": number,"total_amount": number,"updated_at": string,"user_id": string | null,"voucher_id": string | null
+                    "age_confirmed": boolean,"booking_code": string | null,"cancel_reason": string | null,"cancelled_at": string | null,"channel": Database["public"]['Enums']["order_channel"],"cinema_code": string,"cinema_id": string,"cinema_name": string,"consent_at": string | null,"contact_email": string | null,"contact_phone": string | null,"counter_contact": boolean,"created_at": string,"discount_amount": number,"hold_expires_at": string | null,"id": string,"manual_review_resolved_at": string | null,"movie_title": string,"qr_token": string,"room_name": string,"showtime_ends_at": string,"showtime_id": string,"showtime_starts_at": string,"status": Database["public"]['Enums']["order_status"],"subtotal_amount": number,"total_amount": number,"updated_at": string,"user_id": string | null,"voucher_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "age_confirmed"?: boolean,"booking_code"?: string | null,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"channel": Database["public"]['Enums']["order_channel"],"cinema_code": string,"cinema_id": string,"cinema_name": string,"consent_at"?: string | null,"contact_email"?: string | null,"contact_phone"?: string | null,"counter_contact"?: boolean,"created_at"?: string,"discount_amount"?: number,"hold_expires_at"?: string | null,"id"?: string,"manual_review_resolved_at"?: string | null,"movie_title": string,"room_name": string,"showtime_ends_at": string,"showtime_id": string,"showtime_starts_at": string,"status"?: Database["public"]['Enums']["order_status"],"subtotal_amount"?: number,"total_amount"?: number,"updated_at"?: string,"user_id"?: string | null,"voucher_id"?: string | null
+                    "age_confirmed"?: boolean,"booking_code"?: string | null,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"channel": Database["public"]['Enums']["order_channel"],"cinema_code": string,"cinema_id": string,"cinema_name": string,"consent_at"?: string | null,"contact_email"?: string | null,"contact_phone"?: string | null,"counter_contact"?: boolean,"created_at"?: string,"discount_amount"?: number,"hold_expires_at"?: string | null,"id"?: string,"manual_review_resolved_at"?: string | null,"movie_title": string,"qr_token"?: string,"room_name": string,"showtime_ends_at": string,"showtime_id": string,"showtime_starts_at": string,"status"?: Database["public"]['Enums']["order_status"],"subtotal_amount"?: number,"total_amount"?: number,"updated_at"?: string,"user_id"?: string | null,"voucher_id"?: string | null
                   }
                   Update: {
-                    "age_confirmed"?: boolean,"booking_code"?: string | null,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"channel"?: Database["public"]['Enums']["order_channel"],"cinema_code"?: string,"cinema_id"?: string,"cinema_name"?: string,"consent_at"?: string | null,"contact_email"?: string | null,"contact_phone"?: string | null,"counter_contact"?: boolean,"created_at"?: string,"discount_amount"?: number,"hold_expires_at"?: string | null,"id"?: string,"manual_review_resolved_at"?: string | null,"movie_title"?: string,"room_name"?: string,"showtime_ends_at"?: string,"showtime_id"?: string,"showtime_starts_at"?: string,"status"?: Database["public"]['Enums']["order_status"],"subtotal_amount"?: number,"total_amount"?: number,"updated_at"?: string,"user_id"?: string | null,"voucher_id"?: string | null
+                    "age_confirmed"?: boolean,"booking_code"?: string | null,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"channel"?: Database["public"]['Enums']["order_channel"],"cinema_code"?: string,"cinema_id"?: string,"cinema_name"?: string,"consent_at"?: string | null,"contact_email"?: string | null,"contact_phone"?: string | null,"counter_contact"?: boolean,"created_at"?: string,"discount_amount"?: number,"hold_expires_at"?: string | null,"id"?: string,"manual_review_resolved_at"?: string | null,"movie_title"?: string,"qr_token"?: string,"room_name"?: string,"showtime_ends_at"?: string,"showtime_id"?: string,"showtime_starts_at"?: string,"status"?: Database["public"]['Enums']["order_status"],"subtotal_amount"?: number,"total_amount"?: number,"updated_at"?: string,"user_id"?: string | null,"voucher_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -724,6 +724,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "showtimes_cinema_id_fkey"
+      columns: ["cinema_id"]
+isOneToOne: false
+      referencedRelation: "cinemas"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "showtimes_movie_id_fkey"
       columns: ["movie_id"]
 isOneToOne: false
@@ -876,7 +882,13 @@ isOneToOne: false
                   }
                   ComputedFields: never
                   Relationships: [
-                    
+                    {
+      foreignKeyName: "showtimes_cinema_id_fkey"
+      columns: ["cinema_id"]
+isOneToOne: false
+      referencedRelation: "cinemas"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"v_report_payos_reconciliation": {
                   Row: {
@@ -919,6 +931,12 @@ isOneToOne: false
                   ComputedFields: never
                   Relationships: [
                     {
+      foreignKeyName: "showtimes_cinema_id_fkey"
+      columns: ["cinema_id"]
+isOneToOne: false
+      referencedRelation: "cinemas"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "showtimes_movie_id_fkey"
       columns: ["movie_id"]
 isOneToOne: false

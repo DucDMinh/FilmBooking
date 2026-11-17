@@ -58,14 +58,14 @@ const okResponse: ScanTicketResponse = {
   result: "OK",
   color: "green",
   message: "",
-  ticket: {
-    ticketId: "t",
+  order: {
+    orderId: "o",
     bookingCode: "HN01-OK1",
     movieTitle: "Phim A",
     cinemaName: "CINEMO A",
     roomName: "P1",
-    seatLabel: "C7",
-    seatType: "STANDARD",
+    seats: ["C7", "C8"],
+    seatCount: 2,
     startsAt: "2026-11-13T12:30:00Z",
     checkedInAt: "2026-11-13T12:05:00Z",
   },

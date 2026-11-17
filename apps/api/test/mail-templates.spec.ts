@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_HOTLINE,
-  extractTicketQrs,
+  extractTicketQrToken,
   renderTemplate,
   renderTicketEmail,
 } from "../src/modules/mail/templates";
@@ -162,30 +162,32 @@ describe("mail: escape giá trị động", () => {
   });
 });
 
-describe("mail vé: khối QR dạng ảnh, mỗi ghế một QR (R-86, bug ticket-email-qr)", () => {
+describe("mail vé: khối QR dạng ảnh, MỘT QR cho cả đơn (R-86, order-level-qr)", () => {
   const ticket = PAYLOADS.TICKET_ISSUED!;
-  const multiTicket = {
-    ...ticket,
-    qr_token: undefined,
-    tickets: [
-      { seat_label: "A5", qr_token: "token-seat-a5" },
-      { seat_label: "A6", qr_token: "token-seat-a6" },
-      { seat_label: "A7", qr_token: "token-seat-a7" },
-    ],
-  };
+  const manySeats = { ...ticket, seats: ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"] };
 
-  it("1 vé có cid -> nhúng <img src=cid:...> kèm alt, vẫn giữ qr_token dạng chữ", () => {
-    const { html, text } = renderTemplate("TICKET_ISSUED", ticket, { qrImageCids: ["ticket-qr-1"] });
+  it("có cid -> nhúng <img src=cid:...> kèm alt, câu 'Một mã QR cho cả đơn', vẫn giữ qr_token dạng chữ", () => {
+    const { html, text } = renderTemplate("TICKET_ISSUED", ticket, { qrImageCid: "ticket-qr" });
 
-    expect(html).toContain('<img src="cid:ticket-qr-1"');
+    expect(html).toContain('<img src="cid:ticket-qr"');
     expect(html).toContain('alt="Mã QR vé"');
-    expect(html).toContain("Đưa mã này cho nhân viên soát vé tại rạp");
-    expect(html).not.toContain("Mỗi ghế có một mã QR riêng");
+    expect(html).toContain("Một mã QR cho cả đơn");
+    expect(html).toContain("không cần mã từng ghế");
     expect(html).toContain("qr-token-xyz-789");
-    expect(text).toContain("qr-token-xyz-789");
+    expect(text).toContain("QR Token: qr-token-xyz-789");
   });
 
-  it("không có cid -> như cũ: chỉ chữ, không <img src=cid:", () => {
+  it("đơn nhiều ghế -> đúng 1 ảnh, liệt kê TOÀN BỘ ghế, không có câu per-ticket", () => {
+    const { html, text } = renderTemplate("TICKET_ISSUED", manySeats, { qrImageCid: "ticket-qr" });
+
+    expect(html.match(/<img src="cid:/g)).toHaveLength(1);
+    expect(html).toContain("A1, A2, A3, A4, A5, A6, A7, A8");
+    expect(text).toContain("A1, A2, A3, A4, A5, A6, A7, A8");
+    expect(html).not.toContain("Mỗi ghế có một mã QR riêng");
+    expect(text.match(/QR Token:/g)).toHaveLength(1);
+  });
+
+  it("không có cid -> chỉ chữ token dự phòng, không <img src=cid:", () => {
     const { html } = renderTemplate("TICKET_ISSUED", ticket);
 
     expect(html).not.toContain('<img src="cid:');
@@ -193,77 +195,35 @@ describe("mail vé: khối QR dạng ảnh, mỗi ghế một QR (R-86, bug tick
   });
 
   it("payload không có token -> không render ảnh", () => {
-    const { html } = renderTicketEmail({ booking_code: "X" }, { qrImageCids: ["ticket-qr-1"] });
+    const { html } = renderTicketEmail({ booking_code: "X" }, { qrImageCid: "ticket-qr" });
 
     expect(html).not.toContain("<img");
   });
 
   it("escape cid (giá trị ngoài ý muốn không thoát được thuộc tính)", () => {
-    const { html } = renderTicketEmail(ticket, { qrImageCids: ['x"><script>'] });
+    const { html } = renderTicketEmail(ticket, { qrImageCid: 'x"><script>' });
 
     expect(html).not.toContain("<script>");
   });
 
-  it("N vé -> N ảnh theo đúng thứ tự, nhãn ghế, câu 'mỗi ghế một mã QR', text liệt kê từng token", () => {
-    const { html, text } = renderTicketEmail(multiTicket, {
-      qrImageCids: ["ticket-qr-1", "ticket-qr-2", "ticket-qr-3"],
-    });
+  it("payload.tickets (định dạng per-ticket cũ) bị bỏ qua: chỉ qr_token của đơn được dùng", () => {
+    const { html } = renderTicketEmail({ ...ticket, tickets: [{ seat_label: "A1", qr_token: "token-cu-per-ticket" }] });
 
-    expect(html.match(/<img src="cid:ticket-qr-\d"/g)).toEqual([
-      '<img src="cid:ticket-qr-1"',
-      '<img src="cid:ticket-qr-2"',
-      '<img src="cid:ticket-qr-3"',
-    ]);
-    const order = ["Ghế A5", "cid:ticket-qr-1", "token-seat-a5", "Ghế A6", "cid:ticket-qr-2", "token-seat-a6", "Ghế A7"];
-    const positions = order.map((needle) => html.indexOf(needle));
-    expect(positions.every((p) => p >= 0)).toBe(true);
-    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
-    expect(html).toContain("Mỗi ghế có một mã QR riêng");
-    expect(text).toContain("Ghế A5: token-seat-a5");
-    expect(text).toContain("Ghế A6: token-seat-a6");
-    expect(text).toContain("Ghế A7: token-seat-a7");
+    expect(html).not.toContain("token-cu-per-ticket");
+    expect(html).toContain("qr-token-xyz-789");
   });
 
-  it("vé không có cid (lỗi/vượt trần) -> chỉ chữ cho vé đó, các vé khác vẫn có ảnh", () => {
-    const { html } = renderTicketEmail(multiTicket, { qrImageCids: ["ticket-qr-1", null, "ticket-qr-3"] });
-
-    expect(html.match(/<img src="cid:/g)).toHaveLength(2);
-    expect(html).not.toContain("cid:ticket-qr-2");
-    expect(html).toContain("token-seat-a6");
-  });
-
-  describe("extractTicketQrs", () => {
-    it("qr_token / qrToken đơn lẻ -> 1 vé không nhãn (TICKET_ISSUED và TICKET, không phân biệt hoa thường)", () => {
-      expect(extractTicketQrs("TICKET_ISSUED", { qr_token: "abc" })).toEqual([{ token: "abc" }]);
-      expect(extractTicketQrs("ticket", { qrToken: "def" })).toEqual([{ token: "def" }]);
-      expect(extractTicketQrs(" TICKET ", { qr_token: "ghi" })).toEqual([{ token: "ghi" }]);
-    });
-
-    it("payload.tickets -> giữ thứ tự, đọc seat_label/seatLabel và qr_token/qrToken, bỏ mục thiếu token", () => {
-      const tickets = [
-        { seat_label: "A2", qr_token: "t2" },
-        { seatLabel: "A10", qrToken: "t10" },
-        { seat_label: "A11", qr_token: "" },
-        { qr_token: "t-no-label" },
-        "rác",
-        null,
-      ];
-
-      expect(extractTicketQrs("TICKET_ISSUED", { tickets, qr_token: "bi-bo-qua" })).toEqual([
-        { seatLabel: "A2", token: "t2" },
-        { seatLabel: "A10", token: "t10" },
-        { token: "t-no-label" },
-      ]);
-    });
-
-    it("tickets rỗng/không hợp lệ -> rơi về qr_token đơn lẻ", () => {
-      expect(extractTicketQrs("TICKET_ISSUED", { tickets: [], qr_token: "abc" })).toEqual([{ token: "abc" }]);
+  describe("extractTicketQrToken", () => {
+    it("qr_token / qrToken (TICKET_ISSUED và TICKET, không phân biệt hoa thường)", () => {
+      expect(extractTicketQrToken("TICKET_ISSUED", { qr_token: "abc" })).toBe("abc");
+      expect(extractTicketQrToken("ticket", { qrToken: "def" })).toBe("def");
+      expect(extractTicketQrToken(" TICKET ", { qr_token: "ghi" })).toBe("ghi");
     });
 
     it("rỗng cho kind khác hoặc thiếu token", () => {
-      expect(extractTicketQrs("PASSWORD_SET", { qr_token: "abc" })).toEqual([]);
-      expect(extractTicketQrs("TICKET_ISSUED", {})).toEqual([]);
-      expect(extractTicketQrs("TICKET_ISSUED", { qr_token: "" })).toEqual([]);
+      expect(extractTicketQrToken("PASSWORD_SET", { qr_token: "abc" })).toBe("");
+      expect(extractTicketQrToken("TICKET_ISSUED", {})).toBe("");
+      expect(extractTicketQrToken("TICKET_ISSUED", { qr_token: "" })).toBe("");
     });
   });
 });

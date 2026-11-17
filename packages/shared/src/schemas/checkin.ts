@@ -38,21 +38,22 @@ export const SCAN_RESULT_COLOR: Record<ScanResult, ScanColor> = {
 };
 
 /**
- * Phản hồi soát vé. Mỗi trường chỉ xuất hiện ở kết quả liên quan:
+ * Phản hồi soát vé (QR cấp đơn: một lần quét = cả đơn). Mỗi trường chỉ xuất hiện ở kết quả liên quan:
  * WRONG_CINEMA chỉ có `correctCinema` (tên + địa chỉ rạp), KHÔNG có tên khách/ghế/email (AC-13).
  */
 export interface ScanTicketResponse {
   result: ScanResult;
   color: ScanColor;
   message: string;
-  ticket?: {
-    ticketId: string;
+  order?: {
+    orderId: string;
     bookingCode: string;
     movieTitle: string;
     cinemaName: string;
     roomName: string;
-    seatLabel: string;
-    seatType: string;
+    /** Mọi ghế của đơn (xếp tự nhiên: A2 trước A10); một lần quét soát cả đơn. */
+    seats: string[];
+    seatCount: number;
     startsAt: string;
     checkedInAt: string;
   };

@@ -64,7 +64,8 @@ export interface OrderTicketDto {
   seatLabel: string;
   seatType: string;
   priceAmount: number;
-  qrToken: string;
+  /** Không có qrToken: token soát vé (credential) nằm ở orders.qr_token và chỉ đi qua email/trang vé của khách. */
+  checkedIn: boolean;
   checkedInAt: string | null;
   checkedInByName: string | null;
 }

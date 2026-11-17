@@ -29,28 +29,35 @@ describe("CheckinResult", () => {
       ...base,
       result: "OK",
       color: "green",
-      ticket: {
-        ticketId: "t",
+      order: {
+        orderId: "o",
         bookingCode: "HN01-AAA",
         movieTitle: "Phim A",
         cinemaName: "CINEMO Long Biên",
         roomName: "Phòng 03",
-        seatLabel: "C7",
-        seatType: "STANDARD",
+        seats: ["C7", "C8", "C10"],
+        seatCount: 3,
         startsAt: "2026-11-13T12:30:00Z",
         checkedInAt: "2026-11-13T12:05:00Z",
       },
     };
     render(<CheckinResult response={response} onNext={() => undefined} />);
     expect(screen.getByRole("heading", { name: "VÉ HỢP LỆ" })).toBeInTheDocument();
-    expect(screen.getByText("C7")).toBeInTheDocument();
+    expect(screen.getByText("C7, C8, C10")).toBeInTheDocument();
+    expect(screen.getByText("3 ghế")).toBeInTheDocument();
+    expect(screen.getByText("Đã soát 3 ghế của đơn")).toBeInTheDocument();
+    expect(screen.getByText("HN01-AAA")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveClass("bg-success-banner");
   });
 
   it("USED (AC-12): nền đỏ, thời điểm + người soát lần đầu", () => {
     render(
       <CheckinResult
-        response={{ ...base, result: "USED", used: { checkedInAt: "2026-11-13T12:02:00Z", staffName: "Minh Anh" } }}
+        response={{
+          ...base,
+          result: "USED",
+          used: { checkedInAt: "2026-11-13T12:02:00Z", staffName: "Minh Anh" },
+        }}
         onNext={() => undefined}
       />,
     );
@@ -64,15 +71,20 @@ describe("CheckinResult", () => {
     const leaked = {
       ...base,
       result: "WRONG_CINEMA",
-      correctCinema: { id: "c", code: "HN02", name: "CINEMO Cầu Giấy", address: "1 Cầu Giấy, Hà Nội" },
-      ticket: {
-        ticketId: "t",
+      correctCinema: {
+        id: "c",
+        code: "HN02",
+        name: "CINEMO Cầu Giấy",
+        address: "1 Cầu Giấy, Hà Nội",
+      },
+      order: {
+        orderId: "o",
         bookingCode: "HN01-SECRET",
         movieTitle: "Phim A",
         cinemaName: "CINEMO Long Biên",
         roomName: "Phòng 03",
-        seatLabel: "C7",
-        seatType: "STANDARD",
+        seats: ["C7", "C8"],
+        seatCount: 2,
         startsAt: "2026-11-13T12:30:00Z",
         checkedInAt: "2026-11-13T12:05:00Z",
       },
@@ -82,7 +94,7 @@ describe("CheckinResult", () => {
     expect(screen.getByText("CINEMO Cầu Giấy")).toBeInTheDocument();
     expect(screen.getByText("1 Cầu Giấy, Hà Nội")).toBeInTheDocument();
     expect(screen.getByText("Vé không bị đánh dấu check-in.")).toBeInTheDocument();
-    for (const secret of ["C7", "Phim A", "Nguyễn Văn Khách", "HN01-SECRET", "Phòng 03"]) {
+    for (const secret of ["C7", "C8", "2 ghế", "Phim A", "Nguyễn Văn Khách", "HN01-SECRET", "Phòng 03"]) {
       expect(container).not.toHaveTextContent(secret);
     }
   });

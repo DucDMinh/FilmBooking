@@ -212,103 +212,52 @@ function bulletList(items: string[], tag: "ul" | "ol" = "ul"): string {
 
 export interface RenderOptions {
   /**
-   * Content-ID ảnh QR inline (`cid:`), song song theo thứ tự `readTicketQrs`; `null`/thiếu = vé đó chỉ hiện chữ token
-   * (chưa tạo được ảnh hoặc vượt trần số ảnh).
+   * Content-ID ảnh QR inline (`cid:`) của đơn; thiếu = mail chỉ hiện chữ token
+   * (chưa tạo được ảnh hoặc payload không có token).
    */
-  qrImageCids?: ReadonlyArray<string | null | undefined>;
-}
-
-/** Một vé = một ghế = một qr_token riêng (tickets.order_seat_id unique). */
-export interface TicketQr {
-  seatLabel?: string;
-  token: string;
+  qrImageCid?: string;
 }
 
 const TICKET_KINDS = new Set(["TICKET_ISSUED", "TICKET"]);
 
-function readQrToken(source: Record<string, unknown>): string {
-  return String(source.qr_token ?? source.qrToken ?? "");
+/** Nguồn DUY NHẤT đọc qr_token của mail vé: một mã QR cho cả đơn (orders.qr_token); chuỗi rỗng nếu không có. */
+function readQrToken(payload: Record<string, unknown>): string {
+  return String(payload.qr_token ?? payload.qrToken ?? "");
 }
 
-function readSeatLabel(source: Record<string, unknown>): string {
-  return String(source.seat_label ?? source.seatLabel ?? "");
-}
-
-/**
- * Nguồn DUY NHẤT đọc qr_token của mail vé: `payload.tickets` ([{ seat_label, qr_token }], giữ thứ tự) nếu có vé hợp lệ,
- * ngược lại qr_token đơn lẻ (outbox cũ) coi như 1 vé không nhãn.
- */
-function readTicketQrs(payload: Record<string, unknown>): TicketQr[] {
-  const fromList: TicketQr[] = [];
-  if (Array.isArray(payload.tickets)) {
-    for (const entry of payload.tickets) {
-      if (typeof entry !== "object" || entry === null) continue;
-      const record = entry as Record<string, unknown>;
-      const token = readQrToken(record);
-      if (!token) continue;
-      const seatLabel = readSeatLabel(record);
-      fromList.push(seatLabel ? { seatLabel, token } : { token });
-    }
-  }
-  if (fromList.length > 0) return fromList;
-  const single = readQrToken(payload);
-  return single ? [{ token: single }] : [];
-}
-
-/** Danh sách vé (token + nhãn ghế) cần QR cho mail; rỗng với kind không phải vé hoặc payload thiếu token. */
-export function extractTicketQrs(kind: string, payload: Record<string, unknown>): TicketQr[] {
-  if (!TICKET_KINDS.has(kind.toUpperCase().trim())) return [];
-  return readTicketQrs(payload);
-}
-
-function ticketTitle(ticket: TicketQr, index: number): string {
-  return ticket.seatLabel ? `Ghế ${ticket.seatLabel}` : `Vé ${index + 1}`;
+/** qr_token của đơn cần QR cho mail; rỗng với kind không phải vé hoặc payload thiếu token. */
+export function extractTicketQrToken(kind: string, payload: Record<string, unknown>): string {
+  if (!TICKET_KINDS.has(kind.toUpperCase().trim())) return "";
+  return readQrToken(payload);
 }
 
 function tokenChip(token: string): string {
   return `<p style="margin:6px 0 0 0;"><span style="display:inline-block;padding:10px 14px;background-color:#FFFFFF;border:1px solid ${BRAND.line};border-radius:6px;font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;letter-spacing:2px;color:${BRAND.text};">${escapeHtml(token)}</span></p>`;
 }
 
-/** Khối của một vé: (nhãn ghế nếu đơn nhiều vé) + ảnh QR (nếu có cid) + chữ qr_token dự phòng. */
-function ticketQrBlock(ticket: TicketQr, index: number, cid: string | null, isMulti: boolean): string {
-  const divider = index > 0 ? `border-top:1px dashed ${BRAND.line};padding-top:14px;` : "";
-  const title = isMulti
-    ? `<p style="margin:16px 0 0 0;${divider}font-size:15px;font-weight:700;color:${BRAND.text};">${escapeHtml(ticketTitle(ticket, index))}</p>`
-    : "";
+/** Khối QR của đơn: ảnh QR (nếu có cid) + câu hướng dẫn + chữ qr_token dự phòng. */
+function qrSectionHtml(token: string, cid: string | undefined): string {
+  if (!token) return "";
   if (!cid) {
-    return `${title}
+    return `
       <p style="margin:16px 0 0 0;font-size:12px;letter-spacing:1px;color:${BRAND.muted};">MÃ QUÉT SOÁT VÉ (QR TOKEN)</p>
-      ${tokenChip(ticket.token)}`;
+      ${tokenChip(token)}`;
   }
-  const hint = isMulti ? "" : `\n      <p style="margin:10px 0 0 0;font-size:13px;color:${BRAND.text};">Đưa mã này cho nhân viên soát vé tại rạp</p>`;
-  return `${title}
-      <img src="cid:${escapeHtml(cid)}" width="220" height="220" alt="Mã QR vé" style="display:block;margin:12px auto 0 auto;width:220px;height:220px;border:1px solid ${BRAND.line};background-color:#FFFFFF;padding:8px;">${hint}
+  return `
+      <img src="cid:${escapeHtml(cid)}" width="220" height="220" alt="Mã QR vé" style="display:block;margin:16px auto 0 auto;width:220px;height:220px;border:1px solid ${BRAND.line};background-color:#FFFFFF;padding:8px;">
+      <p style="margin:10px 0 0 0;font-size:13px;color:${BRAND.text};">Một mã QR cho cả đơn — đưa mã này cho nhân viên soát vé, không cần mã từng ghế</p>
       <p style="margin:12px 0 0 0;font-size:12px;letter-spacing:1px;color:${BRAND.muted};">Mã dự phòng nếu không hiển thị được ảnh</p>
-      ${tokenChip(ticket.token)}`;
+      ${tokenChip(token)}`;
 }
 
-function qrSectionHtml(tickets: TicketQr[], cids: RenderOptions["qrImageCids"] = []): string {
-  if (tickets.length === 0) return "";
-  const isMulti = tickets.length > 1;
-  const intro = isMulti
-    ? `<p style="margin:16px 0 0 0;font-size:13px;color:${BRAND.text};">Mỗi ghế có một mã QR riêng — nhân viên soát vé sẽ quét từng mã.</p>`
-    : "";
-  const blocks = tickets.map((ticket, index) => ticketQrBlock(ticket, index, cids[index] ?? null, isMulti));
-  return `${intro}${blocks.join("\n")}`;
-}
-
-function qrSectionText(tickets: TicketQr[]): string {
-  const [only] = tickets;
-  if (!only) return "";
-  if (tickets.length === 1) return `QR Token: ${only.token}\n`;
-  const lines = tickets.map((ticket, index) => `${ticketTitle(ticket, index)}: ${ticket.token}`);
-  return `Mỗi ghế có một mã QR riêng (QR Token từng vé):\n${lines.join("\n")}\n`;
+function qrSectionText(token: string): string {
+  return token ? `QR Token: ${token}\n` : "";
 }
 
 /** 1. Email vé (TICKET_ISSUED) - R-86, R-133, AC-26 */
 export function renderTicketEmail(payload: Record<string, unknown>, opts: RenderOptions = {}): RenderedEmail {
   const bookingCode = String(payload.booking_code ?? payload.bookingCode ?? "N/A");
-  const qrTickets = readTicketQrs(payload);
+  const qrToken = readQrToken(payload);
   const cinemaName = String(payload.cinema_name ?? payload.cinemaName ?? "Rạp CINEMO");
   const cinemaAddress = payload.cinema_address ? String(payload.cinema_address) : "";
   const hotline = String(payload.hotline ?? DEFAULT_HOTLINE);
@@ -336,7 +285,7 @@ export function renderTicketEmail(payload: Record<string, unknown>, opts: Render
   if (combos) rows.push({ label: "Bắp nước", value: combos });
   rows.push({ label: "Tổng thanh toán", value: totalAmount, valueColor: "#059669", valueSize: 16 });
 
-  const qrBlock = qrSectionHtml(qrTickets, opts.qrImageCids ?? []);
+  const qrBlock = qrSectionHtml(qrToken, opts.qrImageCid);
 
   const ticketCode = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BRAND.cardBg}" style="background-color:${BRAND.cardBg};border:1px solid ${BRAND.line};border-top:4px solid ${BRAND.accent};border-radius:8px;margin:18px 0 0 0;">
   <tr>
@@ -371,7 +320,7 @@ ${notes}`,
 
   const text = `XÁC NHẬN ĐẶT VÉ THÀNH CÔNG - CINEMO
 Mã đặt vé: ${bookingCode}
-${qrSectionText(qrTickets)}
+${qrSectionText(qrToken)}
 Phim: ${movieTitle} ${ageRating ? `(${ageRating})` : ""}
 Rạp chiếu: ${cinemaName}
 ${cinemaAddress ? `Địa chỉ: ${cinemaAddress}\n` : ""}Hotline: ${hotline}

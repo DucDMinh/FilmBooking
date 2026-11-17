@@ -120,6 +120,7 @@ class FakeDb {
         {
           id: ORDER_PAID_HN01,
           booking_code: "HN01-PAID01",
+          qr_token: "b".repeat(32),
           channel: "WEB",
           cinema_id: HN01,
           cinema_code: "HN01",
@@ -145,6 +146,7 @@ class FakeDb {
         {
           id: ORDER_NMR_HN01,
           booking_code: "HN01-NMR001",
+          qr_token: "c".repeat(32),
           channel: "WEB",
           cinema_id: HN01,
           cinema_code: "HN01",
@@ -170,6 +172,7 @@ class FakeDb {
         {
           id: ORDER_NMR_HN02,
           booking_code: "HN02-NMR002",
+          qr_token: "d".repeat(32),
           channel: "WEB",
           cinema_id: HN02,
           cinema_code: "HN02",
@@ -195,6 +198,7 @@ class FakeDb {
         {
           id: ORDER_AFFECTED_HN01,
           booking_code: "HN01-AFF001",
+          qr_token: "e".repeat(32),
           channel: "WEB",
           cinema_id: HN01,
           cinema_code: "HN01",
@@ -220,6 +224,7 @@ class FakeDb {
         {
           id: ORDER_HOLDING_HN01,
           booking_code: null,
+          qr_token: "f".repeat(32),
           channel: "WEB",
           cinema_id: HN01,
           cinema_code: "HN01",
@@ -999,6 +1004,28 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
 
   // ── Tra cứu đơn hàng (R-103) & Chi tiết đơn hàng (R-104) ────────────────────
   describe("Tra cứu đơn & chi tiết đơn", () => {
+    /** Credential soát vé (orders.qr_token "b".."f" x32 và tickets.qr_token "a" x32) không được xuất hiện trong bất kỳ body admin nào. */
+    const expectNoQrCredential = (body: unknown) => {
+      const json = JSON.stringify(body);
+      expect(json).not.toMatch(/qrToken|qr_token/);
+      expect(json).not.toMatch(/([a-f])\1{31}/);
+    };
+
+    it("GET /orders (tra cứu) và needs-manual-review KHÔNG lộ qr_token của đơn/vé", async () => {
+      for (const url of ["/orders", "/orders?bookingCode=PAID01", "/orders/needs-manual-review", "/admin/orders/needs-manual-review"]) {
+        const res = await request(app.getHttpServer()).get(url).set("Authorization", `Bearer ${managerHn01Token}`).expect(200);
+        expect(res.body).toBeDefined();
+        expectNoQrCredential(res.body);
+      }
+      for (const token of [managerHn01Token, adminToken]) {
+        const todo = await request(app.getHttpServer()).get("/admin/todo").set("Authorization", `Bearer ${token}`).expect(200);
+        expectNoQrCredential(todo.body);
+      }
+      const all = await request(app.getHttpServer()).get("/orders").set("Authorization", `Bearer ${adminToken}`).expect(200);
+      expect(all.body.items.length).toBeGreaterThan(1);
+      expectNoQrCredential(all.body);
+    });
+
     it("Staff HN01 tìm đơn theo mã đặt vé của HN01 -> 200 có kết quả", async () => {
       const res = await request(app.getHttpServer())
         .get("/orders?bookingCode=PAID01")
@@ -1048,6 +1075,21 @@ describe("Orders & Report API (Task 07, R-103, R-104, R-112, R-113, R-116, AC-11
       const statuses = res.body.statusHistory.map((s: { status: string }) => s.status);
       expect(statuses).toContain("holding");
       expect(statuses).toContain("paid");
+    });
+
+    it("GET /orders/:id KHÔNG lộ qr_token (credential soát vé) trong DTO admin; vé có checkedIn boolean", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/orders/${ORDER_PAID_HN01}`)
+        .set("Authorization", `Bearer ${staffHn01Token}`)
+        .expect(200);
+
+      expect(res.body.tickets.length).toBeGreaterThan(0);
+      for (const ticket of res.body.tickets as Record<string, unknown>[]) {
+        expect(ticket).not.toHaveProperty("qrToken");
+        expect(ticket).not.toHaveProperty("qr_token");
+        expect(typeof ticket.checkedIn).toBe("boolean");
+      }
+      expectNoQrCredential(res.body);
     });
 
     it("GET /orders/:id truy vấn lịch sử trạng thái từ audit_logs table_name = 'orders' (D/M6)", async () => {

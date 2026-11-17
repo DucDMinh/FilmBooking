@@ -44,7 +44,7 @@ function OrderInfo({ order }: Readonly<{ order: PaidOrderView }>) {
         {order.cinemaAddress ? ` — ${order.cinemaAddress}` : ""}
       </p>
       <p className="text-body-sm text-fg-secondary">
-        Ghế: {order.tickets.map((t) => t.seatLabel).join(", ") || "—"}
+        Ghế: {order.tickets.map((t) => t.seatLabel).join(", ") || "—"} ({order.tickets.length} ghế)
       </p>
     </div>
   );
@@ -66,7 +66,7 @@ export function TicketCard({ order }: Readonly<{ order: PaidOrderView }>) {
   );
 }
 
-/** Chi tiết đơn: mỗi ghế một QR riêng (R-85). Đơn `affected` không hiện QR dùng được. */
+/** Chi tiết đơn: MỘT QR cho cả đơn (R-85). Đơn `affected` không hiện QR dùng được. */
 export function TicketDetail({ order }: Readonly<{ order: PaidOrderView }>) {
   const affected = order.status === "affected";
   return (
@@ -86,18 +86,16 @@ export function TicketDetail({ order }: Readonly<{ order: PaidOrderView }>) {
         )}
       </div>
       {affected ? null : (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {order.tickets.map((ticket) => (
-            <li
-              key={ticket.qrToken}
-              className="flex flex-col items-center gap-2 rounded-lg border border-border-subtle bg-surface p-4"
-            >
-              <p className="text-h3 font-bold">Ghế {ticket.seatLabel}</p>
-              <TicketQr token={ticket.qrToken} label={`Ghế ${ticket.seatLabel}`} />
-              {ticket.checkedIn ? <p className="text-body-sm font-semibold text-fg-muted">Đã sử dụng</p> : null}
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-border-subtle bg-surface p-4">
+          <p className="text-h3 font-bold">Mã QR đơn hàng</p>
+          <TicketQr token={order.qrToken} label="Mã QR đơn hàng" />
+          <p className="text-center text-body-sm text-fg-secondary">
+            Một mã QR cho cả đơn — đưa cho nhân viên soát vé, không cần mã từng ghế.
+          </p>
+          {order.status === "checked_in" ? (
+            <p className="text-body-sm font-semibold text-fg-muted">Đã soát vé</p>
+          ) : null}
+        </div>
       )}
     </div>
   );

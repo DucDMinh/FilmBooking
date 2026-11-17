@@ -15,6 +15,7 @@
 | CR-005 | Hoàn tiền thủ công thiếu phương thức + ngày hoàn bắt buộc R-110 (GAP-009) | BUG | pending | [2026-11-14-refund-method-required.md](2026-11-14-refund-method-required.md) | 2026-11-14 | |
 | CR-006 | Tùy biến mail đi: giao diện CINEMO + tiếng Việt (mail Auth + mail giao dịch Nest) | MODIFY | done | [2026-11-17-custom-mail-templates.md](archive/2026-11-17-custom-mail-templates.md) | 2026-11-17 | 2026-11-17 |
 | CR-007 | Bấm link xác nhận email → đăng nhập luôn (token_hash + verifyOtp), sửa R-04 | MODIFY | done | [2026-11-17-confirm-email-auto-login.md](archive/2026-11-17-confirm-email-auto-login.md) | 2026-11-17 | 2026-11-17 |
+| CR-008 | Một QR cho cả đơn hàng, staff quét 1 mã soát cả đơn (bỏ QR từng ghế) | MODIFY | done | [2026-11-17-order-level-qr.md](archive/2026-11-17-order-level-qr.md) | 2026-11-17 | 2026-11-18 |
 
 ## Quy tắc tracking
 

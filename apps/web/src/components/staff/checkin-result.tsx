@@ -53,16 +53,21 @@ function Row({ label, value }: Readonly<{ label: string; value: string }>) {
 }
 
 function Details({ response }: Readonly<{ response: ScanTicketResponse }>) {
-  const { ticket, used, correctCinema, startsAt } = response;
-  if (response.result === "OK" && ticket) {
+  const { order, used, correctCinema, startsAt } = response;
+  if (response.result === "OK" && order) {
     return (
-      <dl className="space-y-3">
-        <Row label="Phim" value={ticket.movieTitle} />
-        <Row label="Rạp • Phòng" value={`${ticket.cinemaName} • ${ticket.roomName}`} />
-        <Row label="Suất chiếu" value={formatDateTime(ticket.startsAt)} />
-        <Row label="Ghế" value={ticket.seatLabel} />
-        <Row label="Đã check-in lúc" value={formatDateTime(ticket.checkedInAt)} />
-      </dl>
+      <div className="space-y-3">
+        <p className="text-h3 font-bold text-fg">{`Đã soát ${order.seatCount} ghế của đơn`}</p>
+        <dl className="space-y-3">
+          <Row label="Phim" value={order.movieTitle} />
+          <Row label="Rạp • Phòng" value={`${order.cinemaName} • ${order.roomName}`} />
+          <Row label="Suất chiếu" value={formatDateTime(order.startsAt)} />
+          <Row label="Mã đặt vé" value={order.bookingCode} />
+          <Row label="Ghế" value={order.seats.join(", ")} />
+          <Row label="Số ghế" value={`${order.seatCount} ghế`} />
+          <Row label="Đã check-in lúc" value={formatDateTime(order.checkedInAt)} />
+        </dl>
+      </div>
     );
   }
   if (response.result === "USED" && used) {

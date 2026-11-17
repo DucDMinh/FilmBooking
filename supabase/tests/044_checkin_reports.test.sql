@@ -2,7 +2,7 @@
 -- Requirements: R-97, R-98, R-99, R-101, R-102, R-112, R-113, R-116, R-132
 -- Acceptance Criteria: AC-12, AC-13
 begin;
-select plan(47);
+select plan(45);
 
 create function public.tap_as(p_uid uuid, p_role text default 'authenticated')
 returns void language plpgsql as $$
@@ -433,7 +433,8 @@ select is(
 -- ---------------------------------------------------------------------------
 select public.tap_as('00000000-0000-0000-0000-000000000c01'); -- Staff HN01
 
--- Lần 1: Quét bằng booking_code -> Vé 1 OK, Order -> checked_in, Vé 2 vẫn null
+-- feature-order-level-qr: một lần quét soát CẢ ĐƠN (thay hành vi cũ "mỗi lần quét 1 ghế").
+-- Lần 1: Quét bằng booking_code -> OK, đơn -> checked_in, CẢ 2 vé được check-in
 select is(
   (select public.checkin_ticket('HN01-MLT001', '00000000-0000-0000-0000-0000000000c1')->>'status'),
   'OK',
@@ -443,39 +444,27 @@ select is(
 select is(
   (select status::text from public.orders where id = '00000000-0000-0000-0000-5a0000000010'),
   'checked_in',
-  'Finding 3: Đơn hàng chuyển sang checked_in ngay sau vé đầu tiên'
-);
-
-select isnt(
-  (select checked_in_at from public.tickets where id = '00000000-0000-0000-0000-7a0000000011'),
-  null,
-  'Finding 3: Vé thứ nhất đã được check-in'
+  'Finding 3: Đơn hàng chuyển sang checked_in sau lần quét đầu'
 );
 
 select is(
-  (select checked_in_at from public.tickets where id = '00000000-0000-0000-0000-7a0000000012'),
-  null,
-  'Finding 3: Vé thứ hai chưa bị check-in'
+  (select count(*) from public.tickets where order_id = '00000000-0000-0000-0000-5a0000000010' and checked_in_at is not null),
+  2::bigint,
+  'Order-level QR: một lần quét soát cả 2 vé của đơn đa vé'
 );
 
--- Lần 2: Quét tiếp bằng booking_code -> Nhặt đúng vé 2 chưa check-in -> status OK
-select is(
-  (select public.checkin_ticket('HN01-MLT001', '00000000-0000-0000-0000-0000000000c1')->>'status'),
-  'OK',
-  'Finding 3: Quét lần 2 đơn đa vé bằng booking_code nhặt đúng vé 2 chưa check-in, trả status OK'
-);
-
-select isnt(
-  (select checked_in_at from public.tickets where id = '00000000-0000-0000-0000-7a0000000012'),
-  null,
-  'Finding 3: Vé thứ hai đã được check-in thành công'
-);
-
--- Lần 3: Quét tiếp bằng booking_code -> Toàn bộ vé trong đơn đã soát hết -> USED
+-- Lần 2: Quét lại bằng booking_code -> toàn bộ vé trong đơn đã soát hết -> USED
 select is(
   (select public.checkin_ticket('HN01-MLT001', '00000000-0000-0000-0000-0000000000c1')->>'status'),
   'USED',
-  'Finding 3: Quét lần 3 khi toàn bộ vé trong đơn đã check-in trả status USED'
+  'Finding 3: Quét lại khi toàn bộ vé trong đơn đã check-in trả status USED'
+);
+
+select is(
+  (select count(*) from public.checkin_logs where result = 'SUCCESS'
+     and ticket_id in ('00000000-0000-0000-0000-7a0000000011', '00000000-0000-0000-0000-7a0000000012')),
+  1::bigint,
+  'Order-level QR: chỉ ghi 1 dòng checkin_logs SUCCESS cho cả đơn (R-101)'
 );
 
 -- ---------------------------------------------------------------------------

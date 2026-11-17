@@ -71,7 +71,11 @@ function makeBuilder() {
 }
 
 const mockedFetch = vi.mocked(apiFetch);
-const status = (s: PaymentStatusDto["status"]): PaymentStatusDto => ({ status: s, orderStatus: "x", bookingCode: null });
+const status = (s: PaymentStatusDto["status"]): PaymentStatusDto => ({
+  status: s,
+  orderStatus: "x",
+  bookingCode: null,
+});
 
 function dbRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -87,7 +91,8 @@ function dbRow(overrides: Record<string, unknown> = {}) {
     showtime_ends_at: "2099-11-20T14:00:00Z",
     cinemas: { address: "12 Nguyễn Văn Cừ", hotline: "1900 0000" },
     order_seats: [{ id: "s1", seat_label: "F7" }],
-    tickets: [{ order_seat_id: "s1", qr_token: "a".repeat(32), checked_in_at: null }],
+    qr_token: "a".repeat(32),
+    tickets: [{ order_seat_id: "s1", checked_in_at: null }],
     ...overrides,
   };
 }
@@ -104,9 +109,10 @@ function order(overrides: Partial<PaidOrderView> = {}): PaidOrderView {
     roomName: "Phòng 03",
     startsAt: "2026-11-20T12:00:00Z",
     endsAt: "2026-11-20T14:00:00Z",
+    qrToken: "o".repeat(32),
     tickets: [
-      { seatLabel: "F7", qrToken: "a".repeat(32), checkedIn: false },
-      { seatLabel: "F8", qrToken: "b".repeat(32), checkedIn: true },
+      { seatLabel: "F7", checkedIn: false },
+      { seatLabel: "F8", checkedIn: false },
     ],
     ...overrides,
   };
@@ -175,15 +181,23 @@ describe("PaymentResult polling", () => {
 });
 
 describe("TicketDetail", () => {
-  it("QR chỉ chứa qr_token; hiển thị mã, rạp + địa chỉ, nhắc dùng tại rạp và không huỷ/đổi/hoàn", () => {
+  it("MỘT QR cho cả đơn dù nhiều ghế: QR chỉ chứa qr_token của đơn; hiện danh sách ghế, mã, rạp + địa chỉ, nhắc không huỷ/đổi/hoàn", () => {
     render(<TicketDetail order={order()} />);
     const qrs = screen.getAllByTestId("ticket-qr");
-    expect(qrs.map((q) => q.getAttribute("data-qr-value"))).toEqual(["a".repeat(32), "b".repeat(32)]);
+    expect(qrs.map((q) => q.getAttribute("data-qr-value"))).toEqual(["o".repeat(32)]);
+    expect(screen.getByText(/Ghế: F7, F8/)).toBeInTheDocument();
+    expect(screen.getByText(/2 ghế/)).toBeInTheDocument();
+    expect(screen.getByText(/Một mã QR cho cả đơn/)).toBeInTheDocument();
     expect(screen.getAllByText("HN01-7K3P9Q").length).toBeGreaterThan(0);
     expect(screen.getByText(/CINEMO Long Biên — 12 Nguyễn Văn Cừ/)).toBeInTheDocument();
     expect(screen.getByText(/quét tại rạp/)).toBeInTheDocument();
     expect(screen.getByText("Vé không hỗ trợ huỷ / đổi / hoàn tiền.")).toBeInTheDocument();
-    expect(screen.getByText("Đã sử dụng")).toBeInTheDocument();
+    expect(screen.queryByText("Đã soát vé")).not.toBeInTheDocument();
+  });
+
+  it("đơn checked_in: hiện 'Đã soát vé' ở mức đơn", () => {
+    render(<TicketDetail order={order({ status: "checked_in" })} />);
+    expect(screen.getByText("Đã soát vé")).toBeInTheDocument();
   });
 
   it("mở vé toàn màn hình: QR >= 280px, Wake Lock, đóng bằng Escape", async () => {
@@ -300,21 +314,28 @@ describe("ticket data", () => {
         { id: "s1", seat_label: "A2" },
       ],
       tickets: [
-        { order_seat_id: "s2", qr_token: "t2", checked_in_at: null },
-        { order_seat_id: "s1", qr_token: "t1", checked_in_at: "x" },
+        { order_seat_id: "s2", checked_in_at: null },
+        { order_seat_id: "s1", checked_in_at: "x" },
       ],
+      qr_token: "q".repeat(32),
     };
     const view = toPaidOrderView(row);
     expect(view?.cinemaAddress).toBe("Addr");
     expect(view?.cinemaHotline).toBe("19");
     expect(view?.tickets.map((t) => t.seatLabel)).toEqual(["A2", "A10"]);
+    expect(view?.qrToken).toBe("q".repeat(32));
+    expect(view?.tickets.every((t) => !("qrToken" in t))).toBe(true);
     expect(toPaidOrderView({ ...row, booking_code: null })).toBeNull();
   });
 
   it("chia sắp tới / đã qua theo giờ kết thúc suất", () => {
     const now = new Date("2026-11-15T00:00:00Z");
     const future = order({ id: "f", endsAt: "2026-11-20T14:00:00Z" });
-    const past = order({ id: "p", startsAt: "2026-11-01T10:00:00Z", endsAt: "2026-11-01T12:00:00Z" });
+    const past = order({
+      id: "p",
+      startsAt: "2026-11-01T10:00:00Z",
+      endsAt: "2026-11-01T12:00:00Z",
+    });
     const { upcoming, past: pastList } = splitUpcomingAndPast([past, future], now);
     expect(upcoming.map((o) => o.id)).toEqual(["f"]);
     expect(pastList.map((o) => o.id)).toEqual(["p"]);

@@ -161,7 +161,7 @@ Liên kết MXH: API không tự tạo identity; web gọi link-intent rồi `su
 
 | Route | Guard | Ghi chú |
 |---|---|---|
-| `POST /checkin/scan` | Roles(STAFF)+Scope | 200; quét QR/nhập mã vé theo rạp (RPC `checkin_ticket`); lỗi `WRONG_CINEMA`, `TICKET_USED`, `TICKET_NOT_FOUND`, `TICKET_NOT_PAID`, `CHECKIN_OUTSIDE_WINDOW` |
+| `POST /checkin/scan` | Roles(STAFF)+Scope | 200; quét QR cấp đơn (`orders.qr_token`; QR vé cũ `tickets.qr_token` vẫn được chấp nhận) hoặc nhập mã đặt vé theo rạp (RPC `checkin_ticket`); MỘT lần quét soát cả đơn. Thành công (`result: OK`) trả `order { orderId, bookingCode, movieTitle, cinemaName, roomName, seats: string[] (xếp tự nhiên), seatCount, startsAt, checkedInAt }` (đã bỏ `ticket.ticketId/seatLabel/seatType`); `WRONG_CINEMA` chỉ trả `correctCinema`, không có ghế/tên khách/mã đặt vé; lỗi/kết quả khác: `USED`, `CANCELLED`, `EXPIRED`, `TOO_EARLY`, `NOT_PAID`, `NOT_FOUND` |
 
 ### Đơn hàng (`OrdersModule`; alias `/admin/...`)
 
@@ -169,7 +169,7 @@ Liên kết MXH: API không tự tạo identity; web gọi link-intent rồi `su
 |---|---|---|
 | `GET /orders` | Roles(STAFF) | Tra cứu đơn theo rạp (Manager cũng qua) |
 | `GET /orders/needs-manual-review` | Roles(MANAGER) | Đơn `needs_manual_review` |
-| `GET /orders/:id` | Roles(STAFF) | |
+| `GET /orders/:id` | Roles(STAFF) | `tickets[]` mỗi phần tử có `checkedIn: boolean` + `checkedInAt`; KHÔNG trả `qrToken` (credential soát vé không đi qua DTO admin) |
 | `POST /orders/:id/resolve-manual-review` | Roles(MANAGER) | RPC `resolve_manual_review` |
 | `GET /admin/todo` | Roles(STAFF) | Việc cần xử lý |
 | `GET /admin/orders` | Roles(STAFF) | Alias `GET /orders` |
