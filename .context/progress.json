@@ -541,11 +541,25 @@
         "reportPath": ".context/review-reports/bug-cinema-map-phase-1-task-01-round-2-review.md"
       },
       "updatedAt": "2026-11-17T03:27:30.031Z"
+    },
+    {
+      "id": "ticket-email-qr/phase-1-task-01",
+      "title": "Email vé chỉ in chữ qr_token, thiếu hình QR (R-86); sửa: mỗi ghế một QR (CID inline), enrich mọi vé của đơn",
+      "status": "done",
+      "severity": "high",
+      "reviewer": {
+        "verdict": "PASS",
+        "level": "NORMAL",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/bug-ticket-email-qr-phase-1-task-01-round-2-review.md"
+      },
+      "note": "spec_version 3.2.0 không bump, scope v24. Round 1 FAIL (HIGH: mỗi ghế 1 vé 1 qr_token, email chỉ 1 QR) đã sửa. Verify đầu-cuối: 8 vé thật -> 8 PNG giải mã == token DB. Residual: chưa gửi Gmail thật, Outlook desktop hiện CID như đính kèm, R-86 còn thiếu link bản đồ (gap), API đang chạy phải build lại + restart.",
+      "updatedAt": "2026-11-17T10:16:18.057Z"
     }
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-17T09:30:59.976Z",
+  "lastUpdated": "2026-11-17T10:16:18.057Z",
   "inProgressTask": null,
   "completedTasks": [
     {

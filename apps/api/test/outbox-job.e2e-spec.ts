@@ -51,6 +51,8 @@ interface OutboxRow {
 interface FakeTicket {
   order_id: string;
   qr_token: string;
+  /** Nhãn ghế của vé (PostgREST embed `order_seats(seat_label)`); bỏ trống = không join được ghế. */
+  seat_label?: string;
 }
 
 interface FakeCinema {
@@ -68,6 +70,7 @@ function createFakeSupabase() {
   const tickets = new Map<string, FakeTicket[]>();
   const cinemas = new Map<string, FakeCinema>();
   const orderSeats = new Map<string, FakeOrderSeat[]>();
+  const ticketSelects: string[] = [];
 
   const reset = (rows: OutboxRow[] = []) => {
     outbox.clear();
@@ -77,6 +80,7 @@ function createFakeSupabase() {
     tickets.clear();
     cinemas.clear();
     orderSeats.clear();
+    ticketSelects.length = 0;
   };
 
   const adminClient = {
@@ -90,48 +94,24 @@ function createFakeSupabase() {
     from: (table: string) => {
       if (table === "tickets") {
         return {
-          select: () => {
-            let limitCount: number | null = null;
-            let currentOrderId: string | null = null;
-
-            const queryBuilder = {
-              eq: (_col: string, val: unknown) => {
-                currentOrderId = String(val);
-                return queryBuilder;
-              },
-              limit: (n: number) => {
-                limitCount = n;
-                return queryBuilder;
-              },
-              maybeSingle: async () => {
-                const list = currentOrderId ? (tickets.get(currentOrderId) ?? []) : [];
-                const effectiveList = limitCount !== null ? list.slice(0, limitCount) : list;
-                if (effectiveList.length > 1) {
-                  return {
-                    data: null,
-                    error: {
-                      code: "PGRST116",
-                      message: `Results contain ${effectiveList.length} rows, application/vnd.pgrst.object+json requires 1 row`,
-                    },
-                  };
-                }
-                const item = effectiveList[0];
-                return {
-                  data: item ? { qr_token: item.qr_token } : null,
-                  error: null,
-                };
-              },
-              then: (resolve: (val: { data: unknown; error: null }) => void) => {
-                const list = currentOrderId ? (tickets.get(currentOrderId) ?? []) : [];
-                const effectiveList = limitCount !== null ? list.slice(0, limitCount) : list;
-                resolve({
-                  data: effectiveList.map((t) => ({ qr_token: t.qr_token })),
-                  error: null,
-                });
-              },
+          // Chỉ hỗ trợ đúng truy vấn mong muốn: lấy TẤT CẢ vé của đơn (select + eq, await trực tiếp),
+          // không limit/maybeSingle -> code gọi limit(1) sẽ ném TypeError và không enrich được token.
+          select: (columns: string) => {
+            ticketSelects.push(columns);
+            return {
+              eq: (_col: string, val: unknown) => ({
+                then: (resolve: (val: { data: unknown; error: null }) => void) => {
+                  const list = tickets.get(String(val)) ?? [];
+                  resolve({
+                    data: list.map((t) => ({
+                      qr_token: t.qr_token,
+                      order_seats: t.seat_label ? { seat_label: t.seat_label } : null,
+                    })),
+                    error: null,
+                  });
+                },
+              }),
             };
-
-            return queryBuilder;
           },
         };
       }
@@ -260,6 +240,7 @@ function createFakeSupabase() {
   return {
     admin: () => adminClient,
     getRows: () => [...outbox.values()],
+    ticketSelects,
     reset,
     setTickets: (items: FakeTicket[]) => {
       for (const t of items) {
@@ -436,45 +417,10 @@ describe("Outbox Job & Email Worker", () => {
       expect(rows.every((r) => r.last_error === null)).toBe(true);
     });
 
-    it("B/M5 PostgREST PGRST116: Mô phỏng lỗi khi query > 1 vé không có limit(1) vs thành công khi có limit(1)", async () => {
-      const orderId = "order-multi-ticket-test";
-      fakeDb.setTickets([
-        { order_id: orderId, qr_token: "qr-token-ticket-1" },
-        { order_id: orderId, qr_token: "qr-token-ticket-2" },
-      ]);
-
-      // Không có limit(1) -> PGRST116 error
-      type TicketQueryResult = { data: { qr_token: string } | null; error: { code: string; message: string } | null };
-      type TicketQuery = {
-        select: () => {
-          eq: (_col: string, _val: unknown) => {
-            limit: (_n: number) => { maybeSingle: () => Promise<TicketQueryResult> };
-            maybeSingle: () => Promise<TicketQueryResult>;
-          };
-        };
-      };
-      const ticketDb = fakeDb.admin() as unknown as { from: (_t: string) => TicketQuery };
-
-      const withoutLimit = await ticketDb.from("tickets").select().eq("order_id", orderId).maybeSingle();
-      expect(withoutLimit.data).toBeNull();
-      expect(withoutLimit.error).toEqual({
-        code: "PGRST116",
-        message: "Results contain 2 rows, application/vnd.pgrst.object+json requires 1 row",
-      });
-
-      // Có limit(1) -> thành công lấy vé đầu tiên
-      const withLimit = await ticketDb.from("tickets").select().eq("order_id", orderId).limit(1).maybeSingle();
-      expect(withLimit.error).toBeNull();
-      expect(withLimit.data).toEqual({ qr_token: "qr-token-ticket-1" });
-    });
-
-    it("B/M5: Worker xử lý TICKET_ISSUED cho đơn hàng 2 ghế (2 vé) -> limit(1) lấy đúng QR token và render đầy đủ QR/ghế/địa chỉ", async () => {
+    function ticketIssuedRow(id: string, orderId: string, cinemaId: string, extraPayload: Record<string, unknown> = {}): OutboxRow {
       const pastTime = new Date(Date.now() - 60000).toISOString();
-      const orderId = "order-uuid-enrich-01";
-      const cinemaId = "cinema-uuid-enrich-01";
-
-      const mockRow: OutboxRow = {
-        id: "email-ticket-enrich",
+      return {
+        id,
         kind: "TICKET_ISSUED",
         to_email: "khach-enrich@example.com",
         payload: {
@@ -487,6 +433,7 @@ describe("Outbox Job & Email Worker", () => {
           showtime_starts_at: "2026-11-25T20:00:00Z",
           total_amount: 300000,
           // KHÔNG truyền qr_token, cinema_address, seats (đúng payload do DB enqueue)
+          ...extraPayload,
         },
         cinema_id: cinemaId,
         status: "PENDING",
@@ -496,39 +443,107 @@ describe("Outbox Job & Email Worker", () => {
         created_at: pastTime,
         sent_at: null,
       };
+    }
 
-      fakeDb.reset([mockRow]);
-      // Đơn hàng có 2 ghế -> có 2 vé trong bảng tickets (quan hệ 1-N giữa orders và tickets)
+    async function runSendEmails() {
+      const res = await request(app.getHttpServer()).post("/jobs/send-emails").set("x-job-secret", TEST_JOB_SECRET);
+      expect(res.status).toBe(200);
+      return res;
+    }
+
+    it("B/M5: đơn 3 ghế (nhãn lộn xộn) -> enrich lấy TẤT CẢ vé, sắp xếp tự nhiên (A2 trước A10), mỗi ghế một QR", async () => {
+      const orderId = "order-uuid-enrich-01";
+      const cinemaId = "cinema-uuid-enrich-01";
+      fakeDb.reset([ticketIssuedRow("email-ticket-enrich", orderId, cinemaId)]);
       fakeDb.setTickets([
-        { order_id: orderId, qr_token: "qr-enriched-from-db-12345" },
-        { order_id: orderId, qr_token: "qr-enriched-second-seat-67890" },
+        { order_id: orderId, qr_token: "qr-token-seat-a10", seat_label: "A10" },
+        { order_id: orderId, qr_token: "qr-token-seat-a2", seat_label: "A2" },
+        { order_id: orderId, qr_token: "qr-token-seat-b1", seat_label: "B1" },
       ]);
       fakeDb.setCinemas([{ id: cinemaId, address: "Tầng 5, TTTM Vincom, 54A Nguyễn Chí Thanh, Hà Nội" }]);
       fakeDb.setOrderSeats([
-        { order_id: orderId, seat_label: "E10" },
-        { order_id: orderId, seat_label: "E11" },
+        { order_id: orderId, seat_label: "A10" },
+        { order_id: orderId, seat_label: "A2" },
+        { order_id: orderId, seat_label: "B1" },
       ]);
 
-      const res = await request(app.getHttpServer())
-        .post("/jobs/send-emails")
-        .set("x-job-secret", TEST_JOB_SECRET);
+      const res = await runSendEmails();
 
-      expect(res.status).toBe(200);
       expect(res.body.sent).toBe(1);
-
-      // Verify email được gửi qua SMTP với đầy đủ QR token đầu tiên, địa chỉ và cả 2 ghế từ DB
+      expect(fakeDb.ticketSelects).toEqual(["qr_token, order_seats(seat_label)"]);
       expect(sendMailMock).toHaveBeenCalledTimes(1);
       const callArgs = sendMailMock.mock.calls[0]![0];
       expect(callArgs.to).toBe("khach-enrich@example.com");
-      expect(callArgs.html).toContain("qr-enriched-from-db-12345");
       expect(callArgs.html).toContain("54A Nguyễn Chí Thanh");
-      expect(callArgs.html).toContain("E10, E11");
-      expect(callArgs.text).toContain("qr-enriched-from-db-12345");
       expect(callArgs.text).toContain("54A Nguyễn Chí Thanh");
-      expect(callArgs.text).toContain("E10, E11");
+
+      // Thứ tự tự nhiên: A2, A10, B1 — mỗi vé một ảnh + token đúng ghế
+      const order = ["Ghế A2", "qr-token-seat-a2", "Ghế A10", "qr-token-seat-a10", "Ghế B1", "qr-token-seat-b1"];
+      const positions = order.map((needle) => (callArgs.html as string).indexOf(needle));
+      expect(positions.every((pos) => pos >= 0)).toBe(true);
+      expect([...positions].sort((x, y) => x - y)).toEqual(positions);
+      expect((callArgs.attachments as { cid: string }[]).map((att) => att.cid)).toEqual([
+        "ticket-qr-1",
+        "ticket-qr-2",
+        "ticket-qr-3",
+      ]);
+      expect(callArgs.text).toContain("Ghế A2: qr-token-seat-a2");
+      expect(callArgs.text).toContain("Ghế A10: qr-token-seat-a10");
+      expect(callArgs.text).toContain("Ghế B1: qr-token-seat-b1");
 
       const row = fakeDb.getRows().find((r) => r.id === "email-ticket-enrich")!;
       expect(row.status).toBe("SENT");
+    });
+
+    it("B/M5: đơn 1 ghế -> 1 vé, 1 ảnh QR, không có câu 'mỗi ghế một mã QR'", async () => {
+      const orderId = "order-uuid-enrich-single";
+      const cinemaId = "cinema-uuid-enrich-single";
+      fakeDb.reset([ticketIssuedRow("email-ticket-single", orderId, cinemaId)]);
+      fakeDb.setTickets([{ order_id: orderId, qr_token: "qr-token-only-seat", seat_label: "C3" }]);
+      fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
+      fakeDb.setOrderSeats([{ order_id: orderId, seat_label: "C3" }]);
+
+      await runSendEmails();
+
+      const callArgs = sendMailMock.mock.calls[0]![0];
+      expect(callArgs.attachments).toHaveLength(1);
+      expect(callArgs.html).toContain("qr-token-only-seat");
+      expect(callArgs.html).not.toContain("Mỗi ghế có một mã QR riêng");
+    });
+
+    it("B/M5: payload đã có sẵn qr_token đơn lẻ (outbox cũ) -> không truy vấn tickets, giữ nguyên token", async () => {
+      const orderId = "order-uuid-enrich-legacy";
+      const cinemaId = "cinema-uuid-enrich-legacy";
+      fakeDb.reset([ticketIssuedRow("email-ticket-legacy", orderId, cinemaId, { qr_token: "qr-token-from-payload" })]);
+      fakeDb.setTickets([{ order_id: orderId, qr_token: "qr-token-from-db", seat_label: "A1" }]);
+      fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
+
+      await runSendEmails();
+
+      expect(fakeDb.ticketSelects).toEqual([]);
+      const callArgs = sendMailMock.mock.calls[0]![0];
+      expect(callArgs.html).toContain("qr-token-from-payload");
+      expect(callArgs.html).not.toContain("qr-token-from-db");
+      expect(callArgs.attachments).toHaveLength(1);
+    });
+
+    it("B/M5: vé không join được nhãn ghế vẫn có QR (xếp sau các vé có nhãn)", async () => {
+      const orderId = "order-uuid-enrich-nolabel";
+      const cinemaId = "cinema-uuid-enrich-nolabel";
+      fakeDb.reset([ticketIssuedRow("email-ticket-nolabel", orderId, cinemaId)]);
+      fakeDb.setTickets([
+        { order_id: orderId, qr_token: "qr-token-no-label" },
+        { order_id: orderId, qr_token: "qr-token-b2", seat_label: "B2" },
+      ]);
+      fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
+
+      await runSendEmails();
+
+      const callArgs = sendMailMock.mock.calls[0]![0];
+      expect(callArgs.attachments).toHaveLength(2);
+      expect((callArgs.html as string).indexOf("qr-token-b2")).toBeLessThan(
+        (callArgs.html as string).indexOf("qr-token-no-label"),
+      );
     });
   });
 

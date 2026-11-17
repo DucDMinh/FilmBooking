@@ -16,6 +16,37 @@ export interface SendEmailsJobResult {
 
 export const MAX_EMAIL_ATTEMPTS = 3;
 
+/** Vé của đơn đưa vào payload mail: mỗi ghế một vé với qr_token riêng. */
+interface TicketForEmail {
+  seat_label?: string;
+  qr_token: string;
+}
+
+interface TicketRowWithSeat {
+  qr_token?: string | null;
+  /** PostgREST embed của FK order_seat_id: object (to-one), phòng trường hợp trả mảng. */
+  order_seats?: { seat_label?: string | null } | { seat_label?: string | null }[] | null;
+}
+
+/**
+ * Chuẩn hoá vé của đơn: bỏ dòng thiếu token, xếp theo nhãn ghế kiểu tự nhiên (A2 trước A10), vé không có nhãn xếp cuối.
+ * Không nhúng token vào log.
+ */
+export function orderTicketsForEmail(rows: TicketRowWithSeat[]): TicketForEmail[] {
+  const tickets: TicketForEmail[] = [];
+  for (const row of rows) {
+    if (!row.qr_token) continue;
+    const seat = Array.isArray(row.order_seats) ? row.order_seats[0] : row.order_seats;
+    tickets.push(seat?.seat_label ? { seat_label: seat.seat_label, qr_token: row.qr_token } : { qr_token: row.qr_token });
+  }
+  return tickets.sort((a, b) => {
+    if (a.seat_label && b.seat_label) return a.seat_label.localeCompare(b.seat_label, "vi", { numeric: true });
+    if (a.seat_label) return -1;
+    if (b.seat_label) return 1;
+    return 0;
+  });
+}
+
 interface OutboxCandidate {
   id: string;
   kind: string;
@@ -39,7 +70,7 @@ export class JobsService {
   ) {}
 
   /**
-   * B/M5: Tự động truy vấn bổ sung thông tin qr_token, cinema_address, và seats
+   * B/M5: Tự động truy vấn bổ sung vé (mỗi ghế một qr_token), cinema_address, và seats
    * nếu payload vé từ DB thiếu các trường này trước khi render email gửi cho khách.
    */
   private async enrichTicketPayload(
@@ -51,7 +82,8 @@ export class JobsService {
     const cinemaId = (enriched.cinema_id ?? enriched.cinemaId ?? fallbackCinemaId) as string | undefined;
     const admin = this.supabase.admin();
 
-    const hasQr = Boolean(enriched.qr_token ?? enriched.qrToken);
+    const hasQr =
+      Boolean(enriched.qr_token ?? enriched.qrToken) || (Array.isArray(enriched.tickets) && enriched.tickets.length > 0);
     const hasAddress = Boolean(enriched.cinema_address ?? enriched.cinemaAddress);
     const hasSeats = Array.isArray(enriched.seats)
       ? enriched.seats.length > 0
@@ -63,17 +95,21 @@ export class JobsService {
       tasks.push(
         (async () => {
           try {
+            // Mỗi ghế một vé: lấy TẤT CẢ vé của đơn (không limit) kèm nhãn ghế để email có đủ QR từng ghế.
             const { data, error } = await admin
               .from("tickets")
-              .select("qr_token")
-              .eq("order_id", orderId)
-              .limit(1)
-              .maybeSingle();
-            if (!error && data?.qr_token) {
-              enriched.qr_token = data.qr_token;
+              .select("qr_token, order_seats(seat_label)")
+              .eq("order_id", orderId);
+            if (error) {
+              // PostgREST trả error (không throw): mail vẫn gửi nhưng thiếu QR → để lại dấu vết (chỉ order id + code).
+              this.logger.warn(`Failed to enrich tickets for order ${orderId}: ${error.code ?? "unknown"}`);
+            } else if (Array.isArray(data)) {
+              const tickets = orderTicketsForEmail(data as TicketRowWithSeat[]);
+              if (tickets.length > 0) enriched.tickets = tickets;
             }
           } catch (err) {
-            this.logger.warn(`Failed to enrich qr_token for order ${orderId}: ${err}`);
+            // Chỉ log order id + lỗi; err không chứa qr_token.
+            this.logger.warn(`Failed to enrich tickets for order ${orderId}: ${err}`);
           }
         })(),
       );

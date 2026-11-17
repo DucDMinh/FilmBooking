@@ -1,19 +1,24 @@
 {
   "specVersion": "3.2.0",
-  "scopeVersion": 23,
-  "generatedAt": "2026-11-17T17:30:00+07:00",
-  "trigger": "feature-update",
-  "workItem": "feature-confirm-email-auto-login/phase-1-task-01",
+  "scopeVersion": 24,
+  "generatedAt": "2026-11-17T17:14:10+07:00",
+  "trigger": "bug-fix",
+  "workItem": "bug-ticket-email-qr/phase-1-task-01",
   "specRefs": [
+    "R-86",
+    "R-85",
+    "R-133",
+    "R-98",
+    "R-99",
+    "AC-12",
+    "AC-13",
     "NFR-10",
     "R-04",
     "R-11",
     "R-13",
     "R-24",
     "R-78",
-    "R-86",
     "R-109",
-    "R-133",
     "AC-26",
     "R-05",
     "R-06",
@@ -66,7 +71,8 @@
       "apps/api/test/auth-email-templates.spec.ts",
       "supabase/config.toml",
       "apps/web/src/app/auth/confirm/route.ts",
-      "apps/web/src/app/auth/confirm/__tests__/route.test.ts"
+      "apps/web/src/app/auth/confirm/__tests__/route.test.ts",
+      "apps/api/test/mail-ticket-qr.spec.ts"
     ],
     "modules": [
       "web-catalog",
@@ -81,7 +87,8 @@
       "api-mail-templates",
       "supabase-auth-email-templates",
       "web-auth-confirm",
-      "web-xac-nhan-email"
+      "web-xac-nhan-email",
+      "api-mail-ticket-qr"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -146,11 +153,30 @@
         "supabase/templates/confirmation.html",
         "apps/api/test/auth-email-templates.spec.ts",
         "docs/dev-setup.md"
+      ],
+      "bug-ticket-email-qr/phase-1-task-01": [
+        "apps/api/src/modules/mail/templates.ts",
+        "apps/api/src/modules/mail/mail.service.ts",
+        "apps/api/src/modules/jobs/jobs.controller.ts",
+        "apps/api/test/mail-templates.spec.ts",
+        "apps/api/test/mail-ticket-qr.spec.ts",
+        "apps/api/test/outbox-job.e2e-spec.ts",
+        "apps/api/package.json",
+        "pnpm-lock.yaml"
       ]
     }
   },
   "impact": {
     "direct": [
+      "[scope v24 / bug-ticket-email-qr] mail.ticket.qr-per-seat (R-86, R-85) — BUG FIX (requirement KHÔNG đổi, không bump spec_version): email vé TICKET_ISSUED/TICKET nay có MỖI GHẾ MỘT ẢNH QR (mỗi ghế = 1 vé = 1 `qr_token` riêng, R-85) thay vì chỉ in chữ qr_token. Ảnh nhúng bằng CID inline attachment (`<img src=\"cid:ticket-qr-<n>\" …>`, alt \"Mã QR vé\", `MailTransport.attachments`: PNG, `contentType image/png`, cid `ticket-qr-<n>` không trùng nhau) vì Gmail/Outlook chặn `data:` URI. Đơn 1 ghế: 1 ảnh + câu \"Đưa mã này cho nhân viên soát vé tại rạp\"; đơn nhiều ghế: câu \"Mỗi ghế có một mã QR riêng — nhân viên soát vé sẽ quét từng mã\" + tiêu đề \"Ghế X\" trên từng khối",
+      "[scope v24] mail.ticket.qr-content (R-85, R-98, R-99) — mỗi ảnh QR mã hoá NGUYÊN chuỗi `qr_token` của đúng vé đó (không tiền tố/URL; token 32 ký tự hex), errorCorrectionLevel M (khớp trang vé web `ticket-qr.tsx`), PNG 440px hiển thị 220px. Giải mã ảnh (jsqr hoặc quét thật) PHẢI == `tickets.qr_token` của ghế ghi ở nhãn; staff `/staff/soat-ve` (Html5Qrcode) quét từng QR trong email → check-in đúng từng ghế, từng vé check-in một lần (R-99), quét lại → \"Đã sử dụng\" (AC-12), sai rạp → \"Sai rạp\" (AC-13)",
+      "[scope v24] mail.ticket.seat-label-order — nhãn ghế ở mỗi khối QR là `order_seats.seat_label` của vé đó; thứ tự sắp xếp TỰ NHIÊN (A2 < A10, `localeCompare(\"vi\", {numeric:true})`), khớp thứ tự trang vé web (`ticket-data.ts`); vé không có nhãn xếp cuối; vé thiếu `qr_token` bị bỏ qua. Dữ liệu seed thật: đơn 8 vé → thứ tự D4, D9, D10, E4, E9, E10, F7, F8",
+      "[scope v24] mail.ticket.text-fallback (R-86) — dưới mỗi ảnh QR GIỮ chuỗi `qr_token` dạng chữ (dự phòng khi client chặn ảnh/hiển thị CID như đính kèm); phần `text` liệt kê `Ghế X: <token>` cho từng vé (đơn 1 vé vẫn dùng `QR Token: <token>` như cũ). Mọi token/nhãn/cid qua `escapeHtml`",
+      "[scope v24] mail.ticket.max-images — trần `MAX_TICKET_QR_IMAGES = 10`: đơn > 10 ghế → 10 vé đầu (theo thứ tự tự nhiên) có ảnh, từ vé thứ 11 chỉ có chữ token (đã ghi rõ trong email); không bao giờ gửi `attachments` rỗng",
+      "[scope v24] mail.ticket.qr-failure-tolerant — lỗi tạo ảnh QR của một vé (hoặc mọi vé) KHÔNG chặn gửi mail và không throw: vé lỗi chỉ còn chữ token, vé khác vẫn có ảnh; log warn chỉ có số thứ tự vé + message, KHÔNG log token. Tạo ảnh chạy song song, mỗi vé try/catch riêng",
+      "[scope v24] api.jobs.send-emails (enrich tickets) — `POST /jobs/send-emails` (header x-job-secret): với mail TICKET_ISSUED chưa có `qr_token`/`tickets` trong payload, job truy vấn TẤT CẢ vé của đơn (`tickets` select `qr_token, order_seats(seat_label)` theo `order_id`, bằng service-role nên không bị RLS chặn; không còn `.limit(1).maybeSingle()`) rồi ghi `payload.tickets: [{seat_label, qr_token}]`. Thêm đúng 1 truy vấn/mail (index `tickets_order_id_idx`, không N+1). Lỗi truy vấn/throw → mail vẫn gửi, chỉ thiếu QR (log chỉ có order id). Outbox đã có sẵn `tickets` → không truy vấn lại",
+      "[scope v24] api.mail.transport-attachments — `MailTransport.sendMail` options thêm `attachments?: {filename, content: Buffer, cid, contentType}[]`; `SendEmailOptions.attachments?` truyền xuống nodemailer: message MIME `multipart/related` với từng phần `image/png` có `Content-ID` `<ticket-qr-<n>>`, HTML tham chiếu `cid:ticket-qr-<n>` khớp. Kind mail khác (không phải vé) KHÔNG có attachments",
+      "[scope v24] api.deps.qrcode — dependency mới `qrcode` (+ `@types/qrcode`, devDeps giải mã cho test) trong `apps/api/package.json` + `pnpm-lock.yaml`; API đang chạy phải `pnpm --filter @filmbooking/api build` + restart mới có hiệu lực (nạp dependency + code mới)",
       "[scope v23 / confirm-email-auto-login] auth.confirm.route (R-04, R-15) — MODIFY: route mới `GET /auth/confirm?token_hash=…&type=signup&next=…` (apps/web/src/app/auth/confirm/route.ts) gọi `verifyOtp({type, token_hash})` phía server. Hợp lệ → `email_confirmed_at` được set + đặt cookie phiên + redirect `/xac-nhan-email?status=success` (đã đăng nhập, nút \"Tiếp tục đặt vé\" dùng được ngay, không phải nhập lại email/mật khẩu); hoạt động cả khi mở link ở thiết bị/trình duyệt khác với nơi đăng ký (không cần code_verifier/PKCE)",
       "[scope v23] auth.confirm.invalid-link (R-04) — link đã dùng / hết hạn (24 giờ) / `token_hash` sai / thiếu `token_hash` / thiếu `type` / `type` ≠ `signup` (vd `recovery`, `magic_link`, `email_change`) / `verifyOtp` lỗi hoặc throw → KHÔNG có phiên, KHÔNG Set-Cookie, redirect `/xac-nhan-email?status=expired` (màn \"Liên kết hết hạn\" + nút gửi lại); không lộ chi tiết lỗi; `type` sai thì KHÔNG gọi verifyOtp",
       "[scope v23] auth.confirm.next (R-04, R-135) — `next` luôn qua `sanitizeNext`: `//evil.com`, `https://evil.com`, `/admin/../phim` bị loại → về `/`; thiếu `next` → `/`. Nhân sự (admin/manager/staff) xác nhận qua đường này → `resolvePostLoginTarget` đưa về khu vực vai trò (`/admin`, `/staff/chon-rap`) thay vì trang success của khách",
@@ -159,7 +185,7 @@
       "[scope v23] auth.confirm.config — link phụ thuộc `site_url` của Supabase Auth: local `http://localhost:3000`; staging/prod phải dán template `confirmation` vào Supabase Dashboard và đặt Site URL đúng domain web, KHÔNG có `/` ở cuối (nếu không link thành `//auth/confirm`). Template qua `supabase/config.toml` chỉ áp dụng local (cần `pnpm db:stop && pnpm db:start` để nạp)",
       "[scope v22 / custom-mail-templates] mail.nest.layout — MODIFY chỉ trình bày (requirement KHÔNG đổi, không bump spec_version): mọi mail giao dịch do Nest gửi (10 kind của `renderTemplate`: TICKET_ISSUED, ACCOUNT_LOCKED_ALERT, IDENTITY_LINKED, IDENTITY_UNLINKED, LATE_PAYMENT_MANUAL_REVIEW, AMOUNT_MISMATCH_MANUAL_REVIEW, SHOWTIME_CANCELLED, PASSWORD_SET, OAUTH_MISSING_EMAIL_COLLISION, OAUTH_MISSING_EMAIL_VERIFY) đổi giao diện sang thương hiệu CINEMO: bố cục bảng 600px + style inline (không `<style>`, không `display:flex`), `lang=\"vi\"`, preheader ẩn, header dải tối `#111620` + wordmark CINEMO `#F06D5B`, nút CTA nền `#F06D5B`, footer có hotline + câu \"email tự động, không trả lời\"",
       "[scope v22] mail.nest.subject — subject mọi mail Nest đổi tiền tố `[FilmBooking]` → `[CINEMO]` (vd `[CINEMO] Vé điện tử …`); tên thương hiệu trong header/footer/phần `text` đổi \"FilmBooking\" → \"CINEMO\". Test/selector cũ dò `[FilmBooking]` phải cập nhật (đã sửa 3 assert ở outbox-job.e2e-spec.ts)",
-      "[scope v22] mail.ticket (R-86, R-133, AC-26) — nội dung vé GIỮ NGUYÊN, chỉ giao diện đổi: mã đặt vé, qr_token, tên rạp + địa chỉ + link bản đồ + hotline rạp, phim, phòng, suất, ghế, combo, tổng tiền VND; đủ 4 lưu ý (đến trước 15 phút, \"Vé chỉ dùng tại rạp ghi trên vé\", \"Vé không huỷ / không hoàn tiền\", giấy tờ tuỳ thân phim T13+) ở cả `html` lẫn `text`",
+      "[scope v22] [ĐÃ ĐỔI ở scope v24 — email vé nay có mỗi ghế một ảnh QR (CID) + chữ token dự phòng, không còn chỉ một chữ qr_token; xem scope v24 mail.ticket.qr-per-seat. Ghi chú: \"link bản đồ\" của R-86 thực tế CHƯA có trong email vé — gap, xem residual v24] mail.ticket (R-86, R-133, AC-26) — nội dung vé GIỮ NGUYÊN, chỉ giao diện đổi: mã đặt vé, qr_token, tên rạp + địa chỉ + link bản đồ + hotline rạp, phim, phòng, suất, ghế, combo, tổng tiền VND; đủ 4 lưu ý (đến trước 15 phút, \"Vé chỉ dùng tại rạp ghi trên vé\", \"Vé không huỷ / không hoàn tiền\", giấy tờ tuỳ thân phim T13+) ở cả `html` lẫn `text`",
       "[scope v22] mail.account-locked (R-11) — ACCOUNT_LOCKED_ALERT giữ nguyên \"5 lần liên tiếp\" + \"15 phút\"; mail.identity (R-24) — IDENTITY_LINKED/IDENTITY_UNLINKED giữ câu cảnh báo liên kết/huỷ liên kết; mail.late-payment (R-78) — LATE_PAYMENT_MANUAL_REVIEW/AMOUNT_MISMATCH_MANUAL_REVIEW giữ lý do, mã đặt vé/mã đơn/mã giao dịch/số tiền/rạp, hướng dẫn liên hệ hotline + hoàn tiền thủ công; mail.showtime-cancelled (R-109 + AC-24) — giữ hướng dẫn hoàn tiền thủ công + câu không hỗ trợ đổi suất; mail.password-set / OAuth (OAUTH_MISSING_EMAIL_COLLISION, OAUTH_MISSING_EMAIL_VERIFY) — giữ nội dung",
       "[scope v22] mail.nest.escape — mọi giá trị động (tên phim/rạp, ghế, title, preheader, href) vẫn qua `escapeHtml`; payload chứa `<script>`, `<img onerror>`, dấu nháy kép → HTML không chứa thẻ thô",
       "[scope v22] mail.auth.templates — 6 template Supabase Auth tiếng Việt có dấu, thương hiệu CINEMO tại `supabase/templates/*.html`, nạp qua 6 khối `[auth.email.template.<tên>]` trong `supabase/config.toml` (CHỈ áp dụng khi chạy Supabase local; staging/prod phải dán template vào Dashboard): `confirmation` (xác nhận đăng ký, R-04: link dùng một lần, hết hạn 24 giờ, chưa xác nhận không đặt vé được), `recovery` (đặt lại mật khẩu, R-13: hết hạn 1 giờ, dùng một lần, không yêu cầu thì bỏ qua), `magic_link`, `email_change` (xác nhận đổi từ `{{ .Email }}` sang `{{ .NewEmail }}`), `invite` (lời mời nhân sự), `reauthentication` (mã `{{ .Token }}` nổi bật, không chia sẻ). Biến Go template giữ nguyên (`.ConfirmationURL`, `.Token`, `.Email`, `.NewEmail`); không `<script`, không URL cứng [ĐÃ ĐỔI ở scope v23 — riêng template `confirmation` nay dùng `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next=/` thay `{{ .ConfirmationURL }}`, xem scope v23 mail.auth.confirmation-link; 5 template còn lại không đổi]",
@@ -174,6 +200,10 @@
       "auth.email-channel — [v21] email Auth (xác nhận đăng ký R-04, quên mật khẩu) vẫn do Supabase Auth (GoTrue) gửi qua SMTP riêng của GoTrue (kênh gửi không đổi); local vào Mailpit http://127.0.0.1:54324, KHÔNG phải hộp thư thật. [v22] riêng GIAO DIỆN/NGÔN NGỮ mail Auth đã đổi, xem mail.auth.templates"
     ],
     "dependents": [
+      "[scope v24] staff.checkin — R-98, R-99, AC-12, AC-13: màn `/staff/soat-ve` KHÔNG đổi code; QR trong email là nguồn quét mới (khách mở email ở quầy): mỗi ghế một QR → check-in từng vé độc lập, quét lại cùng QR → \"Đã sử dụng\" kèm thời điểm + người soát, vé rạp khác → \"Sai rạp\"; check-in vé này không làm vé ghế khác bị đánh dấu",
+      "[scope v24] web.ticket-page — trang vé web (mỗi ghế một QR `ticket-qr.tsx`/`ticket-card.tsx`) KHÔNG đổi; email phải khớp trang vé về token từng ghế và thứ tự ghế",
+      "[scope v24] mail.outbox.payload — payload outbox TICKET_ISSUED từ RPC vẫn KHÔNG chứa token (token chỉ được ghép lúc gửi trong job); outbox cũ đã có sẵn `qr_token` đơn lẻ (không có `tickets`) vẫn render đúng 1 QR; kind khác (ACCOUNT_LOCKED_ALERT, IDENTITY_*, SHOWTIME_CANCELLED, LATE_PAYMENT_*, AMOUNT_MISMATCH_*, PASSWORD_SET, OAUTH_*) KHÔNG đi qua bước enrich/QR và KHÔNG có attachments",
+      "[scope v24] mail.retry-backoff — outbox retry/backoff (tối đa 3 lần, `last_error`, FAILED) và alert `email_failed` không đổi; mail vé nay lớn hơn (≤ 10 PNG khoảng 3KB/ảnh, ~40KB base64) nhưng vẫn gửi qua cùng SMTP transport",
       "[scope v23] auth.email-confirmation-gate — R-05: tài khoản CHƯA xác nhận vẫn không giữ ghế/đặt vé (chặn ở server) + banner nhắc + nút \"Gửi lại email\"; SAU khi bấm link xác nhận (cùng trình duyệt) khách vào `/xac-nhan-email?status=success` đã đăng nhập và giữ ghế/đặt vé được NGAY, không đăng nhập lại",
       "[scope v23] auth.resend-confirmation — R-06: gửi lại email xác nhận (khoảng cách 60 giây, tối đa 5 lần/giờ, đếm ngược, không email thừa) không đổi hành vi; mail gửi lại cũng mang link `/auth/confirm?token_hash=…`. Link của lần gửi trước còn hiệu lực hay không là do GoTrue quyết định — ghi nhận kết quả thật, không giả định",
       "[scope v23] auth.no-enumeration — R-12: không tiết lộ tồn tại email — đăng ký trùng email, quên mật khẩu, lỗi đăng nhập giữ thông báo chung; màn `?status=expired` không phân biệt \"sai token\" với \"đã dùng\" / \"hết hạn\" (không lộ thông tin tài khoản)",
@@ -226,6 +256,19 @@
       "web.schedule — danh sách rạp/lịch chiếu liên quan (/rap → \"Xem lịch chiếu\" R-34, lịch 7 ngày ở /rap/[code] R-37) không đổi hành vi; retest nhẹ"
     ],
     "regression": [
+      "[scope v24 / bug-ticket-email-qr] Email vé đơn 1 GHẾ: thanh toán xong (đơn `paid`) → email `[CINEMO] Vé điện tử …` có đúng 1 ảnh QR (đính kèm inline `ticket-qr-1`), câu \"Đưa mã này cho nhân viên soát vé tại rạp\", chữ `qr_token` bên dưới ảnh; giải mã ảnh QR == `tickets.qr_token` của vé (R-85, R-86)",
+      "[scope v24] Email vé đơn NHIỀU GHẾ (vd 2, 3, 4, 8 ghế; DB local có đơn 4 và 8 vé): mỗi ghế một khối \"Ghế X\" + một ảnh QR + chữ token; số ảnh == số ghế; thứ tự tự nhiên (A2 trước A10, D9 trước D10); nhãn ghế khớp `order_seats.seat_label`; mỗi ảnh quét ra đúng `qr_token` của ghế đó (không trùng token giữa các ảnh) và thứ tự/nhãn khớp trang vé web; câu \"Mỗi ghế có một mã QR riêng — nhân viên soát vé sẽ quét từng mã\" (R-85, R-86)",
+      "[scope v24] Soát vé thật bằng email: mở email trên điện thoại/màn hình, staff vào `/staff/soat-ve` quét lần lượt từng QR → từng ghế check-in thành công đúng ghế/phim/suất/phòng (R-98, R-99, AC-12); quét lại một QR → \"Đã sử dụng\"; đơn có N ghế quét N QR → đơn `checked_in` theo quy tắc hiện có, KHÔNG viết test kỳ vọng quét 1 QR check-in cả đơn",
+      "[scope v24] Fallback chữ: tắt hiển thị ảnh trong client mail (hoặc client chặn CID) → vẫn thấy `qr_token` dạng chữ đúng từng ghế (html + phần `text`: `Ghế X: <token>` hoặc `QR Token:` với đơn 1 vé); staff nhập tay token ở `/staff/soat-ve` check-in được",
+      "[scope v24] Đơn > 10 ghế (cần seed đơn 11–12 vé; không có sẵn ở dữ liệu seed — nếu không dựng được, kiểm bằng test đơn vị mail-ticket-qr.spec.ts): email có tối đa 10 ảnh QR (10 vé đầu theo thứ tự tự nhiên), vé từ thứ 11 chỉ có chữ token kèm ghi chú; không lỗi gửi mail",
+      "[scope v24] Lỗi tạo ảnh QR (vd mock `qrcode` ném lỗi ở test): mail VẪN gửi, vé lỗi chỉ có chữ token, không throw, log không chứa `qr_token`; mọi vé lỗi → mail bản chỉ chữ như trước fix, KHÔNG có `attachments`",
+      "[scope v24] Enrich trong job `POST /jobs/send-emails` (header x-job-secret): outbox TICKET_ISSUED chưa có token → truy vấn đủ vé của đơn (không còn chỉ 1 vé bất kỳ); outbox đã có `tickets` → không truy vấn lại; truy vấn lỗi/throw → mail vẫn SENT nhưng không có QR; fake/mock Supabase trong test chỉ hỗ trợ `select(...).eq(...)` (nếu code quay lại `.limit(1)` test phải đỏ)",
+      "[scope v24] REGRESSION các kind mail khác (ACCOUNT_LOCKED_ALERT R-11, IDENTITY_LINKED/UNLINKED R-24, LATE_PAYMENT_MANUAL_REVIEW/AMOUNT_MISMATCH_MANUAL_REVIEW R-78, SHOWTIME_CANCELLED R-109, PASSWORD_SET, OAUTH_*): không có attachments, nội dung/giao diện CINEMO + tiếng Việt + subject `[CINEMO]` không đổi; mọi giá trị động vẫn escape (payload `<script>` → HTML không có thẻ thô)",
+      "[scope v24] REGRESSION nội dung mail vé ngoài QR (R-86, R-133, AC-26): mã đặt vé, tên rạp + địa chỉ + hotline rạp, phim, suất, phòng, ghế, combo, tổng tiền VND, đủ 4 lưu ý (đến trước 15 phút, \"Vé chỉ dùng tại rạp ghi trên vé\", \"Vé không huỷ / không hoàn tiền\", giấy tờ tuỳ thân phim T13+) ở cả `html` lẫn `text`; subject `[CINEMO] …`; HTML bảng + inline style, không `<style>`/flex",
+      "[scope v24] REGRESSION mail Supabase Auth (xác nhận đăng ký, quên mật khẩu, magic link, đổi email, mời, xác thực lại): KHÔNG đổi — vẫn do GoTrue gửi, local vào Mailpit http://127.0.0.1:54324; `supabase/templates/*` và `supabase/config.toml` không bị đụng",
+      "[scope v24] REGRESSION SMTP transport (NFR-10): thiếu `SMTP_HOST` ở môi trường không phải test → \"SMTP is not configured (SMTP_HOST)\" + retry 3 lần rồi FAILED; `NODE_ENV=test` vẫn trả id mock `mock-email-…`; mock transport trong test (`mail-service.spec.ts`, `outbox-job.e2e-spec.ts`, `integration/helpers/app-harness.ts`) vẫn biên dịch với `attachments?` optional",
+      "[scope v24] LƯU Ý môi trường: API :3001 đang chạy phải `pnpm --filter @filmbooking/api build` + restart để mail vé có QR (nạp dependency `qrcode` + code mới); chạy Supabase local để có vé/đơn thật; gửi mail thật qua Gmail/SMTP do USER tự kiểm (App Password trong `.env.local`, gọi tay `POST /jobs/send-emails`) — môi trường test/CI không gửi thật, KHÔNG viết test E2E gửi mail thật",
+      "[scope v24] Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng) — (1) chưa kiểm hiển thị trên Gmail/Outlook thật: Outlook desktop có thể hiện ảnh CID như tệp đính kèm (chữ token luôn có); (2) R-86 còn thiếu \"link bản đồ\" trong email vé (gap, cần Change Request riêng — KHÔNG viết test kỳ vọng email vé có link bản đồ); (3) outbox cũ đã có sẵn `qr_token` đơn lẻ (không `tickets`) vẫn chỉ 1 QR dù đơn nhiều ghế — RPC hiện tại không đưa token vào payload nên chỉ là dữ liệu cũ; (4) bước enrich khi PostgREST trả `error` (không throw) bỏ qua im lặng, không log (LOW, có từ trước); (5) truy vấn vé không lọc trạng thái `cancelled` (đơn mới phát hành vé thì chưa có vé huỷ); (6) đơn > 10 ghế chỉ 10 vé đầu có ảnh",
       "[scope v23 / confirm-email-auto-login] Luồng chính CÙNG thiết bị: đăng ký email+mật khẩu mới (local) → mở mail trong Mailpit http://127.0.0.1:54324 → bấm \"Xác nhận email\" → về `/xac-nhan-email?status=success` ĐÃ đăng nhập (header hiện tài khoản, `GET /me` 200, `auth.users.email_confirmed_at` được set), bấm \"Tiếp tục đặt vé\" giữ ghế được ngay không phải đăng nhập lại (R-04, R-05)",
       "[scope v23] KHÁC thiết bị/trình duyệt: đăng ký ở trình duyệt A, mở link trong mail ở trình duyệt B (profile khác / ẩn danh) → B đăng nhập luôn (không cần code_verifier); A vẫn chưa có phiên (R-04)",
       "[scope v23] Một lần dùng: bấm lại CÙNG link lần 2 → `/xac-nhan-email?status=expired`, không Set-Cookie, không đổi phiên hiện có; link sai/cắt ngắn (vd `token_hash` 22 ký tự), thiếu `token_hash`, `type=recovery|magic_link|email_change|invite`, `type` rỗng → `?status=expired`",
@@ -279,7 +322,7 @@
       "/rap, /rap/[code] responsive: bản đồ không tràn ngang ở 360/768/1280 px; popup mở được trên mobile",
       "Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng) — scan bug-cinema-map #1: /rap chỉ hiện 1 rạp trên bản đồ/danh sách; #2: z-index bản đồ Leaflet có thể đè header khi cuộn; #3: CSS động Leaflet; #4: thiếu test nhánh có toạ độ ở cinemas.test — các defect này chưa xử lý, cần triage riêng",
       "Residual: web :3000 của người dùng có thể còn chạy bản build cũ → cần build/restart lại trước khi test thủ công; `pnpm build` web chưa chạy cho task này (chủ ý, tránh ghi đè .next đang dùng) — kiểm bằng typecheck + next dev",
-      "[scope v21 / feature-mail-smtp] Email vé sau thanh toán (R-86): paid → email vé vào outbox → job gửi qua SMTP → SENT; nội dung (mã đặt vé, QR, tên rạp + địa chỉ + link bản đồ + hotline, lưu ý) giống trước",
+      "[scope v21 / feature-mail-smtp] [ĐÃ ĐỔI ở scope v24 — email vé nay có mỗi ghế một ảnh QR (CID inline); \"QR\" trước đó thực chất chỉ là chữ qr_token, xem scope v24 mail.ticket.qr-per-seat] Email vé sau thanh toán (R-86): paid → email vé vào outbox → job gửi qua SMTP → SENT; nội dung (mã đặt vé, QR, tên rạp + địa chỉ + link bản đồ + hotline, lưu ý) giống trước",
       "[scope v21] ACCOUNT_LOCKED_ALERT (R-11): sai mật khẩu 5 lần → email cảnh báo tới chủ tài khoản vào outbox và gửi được qua SMTP",
       "[scope v21] SHOWTIME_CANCELLED (R-109 + AC-24): huỷ suất → mỗi đơn affected có 1 email hướng dẫn liên hệ CSKH; trạng thái gửi hiển thị ở Đơn bị ảnh hưởng",
       "[scope v21] Resend-email của admin (gửi lại email huỷ suất): bấm gửi lại → email gửi qua SMTP, trạng thái cập nhật",
@@ -288,7 +331,7 @@
       "[scope v21] Email Auth (xác nhận đăng ký / quên mật khẩu) không hồi quy: vẫn tới Mailpit http://127.0.0.1:54324 ở local; luồng đăng ký → xác nhận (R-04) chạy như trước",
       "[scope v21] LƯU Ý: gửi mail Gmail thật do USER tự kiểm bằng App Password (điền `SMTP_*` vào `.env.local`, gọi tay `POST /jobs/send-emails` với `x-job-secret`); môi trường builder/CI không dùng mạng nên KHÔNG viết test E2E gửi mail thật. Gmail giới hạn ~500 mail/ngày, chỉ dùng demo",
       "[scope v21] Residual đã biết (KHÔNG viết test kỳ vọng hành vi đúng): thiếu `SMTP_*` ở production không bị chặn lúc khởi động (scan bug-register-email #5); `.github/workflows/ci.yml` và `e2e.yml` còn `RESEND_API_KEY: ci-placeholder` (biến thừa vô hại)",
-      "[scope v22 / custom-mail-templates] Mail vé (R-86, R-133, AC-26): paid → email vé; nội dung phải GIỮ NGUYÊN (mã đặt vé, QR/qr_token, tên rạp + địa chỉ + link bản đồ + hotline, phim, suất, phòng, ghế, combo, tổng tiền, 4 lưu ý) — chỉ giao diện đổi; subject bắt đầu `[CINEMO]`; HTML dùng bảng + inline style, không phụ thuộc `<style>`/flex",
+      "[scope v22 / custom-mail-templates] [ĐÃ ĐỔI ở scope v24 — QR trong mail vé nay là ẢNH, mỗi ghế một QR + chữ qr_token dự phòng; \"link bản đồ\" vẫn là gap, xem residual v24] Mail vé (R-86, R-133, AC-26): paid → email vé; nội dung phải GIỮ NGUYÊN (mã đặt vé, QR/qr_token, tên rạp + địa chỉ + link bản đồ + hotline, phim, suất, phòng, ghế, combo, tổng tiền, 4 lưu ý) — chỉ giao diện đổi; subject bắt đầu `[CINEMO]`; HTML dùng bảng + inline style, không phụ thuộc `<style>`/flex",
       "[scope v22] Mail khoá tài khoản (R-11): sai mật khẩu 5 lần → email cảnh báo đủ \"5 lần liên tiếp\" + \"15 phút\", subject `[CINEMO] …`",
       "[scope v22] Mail liên kết/huỷ liên kết MXH (R-24): link/unlink Google/Facebook → email thông báo đúng nội dung, giao diện CINEMO",
       "[scope v22] Mail tiền về muộn (R-78): đơn `needs_manual_review` (ghế đã bán cho người khác / lệch số tiền) → email khách có lý do, mã đặt vé/mã đơn/mã giao dịch/số tiền/rạp + hướng dẫn liên hệ rạp/hoàn tiền thủ công",
@@ -303,6 +346,11 @@
     ]
   },
   "acceptance": [
+    "CR ticket-email-qr A1: Given đơn đã thanh toán có N ghế (N ≥ 1, N ≤ 10) When nhận email vé `TICKET_ISSUED` Then email có đúng N ảnh QR (CID inline), mỗi ảnh kèm nhãn ghế + chữ `qr_token` dự phòng; thứ tự ghế tự nhiên (A2 < A10); mỗi ảnh QR giải mã ra đúng `qr_token` của ghế đó (không trùng giữa các ghế). [R-86, R-85]",
+    "CR ticket-email-qr A2: Given email vé nhiều ghế When staff vào `/staff/soat-ve` quét từng QR trong email Then từng ghế check-in thành công đúng vé; quét lại một QR → \"Đã sử dụng\"; vé rạp khác → \"Sai rạp\". [R-98, R-99, AC-12, AC-13]",
+    "CR ticket-email-qr A3: Given client mail chặn ảnh Then vẫn thấy `qr_token` dạng chữ cho từng ghế (html + text) và nhập tay được ở màn soát vé; Given đơn > 10 ghế Then tối đa 10 ảnh, các vé còn lại chỉ có chữ token. [R-86]",
+    "CR ticket-email-qr A4: Given lỗi tạo ảnh QR (một hoặc mọi vé) hoặc lỗi truy vấn vé khi enrich Then mail vẫn được gửi (SENT), không throw, log không chứa `qr_token`; mọi vé lỗi → mail chỉ chữ, không `attachments`. [R-86, NFR-10]",
+    "CR ticket-email-qr A5: Given mail không phải vé (ACCOUNT_LOCKED_ALERT, IDENTITY_*, SHOWTIME_CANCELLED, LATE_PAYMENT_*, AMOUNT_MISMATCH_*, PASSWORD_SET, OAUTH_*) và mail Supabase Auth Then KHÔNG đổi, không có attachments; nội dung vé ngoài QR (mã đặt vé, rạp + địa chỉ + hotline, phim, suất, phòng, ghế, combo, tổng tiền, 4 lưu ý) giữ nguyên. [R-86, R-133, AC-26, R-11, R-24, R-78, R-109]",
     "CR confirm-email-auto-login A1: Given khách vừa đăng ký email/mật khẩu When bấm link xác nhận hợp lệ trong mail (cùng thiết bị HOẶC khác thiết bị) Then `email_confirmed_at` được set, trình duyệt có cookie phiên, redirect `/xac-nhan-email?status=success` ĐÃ đăng nhập, nút \"Tiếp tục đặt vé\" dùng được ngay, không phải nhập lại email/mật khẩu. [R-04, R-05]",
     "CR confirm-email-auto-login A2: Given link đã dùng / quá 24 giờ / `token_hash` sai / thiếu `token_hash` / `type` ≠ `signup` When mở `/auth/confirm` Then KHÔNG có phiên (không Set-Cookie), redirect `/xac-nhan-email?status=expired` (màn \"Liên kết hết hạn\" + gửi lại); với `type` sai thì không gọi verify. [R-04, R-12]",
     "CR confirm-email-auto-login A3: Given `next` bất kỳ When mở `/auth/confirm` Then `next` luôn qua sanitizeNext (`//evil.com`, `https://evil.com`, `/admin/../phim` → `/`; thiếu → `/`); nhân sự xác nhận qua đường này → khu vực vai trò (`/admin`, `/staff/chon-rap`). [R-04, R-135]",
@@ -356,11 +404,11 @@
     "CR mail-smtp A3: Given email Auth (xác nhận đăng ký, quên mật khẩu) When thực hiện luồng đăng ký / quên mật khẩu Then KHÔNG đổi — vẫn do Supabase Auth gửi qua SMTP của GoTrue, local vào Mailpit http://127.0.0.1:54324. [R-04]",
     "CR mail-smtp A4: Given email giao dịch ACCOUNT_LOCKED_ALERT / vé / SHOWTIME_CANCELLED When đến hạn gửi Then đi qua cùng transport SMTP, nội dung nghiệp vụ không đổi (từ scope v22 giao diện/subject đổi sang CINEMO); lỗi SMTP hoặc người nhận bị từ chối → throw lỗi để outbox retry. [R-11, R-86, R-109]",
     "CR custom-mail-templates A1: Given mọi kind mail Nest (vé, khoá tài khoản, liên kết/huỷ liên kết MXH, tiền về muộn/lệch tiền, huỷ suất, đặt mật khẩu, OAuth) When render Then HTML dùng bảng + inline style (không `<style>`, không flex), có \"CINEMO\", `lang=\"vi\"`, subject bắt đầu `[CINEMO]`, có nút CTA màu `#F06D5B` khi có link. [R-86, R-11, R-24, R-78, R-109]",
-    "CR custom-mail-templates A2: Given mail vé When nhận Then vẫn đủ mã đặt vé, qr_token, tên + địa chỉ rạp, \"chỉ dùng tại rạp ghi trên vé\", \"không huỷ/không hoàn\", đến trước 15 phút, ghế, tổng tiền (cả html và text). [R-86, R-133, AC-26]",
+    "CR custom-mail-templates A2 [BỔ SUNG ở scope v24: qr_token nay đi kèm ảnh QR mỗi ghế — xem CR ticket-email-qr A1; chữ qr_token vẫn có]: Given mail vé When nhận Then vẫn đủ mã đặt vé, qr_token, tên + địa chỉ rạp, \"chỉ dùng tại rạp ghi trên vé\", \"không huỷ/không hoàn\", đến trước 15 phút, ghế, tổng tiền (cả html và text). [R-86, R-133, AC-26]",
     "CR custom-mail-templates A3: Given payload có `<script>`/dấu nháy trong tên phim/rạp When render Then HTML không chứa thẻ `<script>` thô (escape).",
     "CR custom-mail-templates A4: Given đăng ký tài khoản mới (Supabase local) When xem Mailpit Then mail `[CINEMO] Xác nhận email của bạn` tiếng Việt có dấu, nêu link hết hạn sau 24 giờ, nút/link xác nhận hoạt động. [R-04, AC-01] [scope v23: nút/link xác nhận nay dẫn tới `/auth/confirm` và đăng nhập luôn — xem CR confirm-email-auto-login]",
     "CR custom-mail-templates A5: Given quên mật khẩu When xem Mailpit Then mail `[CINEMO] Đặt lại mật khẩu` nêu link hết hạn 1 giờ, dùng một lần; đặt lại thành công như trước. [R-13]",
     "CR custom-mail-templates A6: Given 6 template Auth (`confirmation`, `recovery`, `magic_link`, `email_change`, `invite`, `reauthentication`) Then đủ file, có \"CINEMO\", `lang=\"vi\"`, chỉ dùng biến `.ConfirmationURL/.Token/.Email/.NewEmail`, không `<script`; `[auth.email.notification.*]` không bật. [R-04, R-13, R-14]"
   ],
-  "risk": "high"
+  "risk": "medium"
 }
