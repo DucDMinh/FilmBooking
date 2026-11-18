@@ -20,7 +20,7 @@ interface PaidOrder {
 }
 
 // Docker/Supabase không chạy -> skip (đã cảnh báo ở loadLocalSupabaseEnv), không fail.
-describe.skipIf(!supabaseEnv)("integration: huỷ suất + email hàng loạt + đóng rạp (AC-24, AC-25, AC-26)", () => {
+describe.skipIf(!supabaseEnv)("integration: huỷ suất + email hàng loạt + hẹn lịch đóng rạp (AC-24, AC-25, AC-26, AC-27)", () => {
   const env = supabaseEnv!;
   const scope = createRunScope();
   let admin: SupabaseClient;
@@ -356,48 +356,80 @@ describe.skipIf(!supabaseEnv)("integration: huỷ suất + email hàng loạt + 
     });
   });
 
-  describe("AC-26: đóng rạp khi còn suất tương lai đã bán", () => {
-    it("chặn đóng rạp (409 + danh sách suất) -> huỷ hàng loạt 3 suất kèm email -> đóng rạp được", async () => {
+  describe("AC-26/AC-27: đóng rạp = hẹn lịch +7 ngày (R-33, R-136), không còn chặn theo suất đã bán", () => {
+    it("rạp còn suất đã bán vẫn hẹn đóng được: giữ nguyên OPEN, lịch +7 ngày, email xếp hàng; huỷ lịch; Manager bị chặn", async () => {
       const cinema = await factories.createCinema();
       const adminUser = await factories.createAdminUser();
       const manager = await factories.createStaffUser(cinema.id, "MANAGER");
-      const showtimes: TestShowtime[] = [];
-      const paid: PaidOrder[] = [];
-      for (let index = 0; index < 3; index += 1) {
-        const showtime = await factories.createShowtime({ cinemaId: cinema.id, startsInHours: 24 + index * 3 });
-        await addShowtimePrice(showtime.id);
-        showtimes.push(showtime);
-        paid.push(await createPaidOrder(showtime, showtime.seatIds[0]!));
+      const customer = await createCustomer("notice");
+      const showtime = await factories.createShowtime({ cinemaId: cinema.id, startsInHours: 24 });
+      await addShowtimePrice(showtime.id);
+      await createPaidOrder(showtime, showtime.seatIds[0]!);
+      const setStatus = (status: string, token = adminUser.accessToken) =>
+        request(server).patch(`/admin/cinemas/${cinema.id}/status`).set("Authorization", `Bearer ${token}`).send({ status });
+      const cinemaRow = async () =>
+        (await admin.from("cinemas").select("status, scheduled_status, scheduled_effective_at").eq("id", cinema.id).single()).data;
+      const noticeRows = async () =>
+        (await admin.from("email_outbox").select("id, to_email, payload").eq("kind", "CINEMA_STATUS_NOTICE").eq("cinema_id", cinema.id)).data ?? [];
+
+      try {
+        const before = Date.now();
+        const scheduled = await setStatus("CLOSED");
+        expect(scheduled.status, JSON.stringify(scheduled.body)).toBe(200);
+        expect(scheduled.body).toMatchObject({
+          success: true,
+          cinemaId: cinema.id,
+          status: "OPEN",
+          scheduledStatus: "CLOSED",
+          scheduleCancelled: false,
+        });
+        const effectiveMs = Date.parse(scheduled.body.scheduledEffectiveAt as string);
+        expect(Math.abs(effectiveMs - (before + 7 * 86_400_000))).toBeLessThan(60_000);
+        expect(scheduled.body.emailsEnqueuedCount).toBeGreaterThanOrEqual(1);
+
+        // Trạng thái không đổi tức thì; suất đã bán không bị đụng ở bước hẹn lịch.
+        expect(await cinemaRow()).toMatchObject({ status: "OPEN", scheduled_status: "CLOSED" });
+        expect((await admin.from("showtimes").select("status").eq("id", showtime.id).single()).data?.status).not.toBe("CANCELLED");
+
+        // Mỗi tài khoản đã xác nhận email 1 dòng outbox; khách tạo ở test nằm trong đó.
+        const rows = await noticeRows();
+        expect(rows).toHaveLength(scheduled.body.emailsEnqueuedCount);
+        expect(rows.find((row) => String(row.to_email).toLowerCase() === customer.email.toLowerCase())?.payload).toMatchObject({
+          cinema_code: cinema.code,
+          target_status: "CLOSED",
+        });
+
+        // Manager không hẹn được; đường vòng PATCH /cinemas/:id đổi status bị từ chối.
+        expect((await setStatus("TEMP_CLOSED", manager.accessToken)).status).toBe(403);
+        const viaPatch = await request(server)
+          .patch(`/admin/cinemas/${cinema.id}`)
+          .set("Authorization", `Bearer ${adminUser.accessToken}`)
+          .send({ status: "TEMP_CLOSED" });
+        expect(viaPatch.status, JSON.stringify(viaPatch.body)).toBe(400);
+        expect(viaPatch.body.error.code).toBe("VALIDATION_ERROR");
+        expect(await cinemaRow()).toMatchObject({ status: "OPEN", scheduled_status: "CLOSED" });
+
+        // Hẹn đúng trạng thái hiện tại khi đang có lịch = huỷ lịch (email đính chính).
+        const cancelled = await setStatus("OPEN");
+        expect(cancelled.status, JSON.stringify(cancelled.body)).toBe(200);
+        expect(cancelled.body).toMatchObject({
+          status: "OPEN",
+          scheduledStatus: null,
+          scheduledEffectiveAt: null,
+          scheduleCancelled: true,
+        });
+        expect(await cinemaRow()).toMatchObject({ status: "OPEN", scheduled_status: null, scheduled_effective_at: null });
+
+        // Không còn lịch: hẹn đúng trạng thái hiện tại bị từ chối (400, không gửi thêm email).
+        const rowsBefore = (await noticeRows()).length;
+        const unchanged = await setStatus("OPEN");
+        expect(unchanged.status, JSON.stringify(unchanged.body)).toBe(400);
+        expect(unchanged.body.error.code).toBe("VALIDATION_ERROR");
+        expect((await noticeRows()).length).toBe(rowsBefore);
+      } finally {
+        // Dọn email thông báo gửi cho MỌI tài khoản local (không gắn prefix scope) để không rác outbox / không bị job gửi nhầm.
+        await admin.from("email_outbox").delete().eq("kind", "CINEMA_STATUS_NOTICE").eq("cinema_id", cinema.id);
       }
-      const setStatus = (status: string) =>
-        request(server).patch(`/admin/cinemas/${cinema.id}/status`).set("Authorization", `Bearer ${adminUser.accessToken}`).send({ status });
-
-      for (const status of ["TEMP_CLOSED", "CLOSED"]) {
-        const blocked = await setStatus(status);
-        expect(blocked.status, JSON.stringify(blocked.body)).toBe(409);
-        expect([...(blocked.body.error.details.showtimeIds as string[])].sort()).toEqual(showtimes.map((s) => s.id).sort());
-      }
-      expect((await admin.from("cinemas").select("status").eq("id", cinema.id).single()).data?.status).toBe("OPEN");
-
-      // Manager (không phải Admin) không đổi được trạng thái rạp.
-      const asManager = await request(server).patch(`/admin/cinemas/${cinema.id}/status`).set("Authorization", `Bearer ${manager.accessToken}`).send({ status: "TEMP_CLOSED" });
-      expect(asManager.status).toBe(403);
-
-      const cancel = await request(server)
-        .post(`/cinemas/${cinema.id}/showtimes/cancel`)
-        .set("Authorization", `Bearer ${manager.accessToken}`)
-        .send({ allFuture: true, reason: "Rạp tạm đóng để bảo trì" });
-      expect(cancel.status, JSON.stringify(cancel.body)).toBe(201);
-      expect(cancel.body).toMatchObject({ cancelledShowtimesCount: 3, affectedOrdersCount: 3, emailsEnqueuedCount: 3 });
-
-      const mails = await outboxRowsFor(paid.map((o) => o.orderId));
-      expect(mails).toHaveLength(3);
-      await drainOutbox(app, admin, mails.map((row) => row.id as string));
-      expect((await outboxRowsFor(paid.map((o) => o.orderId))).every((row) => row.status === "SENT")).toBe(true);
-
-      const closed = await setStatus("TEMP_CLOSED");
-      expect(closed.status, JSON.stringify(closed.body)).toBe(200);
-      expect((await admin.from("cinemas").select("status").eq("id", cinema.id).single()).data?.status).toBe("TEMP_CLOSED");
     });
   });
 });

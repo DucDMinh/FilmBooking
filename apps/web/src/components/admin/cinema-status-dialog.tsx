@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,11 +15,13 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import {
-  CINEMA_DB_STATUSES,
-  type CinemaDbStatus,
-  type CinemaDto,
-  type ShowtimeDto,
-} from "@filmbooking/shared/schemas/catalog";
+  CINEMA_STATUS_DELAY_DAYS,
+  expectedEffectiveDate,
+  formatVnDate,
+  stopsSellingTickets,
+} from "@/lib/cinema-schedule";
+import type { SetCinemaStatusResultDto } from "@filmbooking/shared/schemas/cancellation";
+import { CINEMA_DB_STATUSES, type CinemaDbStatus, type CinemaDto } from "@filmbooking/shared/schemas/catalog";
 
 export const CINEMA_STATUS_LABELS: Record<CinemaDbStatus, string> = {
   COMING_SOON: "Sắp mở",
@@ -29,21 +30,25 @@ export const CINEMA_STATUS_LABELS: Record<CinemaDbStatus, string> = {
   CLOSED: "Ngừng hoạt động",
 };
 
-/** Chi tiết suất chặn đóng rạp từ API suất; lỗi thì trả rỗng và UI rơi về mã suất. */
-async function loadBlockingShowtimes(cinemaId: string, ids: readonly string[]): Promise<ShowtimeDto[]> {
-  try {
-    const from = encodeURIComponent(new Date().toISOString());
-    const all = await apiFetch<ShowtimeDto[]>(`/cinemas/${cinemaId}/showtimes?from=${from}`);
-    return all.filter((showtime) => ids.includes(showtime.id));
-  } catch {
-    return [];
-  }
+type DialogMode = "none" | "schedule" | "cancel";
+
+/** Chọn trạng thái khác hiện tại = hẹn lịch; giữ nguyên trạng thái hiện tại khi đang có lịch = huỷ lịch. */
+function resolveMode(cinema: CinemaDto, selected: CinemaDbStatus): DialogMode {
+  if (selected !== cinema.status) return "schedule";
+  return cinema.scheduledStatus ? "cancel" : "none";
 }
 
-const formatStart = (iso: string) =>
-  new Date(iso).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" });
+function successMessage(result: SetCinemaStatusResultDto): string {
+  const emails = `${result.emailsEnqueuedCount} khách hàng`;
+  if (result.scheduleCancelled) return `Đã huỷ lịch đổi trạng thái. Đã gửi email đính chính tới ${emails}.`;
+  const date = result.scheduledEffectiveAt ? formatVnDate(new Date(result.scheduledEffectiveAt)) : "";
+  return `Đã hẹn đổi trạng thái rạp${date ? ` có hiệu lực ${date}` : ""}. Đã gửi email thông báo tới ${emails}.`;
+}
 
-/** Đổi trạng thái rạp (Admin). AC-26: còn suất đã bán -> chặn, hiện danh sách + link huỷ hàng loạt. */
+/**
+ * Đổi trạng thái rạp (Admin, R-136): mọi thay đổi có hiệu lực sau 7 ngày và email toàn bộ khách ngay bây giờ.
+ * Rạp đang có lịch: chọn trạng thái khác = hẹn lại (thay lịch cũ); giữ nguyên trạng thái hiện tại = huỷ lịch.
+ */
 export function CinemaStatusDialog({
   cinema,
   open,
@@ -53,109 +58,129 @@ export function CinemaStatusDialog({
   cinema: CinemaDto;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onChanged: (status: CinemaDbStatus) => void;
+  onChanged: (result: SetCinemaStatusResultDto) => void;
 }>) {
   const [status, setStatus] = useState<CinemaDbStatus>(cinema.status);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [blockedIds, setBlockedIds] = useState<string[] | null>(null);
-  const [blockedShowtimes, setBlockedShowtimes] = useState<ShowtimeDto[]>([]);
+  // Ref đồng bộ: chặn gửi lần hai ngay cả khi state `saving` chưa kịp render (thao tác này gửi email hàng loạt).
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (open) {
       setStatus(cinema.status);
       setError(null);
-      setBlockedIds(null);
-      setBlockedShowtimes([]);
     }
   }, [open, cinema.status]);
 
+  const mode = resolveMode(cinema, status);
+  const effectiveDate = formatVnDate(expectedEffectiveDate());
+  const pendingDate = cinema.scheduledEffectiveAt ? formatVnDate(new Date(cinema.scheduledEffectiveAt)) : "";
+
   async function submit() {
-    if (!cinema.id) return;
+    if (!cinema.id || mode === "none" || submittingRef.current) return;
+    submittingRef.current = true;
     setSaving(true);
     setError(null);
     try {
-      await apiFetch(`/admin/cinemas/${cinema.id}/status`, { method: "PATCH", json: { status } });
-      toast.success("Đã đổi trạng thái rạp");
-      onChanged(status);
+      const result = await apiFetch<SetCinemaStatusResultDto>(`/admin/cinemas/${cinema.id}/status`, {
+        method: "PATCH",
+        json: { status },
+      });
+      toast.success(successMessage(result));
+      onChanged(result);
       onOpenChange(false);
     } catch (err) {
-      const ids = err instanceof ApiError && err.code === "CONFLICT" ? err.details?.showtimeIds : undefined;
-      if (Array.isArray(ids)) {
-        const list = ids.filter((id): id is string => typeof id === "string");
-        setBlockedIds(list);
-        setBlockedShowtimes(await loadBlockingShowtimes(cinema.id, list));
-      } else {
-        setError(err instanceof ApiError ? err.message : "Đã có lỗi xảy ra. Vui lòng thử lại sau.");
-      }
+      setError(err instanceof ApiError ? err.message : "Đã có lỗi xảy ra. Vui lòng thử lại sau.");
     } finally {
+      submittingRef.current = false;
       setSaving(false);
     }
   }
 
-  const cancelAllHref = `/admin/lich-chieu?cinema=${cinema.id ?? ""}&cancelAll=1`;
-  const rows =
-    blockedShowtimes.length > 0
-      ? blockedShowtimes.map((s) => ({ key: s.id, text: `${formatStart(s.startsAt)} • ${s.format}` }))
-      : (blockedIds ?? []).map((id) => ({ key: id, text: `Suất ${id.slice(0, 8)}` }));
+  // Đang gửi thì không cho đóng (Esc, click ra ngoài, nút X): đóng giữa chừng mất trạng thái và cho phép gửi lại.
+  function handleOpenChange(next: boolean) {
+    if (!next && submittingRef.current) return;
+    onOpenChange(next);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Đổi trạng thái rạp</DialogTitle>
-          <DialogDescription>{cinema.name}</DialogDescription>
+          <DialogDescription>
+            {cinema.name} — hiện đang: {CINEMA_STATUS_LABELS[cinema.status]}
+          </DialogDescription>
         </DialogHeader>
 
-        {blockedIds ? (
-          <div role="alert" className="space-y-3 rounded-md border border-danger-line bg-danger-soft p-3 text-body-sm">
-            <p>
-              Rạp còn {blockedIds.length} suất tương lai đã bán vé. Cần huỷ các suất này (kèm email cho khách) trước
-              khi đổi trạng thái. Trạng thái rạp chưa thay đổi.
-            </p>
-            <ul className="max-h-48 space-y-1 overflow-y-auto">
-              {rows.map((row) => (
-                <li key={row.key}>{row.text}</li>
+        {cinema.scheduledStatus ? (
+          <p className="rounded-md border border-warning-line bg-warning-soft p-3 text-body-sm">
+            Đang chờ: {CINEMA_STATUS_LABELS[cinema.scheduledStatus]} từ ngày {pendingDate}. Hẹn lại sẽ
+            thay lịch cũ và gửi lại email cho toàn bộ khách hàng.
+          </p>
+        ) : null}
+
+        <div className="space-y-2">
+          <label htmlFor="cinema-status" className="text-body-sm font-semibold">
+            Trạng thái mới
+          </label>
+          <Select value={status} onValueChange={(value) => setStatus(value as CinemaDbStatus)}>
+            <SelectTrigger id="cinema-status" aria-label="Trạng thái mới">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CINEMA_DB_STATUSES.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {CINEMA_STATUS_LABELS[value]}
+                  {value === cinema.status ? " (hiện tại)" : ""}
+                </SelectItem>
               ))}
-            </ul>
-            <Button asChild variant="destructive">
-              <Link href={cancelAllHref}>Huỷ hàng loạt các suất</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <label htmlFor="cinema-status" className="text-body-sm font-semibold">
-              Trạng thái mới
-            </label>
-            <Select value={status} onValueChange={(value) => setStatus(value as CinemaDbStatus)}>
-              <SelectTrigger id="cinema-status" aria-label="Trạng thái mới">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CINEMA_DB_STATUSES.map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {CINEMA_STATUS_LABELS[value]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {error ? (
-              <p role="alert" className="text-small text-danger">
-                {error}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {mode === "schedule" ? (
+          <div className="space-y-2 rounded-md border border-border-subtle bg-surface-elevated p-3 text-body-sm">
+            <p>
+              Thay đổi có hiệu lực vào {effectiveDate} (sau {CINEMA_STATUS_DELAY_DAYS} ngày). Rạp giữ
+              nguyên trạng thái hiện tại cho tới lúc đó. Hệ thống gửi email tới toàn bộ khách hàng ngay bây giờ.
+            </p>
+            {stopsSellingTickets(status) ? (
+              <p>
+                Đến hạn, các suất chiếu còn lại của rạp sẽ tự huỷ; khách có vé các suất từ ngày hiệu lực trở đi cần đến
+                quầy hoàn tiền trước ngày {effectiveDate}, sau hạn sẽ không giải quyết.
               </p>
-            ) : null}
+            ) : (
+              <p>Đến hạn, rạp nhận đặt vé trở lại; không có suất chiếu nào bị huỷ.</p>
+            )}
           </div>
-        )}
+        ) : null}
+
+        {mode === "cancel" ? (
+          <p className="rounded-md border border-warning-line bg-warning-soft p-3 text-body-sm">
+            Huỷ lịch sẽ giữ rạp ở trạng thái {CINEMA_STATUS_LABELS[cinema.status]} và gửi email đính chính cho toàn bộ
+            khách hàng.
+          </p>
+        ) : null}
+
+        {error ? (
+          <p role="alert" className="text-small text-danger">
+            {error}
+          </p>
+        ) : null}
 
         <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+          <Button variant="secondary" onClick={() => handleOpenChange(false)} disabled={saving}>
             Đóng
           </Button>
-          {blockedIds ? null : (
-            <Button onClick={submit} disabled={saving || status === cinema.status}>
-              {saving ? "Đang lưu…" : "Đổi trạng thái"}
-            </Button>
-          )}
+          <Button
+            onClick={submit}
+            disabled={saving || mode === "none"}
+            variant={mode === "cancel" ? "destructive" : "default"}
+          >
+            {saving ? "Đang lưu…" : mode === "cancel" ? "Huỷ lịch & gửi email đính chính" : "Hẹn đổi trạng thái & gửi email"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

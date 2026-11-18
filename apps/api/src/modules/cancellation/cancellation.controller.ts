@@ -33,6 +33,7 @@ import {
   type RecordRefundResultDto,
   type ResendEmailResultDto,
   type SetCinemaStatusInput,
+  type SetCinemaStatusResultDto,
 } from "@filmbooking/shared/schemas/cancellation";
 import { z } from "zod";
 import { AccessService, type AuthenticatedRequest } from "../../common/auth/access.service";
@@ -127,15 +128,15 @@ export class CancellationController {
   }
 
   /**
-   * Đổi trạng thái rạp qua RPC set_cinema_status (R-33, AC-26).
-   * Chỉ Admin. Đóng rạp còn suất tương lai đã bán -> 409 CONFLICT kèm showtimeIds.
+   * Hẹn lịch đổi trạng thái rạp (R-33, R-136, AC-26/AC-27): hiệu lực sau đúng 7 ngày, email báo toàn bộ khách.
+   * Chỉ Admin. Rạp giữ nguyên trạng thái hiện tại; hẹn đúng trạng thái hiện tại khi đang có lịch = huỷ lịch.
    */
   @Roles("ADMIN")
   @Patch(["admin/cinemas/:cinemaId/status", "cinemas/:cinemaId/status"])
   async setStatusPatch(
     @Param("cinemaId", cinemaIdParam) cinemaId: string,
     @Body(new ZodValidationPipe(setCinemaStatusSchema)) body: SetCinemaStatusInput,
-  ): Promise<{ success: boolean; cinemaId: string; status: string }> {
+  ): Promise<SetCinemaStatusResultDto> {
     return this.service.setCinemaStatus(cinemaId, body);
   }
 
@@ -144,7 +145,7 @@ export class CancellationController {
   async setStatusPost(
     @Param("cinemaId", cinemaIdParam) cinemaId: string,
     @Body(new ZodValidationPipe(setCinemaStatusSchema)) body: SetCinemaStatusInput,
-  ): Promise<{ success: boolean; cinemaId: string; status: string }> {
+  ): Promise<SetCinemaStatusResultDto> {
     return this.service.setCinemaStatus(cinemaId, body);
   }
 

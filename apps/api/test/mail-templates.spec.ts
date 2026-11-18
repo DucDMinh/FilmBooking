@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_HOTLINE,
   extractTicketQrToken,
+  renderCinemaStatusNoticeEmail,
   renderTemplate,
   renderTicketEmail,
 } from "../src/modules/mail/templates";
@@ -47,6 +48,13 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
     room_name: "Phòng VIP",
     showtime_starts_at: "2026-11-22T20:00:00Z",
     reason: "Bảo trì rạp",
+  },
+  CINEMA_STATUS_NOTICE: {
+    cinema_name: "CINEMO Hà Nội",
+    cinema_code: "HN01",
+    cinema_address: "54 Liễu Giai, Ba Đình, Hà Nội",
+    target_status: "CLOSED",
+    effective_at: "2026-11-25T03:00:00Z",
   },
   PASSWORD_SET: { token: "pwd-token-1", web_origin: ORIGIN },
   OAUTH_MISSING_EMAIL_COLLISION: { provider: "facebook", web_origin: ORIGIN },
@@ -224,6 +232,320 @@ describe("mail vé: khối QR dạng ảnh, MỘT QR cho cả đơn (R-86, order
       expect(extractTicketQrToken("PASSWORD_SET", { qr_token: "abc" })).toBe("");
       expect(extractTicketQrToken("TICKET_ISSUED", {})).toBe("");
       expect(extractTicketQrToken("TICKET_ISSUED", { qr_token: "" })).toBe("");
+    });
+  });
+});
+
+describe("mail thông báo đổi trạng thái rạp (R-136, AC-27)", () => {
+  const base = {
+    cinema_name: "CINEMO Hà Nội",
+    cinema_code: "HN01",
+    cinema_address: "54 Liễu Giai, Ba Đình, Hà Nội",
+    hotline: "1900 1234",
+    // 03:00 UTC = 10:00 giờ VN cùng ngày 25/11/2026
+    effective_at: "2026-11-25T03:00:00Z",
+  };
+  const REFUND_DEADLINE = "CINEMO sẽ không giải quyết hoàn tiền";
+
+  const render = (extra: Record<string, unknown>) =>
+    renderTemplate("CINEMA_STATUS_NOTICE", { ...base, ...extra });
+
+  describe("CLOSED", () => {
+    const { subject, html, text } = render({ target_status: "CLOSED", current_status: "OPEN" });
+
+    it("subject + tiêu đề + câu chính thức đóng cửa", () => {
+      expect(subject).toBe("[CINEMO] Thông báo: Rạp CINEMO Hà Nội sẽ đóng cửa từ ngày 25/11/2026");
+      expect(html).toContain("Thông báo đóng cửa rạp");
+      expect(html).toContain("Kính gửi quý khách,");
+      expect(html).toContain("chính thức đóng cửa kể từ ngày");
+      expect(text).toContain("chính thức đóng cửa kể từ ngày 25/11/2026");
+    });
+
+    it("bảng thông tin: rạp, địa chỉ, ngày đóng cửa, hotline", () => {
+      expect(html).toContain("54 Liễu Giai, Ba Đình, Hà Nội");
+      expect(html).toContain("Ngày đóng cửa");
+      expect(html).toContain("1900 1234");
+      expect(text).toContain("Hotline: 1900 1234");
+    });
+
+    it("noteBox hoàn tiền: hạn chót = ngày hiệu lực, đến quầy vé, sau hạn không giải quyết", () => {
+      for (const out of [html, text]) {
+        expect(out).toContain("trước ngày 25/11/2026");
+        expect(out).toContain("quầy vé");
+        expect(out).toContain(REFUND_DEADLINE);
+        // Hiệu lực rơi giữa ngày: suất trong chính ngày hiệu lực cũng bị huỷ nên phải nêu "từ ngày X trở đi"
+        expect(out).toContain("từ ngày 25/11/2026 trở đi");
+        expect(out).not.toContain("sau ngày 25/11/2026");
+      }
+      expect(html).toContain("các rạp khác vẫn hoạt động bình thường");
+    });
+
+    it("gọi tên khách khi có customer_name", () => {
+      const named = render({ target_status: "CLOSED", customer_name: "Nguyễn Văn A" });
+      expect(named.html).toContain("Kính gửi Nguyễn Văn A,");
+    });
+  });
+
+  describe("TEMP_CLOSED", () => {
+    const { subject, html, text } = render({ target_status: "TEMP_CLOSED" });
+
+    it("tạm ngừng hoạt động, thời gian mở lại thông báo sau, vẫn có noteBox hoàn tiền", () => {
+      expect(subject).toBe("[CINEMO] Thông báo: Rạp CINEMO Hà Nội sẽ tạm ngừng hoạt động từ ngày 25/11/2026");
+      expect(html).toContain("tạm ngừng hoạt động kể từ ngày");
+      expect(html).toContain("thời gian mở lại sẽ được thông báo sau");
+      expect(html).toContain(REFUND_DEADLINE);
+      expect(text).toContain("trước ngày 25/11/2026");
+    });
+  });
+
+  describe("COMING_SOON", () => {
+    const { subject, html } = render({ target_status: "COMING_SOON" });
+
+    it("chuyển sang sắp khai trương, ngừng nhận đặt vé, có noteBox hoàn tiền", () => {
+      expect(subject).toBe("[CINEMO] Thông báo: Rạp CINEMO Hà Nội sẽ chuyển sang sắp khai trương từ ngày 25/11/2026");
+      expect(html).toContain("sắp khai trương");
+      expect(html).toContain("tạm ngừng nhận đặt vé kể từ ngày");
+      expect(html).toContain(REFUND_DEADLINE);
+    });
+  });
+
+  describe("OPEN", () => {
+    const { subject, html, text } = render({ target_status: "OPEN", current_status: "TEMP_CLOSED" });
+
+    it("báo ngày mở cửa, mời xem lịch chiếu, KHÔNG có noteBox hoàn tiền", () => {
+      expect(subject).toBe("[CINEMO] Thông báo: Rạp CINEMO Hà Nội sẽ mở cửa từ ngày 25/11/2026");
+      expect(html).toContain("nhận đặt vé");
+      expect(html).toContain("lịch chiếu");
+      expect(html).toContain("Ngày mở cửa");
+      for (const out of [html, text]) {
+        expect(out).not.toContain(REFUND_DEADLINE);
+        expect(out).not.toContain("quầy vé");
+      }
+    });
+
+    it("nút dẫn tới trang rạp theo mã rạp", () => {
+      const withOrigin = render({ target_status: "OPEN", web_origin: ORIGIN });
+      expect(withOrigin.html).toContain(`href="${ORIGIN}/rap/HN01"`);
+    });
+  });
+
+  describe("schedule_cancelled (đính chính huỷ lịch)", () => {
+    describe("rạp đang OPEN (hoặc payload thiếu current_status): vẫn hoạt động bình thường", () => {
+      for (const target of ["CLOSED", "TEMP_CLOSED", "COMING_SOON"]) {
+        for (const current of ["OPEN", undefined]) {
+          it(`${target} bị huỷ, current=${current ?? "(thiếu)"}`, () => {
+            const { subject, html, text } = render({
+              target_status: target,
+              current_status: current,
+              schedule_cancelled: true,
+            });
+            expect(subject).toBe("[CINEMO] Đính chính: Rạp CINEMO Hà Nội vẫn hoạt động bình thường");
+            for (const out of [html, text]) {
+              expect(out).toContain("đã được huỷ");
+              expect(out).toContain("không cần đến rạp hoàn tiền");
+              expect(out).toContain("xin lỗi");
+              expect(out).not.toContain(REFUND_DEADLINE);
+            }
+          });
+        }
+      }
+
+      it("nêu đúng việc bị huỷ theo target", () => {
+        const closed = render({ target_status: "CLOSED", current_status: "OPEN", schedule_cancelled: true });
+        expect(closed.text).toContain("đóng cửa từ ngày 25/11/2026");
+        const temp = render({ target_status: "TEMP_CLOSED", current_status: "OPEN", schedule_cancelled: true });
+        expect(temp.text).toContain("tạm ngừng hoạt động từ ngày 25/11/2026");
+      });
+    });
+
+    describe("rạp đang KHÔNG hoạt động: không được nói 'vẫn hoạt động bình thường'", () => {
+      const NOT_OPERATING_SUBJECT = "[CINEMO] Đính chính: Thông báo về rạp CINEMO Hà Nội đã được huỷ";
+
+      function expectNoFalseClaims(out: string): void {
+        expect(out).not.toContain("vẫn hoạt động bình thường");
+        expect(out).not.toContain("tiếp tục hoạt động như bình thường");
+        expect(out).not.toContain("không cần đến rạp hoàn tiền");
+        expect(out).not.toContain(REFUND_DEADLINE);
+        expect(out).toContain("đã được huỷ");
+        expect(out).toContain("giữ nguyên trạng thái hiện tại");
+        expect(out).toContain("xin lỗi");
+      }
+
+      it("TEMP_CLOSED -> OPEN bị huỷ: rạp vẫn tạm đóng, ngày mở cửa dự kiến không còn áp dụng", () => {
+        const { subject, html, text } = render({
+          target_status: "OPEN",
+          current_status: "TEMP_CLOSED",
+          schedule_cancelled: true,
+        });
+        expect(subject).toBe(NOT_OPERATING_SUBJECT);
+        for (const out of [html, text]) {
+          expectNoFalseClaims(out);
+          expect(out).toContain("đang tạm đóng cửa");
+          expect(out).toContain("mở cửa từ ngày 25/11/2026 đã được huỷ");
+          expect(out).toContain("Ngày mở cửa dự kiến không còn áp dụng");
+        }
+      });
+
+      it("COMING_SOON -> OPEN bị huỷ: rạp vẫn sắp khai trương", () => {
+        const { subject, html, text } = render({
+          target_status: "OPEN",
+          current_status: "COMING_SOON",
+          schedule_cancelled: true,
+        });
+        expect(subject).toBe(NOT_OPERATING_SUBJECT);
+        for (const out of [html, text]) {
+          expectNoFalseClaims(out);
+          expect(out).toContain("đang ở trạng thái sắp khai trương");
+          expect(out).toContain("Ngày mở cửa dự kiến không còn áp dụng");
+        }
+      });
+
+      it("TEMP_CLOSED -> CLOSED bị huỷ: rạp vẫn tạm đóng, không nhắc ngày mở cửa", () => {
+        const { subject, html, text } = render({
+          target_status: "CLOSED",
+          current_status: "TEMP_CLOSED",
+          schedule_cancelled: true,
+        });
+        expect(subject).toBe(NOT_OPERATING_SUBJECT);
+        for (const out of [html, text]) {
+          expectNoFalseClaims(out);
+          expect(out).toContain("đang tạm đóng cửa");
+          expect(out).toContain("đóng cửa từ ngày 25/11/2026 đã được huỷ");
+          expect(out).not.toContain("Ngày mở cửa dự kiến");
+        }
+      });
+
+      it("CLOSED -> OPEN bị huỷ: rạp vẫn đã đóng cửa", () => {
+        const { html, text } = render({
+          target_status: "OPEN",
+          current_status: "CLOSED",
+          schedule_cancelled: true,
+        });
+        for (const out of [html, text]) {
+          expectNoFalseClaims(out);
+          expect(out).toContain("đã đóng cửa");
+        }
+      });
+    });
+
+    it("OPEN -> CLOSED bị huỷ: rạp vẫn hoạt động (current OPEN)", () => {
+      const { subject, text } = render({
+        target_status: "CLOSED",
+        current_status: "open",
+        schedule_cancelled: true,
+      });
+      expect(subject).toBe("[CINEMO] Đính chính: Rạp CINEMO Hà Nội vẫn hoạt động bình thường");
+      expect(text).toContain("đóng cửa từ ngày 25/11/2026 đã được huỷ");
+    });
+  });
+
+  describe("target không nhận diện được", () => {
+    it("dùng mẫu chung, không ném lỗi, không noteBox hoàn tiền", () => {
+      for (const target of ["WHATEVER", undefined]) {
+        const { subject, html, text } = render({ target_status: target });
+        expect(subject).toBe("[CINEMO] Thông báo: Rạp CINEMO Hà Nội thay đổi trạng thái hoạt động");
+        expect(html).toContain("thay đổi trạng thái hoạt động");
+        expect(html).not.toContain(REFUND_DEADLINE);
+        expect(text).not.toContain(REFUND_DEADLINE);
+      }
+    });
+  });
+
+  describe("định dạng ngày theo giờ Việt Nam", () => {
+    it("23:30 UTC ngày 24 = 06:30 ngày 25 giờ VN -> 25/11/2026", () => {
+      const { subject, html, text } = render({ target_status: "CLOSED", effective_at: "2026-11-24T23:30:00Z" });
+      expect(subject).toContain("25/11/2026");
+      for (const out of [html, text]) {
+        expect(out).toContain("trước ngày 25/11/2026");
+        expect(out).not.toContain("24/11/2026");
+      }
+    });
+
+    it("17:00 UTC ngày 25 = 00:00 ngày 26 giờ VN -> 26/11/2026, cả hạn chót trong noteBox và dòng ngày đóng cửa", () => {
+      const { subject, html, text } = render({ target_status: "CLOSED", effective_at: "2026-11-25T17:00:00Z" });
+      expect(subject).toContain("26/11/2026");
+      for (const out of [html, text]) {
+        expect(out).toContain("trước ngày 26/11/2026");
+        expect(out).toContain("từ ngày 26/11/2026 trở đi");
+        expect(out).not.toContain("25/11/2026");
+      }
+      expect(text).toContain("Ngày đóng cửa: 26/11/2026");
+    });
+  });
+
+  describe("hotline + payload camelCase + router", () => {
+    it("thiếu hotline -> dùng hotline mặc định trong bản text", () => {
+      const { text } = renderCinemaStatusNoticeEmail({
+        cinema_name: "R",
+        target_status: "CLOSED",
+        effective_at: "2026-11-25T03:00:00Z",
+      });
+      expect(text).toContain(`Hotline: ${DEFAULT_HOTLINE}`);
+    });
+
+    it("chấp nhận camelCase", () => {
+      const { subject, html } = renderTemplate("CINEMA_STATUS_NOTICE", {
+        cinemaName: "CINEMO Huế",
+        cinemaCode: "HUE1",
+        targetStatus: "closed",
+        effectiveAt: "2026-11-25T03:00:00Z",
+        customerName: "Lan",
+        scheduleCancelled: false,
+      });
+      expect(subject).toBe("[CINEMO] Thông báo: Rạp CINEMO Huế sẽ đóng cửa từ ngày 25/11/2026");
+      expect(html).toContain("Kính gửi Lan,");
+    });
+
+    it("kind không phân biệt hoa thường và khoảng trắng", () => {
+      const payload = { ...base, target_status: "CLOSED" };
+      const expected = renderTemplate("CINEMA_STATUS_NOTICE", payload).subject;
+      expect(renderTemplate("cinema_status_notice", payload).subject).toBe(expected);
+      expect(renderTemplate("  Cinema_Status_Notice ", payload).subject).toBe(expected);
+    });
+  });
+
+  describe("escape HTML", () => {
+    it("tên rạp, địa chỉ, tên khách chứa mã độc không lọt ra html", () => {
+      const { html } = renderTemplate("CINEMA_STATUS_NOTICE", {
+        cinema_name: "<script>alert(1)</script>",
+        cinema_code: '"><img src=x>',
+        cinema_address: "<img src=x onerror=alert(3)>",
+        customer_name: "<b>Hacker</b>",
+        target_status: "CLOSED",
+        effective_at: "2026-11-25T03:00:00Z",
+      });
+      expect(html).not.toContain("<script>");
+      expect(html).not.toContain("<img");
+      expect(html).not.toContain("<b>Hacker</b>");
+      expect(html).toContain("&lt;script&gt;");
+    });
+
+    it("OPEN: cinema_code độc hại được encode + escape trong href nút 'Xem lịch chiếu'", () => {
+      const code = 'x"><img src=x onerror=alert(1)>';
+      const { html } = renderTemplate("CINEMA_STATUS_NOTICE", {
+        ...base,
+        cinema_code: code,
+        target_status: "OPEN",
+        web_origin: ORIGIN,
+      });
+      expect(html).toContain("Xem lịch chiếu");
+      expect(html).not.toContain("<img");
+      expect(html).toContain(`href="${ORIGIN}/rap/${encodeURIComponent(code)}"`);
+    });
+  });
+
+  describe("subject một dòng", () => {
+    it("tên rạp chứa CR/LF không làm subject xuống dòng", () => {
+      const { subject } = render({ cinema_name: "CINEMO\r\nBcc: x@evil.test", target_status: "CLOSED" });
+      expect(subject).not.toMatch(/[\r\n]/);
+      expect(subject).toContain("CINEMO Bcc: x@evil.test");
+      const correction = render({
+        cinema_name: "CINEMO\nHà Nội",
+        target_status: "CLOSED",
+        current_status: "OPEN",
+        schedule_cancelled: true,
+      });
+      expect(correction.subject).not.toMatch(/[\r\n]/);
     });
   });
 });

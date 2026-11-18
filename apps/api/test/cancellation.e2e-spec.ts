@@ -18,6 +18,8 @@ import { CancellationService } from "../src/modules/cancellation/cancellation.se
 const JWT_SECRET = "test-jwt-secret-test-jwt-secret-1234";
 const SUPABASE_URL = "https://test.supabase.co";
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const FORBIDDEN_RPC_CINEMA = uuid(9997);
+const BROKEN_RPC_CINEMA = uuid(9998);
 
 const HN01 = uuid(1);
 const HN02 = uuid(2);
@@ -74,9 +76,11 @@ class FakeDb {
     email_outbox: [],
   };
   private nextId = 1000;
+  scheduleCalls: { cinemaId: string; status: string }[] = [];
 
   reset() {
     this.nextId = 1000;
+    this.scheduleCalls = [];
     this.tables = {
       user_roles: [{ user_id: ADMIN, role: "ADMIN" }],
       staff_assignments: [
@@ -229,9 +233,18 @@ class FakeDb {
       });
     }
 
-    if (fn === "set_cinema_status") {
+    if (fn === "schedule_cinema_status") {
       const cinemaId = args.p_cinema_id as string;
       const status = args.p_status as string;
+      this.scheduleCalls.push({ cinemaId, status });
+
+      // Lỗi DB giả lập: `FORBIDDEN_RPC_CINEMA` = RPC từ chối quyền (42501), `BROKEN_RPC_CINEMA` = lỗi không phân loại.
+      if (cinemaId === FORBIDDEN_RPC_CINEMA) {
+        return Promise.resolve({ data: null, error: { code: "42501", message: "FORBIDDEN_ADMIN_REQUIRED" } });
+      }
+      if (cinemaId === BROKEN_RPC_CINEMA) {
+        return Promise.resolve({ data: null, error: { code: "XX000", message: "boom: internal detail" } });
+      }
 
       const cinema = (this.tables.cinemas ?? []).find((c) => c.id === cinemaId);
       if (!cinema) {
@@ -241,36 +254,51 @@ class FakeDb {
         });
       }
 
-      if (["TEMP_CLOSED", "CLOSED"].includes(status)) {
-        // Kiểm tra suất tương lai đã bán vé
-        const soldShowtimes = (this.tables.showtimes ?? [])
-          .filter(
-            (st) =>
-              st.cinema_id === cinemaId &&
-              st.status !== "CANCELLED" &&
-              (this.tables.orders ?? []).some(
-                (o) => o.showtime_id === st.id && ["paid", "checked_in"].includes(o.status as string),
-              ),
-          )
-          .map((st) => st.id as string);
-
-        if (soldShowtimes.length > 0) {
+      // Cùng trạng thái hiện tại: đang có lịch -> huỷ lịch; không có lịch -> từ chối.
+      if (status === cinema.status) {
+        if (!cinema.scheduled_status) {
           return Promise.resolve({
             data: null,
-            error: {
-              code: "23514",
-              message: `CINEMA_HAS_ACTIVE_SOLD_SHOWTIMES: Rạp còn ${soldShowtimes.length} suất chiếu tương lai đã bán vé (${soldShowtimes.join(", ")})`,
-              details: JSON.stringify(soldShowtimes),
-            },
+            error: { code: "22023", message: `STATUS_UNCHANGED: Rạp đã ở trạng thái ${status} và không có lịch đổi trạng thái đang chờ` },
           });
         }
+        cinema.scheduled_status = null;
+        cinema.scheduled_effective_at = null;
+        return Promise.resolve({
+          data: {
+            success: true,
+            cinema_id: cinemaId,
+            status: cinema.status,
+            scheduled_status: null,
+            scheduled_effective_at: null,
+            schedule_cancelled: true,
+            emails_enqueued_count: 3,
+          },
+          error: null,
+        });
       }
 
-      cinema.status = status;
+      // Hẹn lịch: trạng thái hiện tại GIỮ NGUYÊN (không đổi tức thì), không còn chặn theo suất đã bán.
+      const effectiveAt = "2026-11-25T03:00:00.000Z";
+      cinema.scheduled_status = status;
+      cinema.scheduled_effective_at = effectiveAt;
       return Promise.resolve({
-        data: { success: true, cinema_id: cinemaId, status },
+        data: {
+          success: true,
+          cinema_id: cinemaId,
+          status: cinema.status,
+          scheduled_status: status,
+          scheduled_effective_at: effectiveAt,
+          schedule_cancelled: false,
+          emails_enqueued_count: 5,
+        },
         error: null,
       });
+    }
+
+    if (fn === "set_cinema_status") {
+      // RPC tức thì đã bị gỡ khỏi DB: gọi lại là lỗi hợp đồng.
+      return Promise.resolve({ data: null, error: { code: "PGRST202", message: "function set_cinema_status not found" } });
     }
 
     return Promise.resolve({ data: null, error: { code: "PGRST202", message: "function not found" } });
@@ -795,11 +823,10 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
   });
 
   // ==========================================================================
-  // 3. AC-26: Đóng rạp còn suất đã bán -> 409 kèm danh sách suất cần huỷ
+  // 3. AC-26/AC-27: đổi trạng thái rạp = HẸN LỊCH +7 ngày (R-33, R-136) — không đổi tức thì, không còn 409
   // ==========================================================================
-  describe("AC-26: Đóng rạp & kiểm tra suất chiếu còn hiệu lực", () => {
-    it("Đóng rạp còn suất tương lai đã bán vé -> 409 CONFLICT kèm danh sách suất cần huỷ", async () => {
-      // Có đơn paid cho SHOWTIME_HN01
+  describe("AC-26/AC-27: hẹn lịch đổi trạng thái rạp", () => {
+    it("Đóng rạp còn suất đã bán vé -> 200, hẹn lịch, trạng thái hiện tại GIỮ NGUYÊN (không còn 409)", async () => {
       fakeDb.tables.orders.push({
         id: uuid(701),
         cinema_id: HN01,
@@ -808,39 +835,107 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
         total_amount: 100000,
       });
 
-      const res = await call("patch", `/admin/cinemas/${HN01}/status`, adminToken, {
-        status: "TEMP_CLOSED",
-      });
-
-      expect(res.status).toBe(409);
-      expect(res.body.error.code).toBe("CONFLICT");
-      expect(res.body.error.details.showtimeIds).toBeDefined();
-      expect(res.body.error.details.showtimeIds).toContain(SHOWTIME_HN01);
-
-      // Trạng thái rạp chưa bị đổi
-      const cinema = fakeDb.tables.cinemas.find((c) => c.id === HN01);
-      expect(cinema?.status).toBe("OPEN");
-    });
-
-    it("Đóng rạp khi không còn suất tương lai đã bán -> 200 OK", async () => {
-      // Rạp HN02 không có đơn paid nào
-      const res = await call("patch", `/admin/cinemas/${HN02}/status`, adminToken, {
-        status: "TEMP_CLOSED",
-      });
+      const res = await call("patch", `/admin/cinemas/${HN01}/status`, adminToken, { status: "CLOSED" });
 
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.status).toBe("TEMP_CLOSED");
-
-      const cinema = fakeDb.tables.cinemas.find((c) => c.id === HN02);
-      expect(cinema?.status).toBe("TEMP_CLOSED");
+      expect(res.body).toEqual({
+        success: true,
+        cinemaId: HN01,
+        status: "OPEN",
+        scheduledStatus: "CLOSED",
+        scheduledEffectiveAt: "2026-11-25T03:00:00.000Z",
+        scheduleCancelled: false,
+        emailsEnqueuedCount: 5,
+      });
+      expect(fakeDb.scheduleCalls).toEqual([{ cinemaId: HN01, status: "CLOSED" }]);
+      expect(fakeDb.tables.cinemas.find((c) => c.id === HN01)?.status).toBe("OPEN");
+      // Suất/đơn không bị đụng ở bước hẹn lịch.
+      expect(fakeDb.tables.showtimes.find((s) => s.id === SHOWTIME_HN01)?.status).toBe("OPEN");
     });
 
-    it("Manager / Staff không được đổi trạng thái rạp -> 403", async () => {
-      const res = await call("patch", `/admin/cinemas/${HN01}/status`, managerHn01Token, {
-        status: "TEMP_CLOSED",
+    it.each([
+      ["patch", "/admin/cinemas"],
+      ["post", "/admin/cinemas"],
+      ["patch", "/cinemas"],
+      ["post", "/cinemas"],
+    ] as const)("%s %s/:id/status đều hẹn lịch (4 route giữ nguyên)", async (method, base) => {
+      const res = await call(method, `${base}/${HN02}/status`, adminToken, { status: "TEMP_CLOSED" });
+      expect(res.status).toBe(method === "post" ? 201 : 200); // POST giữ mã mặc định Nest như trước
+      expect(res.body.status).toBe("OPEN");
+      expect(res.body.scheduledStatus).toBe("TEMP_CLOSED");
+    });
+
+    it("hẹn đúng trạng thái hiện tại khi đang có lịch -> huỷ lịch (scheduleCancelled, scheduled* = null)", async () => {
+      const cinema = fakeDb.tables.cinemas.find((c) => c.id === HN01)!;
+      cinema.scheduled_status = "CLOSED";
+      cinema.scheduled_effective_at = "2026-11-25T03:00:00.000Z";
+
+      const res = await call("patch", `/admin/cinemas/${HN01}/status`, adminToken, { status: "OPEN" });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        success: true,
+        cinemaId: HN01,
+        status: "OPEN",
+        scheduledStatus: null,
+        scheduledEffectiveAt: null,
+        scheduleCancelled: true,
+        emailsEnqueuedCount: 3,
       });
+    });
+
+    it("hẹn đúng trạng thái hiện tại khi KHÔNG có lịch -> 400 VALIDATION_ERROR (STATUS_UNCHANGED)", async () => {
+      const res = await call("patch", `/admin/cinemas/${HN01}/status`, adminToken, { status: "OPEN" });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("rạp không tồn tại -> 404 NOT_FOUND", async () => {
+      const res = await call("patch", `/admin/cinemas/${uuid(9999)}/status`, adminToken, { status: "CLOSED" });
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("RPC từ chối quyền (42501) -> 403 FORBIDDEN", async () => {
+      const res = await call("patch", `/admin/cinemas/${FORBIDDEN_RPC_CINEMA}/status`, adminToken, { status: "CLOSED" });
       expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("lỗi RPC không phân loại -> 500 INTERNAL_ERROR, không lộ chi tiết DB", async () => {
+      const res = await call("patch", `/admin/cinemas/${BROKEN_RPC_CINEMA}/status`, adminToken, { status: "CLOSED" });
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe("INTERNAL_ERROR");
+      expect(JSON.stringify(res.body)).not.toContain("boom");
+    });
+
+    it("trạng thái không hợp lệ -> 400 (không gọi RPC)", async () => {
+      const res = await call("patch", `/admin/cinemas/${HN01}/status`, adminToken, { status: "BROKEN" });
+      expect(res.status).toBe(400);
+      expect(fakeDb.scheduleCalls).toEqual([]);
+    });
+
+    // RPC chạy bằng service_role (không có lớp chặn ở DB) nên `@Roles("ADMIN")` là rào chắn DUY NHẤT: phải phủ cả 4 route.
+    const STATUS_ROUTES = [
+      ["patch", "/admin/cinemas"],
+      ["post", "/admin/cinemas"],
+      ["patch", "/cinemas"],
+      ["post", "/cinemas"],
+    ] as const;
+
+    it.each(STATUS_ROUTES)("%s %s/:id/status: Manager / Staff / khách thường -> 403, không gọi RPC", async (method, base) => {
+      const customerToken = await sign(uuid(36)); // không có user_roles / staff_assignments
+      for (const token of [managerHn01Token, staffHn01Token, customerToken]) {
+        const res = await call(method, `${base}/${HN01}/status`, token, { status: "TEMP_CLOSED" });
+        expect(res.status).toBe(403);
+      }
+      expect(fakeDb.scheduleCalls).toEqual([]);
+    });
+
+    it.each(STATUS_ROUTES)("%s %s/:id/status: không có token -> 401, không gọi RPC", async (method, base) => {
+      const res = await request(app.getHttpServer())[method](`${base}/${HN01}/status`).send({ status: "TEMP_CLOSED" });
+      expect(res.status).toBe(401);
+      expect(fakeDb.scheduleCalls).toEqual([]);
     });
   });
 

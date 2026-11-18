@@ -199,14 +199,14 @@ isOneToOne: false
                   ]
                 },"cinemas": {
                   Row: {
-                    "address": string,"amenities": (string)[],"cleaning_minutes": number | null,"code": string,"created_at": string,"district": string | null,"email": string | null,"hotline": string | null,"id": string,"image_url": string | null,"latitude": number | null,"longitude": number | null,"name": string,"online_cutoff_minutes": number | null,"opening_hours": string | null,"province_id": string,"status": Database["public"]['Enums']["cinema_status"],"updated_at": string
+                    "address": string,"amenities": (string)[],"cleaning_minutes": number | null,"code": string,"created_at": string,"district": string | null,"email": string | null,"hotline": string | null,"id": string,"image_url": string | null,"latitude": number | null,"longitude": number | null,"name": string,"online_cutoff_minutes": number | null,"opening_hours": string | null,"province_id": string,"scheduled_effective_at": string | null,"scheduled_status": Database["public"]['Enums']["cinema_status"] | null,"status": Database["public"]['Enums']["cinema_status"],"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "address": string,"amenities"?: (string)[],"cleaning_minutes"?: number | null,"code": string,"created_at"?: string,"district"?: string | null,"email"?: string | null,"hotline"?: string | null,"id"?: string,"image_url"?: string | null,"latitude"?: number | null,"longitude"?: number | null,"name": string,"online_cutoff_minutes"?: number | null,"opening_hours"?: string | null,"province_id": string,"status"?: Database["public"]['Enums']["cinema_status"],"updated_at"?: string
+                    "address": string,"amenities"?: (string)[],"cleaning_minutes"?: number | null,"code": string,"created_at"?: string,"district"?: string | null,"email"?: string | null,"hotline"?: string | null,"id"?: string,"image_url"?: string | null,"latitude"?: number | null,"longitude"?: number | null,"name": string,"online_cutoff_minutes"?: number | null,"opening_hours"?: string | null,"province_id": string,"scheduled_effective_at"?: string | null,"scheduled_status"?: Database["public"]['Enums']["cinema_status"] | null,"status"?: Database["public"]['Enums']["cinema_status"],"updated_at"?: string
                   }
                   Update: {
-                    "address"?: string,"amenities"?: (string)[],"cleaning_minutes"?: number | null,"code"?: string,"created_at"?: string,"district"?: string | null,"email"?: string | null,"hotline"?: string | null,"id"?: string,"image_url"?: string | null,"latitude"?: number | null,"longitude"?: number | null,"name"?: string,"online_cutoff_minutes"?: number | null,"opening_hours"?: string | null,"province_id"?: string,"status"?: Database["public"]['Enums']["cinema_status"],"updated_at"?: string
+                    "address"?: string,"amenities"?: (string)[],"cleaning_minutes"?: number | null,"code"?: string,"created_at"?: string,"district"?: string | null,"email"?: string | null,"hotline"?: string | null,"id"?: string,"image_url"?: string | null,"latitude"?: number | null,"longitude"?: number | null,"name"?: string,"online_cutoff_minutes"?: number | null,"opening_hours"?: string | null,"province_id"?: string,"scheduled_effective_at"?: string | null,"scheduled_status"?: Database["public"]['Enums']["cinema_status"] | null,"status"?: Database["public"]['Enums']["cinema_status"],"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -953,7 +953,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "apply_voucher":
+            "apply_due_cinema_status_changes":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"apply_voucher":
 { Args: { "p_code": string,"p_order_id": string }; Returns: Json
                            },
 "apply_voucher_core":
@@ -970,6 +973,9 @@ isOneToOne: false
                            },
 "cancel_showtimes":
 { Args: { "p_actor_id"?: string,"p_reason": string,"p_showtime_ids": (string)[] }; Returns: Json
+                           },
+"cancel_showtimes_core":
+{ Args: { "p_actor_id": string,"p_reason": string,"p_send_emails": boolean,"p_showtime_ids": (string)[] }; Returns: Json
                            },
 "cancel_stale_payment":
 { Args: { "p_payment_id": string,"p_reason"?: string }; Returns: Json
@@ -1108,11 +1114,11 @@ isOneToOne: false
 "resolve_manual_review":
 { Args: { "p_action": string,"p_note"?: string,"p_order_id": string,"p_refund_reference"?: string,"p_refunded_amount"?: number }; Returns: Json
                            },
+"schedule_cinema_status":
+{ Args: { "p_cinema_id": string,"p_status": Database["public"]['Enums']["cinema_status"] }; Returns: Json
+                           },
 "sell_order_seats":
 { Args: { "p_order_id": string }; Returns: boolean
-                           },
-"set_cinema_status":
-{ Args: { "p_cinema_id": string,"p_status": Database["public"]['Enums']["cinema_status"] }; Returns: Json
                            },
 "showtime_has_sales":
 { Args: { "p_showtime_id": string }; Returns: boolean

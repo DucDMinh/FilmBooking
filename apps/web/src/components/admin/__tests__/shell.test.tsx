@@ -509,6 +509,8 @@ describe("AdminLayout (Chặn CUSTOMER và phân quyền)", () => {
         imageUrl: null,
         amenities: [],
         status: "OPEN",
+        scheduledStatus: null,
+        scheduledEffectiveAt: null,
       },
     ];
 

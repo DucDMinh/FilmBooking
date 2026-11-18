@@ -17,11 +17,9 @@ import { ENV, type Env } from "../../config/env";
 import { asRows, showtimeToDto, unwrap, vnDayRange, type ShowtimeRow } from "./movies.service";
 
 const CINEMA_COLUMNS =
-  "id, code, name, district, address, latitude, longitude, hotline, email, opening_hours, image_url, amenities, status, provinces!inner(code)";
+  "id, code, name, district, address, latitude, longitude, hotline, email, opening_hours, image_url, amenities, status, scheduled_status, scheduled_effective_at, provinces!inner(code)";
 const ROOM_COLUMNS = "id, name, supported_formats, status";
 const SHOWTIME_COLUMNS = "id, room_id, starts_at, ends_at, format, language_mode, status";
-/** Đóng rạp (tạm/vĩnh viễn) phải chờ hết suất tương lai. */
-const CLOSING_STATUSES: readonly CinemaDbStatus[] = ["TEMP_CLOSED", "CLOSED"];
 
 interface CinemaRow {
   id: string;
@@ -37,6 +35,8 @@ interface CinemaRow {
   image_url: string | null;
   amenities: string[];
   status: CinemaDbStatus;
+  scheduled_status: CinemaDbStatus | null;
+  scheduled_effective_at: string | null;
   provinces: { code: string } | null;
 }
 
@@ -75,6 +75,9 @@ function cinemaToDto(row: CinemaRow): CinemaDto {
     imageUrl: row.image_url,
     amenities: row.amenities,
     status: row.status,
+    scheduledStatus: row.scheduled_status,
+    // PostgREST trả "+00:00"; chuẩn hoá UTC ISO ("Z") như mọi thời gian khác của API.
+    scheduledEffectiveAt: row.scheduled_effective_at ? new Date(row.scheduled_effective_at).toISOString() : null,
   };
 }
 
@@ -135,12 +138,18 @@ export class CinemasService {
     return rows.map(cinemaToDto);
   }
 
+  /**
+   * R-137: rạp tồn tại ở MỌI trạng thái đều trả 200 kèm `cinema.status`; rạp không OPEN không có phòng/suất.
+   * Mã rạp không tồn tại -> 404. Chỉ dùng client anon (đặc quyền tối thiểu): policy `cinemas_select` cho anon đọc
+   * mọi rạp; chỉ chọn cột công khai `CINEMA_COLUMNS`.
+   */
   async detailPublic(code: string, date: string | undefined, now = new Date()): Promise<CinemaDetailDto> {
     const db = this.publicClient();
     const cinema = unwrap(
-      await db.from("cinemas").select(CINEMA_COLUMNS).eq("code", code).eq("status", "OPEN").maybeSingle(),
+      await db.from("cinemas").select(CINEMA_COLUMNS).eq("code", code).maybeSingle(),
     ) as CinemaRow | null;
     if (!cinema) throw new AppException(ERROR_CODES.NOT_FOUND, "Cinema not found");
+    if (cinema.status !== "OPEN") return { cinema: cinemaToDto(cinema), rooms: [], showtimes: [] };
 
     const { from, to } = vnDayRange(date, now);
     const [rooms, showtimes] = await Promise.all([
@@ -213,16 +222,28 @@ export class CinemasService {
 
   /**
    * Manager chỉ sửa thông tin rạp mình (CinemaScopeGuard đã chặn rạp khác); mã, tỉnh, trạng thái và
-   * cấu hình vận hành chỉ Admin. Đóng rạp bị chặn khi còn suất tương lai (huỷ hàng loạt ở luồng riêng).
+   * cấu hình vận hành chỉ Admin. Trạng thái KHÔNG đổi được ở đây (R-33, R-136): đổi trạng thái là hẹn lịch
+   * +7 ngày qua `/admin/cinemas/:id/status`. `status` bằng trạng thái hiện tại bị bỏ qua (client gửi nguyên form).
    */
   async update(jwt: string, id: string, input: UpdateCinemaInput, isAdmin: boolean): Promise<CinemaDto> {
     if (!isAdmin && CINEMA_ADMIN_ONLY_FIELDS.some((field) => input[field] !== undefined)) {
       throw new AppException(ERROR_CODES.FORBIDDEN, "Only an admin can change these fields");
     }
     const db = this.supabase.forUser(jwt);
-    if (input.status && CLOSING_STATUSES.includes(input.status)) await this.assertNoFutureShowtimes(db, id);
 
     const changes: Record<string, unknown> = cinemaToColumns(input);
+    if (input.status !== undefined) {
+      const current = await this.findForStatusCheck(db, id);
+      if (input.status !== current.status) {
+        throw new AppException(
+          ERROR_CODES.VALIDATION_ERROR,
+          "Cinema status cannot be changed here; schedule it via /admin/cinemas/:id/status (effective after 7 days)",
+        );
+      }
+      delete changes.status;
+      const onlyStatusGiven = Object.keys(changes).length === 0 && input.provinceCode === undefined;
+      if (onlyStatusGiven) return cinemaToDto(current);
+    }
     if (input.provinceCode) changes.province_id = await this.resolveProvinceId(db, input.provinceCode);
     const row = unwrap(
       await db.from("cinemas").update(changes).eq("id", id).select(CINEMA_COLUMNS).maybeSingle(),
@@ -231,19 +252,12 @@ export class CinemasService {
     return cinemaToDto(row);
   }
 
-  private async assertNoFutureShowtimes(db: SupabaseClient, cinemaId: string): Promise<void> {
-    const { count, error } = await db
-      .from("showtimes")
-      .select("id", { count: "exact", head: true })
-      .eq("cinema_id", cinemaId)
-      .neq("status", "CANCELLED")
-      .gte("starts_at", new Date().toISOString());
-    if (error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, "Database error");
-    if ((count ?? 0) > 0) {
-      throw new AppException(ERROR_CODES.CONFLICT, "Cinema still has upcoming showtimes", {
-        upcomingShowtimes: count,
-      });
-    }
+  private async findForStatusCheck(db: SupabaseClient, id: string): Promise<CinemaRow> {
+    const row = unwrap(
+      await db.from("cinemas").select(CINEMA_COLUMNS).eq("id", id).maybeSingle(),
+    ) as CinemaRow | null;
+    if (!row) throw new AppException(ERROR_CODES.NOT_FOUND, "Cinema not found");
+    return row;
   }
 
   private async resolveProvinceId(db: SupabaseClient, provinceCode: string): Promise<string> {

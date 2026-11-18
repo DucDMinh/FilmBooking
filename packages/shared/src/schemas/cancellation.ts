@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cinemaStatusSchema } from "./catalog";
+import { cinemaStatusSchema, type CinemaDbStatus } from "./catalog";
 
 /**
  * DTO huỷ suất / đóng rạp / đơn bị ảnh hưởng — R-33, R-108..R-110, R-134 (AC-24..AC-26).
@@ -33,6 +33,20 @@ export type CancelShowtimesInput = z.infer<typeof cancelShowtimesSchema>;
 
 export const setCinemaStatusSchema = z.object({ status: cinemaStatusSchema });
 export type SetCinemaStatusInput = z.infer<typeof setCinemaStatusSchema>;
+
+/**
+ * Kết quả hẹn lịch đổi trạng thái rạp (R-33, R-136). `status` là trạng thái HIỆN TẠI (chưa đổi);
+ * `scheduled*` là lịch đang chờ (null khi `scheduleCancelled` — Admin hẹn đúng trạng thái hiện tại để huỷ lịch).
+ */
+export interface SetCinemaStatusResultDto {
+  success: boolean;
+  cinemaId: string;
+  status: CinemaDbStatus;
+  scheduledStatus: CinemaDbStatus | null;
+  scheduledEffectiveAt: string | null;
+  scheduleCancelled: boolean;
+  emailsEnqueuedCount: number;
+}
 
 /** Trạng thái xử lý hiển thị trong màn Đơn bị ảnh hưởng. */
 export const AFFECTED_ORDER_STATUSES = ["affected", "refunded_manual"] as const;

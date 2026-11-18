@@ -344,9 +344,9 @@ select is(
 select throws_ok(
   $$insert into public.audit_logs (table_name, action) values ('cinemas', 'INSERT')$$,
   '42501', null, 'client (kể cả Admin) không ghi tay audit_logs');
-select lives_ok(
+select throws_ok(
   $$update public.cinemas set status = 'TEMP_CLOSED' where id = '00000000-0000-0000-0000-0000000000c3'$$,
-  'Admin đổi trạng thái rạp');
+  '42501', null, 'Admin KHÔNG đổi tức thì status qua UPDATE trực tiếp (R-136: chỉ schedule_cinema_status)');
 select lives_ok(
   $$insert into public.provinces (id, code, name) values ('00000000-0000-0000-0000-0000000000a2', 'HCM', 'TP HCM')$$,
   'Admin thêm tỉnh/thành');

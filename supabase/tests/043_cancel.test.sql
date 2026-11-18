@@ -341,34 +341,32 @@ select throws_ok(
 select tap_as('00000000-0000-0000-0000-000000000b01'); -- Trở lại Manager HN01
 
 -- ---------------------------------------------------------------------------
--- 4. Test set_cinema_status & AC-26 (Chặn đóng rạp khi còn suất đã bán)
+-- 4. Test schedule_cinema_status & AC-26 (đổi trạng thái rạp = hẹn lịch 7 ngày, KHÔNG còn chặn khi còn suất đã bán — R-33/R-136)
 -- ---------------------------------------------------------------------------
--- Manager HN01 gọi set_cinema_status -> Bị từ chối 42501 (FORBIDDEN_ADMIN_REQUIRED, R-32, AC-26, M7)
+-- Manager HN01 gọi schedule_cinema_status -> Bị từ chối 42501 (FORBIDDEN_ADMIN_REQUIRED, R-32, AC-26, M7)
 select throws_ok(
-  $$select public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'TEMP_CLOSED'::public.cinema_status)$$,
+  $$select public.schedule_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'TEMP_CLOSED'::public.cinema_status)$$,
   '42501',
   'FORBIDDEN_ADMIN_REQUIRED',
-  'Phân quyền: Manager gọi set_cinema_status bị chặn FORBIDDEN_ADMIN_REQUIRED'
+  'Phân quyền: Manager gọi schedule_cinema_status bị chặn FORBIDDEN_ADMIN_REQUIRED'
 );
 
 -- Di chuyển các bước test AC-26 sang thực hiện dưới quyền Admin
 select tap_as('00000000-0000-0000-0000-000000000a01'); -- Admin
 
 -- Rạp HN01 còn 3 suất tương lai đã bán vé (Showtime 2, 3, 4)
--- Gọi set_cinema_status sang 'TEMP_CLOSED' phải bị lỗi kèm mã CINEMA_HAS_ACTIVE_SOLD_SHOWTIMES
-select throws_ok(
-  $$select public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'TEMP_CLOSED'::public.cinema_status)$$,
-  '23514',
-  null,
-  'AC-26: set_cinema_status chặn đóng rạp khi còn 3 suất tương lai đã bán vé'
+-- AC-26 (viết lại): hẹn đổi trạng thái KHÔNG bị chặn; lịch +7 ngày, job tới hạn mới tự huỷ suất/đơn (xem 066)
+select is(
+  (public.schedule_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'TEMP_CLOSED'::public.cinema_status)->>'scheduled_status'),
+  'TEMP_CLOSED',
+  'AC-26: schedule_cinema_status KHÔNG chặn khi còn 3 suất tương lai đã bán vé (hẹn TEMP_CLOSED)'
 );
 
--- Thử gọi sang 'CLOSED' cũng phải bị chặn
-select throws_ok(
-  $$select public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'CLOSED'::public.cinema_status)$$,
-  '23514',
-  null,
-  'AC-26: set_cinema_status chặn CLOSED khi còn suất tương lai đã bán vé'
+-- Hẹn lại sang 'CLOSED' thay lịch cũ, cũng không bị chặn
+select is(
+  (public.schedule_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'CLOSED'::public.cinema_status)->>'scheduled_status'),
+  'CLOSED',
+  'AC-26: hẹn lại sang CLOSED thay lịch TEMP_CLOSED, không bị chặn'
 );
 
 -- Huỷ cả 3 suất chiếu đó qua cancel_showtimes
@@ -385,17 +383,17 @@ select is(
   'AC-26: Huỷ hàng loạt 3 suất tương lai thành công'
 );
 
--- Sau khi huỷ cả 3 suất -> set_cinema_status sang TEMP_CLOSED thành công
+-- Rạp VẪN giữ trạng thái OPEN (chỉ có lịch chờ, không đổi tức thì)
 select is(
-  (public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'TEMP_CLOSED'::public.cinema_status)->>'status'),
-  'TEMP_CLOSED',
-  'AC-26: Sau khi huỷ các suất đã bán, set_cinema_status thành công đổi sang TEMP_CLOSED'
+  (select status from public.cinemas where id = '00000000-0000-0000-0000-0000000000c1'),
+  'OPEN'::public.cinema_status,
+  'AC-26: cinemas.status giữ nguyên OPEN sau khi hẹn lịch'
 );
 
 select is(
-  (select status from public.cinemas where id = '00000000-0000-0000-0000-0000000000c1'),
-  'TEMP_CLOSED'::public.cinema_status,
-  'AC-26: Bảng cinemas đã cập nhật status = TEMP_CLOSED'
+  (select scheduled_status from public.cinemas where id = '00000000-0000-0000-0000-0000000000c1'),
+  'CLOSED'::public.cinema_status,
+  'AC-26: cinemas.scheduled_status = CLOSED (lịch chờ hiệu lực sau 7 ngày)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -410,12 +408,12 @@ select throws_ok(
   'Phân quyền: Staff không được gọi cancel_showtimes'
 );
 
--- Staff gọi set_cinema_status -> Bị từ chối 42501
+-- Staff gọi schedule_cinema_status -> Bị từ chối 42501
 select throws_ok(
-  $$select public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'OPEN'::public.cinema_status)$$,
+  $$select public.schedule_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'OPEN'::public.cinema_status)$$,
   '42501',
   'FORBIDDEN_ADMIN_REQUIRED',
-  'Phân quyền: Staff không được gọi set_cinema_status'
+  'Phân quyền: Staff không được gọi schedule_cinema_status'
 );
 
 -- Staff gọi preview_cancel_showtimes -> Bị từ chối 42501
@@ -435,9 +433,9 @@ select throws_ok(
   'Phân quyền: Manager HN02 không được huỷ suất của rạp HN01'
 );
 
--- Manager rạp khác (HN02) gọi set_cinema_status trên rạp HN01 -> Bị từ chối 42501
+-- Manager rạp khác (HN02) gọi schedule_cinema_status trên rạp HN01 -> Bị từ chối 42501
 select throws_ok(
-  $$select public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'OPEN'::public.cinema_status)$$,
+  $$select public.schedule_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'OPEN'::public.cinema_status)$$,
   '42501',
   'FORBIDDEN_ADMIN_REQUIRED',
   'Phân quyền: Manager HN02 không được đổi trạng thái rạp HN01'
@@ -452,12 +450,12 @@ select throws_ok(
   'Validation: cancel_showtimes bắt buộc có lý do'
 );
 
--- Admin thực hiện set_cinema_status mở lại rạp HN01 thành công
+-- Admin gọi schedule_cinema_status với trạng thái hiện tại (OPEN) khi đang có lịch CLOSED -> huỷ lịch
 select tap_as('00000000-0000-0000-0000-000000000a01'); -- Admin
 select is(
-  (public.set_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'OPEN'::public.cinema_status)->>'status'),
-  'OPEN',
-  'Phân quyền: Admin đổi set_cinema_status thành công sang OPEN'
+  (public.schedule_cinema_status('00000000-0000-0000-0000-0000000000c1'::uuid, 'OPEN'::public.cinema_status)->>'schedule_cancelled'),
+  'true',
+  'Phân quyền: Admin huỷ lịch đang chờ bằng schedule_cinema_status(trạng thái hiện tại)'
 );
 
 -- Cuối cùng, rollback toàn bộ test transaction

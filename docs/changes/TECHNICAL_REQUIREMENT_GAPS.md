@@ -24,7 +24,7 @@
 | GAP-018 | R-55 | SeatMap admin không realtime (B19); seatmap lỗi → UI coi 0 vé bán | task-03 F6, N1 | Realtime/polling; hiển thị lỗi | open (P3) |
 | GAP-019 | R-47 | Không đổi grid sau tạo; editor chưa read-only khi có suất sắp chiếu; N+1 GET sơ đồ | task-02 | Backlog | open (P3) |
 | GAP-020 | R-41, R-47 | Bảng rạp/phim: nhãn trạng thái, multi-select, MapView, cột Quản lý | task-01 N2 | Chấp nhận demo | accepted (cần PO) |
-| GAP-021 | R-33, AC-26 | Cảnh báo đóng rạp thiếu chi tiết suất | task-01 N1 | Bổ sung | open (P3) |
+| GAP-021 | R-33, AC-26 | Cảnh báo đóng rạp thiếu chi tiết suất | task-01 N1 | Hết hiệu lực: cảnh báo chặn đóng rạp (liệt kê suất đã bán) bị bỏ theo CR `cinema-status-notice` 2026-11-18 — đóng rạp hẹn lịch 7 ngày + email toàn bộ khách (R-136), đến hạn hệ thống tự huỷ suất còn lại | resolved (2026-11-18) |
 | GAP-022 | R-32 | PATCH rạp + settings không atomic; ảnh mồ côi; upload chưa rate limit | task-01 N4/N5 | Transaction + cleanup | open (P3) |
 | GAP-023 | R-52 | Chưa confirm dialog đổi giá; lỗi reload bị nuốt | task-04 r2 | UI polish | open (P3) |
 | GAP-024 | R-105, R-107 | Dialog gán 1 rạp/lần; audit actor id rút gọn | task-07 r2 | Multi-select; join tên | open (P3) |

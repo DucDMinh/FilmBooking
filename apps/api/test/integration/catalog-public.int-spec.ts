@@ -39,6 +39,8 @@ describe.skipIf(!supabaseEnv)("integration catalog public: movies, schedule, cin
 
   let cinemaA: { id: string; code: string };
   let cinemaB: { id: string; code: string };
+  /** Rạp có phòng + suất đang bán nhưng ĐÃ ĐÓNG (R-137): trang vẫn 200, không lộ suất. */
+  let closedCinema: { id: string; code: string };
   let movieSlug: string;
   let showtimeAId: string;
   let showtimeBId: string;
@@ -121,6 +123,13 @@ describe.skipIf(!supabaseEnv)("integration catalog public: movies, schedule, cin
     showtimeAId = await insertShowtime(a.id, roomA1Id, "ON_SALE");
     await insertShowtime(a.id, roomA2Id, "CANCELLED");
     showtimeBId = await insertShowtime(b.id, roomBId, "ON_SALE");
+
+    const c = await factories.createCinema();
+    closedCinema = { id: c.id, code: c.code };
+    const roomCId = (await factories.createRoomWithSeats(c.id, 2, 4)).roomId;
+    await insertShowtime(c.id, roomCId, "ON_SALE");
+    const closed = await admin.from("cinemas").update({ status: "CLOSED" }).eq("id", c.id);
+    if (closed.error) throw new Error(`Đóng rạp test thất bại: ${closed.error.message}`);
   });
 
   afterAll(async () => {
@@ -239,6 +248,44 @@ describe.skipIf(!supabaseEnv)("integration catalog public: movies, schedule, cin
       format: "2D",
       movie: { slug: movieSlug, titleVi: `${scope.prefix}Phim Test Catalog`, durationMinutes: 110, ageRating: "T13" },
     });
+  });
+
+  // R-137 / AC-28: rạp không hoạt động vẫn có trang (200) — DB thật vì RLS/quyền cột quyết định việc đọc.
+  it("GET /cinemas/:code: rạp CLOSED/TEMP_CLOSED/COMING_SOON -> 200 rooms/showtimes rỗng, không có trong danh sách; mã lạ -> 404", async () => {
+    for (const status of ["CLOSED", "TEMP_CLOSED", "COMING_SOON"] as const) {
+      const updated = await admin.from("cinemas").update({ status }).eq("id", closedCinema.id);
+      expect(updated.error).toBeNull();
+      const res = await get(`/cinemas/${closedCinema.code}?date=${showDate}`);
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      expect(res.body.cinema).toMatchObject({
+        code: closedCinema.code,
+        status,
+        scheduledStatus: null,
+        scheduledEffectiveAt: null,
+      });
+      expect(res.body.rooms).toEqual([]);
+      expect(res.body.showtimes).toEqual([]);
+      const list = await get(`/cinemas?province=${scope.provinceCode}`);
+      expect((list.body as Array<{ code: string }>).some((c) => c.code === closedCinema.code)).toBe(false);
+    }
+    expect((await get(`/cinemas/ZZ${closedCinema.code.slice(2)}9`)).status).toBe(404);
+  });
+
+  it("GET /cinemas/:code: rạp OPEN có lịch đổi trạng thái -> trả scheduledStatus + scheduledEffectiveAt (UTC ISO) cho banner", async () => {
+    const effectiveAt = new Date(Date.now() + 7 * DAY_MS).toISOString();
+    const updated = await admin
+      .from("cinemas")
+      .update({ scheduled_status: "CLOSED", scheduled_effective_at: effectiveAt })
+      .eq("id", cinemaB.id);
+    expect(updated.error).toBeNull();
+    try {
+      const res = await get(`/cinemas/${cinemaB.code}?date=${showDate}`);
+      expect(res.status).toBe(200);
+      expect(res.body.cinema).toMatchObject({ status: "OPEN", scheduledStatus: "CLOSED", scheduledEffectiveAt: effectiveAt });
+      expect(res.body.showtimes).toHaveLength(1);
+    } finally {
+      await admin.from("cinemas").update({ scheduled_status: null, scheduled_effective_at: null }).eq("id", cinemaB.id);
+    }
   });
 
   // Sau khi thêm FK showtimes -> cinemas, rooms(count) từ cinemas có thể bị PostgREST coi là mơ hồ

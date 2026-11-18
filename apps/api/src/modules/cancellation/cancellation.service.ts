@@ -18,7 +18,9 @@ import {
   type RecordRefundResultDto,
   type ResendEmailResultDto,
   type SetCinemaStatusInput,
+  type SetCinemaStatusResultDto,
 } from "@filmbooking/shared/schemas/cancellation";
+import type { CinemaDbStatus } from "@filmbooking/shared/schemas/catalog";
 import type { UserAccess } from "../../common/auth/access.service";
 import type { AuthUser } from "../../common/auth/decorators";
 import { AppException } from "../../common/errors/app-exception";
@@ -27,6 +29,35 @@ import {
   buildAffectedOrdersCsv,
   type AffectedOrderCsvRow,
 } from "./affected-csv";
+
+interface RpcError {
+  code?: string;
+  message?: string;
+}
+
+/** Lỗi RPC schedule_cinema_status -> AppException (22023 STATUS_UNCHANGED, P0002, 42501; còn lại 500). */
+function mapScheduleCinemaStatusError(error: RpcError): AppException {
+  const { code, message = "" } = error;
+  if (code === "22023" || message.includes("STATUS_UNCHANGED")) {
+    return new AppException(
+      ERROR_CODES.VALIDATION_ERROR,
+      "Cinema already has this status and no scheduled change is pending",
+    );
+  }
+  if (code === "P0002" || message.includes("CINEMA_NOT_FOUND")) {
+    return new AppException(ERROR_CODES.NOT_FOUND, "Cinema not found");
+  }
+  if (code === "42501" || message.includes("FORBIDDEN")) {
+    return new AppException(ERROR_CODES.FORBIDDEN, "Forbidden");
+  }
+  return new AppException(ERROR_CODES.INTERNAL_ERROR, message);
+}
+
+/** RPC trả timestamptz dạng chuỗi Postgres/JSON; chuẩn hoá về UTC ISO ("Z"). */
+function toIsoOrNull(value: unknown): string | null {
+  if (typeof value !== "string" || value === "") return null;
+  return new Date(value).toISOString();
+}
 
 @Injectable()
 export class CancellationService {
@@ -146,69 +177,28 @@ export class CancellationService {
   }
 
   /**
-   * Đổi trạng thái rạp qua RPC set_cinema_status (R-33, AC-26).
-   * Chặn đóng rạp khi còn suất tương lai đã bán vé -> 409 CONFLICT kèm danh sách showtimeIds.
+   * Hẹn lịch đổi trạng thái rạp qua RPC schedule_cinema_status (R-33, R-136, AC-26/AC-27).
+   * Rạp GIỮ NGUYÊN trạng thái, hiệu lực sau 7 ngày, email báo toàn bộ khách do RPC xếp hàng. Hẹn đúng trạng thái
+   * hiện tại khi đang có lịch = huỷ lịch (`scheduleCancelled`); không có lịch -> 400 (STATUS_UNCHANGED).
+   * Không còn chặn theo suất đã bán: job tới hạn tự huỷ suất còn lại.
    */
-  async setCinemaStatus(
-    cinemaId: string,
-    input: SetCinemaStatusInput,
-  ): Promise<{ success: boolean; cinemaId: string; status: string }> {
-    const { data, error } = await this.supabase
-      .admin()
-      .rpc("set_cinema_status", {
-        p_cinema_id: cinemaId,
-        p_status: input.status,
-      });
-
-    if (error) {
-      if (
-        error.message?.includes("CINEMA_HAS_ACTIVE_SOLD_SHOWTIMES") ||
-        error.code === "23514"
-      ) {
-        let showtimeIds: string[] = [];
-        if (error.details) {
-          try {
-            const parsed =
-              typeof error.details === "string"
-                ? JSON.parse(error.details)
-                : error.details;
-            if (Array.isArray(parsed)) showtimeIds = parsed;
-          } catch {
-            // bỏ qua lỗi parse json
-          }
-        }
-        if (showtimeIds.length === 0 && error.message) {
-          const matches = error.message.match(
-            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
-          );
-          if (matches) showtimeIds = Array.from(new Set(matches));
-        }
-        throw new AppException(
-          ERROR_CODES.CONFLICT,
-          "Cinema has active sold showtimes",
-          { showtimeIds },
-        );
-      }
-      if (
-        error.message?.includes("CINEMA_NOT_FOUND") ||
-        error.code === "P0002"
-      ) {
-        throw new AppException(ERROR_CODES.NOT_FOUND, "Cinema not found");
-      }
-      if (
-        error.message?.includes("FORBIDDEN") ||
-        error.code === "42501"
-      ) {
-        throw new AppException(ERROR_CODES.FORBIDDEN, "Forbidden");
-      }
-      throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
-    }
+  async setCinemaStatus(cinemaId: string, input: SetCinemaStatusInput): Promise<SetCinemaStatusResultDto> {
+    const { data, error } = await this.supabase.admin().rpc("schedule_cinema_status", {
+      p_cinema_id: cinemaId,
+      p_status: input.status,
+    });
+    if (error) throw mapScheduleCinemaStatusError(error);
 
     const res = (data ?? {}) as Record<string, unknown>;
+    const scheduleCancelled = Boolean(res.schedule_cancelled);
     return {
       success: Boolean(res.success ?? true),
       cinemaId,
-      status: input.status,
+      status: res.status as CinemaDbStatus,
+      scheduledStatus: scheduleCancelled ? null : ((res.scheduled_status ?? null) as CinemaDbStatus | null),
+      scheduledEffectiveAt: scheduleCancelled ? null : toIsoOrNull(res.scheduled_effective_at),
+      scheduleCancelled,
+      emailsEnqueuedCount: Number(res.emails_enqueued_count ?? 0),
     };
   }
 

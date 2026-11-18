@@ -59,6 +59,19 @@ export function formatDateTimeVN(dateStr: unknown): string {
   }).format(d);
 }
 
+/** Format ngày dd/mm/yyyy theo Asia/Ho_Chi_Minh (NFR-15); rỗng nếu thiếu, giữ nguyên chuỗi nếu không parse được. */
+export function formatDateVN(dateStr: unknown): string {
+  if (!dateStr) return "";
+  const d = new Date(String(dateStr));
+  if (Number.isNaN(d.getTime())) return String(dateStr);
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d);
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -186,11 +199,12 @@ ${body}
 </table>`;
 }
 
-type NoteKind = "warning" | "danger";
+type NoteKind = "warning" | "danger" | "info";
 
 const NOTE_STYLES: Record<NoteKind, { bg: string; border: string; text: string }> = {
   warning: { bg: "#FFF8EB", border: "#F59E0B", text: "#7A4A06" },
   danger: { bg: "#FEF2F2", border: "#DC2626", text: "#991B1B" },
+  info: { bg: "#EFF6FF", border: "#2563EB", text: "#1E3A8A" },
 };
 
 /** Hộp lưu ý (thay `.alert-box` / `.danger-box`); `html` do caller dựng, đã escape giá trị động. */
@@ -614,6 +628,218 @@ Lưu ý:
   return { subject, html, text };
 }
 
+/** 9. Thông báo đổi trạng thái rạp có hiệu lực sau 7 ngày / đính chính huỷ lịch (CINEMA_STATUS_NOTICE) - R-136, AC-27 */
+interface CinemaStatusCopy {
+  /** Việc sẽ xảy ra với rạp, dùng trong subject/đính chính: "Rạp X sẽ <action> từ ngày …". */
+  action: string;
+  heading: string;
+  dateLabel: string;
+  /** Câu mô tả thay đổi; `date` đã được caller định dạng/bọc đậm/escape, phần còn lại là chữ tĩnh. */
+  sentence: (date: string) => string;
+  /**
+   * refund: rạp ngừng bán vé từ ngày hiệu lực -> khách có vé suất sau đó phải đến quầy hoàn tiền trước hạn.
+   * reopen: rạp mở lại -> mời xem lịch chiếu.
+   */
+  followUp: "refund" | "reopen" | "none";
+}
+
+const GENERIC_STATUS_COPY: CinemaStatusCopy = {
+  action: "thay đổi trạng thái hoạt động",
+  heading: "Thông báo thay đổi trạng thái rạp",
+  dateLabel: "Ngày hiệu lực",
+  sentence: (date) => `sẽ thay đổi trạng thái hoạt động kể từ ngày ${date}`,
+  followUp: "none",
+};
+
+const CINEMA_STATUS_COPY = new Map<string, CinemaStatusCopy>([
+  ["CLOSED", {
+    action: "đóng cửa",
+    heading: "Thông báo đóng cửa rạp",
+    dateLabel: "Ngày đóng cửa",
+    sentence: (date) => `sẽ chính thức đóng cửa kể từ ngày ${date}`,
+    followUp: "refund",
+  }],
+  ["TEMP_CLOSED", {
+    action: "tạm ngừng hoạt động",
+    heading: "Thông báo tạm ngừng hoạt động",
+    dateLabel: "Ngày tạm ngừng",
+    sentence: (date) => `sẽ tạm ngừng hoạt động kể từ ngày ${date} (thời gian mở lại sẽ được thông báo sau)`,
+    followUp: "refund",
+  }],
+  ["COMING_SOON", {
+    action: "chuyển sang sắp khai trương",
+    heading: "Thông báo rạp chuyển sang sắp khai trương",
+    dateLabel: "Ngày hiệu lực",
+    sentence: (date) => `sẽ chuyển sang trạng thái sắp khai trương và tạm ngừng nhận đặt vé kể từ ngày ${date}`,
+    followUp: "refund",
+  }],
+  ["OPEN", {
+    action: "mở cửa",
+    heading: "Thông báo mở cửa rạp",
+    dateLabel: "Ngày mở cửa",
+    sentence: (date) => `sẽ bắt đầu hoạt động và nhận đặt vé từ ngày ${date}`,
+    followUp: "reopen",
+  }],
+]);
+
+const OTHER_CINEMAS_NOTE =
+  "Trong thời gian này, các rạp khác vẫn hoạt động bình thường, quý khách có thể chọn rạp khác để đặt vé.";
+const REOPEN_NOTE = "Rạp đã sẵn sàng đón quý khách, hãy xem lịch chiếu và đặt vé ngay.";
+
+/**
+ * Hạn chót hoàn tiền = ngày hiệu lực. Hiệu lực rơi GIỮA ngày (now()+7 ngày) và job huỷ mọi suất sau thời điểm đó,
+ * nên suất ngay trong ngày hiệu lực cũng bị huỷ -> nêu "từ ngày X trở đi" chứ không phải "sau ngày X". `emphasize` bọc đậm cho html.
+ */
+function refundNoticeContent(date: string, emphasize: (s: string) => string): string {
+  return `Quý khách đã đặt vé cho các suất chiếu diễn ra ${emphasize(`từ ngày ${date} trở đi`)} tại rạp này, vui lòng đến trực tiếp quầy vé của rạp ${emphasize(`trước ngày ${date}`)} (mang theo mã đặt vé hoặc mã QR trong email vé) để được hoàn tiền. Sau thời hạn này, CINEMO sẽ không giải quyết hoàn tiền; các suất chiếu còn lại của rạp sẽ bị huỷ.`;
+}
+
+interface CinemaNoticeFields {
+  cinemaName: string;
+  cinemaCode: string;
+  cinemaAddress: string;
+  hotline: string;
+  greeting: string;
+  /** Ngày hiệu lực dd/mm/yyyy giờ VN; rỗng nếu payload thiếu `effective_at`. */
+  date: string;
+  copy: CinemaStatusCopy;
+  isGenericCopy: boolean;
+  /** Trạng thái hiện tại của rạp (chỉ dùng cho mail đính chính); rỗng nếu payload thiếu. */
+  currentStatus: string;
+  origin: string;
+}
+
+function readCinemaNoticeFields(payload: Record<string, unknown>): CinemaNoticeFields {
+  const targetStatus = String(payload.target_status ?? payload.targetStatus ?? "").toUpperCase().trim();
+  const customerName = String(payload.customer_name ?? payload.customerName ?? "").trim();
+  const knownCopy = CINEMA_STATUS_COPY.get(targetStatus);
+  return {
+    // Một dòng duy nhất: tên rạp nằm trong subject nên không được chứa xuống dòng.
+    cinemaName: String(payload.cinema_name ?? payload.cinemaName ?? "Rạp CINEMO").replace(/\s+/g, " ").trim(),
+    cinemaCode: String(payload.cinema_code ?? payload.cinemaCode ?? ""),
+    cinemaAddress: String(payload.cinema_address ?? payload.cinemaAddress ?? ""),
+    hotline: String(payload.hotline ?? DEFAULT_HOTLINE),
+    greeting: `Kính gửi ${customerName || "quý khách"},`,
+    date: formatDateVN(payload.effective_at ?? payload.effectiveAt),
+    copy: knownCopy ?? GENERIC_STATUS_COPY,
+    isGenericCopy: !knownCopy,
+    currentStatus: String(payload.current_status ?? payload.currentStatus ?? "").toUpperCase().trim(),
+    origin: resolveOrigin(payload),
+  };
+}
+
+function cinemaNoticeRows(f: CinemaNoticeFields, withDate: boolean): InfoRow[] {
+  const rows: InfoRow[] = [{ label: "Rạp", value: f.cinemaName }];
+  if (f.cinemaAddress) rows.push({ label: "Địa chỉ", value: f.cinemaAddress });
+  if (withDate && f.date) rows.push({ label: f.copy.dateLabel, value: f.date, valueColor: "#B91C1C" });
+  rows.push({ label: "Hotline", value: f.hotline });
+  return rows;
+}
+
+const rowsAsText = (rows: InfoRow[]): string => rows.map((r) => `${r.label}: ${r.value}`).join("\n");
+
+/** Khối html + text theo loại thay đổi: hoàn tiền (đóng/tạm đóng/sắp mở), mời xem lịch chiếu (mở cửa), hoặc không có. */
+function cinemaFollowUp(f: CinemaNoticeFields, date: string): { html: string; text: string } {
+  if (f.copy.followUp === "refund") {
+    return {
+      html: `${noteBox("warning", `<strong>Lưu ý về hoàn tiền vé:</strong><br>${refundNoticeContent(escapeHtml(date), (s) => `<strong>${s}</strong>`)}`)}
+${paragraph(escapeHtml(OTHER_CINEMAS_NOTE))}`,
+      text: `LƯU Ý VỀ HOÀN TIỀN VÉ:\n${refundNoticeContent(date, (s) => s)}\n\n${OTHER_CINEMAS_NOTE}\n`,
+    };
+  }
+  if (f.copy.followUp === "reopen") {
+    const cta = f.cinemaCode ? `\n${button("Xem lịch chiếu", `${f.origin}/rap/${encodeURIComponent(f.cinemaCode)}`)}` : "";
+    return { html: `${noteBox("info", escapeHtml(REOPEN_NOTE))}${cta}`, text: `${REOPEN_NOTE}\n` };
+  }
+  return { html: "", text: "" };
+}
+
+function renderCinemaStatusChange(f: CinemaNoticeFields): RenderedEmail {
+  const date = f.date || "sắp tới";
+  const subjectTail = f.isGenericCopy ? f.copy.action : `sẽ ${f.copy.action} từ ngày ${date}`;
+  const subject = `[CINEMO] Thông báo: Rạp ${f.cinemaName} ${subjectTail}`;
+  const where = f.cinemaAddress ? ` (${f.cinemaAddress})` : "";
+  const hotlineLine = `Mọi thắc mắc xin liên hệ hotline ${f.hotline}.`;
+  const followUp = cinemaFollowUp(f, date);
+  const boldDate = `<strong>${escapeHtml(date)}</strong>`;
+
+  const html = wrapLayout(
+    subject,
+    `${heading(f.copy.heading)}
+${paragraph(escapeHtml(f.greeting))}
+${paragraph(`CINEMO xin thông báo rạp <strong>${escapeHtml(f.cinemaName)}</strong>${escapeHtml(where)} ${f.copy.sentence(boldDate)}.`)}
+${infoTable(cinemaNoticeRows(f, true))}
+${followUp.html}
+${paragraph(escapeHtml(hotlineLine))}`,
+    { preheader: `Rạp ${f.cinemaName} ${f.isGenericCopy ? f.copy.action : `sẽ ${f.copy.action} từ ngày ${date}`}.` },
+  );
+
+  const text = `${f.copy.heading.toUpperCase()} - CINEMO
+
+${f.greeting}
+CINEMO xin thông báo rạp ${f.cinemaName}${where} ${f.copy.sentence(date)}.
+${rowsAsText(cinemaNoticeRows(f, true))}
+
+${followUp.text}${hotlineLine}`;
+
+  return { subject, html, text };
+}
+
+/** Cách gọi trạng thái hiện tại khi rạp KHÔNG hoạt động (dùng trong mail đính chính). */
+const CLOSED_STATE_PHRASES = new Map<string, string>([
+  ["CLOSED", "đã đóng cửa"],
+  ["TEMP_CLOSED", "đang tạm đóng cửa"],
+  ["COMING_SOON", "đang ở trạng thái sắp khai trương"],
+]);
+
+/**
+ * Đính chính khi admin huỷ lịch đã hẹn. Rạp giữ nguyên trạng thái hiện tại: nếu đang OPEN (hoặc payload thiếu)
+ * thì vẫn hoạt động bình thường; nếu đang đóng/tạm đóng/sắp mở thì KHÔNG được nói là "vẫn hoạt động".
+ */
+function renderCinemaStatusCorrection(f: CinemaNoticeFields): RenderedEmail {
+  const sinceDate = f.date ? ` từ ngày ${f.date}` : "";
+  const closedState = CLOSED_STATE_PHRASES.get(f.currentStatus);
+  const cancelledNotice = `thông báo trước đó về việc rạp ${f.cinemaName} ${f.copy.action}${sinceDate} đã được huỷ`;
+  const reopenCancelled = f.copy === CINEMA_STATUS_COPY.get("OPEN") ? " Ngày mở cửa dự kiến không còn áp dụng." : "";
+  const subject = closedState
+    ? `[CINEMO] Đính chính: Thông báo về rạp ${f.cinemaName} đã được huỷ`
+    : `[CINEMO] Đính chính: Rạp ${f.cinemaName} vẫn hoạt động bình thường`;
+  const statement = closedState
+    ? `Rạp giữ nguyên trạng thái hiện tại (${closedState}).${reopenCancelled}`
+    : "Rạp tiếp tục hoạt động như bình thường, quý khách không cần đến rạp hoàn tiền vé.";
+  const body = `CINEMO xin đính chính: ${cancelledNotice}. ${statement} CINEMO xin lỗi vì sự bất tiện này.`;
+  const hotlineLine = `Mọi thắc mắc xin liên hệ hotline ${f.hotline}.`;
+  const preheader = closedState
+    ? `Thông báo trước đó về rạp ${f.cinemaName} đã được huỷ, rạp giữ nguyên trạng thái hiện tại.`
+    : `Rạp ${f.cinemaName} vẫn hoạt động bình thường, thông báo trước đó đã được huỷ.`;
+
+  const html = wrapLayout(
+    subject,
+    `${heading("Đính chính thông báo")}
+${paragraph(escapeHtml(f.greeting))}
+${paragraph(escapeHtml(body))}
+${infoTable(cinemaNoticeRows(f, false))}
+${paragraph(escapeHtml(hotlineLine))}`,
+    { preheader },
+  );
+
+  const text = `ĐÍNH CHÍNH THÔNG BÁO - CINEMO
+
+${f.greeting}
+${body}
+${rowsAsText(cinemaNoticeRows(f, false))}
+
+${hotlineLine}`;
+
+  return { subject, html, text };
+}
+
+export function renderCinemaStatusNoticeEmail(payload: Record<string, unknown>): RenderedEmail {
+  const fields = readCinemaNoticeFields(payload);
+  const isCorrection = (payload.schedule_cancelled ?? payload.scheduleCancelled) === true;
+  return isCorrection ? renderCinemaStatusCorrection(fields) : renderCinemaStatusChange(fields);
+}
+
 /** Router chọn template theo kind của outbox */
 export function renderTemplate(
   kind: string,
@@ -644,6 +870,9 @@ export function renderTemplate(
 
     case "SHOWTIME_CANCELLED":
       return renderShowtimeCancelledEmail(payload);
+
+    case "CINEMA_STATUS_NOTICE":
+      return renderCinemaStatusNoticeEmail(payload);
 
     case "PASSWORD_SET":
       return renderPasswordSetEmail(payload);

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { apiFetch } from "@/lib/api/client";
+import { SCHEDULED_CHANGE_LABELS, formatVnShortDate } from "@/lib/cinema-schedule";
 import type { AdminCinemaDto, CinemaDbStatus } from "@filmbooking/shared/schemas/catalog";
 
 const STATUS_TONE: Record<CinemaDbStatus, "success" | "neutral" | "warning" | "danger"> = {
@@ -20,7 +21,7 @@ const STATUS_TONE: Record<CinemaDbStatus, "success" | "neutral" | "warning" | "d
 };
 
 /**
- * Màn 19 — Quản lý rạp (R-32, R-33, R-38). Admin: toàn chuỗi + tạo rạp + đổi trạng thái;
+ * Màn 19 — Quản lý rạp (R-32, R-33, R-38). Admin: toàn chuỗi + tạo rạp + hẹn đổi trạng thái (R-136);
  * Manager: chỉ rạp mình, không có nút tạo / đổi trạng thái.
  */
 export default function AdminCinemasPage() {
@@ -55,7 +56,7 @@ export default function AdminCinemasPage() {
         title="Rạp chiếu"
         description={
           isAdmin
-            ? "Thêm rạp, sửa thông tin và đổi trạng thái hoạt động của từng rạp."
+            ? "Thêm rạp, sửa thông tin và hẹn đổi trạng thái hoạt động của từng rạp (có hiệu lực sau 7 ngày)."
             : "Thông tin và cấu hình các rạp bạn quản lý."
         }
         action={
@@ -94,7 +95,15 @@ export default function AdminCinemasPage() {
                 <TableCell>{cinema.address}</TableCell>
                 <TableCell>{cinema.roomCount}</TableCell>
                 <TableCell>
-                  <Badge tone={STATUS_TONE[cinema.status]}>{CINEMA_STATUS_LABELS[cinema.status]}</Badge>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone={STATUS_TONE[cinema.status]}>{CINEMA_STATUS_LABELS[cinema.status]}</Badge>
+                    {cinema.scheduledStatus && cinema.scheduledEffectiveAt ? (
+                      <Badge tone="info">
+                        {SCHEDULED_CHANGE_LABELS[cinema.scheduledStatus]}{" "}
+                        {formatVnShortDate(new Date(cinema.scheduledEffectiveAt))}
+                      </Badge>
+                    ) : null}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
@@ -130,8 +139,14 @@ export default function AdminCinemasPage() {
           cinema={statusTarget}
           open
           onOpenChange={(open) => !open && setStatusTarget(null)}
-          onChanged={(status) => {
-            setCinemas((prev) => prev?.map((c) => (c.id === statusTarget.id ? { ...c, status } : c)) ?? prev);
+          // Hẹn lịch KHÔNG đổi trạng thái hiện tại (R-136): chỉ cập nhật lịch đang chờ.
+          onChanged={({ status, scheduledStatus, scheduledEffectiveAt }) => {
+            setCinemas(
+              (prev) =>
+                prev?.map((c) =>
+                  c.id === statusTarget.id ? { ...c, status, scheduledStatus, scheduledEffectiveAt } : c,
+                ) ?? prev,
+            );
           }}
         />
       ) : null}

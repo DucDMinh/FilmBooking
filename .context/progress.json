@@ -126,6 +126,61 @@
       ],
       "note": "spec_version 3.3.0, scope v25. HIGH_RISK_MIGRATION (rewrite/backfill orders, unique/check): không promote production khi chưa verify staging; có rollback trong migration. QR = token ngẫu nhiên của đơn (không nhúng nội dung); QR cũ theo ghế vẫn quét được. Residual: chưa xem giao diện web thật/quét camera thật, audit cũ của tickets còn token vé cũ, pnpm db:test nguyên bản FAIL do data demo (có từ trước), gap R-86 link bản đồ, API phải build lại + restart.",
       "updatedAt": "2026-11-17T15:12:57.998Z"
+    },
+    {
+      "id": "cinema-status-notice",
+      "title": "Rạp đóng cửa: trang rạp báo thông báo thay vì 404; mọi đổi trạng thái rạp hiệu lực sau 7 ngày + email toàn bộ khách (spec 3.4.0: R-33, R-136, R-137, AC-26..AC-30)",
+      "class": "MODIFY",
+      "status": "done",
+      "highRiskMigration": true,
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 DB: lịch đổi trạng thái 7 ngày, schedule_cinema_status, job apply_due_cinema_status_changes, quyền cột",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/feature-cinema-status-notice-phase-1-task-01-round-2-review.md"
+          }
+        },
+        {
+          "phase": 1,
+          "task": "task-02 mail: template CINEMA_STATUS_NOTICE",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "NORMAL",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/feature-cinema-status-notice-phase-1-task-02-round-2-review.md"
+          }
+        },
+        {
+          "phase": 2,
+          "task": "task-03 shared+API: hẹn/huỷ lịch, GET /cinemas/:code 200 mọi trạng thái",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 1,
+            "reportPath": ".context/review-reports/feature-cinema-status-notice-phase-2-task-03-round-1-review.md"
+          }
+        },
+        {
+          "phase": 3,
+          "task": "task-04 web: thông báo rạp đóng cửa + banner lịch + dialog admin",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 1,
+            "reportPath": ".context/review-reports/feature-cinema-status-notice-phase-3-task-04-round-1-review.md"
+          }
+        }
+      ],
+      "note": "spec_version 3.4.0, scope v26. HIGH_RISK_MIGRATION (drop set_cinema_status, đổi quyền cột cinemas, job huỷ suất/đơn hàng loạt): không promote production khi chưa verify staging; có rollback trong migration. Residual: không chặn bán vé mới trong 7 ngày chờ (PO chấp nhận); docs/BRD.md chưa cập nhật (CR riêng); trang /rap/<mã> khi API 5xx vẫn hiện 404 (hành vi cũ); mới chỉ có jsdom test cho giao diện web, chưa xem trên trình duyệt thật (web :3000 của user trỏ API cũ cho tới khi restart pnpm dev); pnpm db:test nguyên bản FAIL do data demo (có từ trước); account.test.tsx flake timeout khi máy tải. Cần restart API/web. Validator hết phase: GAPS FOUND (0 CRITICAL/HIGH) đã xử lý G-1/G-3/G-5/G-6.",
+      "updatedAt": "2026-11-18T04:21:54.461Z"
     }
   ],
   "bugs": [
@@ -603,7 +658,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-17T15:12:57.998Z",
+  "lastUpdated": "2026-11-18T04:21:54.462Z",
   "inProgressTask": null,
   "completedTasks": [
     {

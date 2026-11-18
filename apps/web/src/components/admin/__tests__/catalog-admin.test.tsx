@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import type { CinemaDto } from "@filmbooking/shared/schemas/catalog";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -65,6 +65,8 @@ const cinema: CinemaDto = {
   imageUrl: null,
   amenities: [],
   status: "OPEN",
+  scheduledStatus: null,
+  scheduledEffectiveAt: null,
 };
 
 beforeEach(() => {
@@ -198,31 +200,136 @@ describe("CinemaForm", () => {
   });
 });
 
-describe("CinemaStatusDialog (AC-26)", () => {
-  it("còn suất đã bán -> hiện cảnh báo + danh sách + link huỷ hàng loạt, không báo đã đổi", async () => {
-    const showtimeId = "33333333-3333-4333-8333-333333333333";
+describe("CinemaStatusDialog (R-136, AC-30)", () => {
+  const NOW = new Date("2026-11-18T03:00:00.000Z"); // 10:00 VN 18/11 -> hiệu lực 25/11/2026
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const result = (over: Record<string, unknown> = {}) => ({
+    success: true,
+    cinemaId: cinema.id,
+    status: "OPEN",
+    scheduledStatus: "CLOSED",
+    scheduledEffectiveAt: "2026-11-25T03:00:00.000Z",
+    scheduleCancelled: false,
+    emailsEnqueuedCount: 42,
+    ...over,
+  });
+
+  async function pick(label: string) {
+    await userEvent.click(screen.getByRole("combobox", { name: "Trạng thái mới" }));
+    await userEvent.click(await screen.findByRole("option", { name: label }));
+  }
+
+  it("chọn Đóng cửa: giải thích ngày hiệu lực +7 ngày + email + hoàn tiền; xác nhận gọi PATCH /status, báo số email", async () => {
     const onChanged = vi.fn();
-    apiFetch.mockImplementation((path: string) => {
-      if (path.endsWith("/status")) {
-        return Promise.reject(new ApiError("CONFLICT", "x", 409, { showtimeIds: [showtimeId] }));
-      }
-      return Promise.resolve([
-        { id: showtimeId, roomId: "r", startsAt: "2026-12-01T12:00:00.000Z", endsAt: "", format: "2D", languageMode: "SUB", status: "SCHEDULED" },
-      ]);
-    });
+    apiFetch.mockResolvedValue(result());
+    const { toast } = await import("sonner");
     render(<CinemaStatusDialog cinema={cinema} open onOpenChange={vi.fn()} onChanged={onChanged} />);
 
-    await userEvent.click(screen.getByRole("combobox", { name: "Trạng thái mới" }));
-    await userEvent.click(await screen.findByRole("option", { name: "Tạm đóng" }));
-    await userEvent.click(screen.getByRole("button", { name: "Đổi trạng thái" }));
+    // Trạng thái hiện tại + chưa có lịch: chưa có gì để xác nhận.
+    expect(screen.getByRole("button", { name: "Hẹn đổi trạng thái & gửi email" })).toBeDisabled();
 
-    expect(await screen.findByText(/còn 1 suất tương lai đã bán vé/)).toBeInTheDocument();
-    expect(await screen.findByText(/2D/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Huỷ hàng loạt các suất" })).toHaveAttribute(
-      "href",
-      `/admin/lich-chieu?cinema=${cinema.id}&cancelAll=1`,
+    await pick("Ngừng hoạt động");
+    expect(screen.getByText(/có hiệu lực vào 25\/11\/2026/)).toBeInTheDocument();
+    expect(screen.getByText(/gửi email tới toàn bộ khách hàng/)).toBeInTheDocument();
+    expect(screen.getByText(/đến quầy hoàn tiền trước ngày 25\/11\/2026/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Hẹn đổi trạng thái & gửi email" }));
+
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+    expect(apiFetch).toHaveBeenCalledWith(`/admin/cinemas/${cinema.id}/status`, {
+      method: "PATCH",
+      json: { status: "CLOSED" },
+    });
+    expect(onChanged).toHaveBeenCalledWith(expect.objectContaining({ scheduledStatus: "CLOSED", status: "OPEN" }));
+    expect(vi.mocked(toast.success).mock.calls.at(-1)?.[0]).toMatch(/42 khách hàng/);
+  });
+
+  it("chọn Đang hoạt động (rạp đang đóng): không nhắc hoàn tiền / huỷ suất", async () => {
+    render(<CinemaStatusDialog cinema={{ ...cinema, status: "TEMP_CLOSED" }} open onOpenChange={vi.fn()} onChanged={vi.fn()} />);
+    await pick("Đang hoạt động");
+    expect(screen.getByText(/có hiệu lực vào 25\/11\/2026/)).toBeInTheDocument();
+    expect(screen.queryByText(/hoàn tiền/)).not.toBeInTheDocument();
+  });
+
+  it("đã có lịch: hiện lịch hiện tại, mặc định là huỷ lịch (cảnh báo email đính chính), gửi status = trạng thái hiện tại", async () => {
+    const onChanged = vi.fn();
+    apiFetch.mockResolvedValue(result({ scheduledStatus: null, scheduledEffectiveAt: null, scheduleCancelled: true }));
+    const { toast } = await import("sonner");
+    const scheduled = { ...cinema, scheduledStatus: "CLOSED" as const, scheduledEffectiveAt: "2026-11-24T17:30:00.000Z" };
+    render(<CinemaStatusDialog cinema={scheduled} open onOpenChange={vi.fn()} onChanged={onChanged} />);
+
+    expect(screen.getByText(/Đang chờ: Ngừng hoạt động từ ngày 25\/11\/2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Huỷ lịch sẽ giữ rạp ở trạng thái/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Huỷ lịch & gửi email đính chính" }));
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+    expect(apiFetch).toHaveBeenCalledWith(`/admin/cinemas/${cinema.id}/status`, {
+      method: "PATCH",
+      json: { status: "OPEN" },
+    });
+    expect(vi.mocked(toast.success).mock.calls.at(-1)?.[0]).toMatch(/Đã huỷ lịch/);
+  });
+
+  it("đã có lịch: chọn trạng thái khác = hẹn lại (thay lịch cũ, gửi lại email)", async () => {
+    apiFetch.mockResolvedValue(result({ scheduledStatus: "TEMP_CLOSED" }));
+    const scheduled = { ...cinema, scheduledStatus: "CLOSED" as const, scheduledEffectiveAt: "2026-11-24T17:30:00.000Z" };
+    render(<CinemaStatusDialog cinema={scheduled} open onOpenChange={vi.fn()} onChanged={vi.fn()} />);
+    await pick("Tạm đóng");
+    expect(screen.getByText(/thay lịch cũ và gửi lại email/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Hẹn đổi trạng thái & gửi email" }));
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith(`/admin/cinemas/${cinema.id}/status`, {
+        method: "PATCH",
+        json: { status: "TEMP_CLOSED" },
+      }),
     );
+  });
+
+  it("đang gửi: Esc / click ngoài / nút Đóng không đóng được dialog; bấm xác nhận 2 lần chỉ gọi API 1 lần", async () => {
+    const onOpenChange = vi.fn();
+    const onChanged = vi.fn();
+    let finish: (value: unknown) => void = () => undefined;
+    apiFetch.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    render(<CinemaStatusDialog cinema={cinema} open onOpenChange={onOpenChange} onChanged={onChanged} />);
+    await pick("Tạm đóng");
+
+    const confirm = screen.getByRole("button", { name: "Hẹn đổi trạng thái & gửi email" });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+
+    await userEvent.keyboard("{Escape}");
+    // Radix đặt pointer-events:none lên body khi modal mở nên dùng fireEvent cho "click ra ngoài".
+    fireEvent.pointerDown(document.body);
+    fireEvent.click(document.body);
+    // Hai nút "Đóng": nút X của Radix (đi qua onOpenChange đã chặn) và nút ở chân dialog (bị khoá).
+    const closers = screen.getAllByRole("button", { name: "Đóng" });
+    expect(closers.some((button) => (button as HTMLButtonElement).disabled)).toBe(true);
+    for (const button of closers) fireEvent.click(button);
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    finish(result({ scheduledStatus: "TEMP_CLOSED" }));
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("lỗi API: hiện lỗi trong dialog, không gọi onChanged; không còn UI chặn suất đã bán (409)", async () => {
+    const onChanged = vi.fn();
+    apiFetch.mockRejectedValue(new ApiError("VALIDATION_ERROR", "Trạng thái không hợp lệ", 400));
+    render(<CinemaStatusDialog cinema={cinema} open onOpenChange={vi.fn()} onChanged={onChanged} />);
+    await pick("Tạm đóng");
+    await userEvent.click(screen.getByRole("button", { name: "Hẹn đổi trạng thái & gửi email" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Trạng thái không hợp lệ");
     expect(onChanged).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: "Huỷ hàng loạt các suất" })).not.toBeInTheDocument();
   });
 });
 
@@ -257,6 +364,44 @@ describe("AdminCinemasPage", () => {
     expect(await screen.findByText("Rạp khác")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Thêm rạp" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Đổi trạng thái/ })).toHaveLength(2);
+  });
+
+  it("hẹn lịch xong: trạng thái hiện tại GIỮ NGUYÊN, chỉ thêm badge lịch chờ (R-136)", async () => {
+    apiFetch.mockImplementation((path: string) => {
+      if (path === "/me") return Promise.resolve({ id: "u", email: null, emailConfirmed: true, isAdmin: true, cinemas: [] });
+      if (path === "/admin/cinemas") return Promise.resolve([{ ...cinema, roomCount: 1 }]);
+      if (path === `/admin/cinemas/${cinema.id}/status`) {
+        return Promise.resolve({
+          success: true,
+          cinemaId: cinema.id,
+          status: "OPEN",
+          scheduledStatus: "CLOSED",
+          scheduledEffectiveAt: "2026-11-24T17:30:00.000Z",
+          scheduleCancelled: false,
+          emailsEnqueuedCount: 3,
+        });
+      }
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    render(<AdminCinemasPage />);
+    await userEvent.click(await screen.findByRole("button", { name: `Đổi trạng thái rạp ${cinema.name}` }));
+    await userEvent.click(screen.getByRole("combobox", { name: "Trạng thái mới" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Ngừng hoạt động" }));
+    await userEvent.click(screen.getByRole("button", { name: "Hẹn đổi trạng thái & gửi email" }));
+
+    expect(await screen.findByText("Sẽ đóng cửa 25/11")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByText("Đang hoạt động")).toBeInTheDocument();
+    expect(screen.queryByText("Ngừng hoạt động")).not.toBeInTheDocument();
+  });
+
+  it("rạp có lịch chờ: Badge nhãn lịch + ngày hiệu lực (giờ VN); trạng thái hiện tại giữ nguyên", async () => {
+    mockMe({ id: "u", email: null, emailConfirmed: true, isAdmin: true, cinemas: [] }, [
+      { ...cinema, roomCount: 1, scheduledStatus: "CLOSED", scheduledEffectiveAt: "2026-11-24T17:30:00.000Z" },
+    ]);
+    render(<AdminCinemasPage />);
+    expect(await screen.findByText("Sẽ đóng cửa 25/11")).toBeInTheDocument();
+    expect(screen.getByText("Đang hoạt động")).toBeInTheDocument();
   });
 });
 

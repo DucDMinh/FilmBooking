@@ -54,7 +54,7 @@ select set_eq(
     ('report_payos_reconciliation(uuid)'),
     ('report_revenue(uuid,date,date,order_channel)'),
     ('resolve_manual_review(uuid,text,text,text,integer)'),
-    ('set_cinema_status(uuid,cinema_status)')$$,
+    ('schedule_cinema_status(uuid,cinema_status)')$$,
   'authenticated chỉ EXECUTE được các hàm trong allowlist'
 );
 
@@ -92,6 +92,8 @@ select ok(not exists (
       'public.mark_payment_cancelled(uuid,text)',
       'public.generate_booking_code(text)',
       'public.expire_overdue_holds()',
+      'public.apply_due_cinema_status_changes()',
+      'public.cancel_showtimes_core(uuid[],text,uuid,boolean)',
       'public.assert_identity_rpc_caller(uuid)',
       'public.get_user_identities(uuid)',
       'public.unlink_user_identity(uuid,text)',
@@ -240,7 +242,7 @@ select throws_ok($$select public.preview_cancel_showtimes(array['00000000-0000-0
   'A không xem trước huỷ suất của rạp khác');
 select throws_ok($$select public.cancel_showtimes(array['00000000-0000-0000-0000-00000000a048'::uuid], 'x')$$, '42501', null,
   'A không huỷ suất chiếu');
-select throws_ok($$select public.set_cinema_status('00000000-0000-0000-0000-0000000048c1'::uuid, 'TEMP_CLOSED')$$, '42501', null,
+select throws_ok($$select public.schedule_cinema_status('00000000-0000-0000-0000-0000000048c1'::uuid, 'TEMP_CLOSED')$$, '42501', null,
   'A không đổi trạng thái rạp');
 select throws_ok($$select public.checkin_ticket('NOPE', '00000000-0000-0000-0000-0000000048c1'::uuid)$$, '42501', null,
   'A không soát vé của rạp không được gán');

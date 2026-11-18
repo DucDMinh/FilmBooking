@@ -115,7 +115,7 @@ function settingsChanged(
 
 /**
  * Form rạp (màn 36, R-32/R-38/R-56). Admin tạo/sửa đủ trường; Manager chỉ sửa thông tin + cấu hình rạp mình
- * (mã rạp, tỉnh/thành bị khoá; trạng thái đổi riêng qua CinemaStatusDialog có guard AC-26).
+ * (mã rạp, tỉnh/thành bị khoá; trạng thái chỉ đổi qua CinemaStatusDialog (hẹn lịch 7 ngày, R-136); form này không gửi `status` khi sửa).
  */
 export function CinemaForm({
   role,
@@ -256,7 +256,7 @@ export function CinemaForm({
           <Field id="status-readonly" label="Trạng thái">
             <p id="status-readonly" className="text-body-sm text-fg-secondary">
               {CINEMA_STATUS_LABELS[cinema.status]}
-              {isAdmin ? " — đổi tại danh sách rạp (Đổi trạng thái)." : ""}
+              {isAdmin ? " — đổi tại danh sách rạp (Đổi trạng thái, có hiệu lực sau 7 ngày)." : ""}
             </p>
           </Field>
         )}

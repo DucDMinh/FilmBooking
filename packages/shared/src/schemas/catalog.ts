@@ -181,6 +181,10 @@ export interface CinemaDto {
   imageUrl: string | null;
   amenities: string[];
   status: CinemaDbStatus;
+  /** R-136: trạng thái sẽ có hiệu lực tại `scheduledEffectiveAt` (đúng 7 ngày sau lúc Admin hẹn); null = không có lịch. */
+  scheduledStatus: CinemaDbStatus | null;
+  /** UTC ISO; cùng null / cùng có giá trị với `scheduledStatus`. */
+  scheduledEffectiveAt: string | null;
 }
 
 /** Rạp trong màn quản trị: mọi trạng thái + số phòng. */

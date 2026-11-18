@@ -4,6 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CinemaMap } from "@/components/catalog/cinema-map";
+import {
+  CinemaClosedNotice,
+  CinemaScheduleBanner,
+  closedCinemaTitle,
+} from "@/components/catalog/cinema-closed-notice";
 import { CinemaTag } from "@/lib/monitoring/cinema-tag";
 import { FavoriteButton } from "@/components/catalog/favorite-button";
 import { AgeBadge } from "@/components/common/age-badge";
@@ -99,6 +104,15 @@ export async function generateMetadata({ params }: CinemaDetailPageProps): Promi
   }
 
   const { cinema } = detail;
+  if (cinema.status !== "OPEN") {
+    // Rạp không hoạt động: có trang thông báo nhưng không quảng bá lên công cụ tìm kiếm (R-137).
+    const title = closedCinemaTitle(cinema);
+    return {
+      title: `${title} | CINEMO`,
+      description: `${title}. Quý khách vui lòng chọn rạp khác trong hệ thống CINEMO để xem lịch chiếu và đặt vé.`,
+      robots: { index: false, follow: true },
+    };
+  }
   return {
     title: `${cinema.name} | Rạp chiếu phim CINEMO`,
     description: `Xem lịch chiếu phim và đặt vé tại ${cinema.name}. Địa chỉ: ${cinema.address}. Hotline: ${cinema.hotline ?? "1900 8888"}.`,
@@ -121,6 +135,15 @@ export default async function CinemaDetailPage({
   }
 
   const { cinema, showtimes } = detail;
+  if (cinema.status !== "OPEN") {
+    // R-137: thông báo thay cho 404; không JSON-LD/lịch chiếu/bản đồ/yêu thích cho rạp không bán vé.
+    return (
+      <>
+        {cinema.id ? <CinemaTag cinemaId={cinema.id} /> : null}
+        <CinemaClosedNotice cinema={cinema} />
+      </>
+    );
+  }
   const siteUrl = getSiteUrl();
   const jsonLd = buildCinemaJsonLd(cinema, siteUrl);
 
@@ -177,6 +200,8 @@ export default async function CinemaDetailPage({
       />
 
       <div className="space-y-8">
+        <CinemaScheduleBanner cinema={cinema} />
+
         {/* Breadcrumb */}
         <nav aria-label="Đường dẫn phân cấp" className="flex items-center gap-2 text-body-sm text-fg-secondary">
           <Link href="/" className="hover:text-fg">Trang chủ</Link>

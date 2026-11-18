@@ -81,8 +81,8 @@ Liên kết MXH: API không tự tạo identity; web gọi link-intent rồi `su
 | Route | Guard | Ghi chú |
 |---|---|---|
 | `GET /provinces` | Public | |
-| `GET /cinemas` | Public | Chỉ rạp `OPEN` cho khách |
-| `GET /cinemas/:code` | Public | Theo mã rạp |
+| `GET /cinemas` | Public | Chỉ rạp `OPEN` cho khách (`CinemaDto` có thêm `scheduledStatus`, `scheduledEffectiveAt`, nullable) |
+| `GET /cinemas/:code` | Public | Theo mã rạp. **200 cho mọi rạp tồn tại** kèm `cinema.status` (R-137); rạp không `OPEN` -> `rooms: []`, `showtimes: []`; mã không tồn tại -> 404. `cinema` có `scheduledStatus`/`scheduledEffectiveAt` (lịch đổi trạng thái đang chờ, R-136; `null` khi không có) cho banner trang rạp. Tra rạp bằng client anon (policy `cinemas_select` cho đọc mọi rạp), chỉ chọn cột công khai |
 | `GET /home` | Public | Banner + phim đang/sắp chiếu |
 | `GET /movies` | Public | Lọc/tìm phim `PUBLISHED` |
 | `GET /movies/:slug` | Public | |
@@ -93,7 +93,7 @@ Liên kết MXH: API không tự tạo identity; web gọi link-intent rồi `su
 | `GET /admin/cinemas` | Roles(MANAGER) | Admin: tất cả; Manager: rạp mình; kèm `roomCount` |
 | `GET /admin/cinemas/:cinemaId` | Roles(MANAGER)+Scope | |
 | `POST /admin/cinemas` | Roles(ADMIN) | |
-| `PATCH /admin/cinemas/:cinemaId` | Roles(MANAGER)+Scope | Manager chỉ sửa cột cho phép (trigger `cinemas_guard_manager_columns`) |
+| `PATCH /admin/cinemas/:cinemaId` | Roles(MANAGER)+Scope | Manager chỉ sửa cột cho phép (trigger `cinemas_guard_manager_columns`). **`status` khác trạng thái hiện tại -> 400 `VALIDATION_ERROR`** (đổi trạng thái chỉ qua `/status`, hiệu lực sau 7 ngày); `status` bằng hiện tại bị bỏ qua. `authenticated` không còn quyền cột `status`/`scheduled_*` ở DB |
 | `POST /admin/uploads` | Roles(MANAGER) | Body `{bucket: posters\|banners\|cinema-images, cinemaId?, contentType: image/jpeg\|png\|webp, sizeBytes <= 5MB}` -> `{path,token,signedUrl,publicUrl}`; posters/banners chỉ Admin, cinema-images Admin hoặc Manager của rạp; client `PUT` file lên `signedUrl` |
 
 ### Vận hành rạp: phòng, ghế, suất, khoá ghế, cấu hình rạp (`CinemaOpsModule`, `@CinemaScope`)
@@ -189,10 +189,10 @@ Bộ route có 3 dạng alias (`/admin/cinemas/:cinemaId/...`, `/cinemas/:cinema
 | `POST /cinemas/:cinemaId/showtimes/cancel` | Roles(MANAGER)+Scope | Huỷ hàng loạt (RPC `cancel_showtimes`): đơn `paid` -> `affected` + `affected_order_cases`, xếp email; bỏ qua suất đã `CANCELLED` |
 | `POST /admin/cinemas/:cinemaId/cancel-showtimes` | Roles(MANAGER)+Scope | Alias |
 | `POST /showtimes/cancel` | Roles(MANAGER)+Scope | Alias |
-| `PATCH /admin/cinemas/:cinemaId/status` | Roles(ADMIN) | Đóng/mở rạp (RPC `set_cinema_status`) |
-| `PATCH /cinemas/:cinemaId/status` | Roles(ADMIN) | Alias |
-| `POST /admin/cinemas/:cinemaId/status` | Roles(ADMIN) | Alias (POST) |
-| `POST /cinemas/:cinemaId/status` | Roles(ADMIN) | Alias (POST) |
+| `PATCH /admin/cinemas/:cinemaId/status` | Roles(ADMIN) | Body `{status}`. **Hẹn lịch đổi trạng thái +7 ngày** (RPC `schedule_cinema_status`, R-33/R-136): rạp giữ nguyên trạng thái, xếp email `CINEMA_STATUS_NOTICE` cho mọi tài khoản đã xác nhận email. **PATCH trả 200, POST (4 alias) trả 201** (mặc định Nest) với `{success, cinemaId, status (hiện tại), scheduledStatus, scheduledEffectiveAt (UTC ISO), scheduleCancelled, emailsEnqueuedCount}`. Hẹn đúng trạng thái hiện tại khi đang có lịch = huỷ lịch (`scheduleCancelled: true`, `scheduled*: null`, email đính chính); không có lịch -> 400 `VALIDATION_ERROR` (`STATUS_UNCHANGED`); rạp không có -> 404; không phải Admin -> 403. Đã bỏ 409 `CINEMA_HAS_ACTIVE_SOLD_SHOWTIMES` và RPC `set_cinema_status` |
+| `PATCH /cinemas/:cinemaId/status` | Roles(ADMIN) | Alias; 200, cùng body/response |
+| `POST /admin/cinemas/:cinemaId/status` | Roles(ADMIN) | Alias (POST); **201**, cùng body/response |
+| `POST /cinemas/:cinemaId/status` | Roles(ADMIN) | Alias (POST); **201**, cùng body/response |
 | `GET /admin/affected-orders/export` | Roles(STAFF) | CSV `don-bi-anh-huong.csv` |
 | `GET /affected-orders/export` | Roles(STAFF) | Alias |
 | `GET /cinemas/:cinemaId/affected-orders/export` | Roles(STAFF) | Alias |

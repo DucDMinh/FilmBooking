@@ -110,6 +110,8 @@ const sampleCinemas: CinemaDto[] = [
     imageUrl: null,
     amenities: ["2D", "3D", "Dolby Atmos"],
     status: "OPEN",
+    scheduledStatus: null,
+    scheduledEffectiveAt: null,
   },
 ];
 

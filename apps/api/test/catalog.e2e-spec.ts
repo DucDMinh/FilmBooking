@@ -138,6 +138,8 @@ const cinemaRow = (overrides: Record<string, unknown> = {}) => ({
   image_url: null,
   amenities: ["IMAX"],
   status: "OPEN",
+  scheduled_status: null,
+  scheduled_effective_at: null,
   provinces: { code: "HN" },
   ...overrides,
 });
@@ -232,11 +234,58 @@ describe("catalog API (e2e, mock Supabase)", () => {
       expect(response.body.error.code).toBe("VALIDATION_ERROR");
     });
 
-    it("returns 404 for a cinema that is not OPEN", async () => {
+    it("returns 404 for an unknown cinema code (looked up with the anon client, any status)", async () => {
       fake.on("cinemas:select", () => ({ data: null }));
       const response = await request(server()).get("/cinemas/HN01");
       expect(response.status).toBe(404);
-      expect(opArgs(lastQuery(fake.queries, "cinemas"), "eq")).toContainEqual(["status", "OPEN"]);
+      const query = lastQuery(fake.queries, "cinemas");
+      expect(query?.jwt).toBe(ANON_KEY);
+      expect(opArgs(query, "eq")).toContainEqual(["code", "HN01"]);
+      // R-137: không lọc theo trạng thái -> rạp đóng vẫn tra được.
+      expect(opArgs(query, "eq").some(([column]) => column === "status")).toBe(false);
+      expect(fake.queries.some((q) => q.table === "rooms" || q.table === "showtimes")).toBe(false);
+    });
+
+    it.each(["CLOSED", "TEMP_CLOSED", "COMING_SOON"])(
+      "returns 200 with empty rooms/showtimes for a %s cinema (R-137, AC-27)",
+      async (status) => {
+        fake.on("cinemas:select", () => ({ data: cinemaRow({ status }) }));
+        const response = await request(server()).get("/cinemas/HN01?date=2026-11-14");
+        expect(response.status).toBe(200);
+        expect(response.body.cinema).toMatchObject({ code: "HN01", name: "Cinema Hà Nội 1", status });
+        expect(response.body.rooms).toEqual([]);
+        expect(response.body.showtimes).toEqual([]);
+        expect(fake.queries.some((q) => q.table === "rooms" || q.table === "showtimes")).toBe(false);
+      },
+    );
+
+    it("only selects public cinema columns with the anon client (no cleaning/cutoff config leaks)", async () => {
+      fake.on("cinemas:select", () => ({ data: cinemaRow({ status: "CLOSED" }) }));
+      await request(server()).get("/cinemas/HN01");
+      expect(lastQuery(fake.queries, "cinemas")?.jwt).toBe(ANON_KEY);
+      const selected = String(opArgs(lastQuery(fake.queries, "cinemas"), "select")[0]?.[0]);
+      expect(selected).toContain("scheduled_status");
+      expect(selected).toContain("scheduled_effective_at");
+      expect(selected).not.toMatch(/cleaning_minutes|online_cutoff_minutes|\*/);
+    });
+
+    it("exposes the pending status schedule on an OPEN cinema (banner, R-136)", async () => {
+      fake.on("cinemas:select", () => ({
+        data: cinemaRow({ scheduled_status: "CLOSED", scheduled_effective_at: "2026-11-25T03:00:00+00:00" }),
+      }));
+      const response = await request(server()).get("/cinemas/HN01");
+      expect(response.status).toBe(200);
+      expect(response.body.cinema).toMatchObject({
+        status: "OPEN",
+        scheduledStatus: "CLOSED",
+        scheduledEffectiveAt: "2026-11-25T03:00:00.000Z",
+      });
+    });
+
+    it("defaults scheduledStatus / scheduledEffectiveAt to null when no schedule is pending", async () => {
+      fake.on("cinemas:select", () => ({ data: cinemaRow() }));
+      const response = await request(server()).get("/cinemas/HN01");
+      expect(response.body.cinema).toMatchObject({ scheduledStatus: null, scheduledEffectiveAt: null });
     });
 
     it("returns cinema detail with rooms and showtimes as UTC ISO", async () => {
@@ -267,6 +316,8 @@ describe("catalog API (e2e, mock Supabase)", () => {
       });
       // 14/11 giờ VN = [13/11 17:00Z, 14/11 17:00Z)
       const range = lastQuery(fake.queries, "showtimes");
+      expect(range?.jwt).toBe(ANON_KEY);
+      expect(lastQuery(fake.queries, "rooms")?.jwt).toBe(ANON_KEY);
       expect(opArgs(range, "gte")).toContainEqual(["starts_at", "2026-11-13T17:00:00.000Z"]);
       expect(opArgs(range, "lt")).toContainEqual(["starts_at", "2026-11-14T17:00:00.000Z"]);
     });
@@ -404,27 +455,76 @@ describe("catalog API (e2e, mock Supabase)", () => {
       expect(status.body.error.code).toBe("FORBIDDEN");
     });
 
-    it("blocks closing a cinema that still has upcoming showtimes", async () => {
-      fake.on("showtimes:select", () => ({ count: 3 }));
+    const wroteCinema = () =>
+      fake.queries.some((q) => q.table === "cinemas" && q.ops.some(([name]) => name === "update"));
+
+    it("rejects a status change via PATCH /cinemas/:id and never writes (R-33, AC-27)", async () => {
+      fake.on("cinemas:select", () => ({ data: cinemaRow({ status: "OPEN" }) }));
       const response = await request(server())
         .patch(`/admin/cinemas/${HN01}`)
         .set("Authorization", await auth(ADMIN))
-        .send({ status: "TEMP_CLOSED" });
-      expect(response.status).toBe(409);
-      expect(response.body.error.code).toBe("CONFLICT");
-      expect(response.body.error.details).toEqual({ upcomingShowtimes: 3 });
-      expect(fake.queries.some((q) => q.table === "cinemas" && q.ops[0]?.[0] === "update")).toBe(false);
+        .send({ status: "TEMP_CLOSED", name: "Tên mới" });
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe("VALIDATION_ERROR");
+      expect(wroteCinema()).toBe(false);
+      // Không còn kiểm tra suất tương lai (quy tắc đóng rạp cũ đã bỏ).
+      expect(fake.queries.some((q) => q.table === "showtimes")).toBe(false);
     });
 
-    it("Admin closes a cinema once no upcoming showtimes remain", async () => {
-      fake.on("showtimes:select", () => ({ count: 0 }));
-      fake.on("cinemas:update", () => ({ data: cinemaRow({ status: "TEMP_CLOSED" }) }));
+    it("returns 404 when PATCH carries a status for a cinema that does not exist", async () => {
+      fake.on("cinemas:select", () => ({ data: null }));
       const response = await request(server())
         .patch(`/admin/cinemas/${HN01}`)
         .set("Authorization", await auth(ADMIN))
-        .send({ status: "TEMP_CLOSED" });
+        .send({ status: "CLOSED" });
+      expect(response.status).toBe(404);
+      expect(wroteCinema()).toBe(false);
+    });
+
+    it("drops a status equal to the current one and still saves the other fields", async () => {
+      fake.on("cinemas:select", () => ({ data: cinemaRow({ status: "OPEN" }) }));
+      fake.on("cinemas:update", () => ({ data: cinemaRow({ name: "Tên mới" }) }));
+      const response = await request(server())
+        .patch(`/admin/cinemas/${HN01}`)
+        .set("Authorization", await auth(ADMIN))
+        .send({ status: "OPEN", name: "Tên mới" });
       expect(response.status).toBe(200);
-      expect(response.body.status).toBe("TEMP_CLOSED");
+      const update = fake.queries.find((q) => q.table === "cinemas" && q.ops.some(([name]) => name === "update"));
+      expect(opArgs(update, "update")[0]?.[0]).toEqual({ name: "Tên mới" });
+    });
+
+    it("a PATCH holding only the current status is a no-op (no write) and returns the cinema", async () => {
+      fake.on("cinemas:select", () => ({ data: cinemaRow({ status: "OPEN" }) }));
+      const response = await request(server())
+        .patch(`/admin/cinemas/${HN01}`)
+        .set("Authorization", await auth(ADMIN))
+        .send({ status: "OPEN" });
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ code: "HN01", status: "OPEN" });
+      expect(wroteCinema()).toBe(false);
+    });
+
+    it("PATCH without status does not read the current status first", async () => {
+      fake.on("cinemas:update", () => ({ data: cinemaRow({ name: "Tên mới" }) }));
+      const response = await request(server())
+        .patch(`/admin/cinemas/${HN01}`)
+        .set("Authorization", await auth(ADMIN))
+        .send({ name: "Tên mới" });
+      expect(response.status).toBe(200);
+      const cinemaQueries = fake.queries.filter((q) => q.table === "cinemas");
+      expect(cinemaQueries).toHaveLength(1);
+      expect(cinemaQueries[0]?.ops[0]?.[0]).toBe("update");
+    });
+
+    it("create keeps the initial status (e.g. COMING_SOON for a cinema not yet opened)", async () => {
+      fake.on("provinces:select", () => ({ data: { id: "p-hn" } }));
+      fake.on("cinemas:insert", () => ({ data: cinemaRow({ code: "HN03", status: "COMING_SOON" }) }));
+      const response = await request(server())
+        .post("/admin/cinemas")
+        .set("Authorization", await auth(ADMIN))
+        .send({ ...newCinema, status: "COMING_SOON" });
+      expect(response.status).toBe(201);
+      expect(opArgs(lastQuery(fake.queries, "cinemas"), "insert")[0]?.[0]).toMatchObject({ status: "COMING_SOON" });
     });
 
     it("validates cinema PATCH body", async () => {
@@ -471,7 +571,13 @@ describe("catalog API (e2e, mock Supabase)", () => {
         const response = await request(server()).get("/admin/cinemas").set("Authorization", await auth(ADMIN));
         expect(response.status).toBe(200);
         expect(response.body.map((c: { status: string }) => c.status)).toEqual(["TEMP_CLOSED", "COMING_SOON"]);
-        expect(response.body[0]).toMatchObject({ id: HN01, roomCount: 4, provinceCode: "HN" });
+        expect(response.body[0]).toMatchObject({
+          id: HN01,
+          roomCount: 4,
+          provinceCode: "HN",
+          scheduledStatus: null,
+          scheduledEffectiveAt: null,
+        });
         expect(response.body[1].roomCount).toBe(0);
         const query = lastQuery(fake.queries, "cinemas");
         expect(query?.jwt).toBe("admin");

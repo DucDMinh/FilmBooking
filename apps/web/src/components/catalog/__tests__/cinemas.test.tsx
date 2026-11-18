@@ -65,6 +65,8 @@ const sampleCinema: CinemaDto = {
   imageUrl: "https://images.unsplash.com/photo-cinema",
   amenities: ["IMAX", "Dolby Atmos", "Bắp nước"],
   status: "OPEN",
+  scheduledStatus: null,
+  scheduledEffectiveAt: null,
 };
 
 describe("FavoriteButton", () => {
