@@ -8,15 +8,15 @@ export default function AuthLayout({ children }: Readonly<{ children: ReactNode 
       <header className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6">
         <Link
           href="/"
-          aria-label="CINEMO – Trang chủ"
-          className="inline-flex min-h-11 items-center rounded-sm text-2xl font-heavy tracking-wide text-brand"
+          aria-label="CINEMO - Trang chủ"
+          className="inline-flex min-h-11 items-center font-display text-2xl font-heavy tracking-wide text-brand"
         >
           CINEMO
         </Link>
       </header>
       <main id="main" className="flex flex-1 items-start justify-center px-4 pb-12 md:items-center">
-        <div className="w-full max-w-md rounded-hero border border-border-subtle bg-surface p-5 md:p-8">
-          {children}
+        <div className="frame w-full max-w-md">
+          <div className="frame-in p-5 md:p-8">{children}</div>
         </div>
       </main>
     </div>

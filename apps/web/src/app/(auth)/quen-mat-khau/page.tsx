@@ -66,7 +66,7 @@ function ForgotPasswordContent() {
   if (submitted) {
     return (
       <div className="space-y-6 text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
+        <div className="mx-auto flex size-14 items-center justify-center chamfer-md bg-success-soft text-success">
           <CheckCircle2 className="size-8" aria-hidden="true" />
         </div>
 
@@ -80,7 +80,7 @@ function ForgotPasswordContent() {
           </p>
         </div>
 
-        <Button asChild variant="gradient" className="w-full font-semibold shadow-cta-glow">
+        <Button asChild variant="gradient" className="w-full">
           <Link href="/dang-nhap">Quay lại đăng nhập</Link>
         </Button>
       </div>
@@ -90,7 +90,7 @@ function ForgotPasswordContent() {
   return (
     <div className="space-y-6">
       <div className="space-y-1 text-center md:text-left">
-        <div className="mx-auto md:mx-0 mb-3 flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">
+        <div className="mx-auto md:mx-0 mb-3 flex size-12 items-center justify-center chamfer-md bg-brand-soft text-brand">
           <Mail className="size-6" aria-hidden="true" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-fg">Đặt lại mật khẩu</h1>
@@ -125,7 +125,7 @@ function ForgotPasswordContent() {
         <Button
           type="submit"
           variant="gradient"
-          className="w-full font-semibold shadow-cta-glow"
+          className="w-full"
           disabled={loading}
           aria-disabled={loading}
         >

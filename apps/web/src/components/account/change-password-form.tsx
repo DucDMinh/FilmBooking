@@ -4,6 +4,7 @@ import { checkPasswordPolicy, PASSWORD_ISSUE_MESSAGES } from "@filmbooking/share
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 
 import { changePasswordAction } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ function PasswordInputField({
 
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} className={HUD_LABEL}>{label}</Label>
       <div className="relative">
         <Input
           id={id}
@@ -60,7 +61,7 @@ function PasswordInputField({
         </button>
       </div>
       {error ? (
-        <p role="alert" className="text-small text-danger">
+        <p role="alert" className="text-small text-danger-text">
           {error}
         </p>
       ) : null}
@@ -139,7 +140,7 @@ export function ChangePasswordForm(props: Readonly<ChangePasswordFormProps>) {
   };
 
   return (
-    <Card className="border-border-subtle bg-surface">
+    <Card className="border-border bg-surface">
       <CardHeader>
         <CardTitle>Đổi mật khẩu</CardTitle>
         <CardDescription>
@@ -151,7 +152,7 @@ export function ChangePasswordForm(props: Readonly<ChangePasswordFormProps>) {
           {errorMessage ? (
             <div
               role="alert"
-              className="rounded-md border border-danger-line bg-danger-soft p-3 text-body-sm font-medium text-danger"
+              className="border border-danger-line bg-danger-soft p-3 text-body-sm font-medium text-danger-text"
             >
               {errorMessage}
             </div>

@@ -4,14 +4,14 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Điều khoản sử dụng",
-  description: "Điều khoản sử dụng dịch vụ đặt vé xem phim CINEMO, gồm chính sách không huỷ – không hoàn vé.",
+  description: "Điều khoản sử dụng dịch vụ đặt vé xem phim CINEMO, gồm chính sách không huỷ - không hoàn vé.",
 };
 
 const SECTIONS = [
   { id: "pham-vi", title: "1. Phạm vi và chấp thuận" },
   { id: "tai-khoan", title: "2. Tài khoản" },
   { id: "dat-ve", title: "3. Đặt vé và thanh toán" },
-  { id: "khong-huy-khong-hoan", title: "4. Không huỷ – Không hoàn" },
+  { id: "khong-huy-khong-hoan", title: "4. Không huỷ - Không hoàn" },
   { id: "do-tuoi", title: "5. Phân loại độ tuổi" },
   { id: "huy-suat", title: "6. Suất chiếu bị huỷ bởi rạp" },
   { id: "lien-he", title: "7. Liên hệ" },
@@ -22,11 +22,11 @@ export default function TermsPage() {
     <article className="mx-auto w-full max-w-3xl text-base leading-[1.7] text-fg-secondary">
       <h1 className="text-h1 font-bold text-fg">Điều khoản sử dụng</h1>
       <p className="mt-1 text-small text-fg-muted">{LEGAL_META_LINE}</p>
-      <p className="mt-4 rounded-md border border-warning-line bg-warning-soft p-3 text-body-sm text-warning">
+      <p className="mt-4 border border-warning-line bg-warning-soft p-3 text-body-sm text-warning">
         {LEGAL_DRAFT_NOTICE}
       </p>
 
-      <nav aria-label="Mục lục" className="mt-6 rounded-lg border border-border-subtle bg-surface p-4">
+      <nav aria-label="Mục lục" className="mt-6 border border-border bg-surface p-4">
         <p className="text-small font-bold uppercase tracking-wider text-fg-muted">Mục lục</p>
         <ul className="mt-2">
           {SECTIONS.map((section) => (
@@ -71,9 +71,9 @@ export default function TermsPage() {
       </section>
 
       <section id="khong-huy-khong-hoan" className="scroll-mt-20">
-        <h2 className="mt-8 text-h2 font-bold text-fg">4. Không huỷ – Không hoàn</h2>
-        <div className="mt-3 rounded-md border border-danger-line bg-danger-soft p-4 text-body-sm text-fg">
-          <p className="font-extrabold uppercase tracking-wide text-danger-strong">Lưu ý quan trọng</p>
+        <h2 className="mt-8 text-h2 font-bold text-fg">4. Không huỷ - Không hoàn</h2>
+        <div className="mt-3 border-l-[3px] border-danger bg-danger-soft p-4 text-body-sm text-fg">
+          <p className="hud text-danger-strong">Lưu ý quan trọng</p>
           <p className="mt-1">
             Sau khi thanh toán thành công, vé <strong>không được huỷ, không được đổi, không được hoàn tiền</strong>,
             kể cả khi bạn đặt nhầm rạp, nhầm suất, nhầm ghế hoặc không thể đến xem. Hãy kiểm tra kỹ tên rạp, địa chỉ,

@@ -12,10 +12,10 @@ import { apiFetch } from "@/lib/api/client";
 function ProfileLoadingSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="space-y-4 rounded-lg border border-border-subtle bg-surface p-6">
+      <div className="space-y-4 border border-border bg-surface p-6">
         <Skeleton className="h-6 w-44" />
         <div className="flex items-center gap-4">
-          <Skeleton className="size-20 rounded-full" />
+          <Skeleton className="size-20 chamfer-md" />
           <div className="space-y-2">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-3 w-48" />

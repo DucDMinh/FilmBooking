@@ -13,6 +13,7 @@ const STEPS = [
   { step: 4, label: "Thanh toán" },
 ] as const;
 
+/** 4 đoạn thanh 3px: đã qua = success, hiện tại = brand, chưa tới = border; overline hud "BƯỚC n / 4". */
 export function BookingStepper({ currentStep, className }: Readonly<BookingStepperProps>) {
   const currentStepInfo = STEPS.find((s) => s.step === currentStep) ?? STEPS[0];
 
@@ -21,53 +22,37 @@ export function BookingStepper({ currentStep, className }: Readonly<BookingStepp
       aria-label={`Tiến trình đặt vé: Bước ${currentStep} trên 4: ${currentStepInfo.label}`}
       className={cn("w-full py-4", className)}
     >
-      <ol className="flex items-center justify-between gap-2 sm:gap-4">
-        {STEPS.map((item, index) => {
+      <p className="hud hud-brand mb-2" aria-hidden="true">
+        Bước {currentStep} / 4
+      </p>
+      <ol className="grid grid-cols-4 gap-1.5">
+        {STEPS.map((item) => {
           const isPassed = item.step < currentStep;
           const isCurrent = item.step === currentStep;
           const isUpcoming = item.step > currentStep;
 
           return (
-            <li
-              key={item.step}
-              className="flex flex-1 items-center"
-              aria-current={isCurrent ? "step" : undefined}
-            >
-              <div className="flex items-center gap-2 sm:gap-3">
-                <span
-                  className={cn(
-                    "flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-pill text-caption font-semibold transition-colors",
-                    isCurrent && "bg-brand text-fg-on-brand ring-2 ring-brand ring-offset-2 ring-offset-bg",
-                    isPassed && "bg-success-soft text-success",
-                    isUpcoming && "bg-surface-control text-fg-muted",
-                  )}
-                >
-                  {isPassed ? (
-                    <Check className="size-4" aria-hidden="true" />
-                  ) : (
-                    <span>{item.step}</span>
-                  )}
-                </span>
-                <span
-                  className={cn(
-                    "text-caption sm:text-body-sm transition-colors",
-                    isCurrent && "font-semibold text-fg",
-                    isPassed && "font-medium text-fg-secondary",
-                    isUpcoming && "text-fg-muted",
-                  )}
-                >
-                  {item.label}
-                </span>
-              </div>
-              {index < STEPS.length - 1 && (
-                <div
-                  aria-hidden="true"
-                  className={cn(
-                    "ml-2 sm:ml-4 h-0.5 flex-1 transition-colors",
-                    item.step < currentStep ? "bg-success-line" : "bg-border-subtle",
-                  )}
-                />
-              )}
+            <li key={item.step} className="flex min-w-0 flex-col gap-2" aria-current={isCurrent ? "step" : undefined}>
+              <div
+                aria-hidden="true"
+                className={cn(
+                  "h-[3px] w-full transition-colors",
+                  isPassed && "bg-success",
+                  isCurrent && "bg-brand",
+                  isUpcoming && "bg-border",
+                )}
+              />
+              <span
+                className={cn(
+                  "flex items-center gap-1 truncate font-heading text-caption uppercase tracking-wide transition-colors sm:text-body-sm",
+                  isCurrent && "font-bold text-fg",
+                  isPassed && "text-fg-secondary",
+                  isUpcoming && "text-fg-muted",
+                )}
+              >
+                {isPassed ? <Check className="size-3.5 shrink-0 text-success" aria-hidden="true" /> : null}
+                <span className="truncate">{item.label}</span>
+              </span>
             </li>
           );
         })}

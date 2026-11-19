@@ -88,7 +88,7 @@ function ResetPasswordContent() {
   if (success) {
     return (
       <div className="space-y-6 text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
+        <div className="mx-auto flex size-14 items-center justify-center chamfer-md bg-success-soft text-success">
           <CheckCircle2 className="size-8" aria-hidden="true" />
         </div>
 
@@ -99,7 +99,7 @@ function ResetPasswordContent() {
           </p>
         </div>
 
-        <Button asChild variant="gradient" className="w-full font-semibold shadow-cta-glow">
+        <Button asChild variant="gradient" className="w-full">
           <Link href="/dang-nhap">Đăng nhập ngay</Link>
         </Button>
       </div>
@@ -109,7 +109,7 @@ function ResetPasswordContent() {
   return (
     <div className="space-y-6">
       <div className="space-y-1 text-center md:text-left">
-        <div className="mx-auto md:mx-0 mb-3 flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">
+        <div className="mx-auto md:mx-0 mb-3 flex size-12 items-center justify-center chamfer-md bg-brand-soft text-brand">
           <KeyRound className="size-6" aria-hidden="true" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-fg">Đặt mật khẩu mới</h1>
@@ -119,7 +119,7 @@ function ResetPasswordContent() {
       </div>
 
       {!accessToken && (
-        <div className="rounded-md border border-warning-line bg-warning-soft p-3 text-body-sm text-fg">
+        <div className="border border-warning-line bg-warning-soft p-3 text-body-sm text-fg">
           <div className="flex items-start gap-2">
             <AlertTriangle className="size-5 shrink-0 text-warning" aria-hidden="true" />
             <div className="space-y-1">
@@ -172,7 +172,7 @@ function ResetPasswordContent() {
         <Button
           type="submit"
           variant="gradient"
-          className="w-full font-semibold shadow-cta-glow"
+          className="w-full"
           disabled={loading || !accessToken}
           aria-disabled={loading || !accessToken}
         >

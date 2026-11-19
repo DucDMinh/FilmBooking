@@ -53,7 +53,7 @@ export function LoginForm({ next, initialError, onLogin, turnstileRef }: Readonl
     initialError === "oauth"
       ? "Đăng nhập với Google/Facebook không thành công. Vui lòng thử lại."
       : initialError === "email_exists"
-        ? "Email này đã có tài khoản — hãy đăng nhập bằng phương thức cũ để liên kết."
+        ? "Email này đã có tài khoản - hãy đăng nhập bằng phương thức cũ để liên kết."
         : initialError === "identity_taken"
           ? "Tài khoản mạng xã hội này đã được liên kết với một tài khoản khác."
           : null,
@@ -232,7 +232,7 @@ export function LoginForm({ next, initialError, onLogin, turnstileRef }: Readonl
         <Button
           type="submit"
           variant="gradient"
-          className="w-full font-semibold shadow-cta-glow"
+          className="w-full"
           disabled={loading}
           aria-disabled={loading}
         >

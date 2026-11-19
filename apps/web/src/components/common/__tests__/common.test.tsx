@@ -143,7 +143,7 @@ describe("trang pháp lý", () => {
     expect(termsMeta.title).toBe("Điều khoản sử dụng");
     expect(screen.getByRole("heading", { level: 1, name: "Điều khoản sử dụng" })).toBeInTheDocument();
     expect(screen.getByText(LEGAL_DRAFT_NOTICE)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "4. Không huỷ – Không hoàn" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "4. Không huỷ - Không hoàn" })).toBeInTheDocument();
     const text = container.textContent ?? "";
     expect(text).toContain("rạp huỷ suất chiếu hoặc rạp đóng cửa");
     expect(text).toContain("hoàn tiền thủ công");

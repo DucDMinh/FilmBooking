@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 import { ApiError, apiFetch } from "@/lib/api/client";
 
 export interface VoucherInputProps {
@@ -43,7 +44,7 @@ export function VoucherInput({ orderId, appliedCode, onChanged }: Readonly<Vouch
   if (appliedCode) {
     return (
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2 rounded-md bg-success-soft px-3 py-2 text-body-sm text-success">
+        <div className="flex items-center justify-between gap-2 border-l-[3px] border-success bg-success-soft px-3 py-2 text-body-sm text-success">
           <span>
             Đã áp dụng mã <strong>{appliedCode}</strong>
           </span>
@@ -53,7 +54,7 @@ export function VoucherInput({ orderId, appliedCode, onChanged }: Readonly<Vouch
           </Button>
         </div>
         {error ? (
-          <p role="alert" className="text-body-sm text-danger">
+          <p role="alert" className="text-body-sm text-danger-text">
             {error}
           </p>
         ) : null}
@@ -69,7 +70,7 @@ export function VoucherInput({ orderId, appliedCode, onChanged }: Readonly<Vouch
         if (code.trim()) void apply();
       }}
     >
-      <Label htmlFor="voucher-code">Mã giảm giá</Label>
+      <Label htmlFor="voucher-code" className={HUD_LABEL}>Mã giảm giá</Label>
       <div className="flex gap-2">
         <Input
           id="voucher-code"
@@ -86,7 +87,7 @@ export function VoucherInput({ orderId, appliedCode, onChanged }: Readonly<Vouch
         </Button>
       </div>
       {error ? (
-        <p id="voucher-error" role="alert" className="text-body-sm text-danger">
+        <p id="voucher-error" role="alert" className="text-body-sm text-danger-text">
           {error}
         </p>
       ) : null}

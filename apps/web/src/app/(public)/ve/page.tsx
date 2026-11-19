@@ -36,8 +36,8 @@ export default async function VeCuaToiPage() {
   const { upcoming, past } = splitUpcomingAndPast(orders, new Date());
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
-      <h1 className="text-h1 font-extrabold">Vé của tôi</h1>
+    <main className="scrub-inset-0 mx-auto w-full max-w-3xl px-4 py-8">
+      <h1 className="font-heading text-h1 font-bold">Vé của tôi</h1>
       {orders.length === 0 ? (
         <EmptyState
           className="mt-6"

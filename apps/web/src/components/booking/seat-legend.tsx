@@ -1,23 +1,51 @@
 import { formatVnd } from "@filmbooking/shared";
 import type { SeatMapItem } from "@filmbooking/shared/schemas/booking";
+import { Check, Lock, Timer, X } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import { seatTypeLabel } from "./seat-rules";
 
-const STATE_ITEMS = [
-  { label: "Trống", swatch: "border-seat-available-line bg-seat-available" },
-  { label: "Đang chọn", swatch: "border-seat-selected bg-seat-selected" },
-  { label: "Đang giữ", swatch: "border-seat-held bg-seat-held/60" },
-  { label: "Đã bán", swatch: "border-transparent bg-seat-sold" },
-  { label: "Khoá", swatch: "border-seat-locked-line bg-seat-locked" },
-  { label: "Hỏng", swatch: "border-seat-locked-line bg-seat-locked opacity-60" },
-] as const;
+// Mẫu ô chamfer-seat; viền vẽ bằng box-shadow inset (clip-path cắt border). Dấu hiệu khớp SeatMap, không chỉ màu.
+const FREE_SWATCH = "bg-seat-available shadow-[inset_0_0_0_1px_var(--color-seat-available-line)]";
+const ICON = "size-3";
+
+const STATE_ITEMS: readonly { label: string; swatch: string; mark?: ReactNode }[] = [
+  { label: "Trống", swatch: FREE_SWATCH },
+  {
+    label: "Đang chọn",
+    swatch: "bg-seat-selected text-fg-on-brand",
+    mark: <Check className={ICON} strokeWidth={3} aria-hidden="true" />,
+  },
+  { label: "Đang giữ", swatch: "bg-seat-held text-fg-on-brand", mark: <Timer className={ICON} aria-hidden="true" /> },
+  { label: "Đã bán", swatch: "bg-seat-sold text-seat-sold-mark", mark: <X className={ICON} aria-hidden="true" /> },
+  {
+    label: "Khoá",
+    swatch: "border border-dashed border-seat-locked-line bg-seat-locked text-fg-muted",
+    mark: <Lock className={ICON} aria-hidden="true" />,
+  },
+  {
+    label: "Hỏng",
+    swatch: "border border-dashed border-seat-locked-line bg-seat-locked opacity-60",
+  },
+];
 
 const TYPE_SWATCH: Record<string, string> = {
-  NORMAL: "border-seat-available-line bg-seat-available",
-  VIP: "border-seat-vip-line bg-seat-vip",
-  SWEETBOX: "border-seat-sweetbox-line bg-seat-sweetbox",
+  NORMAL: FREE_SWATCH,
+  VIP: "bg-seat-vip shadow-[inset_0_2px_0_var(--color-seat-vip-line),inset_0_0_0_1px_#12697A]",
+  SWEETBOX: "bg-seat-sweetbox shadow-[inset_0_0_0_1px_var(--color-seat-sweetbox-line)]",
 };
+
+function Swatch({ className, children }: Readonly<{ className: string; children?: ReactNode }>) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("chamfer-seat inline-flex h-4 w-[18px] shrink-0 items-center justify-center", className)}
+    >
+      {children}
+    </span>
+  );
+}
 
 /** Chú thích trạng thái + loại ghế có mặt trong phòng kèm giá (R-59). */
 export function SeatLegend({
@@ -30,16 +58,16 @@ export function SeatLegend({
     <div className={cn("flex flex-col gap-3 text-caption text-fg-secondary", className)}>
       <ul className="flex flex-wrap gap-x-4 gap-y-2" aria-label="Chú thích trạng thái ghế">
         {STATE_ITEMS.map((item) => (
-          <li key={item.label} className="flex items-center gap-1.5">
-            <span aria-hidden="true" className={cn("size-4 rounded-seat border", item.swatch)} />
+          <li key={item.label} className="flex items-center gap-2">
+            <Swatch className={item.swatch}>{item.mark}</Swatch>
             {item.label}
           </li>
         ))}
       </ul>
       <ul className="flex flex-wrap gap-x-4 gap-y-2" aria-label="Giá theo loại ghế">
         {types.map((type) => (
-          <li key={type} className="flex items-center gap-1.5">
-            <span aria-hidden="true" className={cn("size-4 rounded-seat border", TYPE_SWATCH[type])} />
+          <li key={type} className="flex items-center gap-2">
+            <Swatch className={TYPE_SWATCH[type] ?? ""} />
             {seatTypeLabel(type)}
             {pricing[type] ? <span className="tabular text-fg">{formatVnd(pricing[type])}</span> : null}
           </li>

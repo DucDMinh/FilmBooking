@@ -3,6 +3,8 @@
 import { AlertTriangle, Check, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
+import { cn } from "@/lib/utils";
 
 import { AvatarUpload } from "@/components/account/avatar-upload";
 import { ChangeEmailDialog } from "@/components/account/change-email-dialog";
@@ -101,7 +103,7 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
   return (
     <div className="space-y-8">
       {/* Khối Thông tin cá nhân */}
-      <Card className="border-border-subtle bg-surface">
+      <Card className="border-border bg-surface">
         <CardHeader>
           <CardTitle>Thông tin cá nhân</CardTitle>
           <CardDescription>
@@ -111,7 +113,7 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
         <CardContent>
           {/* Avatar Upload */}
           <div className="border-b border-border pb-6">
-            <Label className="mb-3 block text-body font-semibold">Ảnh đại diện</Label>
+            <Label className={cn(HUD_LABEL, "mb-3 block")}>Ảnh đại diện</Label>
             <AvatarUpload
               currentAvatarUrl={avatarUrl}
               name={fullName || initialProfile.email}
@@ -122,8 +124,8 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
           <form onSubmit={handleSaveProfile} className="mt-6 space-y-5">
             {/* Họ và tên */}
             <div className="space-y-1.5">
-              <Label htmlFor="full-name">
-                Họ và tên <span className="text-danger">*</span>
+              <Label htmlFor="full-name" className={HUD_LABEL}>
+                Họ và tên <span className="text-danger-text">*</span>
               </Label>
               <Input
                 id="full-name"
@@ -137,7 +139,7 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
                 placeholder="Nhập họ và tên của bạn"
               />
               {fieldErrors.fullName ? (
-                <p role="alert" className="text-small text-danger">
+                <p role="alert" className="text-small text-danger-text">
                   {fieldErrors.fullName}
                 </p>
               ) : null}
@@ -145,7 +147,7 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
 
             {/* Email (read-only + nút đổi email) */}
             <div className="space-y-1.5">
-              <Label htmlFor="profile-email">Địa chỉ Email</Label>
+              <Label htmlFor="profile-email" className={HUD_LABEL}>Địa chỉ Email</Label>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   id="profile-email"
@@ -170,7 +172,7 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
 
             {/* Số điện thoại */}
             <div className="space-y-1.5">
-              <Label htmlFor="phone">Số điện thoại</Label>
+              <Label htmlFor="phone" className={HUD_LABEL}>Số điện thoại</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -184,7 +186,7 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
                 placeholder="0912345678"
               />
               {fieldErrors.phone ? (
-                <p role="alert" className="text-small text-danger">
+                <p role="alert" className="text-small text-danger-text">
                   {fieldErrors.phone}
                 </p>
               ) : (
@@ -197,7 +199,7 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
             {/* Ngày sinh & Giới tính */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="date-of-birth">Ngày sinh</Label>
+                <Label htmlFor="date-of-birth" className={HUD_LABEL}>Ngày sinh</Label>
                 <Input
                   id="date-of-birth"
                   type="date"
@@ -210,14 +212,14 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
                   aria-invalid={Boolean(fieldErrors.dateOfBirth)}
                 />
                 {fieldErrors.dateOfBirth ? (
-                  <p role="alert" className="text-small text-danger">
+                  <p role="alert" className="text-small text-danger-text">
                     {fieldErrors.dateOfBirth}
                   </p>
                 ) : null}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="gender-select">Giới tính</Label>
+                <Label htmlFor="gender-select" className={HUD_LABEL}>Giới tính</Label>
                 <Select value={gender} onValueChange={(val) => setGender(val)} disabled={isSaving}>
                   <SelectTrigger id="gender-select">
                     <SelectValue placeholder="Chọn giới tính" />
@@ -254,9 +256,9 @@ export function ProfileForm({ initialProfile, hasPassword = true }: Readonly<Pro
       {/* Vùng nguy hiểm */}
       <Card className="border-danger-line/60 bg-danger-soft/20">
         <CardHeader>
-          <div className="flex items-center gap-2 text-danger">
+          <div className="flex items-center gap-2 text-danger-text">
             <AlertTriangle className="size-5" aria-hidden="true" />
-            <CardTitle className="text-danger">Vùng nguy hiểm</CardTitle>
+            <CardTitle className="text-danger-text">Vùng nguy hiểm</CardTitle>
           </div>
           <CardDescription className="text-fg-secondary">
             Xoá vĩnh viễn tài khoản CINEMO của bạn và ẩn danh hoá dữ liệu cá nhân theo quy định bảo vệ dữ liệu.

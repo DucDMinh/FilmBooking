@@ -1,6 +1,7 @@
 "use client";
 
 import type { SeatMapItem } from "@filmbooking/shared/schemas/booking";
+import { Check, Heart, Lock, Timer, X } from "lucide-react";
 import { useRef, useState, type KeyboardEvent } from "react";
 
 import { cn } from "@/lib/utils";
@@ -16,30 +17,65 @@ export interface SeatMapProps {
   className?: string;
 }
 
+// Ô ghế là chamfer (clip-path cắt mất border), nên viền vẽ bằng box-shadow inset (design-tokens §1.5, §6).
+// Trạng thái luôn có dấu hiệu ngoài màu (✓, đồng hồ, ×, ổ khoá, nét đứt) để không chỉ dựa vào màu (NFR-12).
 const STATE_CLASS: Record<SeatVisualState, string> = {
-  free: "border-seat-available-line bg-seat-available text-fg hover:border-brand",
-  selected: "border-seat-selected bg-seat-selected text-fg-on-brand font-bold",
-  held: "border-seat-held bg-seat-held/60 text-fg-on-brand",
-  sold: "border-transparent bg-seat-sold text-seat-sold-mark",
-  locked: "border-seat-locked-line bg-seat-locked text-fg-muted",
-  broken: "border-seat-locked-line bg-seat-locked text-fg-muted line-through",
+  free: "bg-seat-available text-fg shadow-[inset_0_0_0_1px_var(--color-seat-available-line)] hover:shadow-[inset_0_0_0_1px_var(--color-brand)]",
+  selected: "bg-seat-selected text-fg-on-brand font-bold [--seat-focus:var(--color-fg-on-brand)]",
+  held: "bg-seat-held text-fg-on-brand [--seat-focus:var(--color-fg-on-brand)]",
+  sold: "bg-seat-sold text-seat-sold-mark",
+  locked: "border border-dashed border-seat-locked-line bg-seat-locked text-fg-muted",
+  broken: "border border-dashed border-seat-locked-line bg-seat-locked text-fg-muted line-through",
 };
 
 const TYPE_CLASS: Record<string, string> = {
-  VIP: "border-seat-vip-line bg-seat-vip",
-  SWEETBOX: "border-seat-sweetbox-line bg-seat-sweetbox",
+  VIP: "bg-seat-vip shadow-[inset_0_2px_0_var(--color-seat-vip-line),inset_0_0_0_1px_#12697A]",
+  SWEETBOX: "bg-seat-sweetbox shadow-[inset_0_0_0_1px_var(--color-seat-sweetbox-line)]",
 };
 
 function seatClass(seat: SeatMapItem, state: SeatVisualState, orphan: boolean): string {
   const typeClass = state === "free" ? TYPE_CLASS[seat.type.toUpperCase()] : undefined;
   return cn(
-    "flex h-9 w-full min-w-7 items-center justify-center rounded-seat border text-caption tabular transition-colors duration-100",
-    "outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "chamfer-seat flex h-9 w-full min-w-7 items-center justify-center gap-px font-mono text-[11px] tabular transition-[background-color,box-shadow] duration-[120ms] motion-reduce:transition-none",
+    "outline-hidden focus-visible:shadow-[inset_0_0_0_2px_var(--seat-focus,var(--color-brand))]",
     STATE_CLASS[state],
     typeClass,
     state === "free" ? "cursor-pointer" : "cursor-default",
-    orphan && "ring-2 ring-danger",
+    // Ghế lẻ (R-66): khung danger inset (ring ngoài sẽ bị clip-path cắt).
+    orphan && "shadow-[inset_0_0_0_2px_var(--color-danger)]",
   );
+}
+
+/** Dấu hiệu ngoài màu cho từng trạng thái; nội dung trang trí, nhãn đọc màn hình nằm ở aria-label của nút. */
+function SeatMark({ seat, state }: Readonly<{ seat: SeatMapItem; state: SeatVisualState }>) {
+  const icon = "size-3 shrink-0";
+  if (state === "selected") {
+    return (
+      <>
+        <Check className={icon} strokeWidth={3} aria-hidden="true" />
+        <span aria-hidden="true">{seat.col}</span>
+      </>
+    );
+  }
+  if (state === "held") return <Timer className="size-3.5" aria-hidden="true" />;
+  if (state === "sold") return <X className="size-3.5" aria-hidden="true" />;
+  if (state === "locked") return <Lock className="size-3.5" aria-hidden="true" />;
+  if (state === "free" && seat.type.toUpperCase() === "SWEETBOX") {
+    return (
+      <>
+        <Heart className={cn(icon, "text-seat-sweetbox-line")} aria-hidden="true" />
+        <span aria-hidden="true">{seat.col}</span>
+      </>
+    );
+  }
+  return <span aria-hidden="true">{seat.col}</span>;
+}
+
+/** Phản hồi chọn ghế: scale 1 -> 1.15 -> 1 trong 160ms, theo thời gian (không scrub). Bỏ qua khi reduced-motion. */
+export function popElement(el: HTMLElement) {
+  if (typeof el.animate !== "function") return;
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  el.animate([{ scale: 1 }, { scale: 1.15 }, { scale: 1 }], { duration: 160, easing: "ease-out" });
 }
 
 /** Ghế kế tiếp theo phím mũi tên: trái/phải trong hàng, lên/xuống sang hàng có cột gần nhất. */
@@ -85,8 +121,9 @@ export function SeatMap({ seats, selectedIds, orphanIds, onSeatActivate, classNa
   return (
     <div className={cn("flex flex-col items-center gap-4", className)}>
       <div className="flex w-full flex-col items-center gap-1" aria-hidden="true">
-        <span className="text-caption font-bold uppercase tracking-widest text-fg-muted">Màn hình</span>
-        <div className="h-1.5 w-[70%] rounded-pill bg-seat-screen" />
+        <span className="hud">Màn hình</span>
+        {/* Thanh màn hình: tia quét theo tiến độ cuộn (wipe); trong khung nhìn thì hiện đủ ngay. */}
+        <div data-scrub-wipe="" className="h-1.5 w-[70%] bg-seat-screen shadow-[0_0_14px_rgb(154_154_176/0.45)]" />
       </div>
       <div className="w-full overflow-x-auto pb-2">
         <div
@@ -99,7 +136,7 @@ export function SeatMap({ seats, selectedIds, orphanIds, onSeatActivate, classNa
         >
           {rows.map((row, rowIndex) => (
             <div key={rowLabels[rowIndex]} role="row" className="flex items-center gap-2">
-              <span role="rowheader" className="w-5 shrink-0 text-center text-caption text-fg-muted">
+              <span role="rowheader" className="hud w-5 shrink-0 text-center">
                 {rowLabels[rowIndex]}
               </span>
               <div
@@ -127,9 +164,12 @@ export function SeatMap({ seats, selectedIds, orphanIds, onSeatActivate, classNa
                         className={seatClass(seat, state, orphanIds?.has(seat.id) ?? false)}
                         onFocus={() => setFocusId(seat.id)}
                         onKeyDown={(event) => onKeyDown(event, seat)}
-                        onClick={() => onSeatActivate(seat)}
+                        onClick={(event) => {
+                          if (interactive) popElement(event.currentTarget);
+                          onSeatActivate(seat);
+                        }}
                       >
-                        <span aria-hidden="true">{seat.col}</span>
+                        <SeatMark seat={seat} state={state} />
                       </button>
                     </div>
                   );

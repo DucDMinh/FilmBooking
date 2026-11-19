@@ -94,7 +94,7 @@ export function OAuthButtons({ next }: Readonly<OAuthButtonsProps>) {
       </div>
 
       {error ? (
-        <p role="alert" className="text-small text-danger text-center">
+        <p role="alert" className="text-small text-danger-text text-center">
           {error}
         </p>
       ) : null}
