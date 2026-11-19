@@ -48,6 +48,8 @@ process.env.E2E_PAYOS_CHECKSUM_KEY = PAYOS_CHECKSUM_KEY;
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "*.spec.ts",
+  // e2e/scrub chạy bằng playwright.scrub.config.ts (mock API, không cần Supabase).
+  testIgnore: "scrub/**",
   globalTeardown: "./e2e/support/global-teardown.ts",
   fullyParallel: false,
   workers: 1,

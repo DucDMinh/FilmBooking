@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   // @filmbooking/shared xuất .ts thô (không build) → Next phải transpile.
   transpilePackages: ["@filmbooking/shared"],
   poweredByHeader: false,
+  // Chỉ để bộ kiểm cuộn (playwright.scrub.config.ts) build ở thư mục riêng, không đè `.next` của dev server đang mở.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // Host phải khớp IMAGE_HOSTS (src/lib/images.ts). Poster/banner: Unsplash (seed) + Supabase Storage (upload).
   images: {
     formats: ["image/avif", "image/webp"],

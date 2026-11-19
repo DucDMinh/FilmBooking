@@ -60,7 +60,7 @@
   font-family: var(--font-heading);
   font-weight: 700;
   /* Tên dài 3 dòng vẫn vừa pin ở 1366x657, 1024x690 (cỡ chữ theo chiều cao màn). */
-  font-size: clamp(36px, min(7vw, 10svh), 112px);
+  font-size: clamp(36px, min(7vw, 8.5svh), 112px);
   line-height: 0.95;
   text-transform: uppercase;
   letter-spacing: -0.03em;
