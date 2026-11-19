@@ -8,7 +8,11 @@ import { PUBLIC_CACHE } from "@/lib/api/cache";
 import { buildMovieJsonLd, serializeJsonLd } from "@/lib/seo/movie-jsonld";
 import { BookingStepper } from "@/components/booking/booking-stepper";
 import { MovieShowtimeSchedule } from "@/components/catalog/movie-showtime-schedule";
+import { SectionHeading } from "@/components/catalog/section-heading";
 import { AgeBadge } from "@/components/common/age-badge";
+import { Scrub } from "@/components/motion/scrub";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { resolveScheduleDate } from "@/lib/vn-date";
 
 interface MovieScheduleDto {
@@ -96,8 +100,9 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
         {/* Khối Hero thông tin chi tiết phim */}
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr]">
           {/* Poster phim */}
-          <div className="space-y-4">
-            <div className="relative aspect-[2/3] w-full overflow-hidden rounded-hero border border-border-subtle bg-surface-elevated shadow-md">
+          <Scrub kind="left" className="space-y-4">
+            <div className="frame">
+            <div className="frame-in relative aspect-[2/3] w-full overflow-hidden bg-surface-elevated">
               {movie.posterUrl ? (
                 <img
                   src={movie.posterUrl}
@@ -115,39 +120,32 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
                 <AgeBadge rating={movie.ageRating} tone="semantic" />
               </div>
             </div>
+            </div>
 
             {movie.trailerUrl && (
-              <a
-                href={movie.trailerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-surface-control text-body-sm font-semibold text-fg transition-colors hover:bg-surface-elevated focus-visible:outline-2 focus-visible:outline-brand"
-              >
-                <Play className="size-4 text-brand" aria-hidden="true" />
-                <span>Xem trailer</span>
-              </a>
+              <Button asChild variant="secondary" className="w-full">
+                <a href={movie.trailerUrl} target="_blank" rel="noopener noreferrer">
+                  <Play className="size-4 text-brand" aria-hidden="true" />
+                  <span>Xem trailer</span>
+                </a>
+              </Button>
             )}
-          </div>
+          </Scrub>
 
           {/* Thông tin metadata và nội dung phim */}
-          <div className="flex flex-col justify-between space-y-6">
+          <Scrub kind="right" className="flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-pill bg-brand-soft px-2.5 py-0.5 text-caption font-semibold uppercase text-brand">
-                  {isComingSoon ? "Sắp chiếu" : "Đang chiếu"}
-                </span>
+                <Badge tone="brand">{isComingSoon ? "Sắp chiếu" : "Đang chiếu"}</Badge>
                 {movie.genres.map((genre) => (
-                  <span
-                    key={genre}
-                    className="rounded-pill bg-surface-control px-2.5 py-0.5 text-caption font-medium text-fg-secondary"
-                  >
+                  <Badge key={genre} tone="neutral">
                     {genre}
-                  </span>
+                  </Badge>
                 ))}
               </div>
 
               <div>
-                <h1 className="text-h1 font-bold tracking-tight text-fg">{movie.titleVi}</h1>
+                <h1 className="text-h1 font-bold tracking-tight text-fg uppercase">{movie.titleVi}</h1>
                 {movie.titleOriginal && (
                   <p className="mt-1 text-body text-fg-secondary">{movie.titleOriginal}</p>
                 )}
@@ -196,29 +194,24 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
             {/* Hành động chính: Nút đặt vé hoặc nhãn thông báo sắp chiếu (R-45) */}
             <div className="pt-2">
               {isComingSoon ? (
-                <div className="rounded-md border border-border-subtle bg-surface-control/60 p-4 text-center text-body-sm text-fg-secondary">
+                <div className="chamfer-md bg-surface-control p-4 text-center text-body-sm text-fg-secondary">
                   Phim dự kiến khởi chiếu vào ngày <strong className="text-fg">{movie.releaseDate}</strong>. Lịch chiếu sẽ được mở trước ngày khởi chiếu.
                 </div>
               ) : (
-                <Link
-                  href="#lich-chieu"
-                  className="flex h-12 w-full sm:w-auto sm:min-w-[200px] items-center justify-center rounded-md bg-gradient-brand text-body font-semibold text-fg-on-brand shadow-md transition-opacity hover:opacity-95 focus-visible:outline-2 focus-visible:outline-brand"
-                >
-                  Chọn suất chiếu
-                </Link>
+                <Button asChild size="lg" className="w-full sm:w-auto sm:min-w-[200px]">
+                  <Link href="#lich-chieu">Chọn suất chiếu</Link>
+                </Button>
               )}
             </div>
-          </div>
+          </Scrub>
         </div>
 
         {/* Luồng đặt vé: Stepper và Lịch chiếu */}
         <section id="lich-chieu" className="space-y-6 border-t border-border pt-8">
-          <div>
-            <h2 className="text-h2 font-bold text-fg">Lịch chiếu</h2>
-            <p className="mt-1 text-body-sm text-fg-secondary">
-              Chọn ngày và suất chiếu phù hợp tại rạp gần bạn nhất
-            </p>
-          </div>
+          <SectionHeading
+            title="Lịch chiếu"
+            description="Chọn ngày và suất chiếu phù hợp tại rạp gần bạn nhất"
+          />
 
           {/* Stepper đặt vé bước 1: Chọn suất */}
           <BookingStepper currentStep={1} />

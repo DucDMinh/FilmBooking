@@ -1,0 +1,29 @@
+/* Bản đồ theo token CYBERPLEX. Leaflet tự sinh DOM nên phải dùng :global cho các lớp của nó. */
+.map :global(.leaflet-tile-pane) {
+  /* Tile OSM sáng -> đảo thành nền tối cho khớp trang (marker nằm ở pane khác nên không bị đảo). */
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.7);
+}
+.map :global(.leaflet-control-attribution) {
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  color: var(--color-fg-secondary);
+}
+.map :global(.leaflet-control-attribution a) { color: var(--color-fg); }
+.map :global(.leaflet-bar a) {
+  background: var(--color-surface-elevated);
+  color: var(--color-fg);
+  border-bottom-color: var(--color-border);
+}
+.map :global(.leaflet-bar a:hover) { background: var(--color-brand); color: var(--color-fg-on-brand); }
+
+.popup :global(.leaflet-popup-content-wrapper),
+.popup :global(.leaflet-popup-tip) {
+  background: var(--color-surface-elevated);
+  color: var(--color-fg);
+  border-radius: 0;
+  box-shadow: var(--shadow-overlay);
+}
+.popup :global(.leaflet-popup-content-wrapper) {
+  clip-path: var(--clip-chip);
+  border-left: 3px solid var(--color-brand);
+}
+.popup :global(.leaflet-popup-close-button) { color: var(--color-fg-secondary); }

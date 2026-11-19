@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { FIELD_CLASS, FIELD_LABEL_CLASS } from "@/components/catalog/filter-field";
 import { ScheduleDateStrip } from "@/components/catalog/showtime-schedule";
 
 /** Giá trị bộ lọc hiện tại, lấy từ URL ở server page rồi truyền xuống (không cần useSearchParams/Suspense). */
@@ -18,9 +19,8 @@ interface ScheduleFiltersProps {
   values: ScheduleFilterValues;
 }
 
-const SELECT_CLASS =
-  "h-11 w-full min-w-0 rounded-sm border border-border-input bg-surface-input px-3 text-body-sm text-fg focus-visible:outline-2 focus-visible:outline-brand md:h-10";
-const LABEL_CLASS = "text-caption font-semibold uppercase tracking-wider text-fg-muted";
+const SELECT_CLASS = FIELD_CLASS;
+const LABEL_CLASS = FIELD_LABEL_CLASS;
 
 /** Dựng URL mới: ghi đè các tham số trong `patch`, tham số rỗng bị xoá khỏi query. */
 function buildHref(pathname: string, values: ScheduleFilterValues, patch: Partial<ScheduleFilterValues>): string {
@@ -38,7 +38,8 @@ export function ScheduleFilters({ provinces, movies, cinemas, values }: Readonly
   const pathname = usePathname();
 
   return (
-    <div className="grid grid-cols-1 gap-4 rounded-lg border border-border-subtle bg-surface p-4 sm:grid-cols-2 md:grid-cols-3">
+    <div className="frame">
+    <div className="frame-in grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3">
       <div className="min-w-0 space-y-1.5">
         <label htmlFor="filter-province" className={LABEL_CLASS}>
           Khu vực
@@ -97,6 +98,7 @@ export function ScheduleFilters({ provinces, movies, cinemas, values }: Readonly
         </select>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -109,6 +111,8 @@ export function ScheduleDateNav({ values, now }: Readonly<{ values: ScheduleFilt
     <ScheduleDateStrip
       selectedDate={values.date}
       onSelect={(date) => router.push(buildHref(pathname, values, { date }))}
+      // Trang /lich-chieu: bộ lọc xếp chồng ở mobile đẩy dải ngày xuống dưới vạch inset đáy; điều khiển phải hiện ngay lúc vào trang (NFR-19).
+      className="scrub-inset-0"
       now={now}
     />
   );

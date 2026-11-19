@@ -1,0 +1,99 @@
+/*
+ * MovieCard + lưới phim (design-spec §16.3, §16.4 nhóm B).
+ * Lệch pha theo CỘT: mỗi thẻ có view() riêng (KHÔNG timeline chung cả lưới, nếu không hàng dưới hiện sớm), --i = chỉ số cột,
+ * --n = số cột. Số cột của lưới khớp .grid bên dưới; lưới nào dùng MovieCard làm con trực tiếp cũng ăn theo pha này.
+ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+@media (max-width: 1023px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+}
+@media (max-width: 559px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+
+.card { --n: 4; position: relative; }
+.card:nth-child(4n + 1) { --i: 0; }
+.card:nth-child(4n + 2) { --i: 1; }
+.card:nth-child(4n + 3) { --i: 2; }
+.card:nth-child(4n + 4) { --i: 3; }
+@media (max-width: 1023px) {
+  .card { --n: 3; }
+  .card:nth-child(3n + 1) { --i: 0; }
+  .card:nth-child(3n + 2) { --i: 1; }
+  .card:nth-child(3n + 3) { --i: 2; }
+}
+@media (max-width: 559px) {
+  .card { --n: 1; }
+  .card:nth-child(n) { --i: 0; }
+}
+
+/* Khung viền gradient vàng-crimson; hover/focus: crimson -> vàng. */
+.frame {
+  --frame-color: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--color-brand) 55%, transparent),
+    color-mix(in srgb, var(--color-brand) 12%, transparent) 42%,
+    color-mix(in srgb, var(--color-danger) 40%, transparent)
+  );
+  height: 100%;
+}
+.card:hover .frame,
+.card:focus-within .frame {
+  --frame-color: linear-gradient(
+    150deg,
+    var(--color-danger),
+    color-mix(in srgb, var(--color-brand) 80%, transparent) 48%,
+    var(--color-danger)
+  );
+}
+
+/* Thanh CTA trượt lên từ đáy poster; thiết bị không hover thì luôn hiện, nằm dưới poster. */
+.cta {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  transform: translateY(calc(100% + 16px));
+  transition: transform 320ms var(--ease-out);
+}
+.card:hover .cta,
+.card:focus-within .cta {
+  transform: none;
+}
+@media (hover: none) {
+  .cta {
+    position: static;
+    transform: none;
+    padding: 10px 12px 0;
+  }
+}
+
+/* Poster phóng nhẹ khi hover/focus (700ms). Đặt ở đây vì scale chạy theo `scale` riêng, không đụng [data-scrub]. */
+.poster { transition: scale 700ms var(--ease-out); }
+.card:hover .poster,
+.card:focus-within .poster {
+  scale: 1.045;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta, .poster { transition-duration: 0.01ms; }
+  .card:hover .poster, .card:focus-within .poster { scale: 1; }
+}
+
+/*
+ * Chống kẹt ẩn khi focus: globals.css chỉ tắt animation của chính [data-scrub] (article), còn poster/tia quét lồng bên trong
+ * chạy animation riêng nên vẫn giữ clip-path che link tiêu đề, nút "Đặt vé" và vòng focus khi thẻ còn trong vùng inset đáy.
+ */
+.card:focus-within [data-scrub-media] {
+  animation: none;
+  clip-path: none;
+}
+.card:focus-within [data-scrub-beam] {
+  animation: none;
+  opacity: 0;
+}

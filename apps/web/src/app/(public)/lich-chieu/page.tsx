@@ -13,7 +13,9 @@ import {
 import { apiFetch } from "@/lib/api/client";
 import { BookingStepper } from "@/components/booking/booking-stepper";
 import { ScheduleDateNav, ScheduleFilters } from "@/components/catalog/schedule-filters";
+import { SectionHeading } from "@/components/catalog/section-heading";
 import { ShowtimeSchedule } from "@/components/catalog/showtime-schedule";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/common/states";
 import { getVnDateString, resolveScheduleDate } from "@/lib/vn-date";
 
@@ -61,7 +63,7 @@ function hasShowtimeOnDate(schedule: MovieScheduleDto["schedule"], date: string)
   );
 }
 
-/** Tham số URL không hợp lệ (rác, `.`, `..`, lặp tham số) coi như chưa chọn — tránh dot-segment trỏ nhầm route danh sách. */
+/** Tham số URL không hợp lệ (rác, `.`, `..`, lặp tham số) coi như chưa chọn - tránh dot-segment trỏ nhầm route danh sách. */
 function parseParam(schema: { safeParse: (v: unknown) => { success: boolean } }, value: unknown): string | undefined {
   return typeof value === "string" && schema.safeParse(value).success ? value : undefined;
 }
@@ -123,7 +125,7 @@ function CinemaResults({
     <div className="space-y-6">
       <div className="flex items-center gap-2 border-b border-border pb-3">
         <MapPin className="size-5 text-brand" aria-hidden="true" />
-        <h2 className="text-h2 font-bold text-fg">{detail.cinema.name}</h2>
+        <h2 className="font-heading text-h2 font-bold uppercase text-fg">{detail.cinema.name}</h2>
       </div>
 
       {byMovie.size === 0 ? (
@@ -134,12 +136,12 @@ function CinemaResults({
       ) : (
         <div className="space-y-6">
           {Array.from(byMovie.values()).map(({ movie, showtimes: movieShowtimes }) => (
-            <div key={movie.slug} className="space-y-4 rounded-lg border border-border-subtle bg-surface p-4 sm:p-6">
+            <div key={movie.slug} className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-pill bg-brand-soft px-2 py-0.5 text-caption font-bold text-brand">
+                <Badge tone="brand">
                   {movie.ageRating}
-                </span>
-                <Link href={`/phim/${movie.slug}`} className="text-h3 font-bold text-fg hover:text-brand">
+                </Badge>
+                <Link href={`/phim/${movie.slug}`} className="font-heading text-h3 font-bold uppercase text-fg hover:text-brand">
                   {movie.titleVi}
                 </Link>
                 <span className="text-caption text-fg-muted">{movie.durationMinutes} phút</span>
@@ -159,16 +161,16 @@ function CinemaResults({
 
 function MovieBlock({ data, date }: Readonly<{ data: MovieScheduleDto; date: string }>) {
   return (
-    <section className="space-y-4 rounded-lg border border-border-subtle bg-surface p-4 sm:p-6">
+    <section className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-3">
         <div className="flex items-center gap-3">
-          <span className="rounded-pill bg-brand-soft px-2.5 py-0.5 text-caption font-bold text-brand">
+          <Badge tone="brand">
             {data.movie.ageRating}
-          </span>
-          <h2 className="text-h2 font-bold text-fg">{data.movie.titleVi}</h2>
+          </Badge>
+          <h2 className="font-heading text-h2 font-bold uppercase text-fg">{data.movie.titleVi}</h2>
         </div>
         <Link href={`/phim/${data.movie.slug}`} className="text-body-sm font-semibold text-link hover:underline">
-          Chi tiết phim →
+          Chi tiết phim
         </Link>
       </div>
       <ShowtimeSchedule movie={data.movie} schedule={data.schedule} selectedDate={date} hideDateStrip />
@@ -233,12 +235,11 @@ export default async function LichChieuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
-      <div>
-        <h1 className="text-h1 font-bold tracking-tight text-fg">Lịch chiếu phim</h1>
-        <p className="mt-1 text-body-sm text-fg-secondary">
-          Tra cứu suất chiếu theo phim hoặc cụm rạp trên toàn hệ thống CINEMO
-        </p>
-      </div>
+      <SectionHeading
+        level="h1"
+        title="Lịch chiếu phim"
+        description="Tra cứu suất chiếu theo phim hoặc cụm rạp trên toàn hệ thống CINEMO"
+      />
 
       <BookingStepper currentStep={1} />
 
