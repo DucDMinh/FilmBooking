@@ -11,6 +11,20 @@
 5. **A11y**: Tab bàn phím thấy vòng focus trên nút chamfer; kiểm tương phản tokens §6; screen reader đọc được phần tử đang hiện dần.
 6. Reconcile tài liệu as-built (`docs/**` nhắc màu/font cũ; `docs/design/cinemo` giữ làm lịch sử). **Không** sửa intent docs.
 
+7. **Residual từ review phase 1-2 (xử lý ở task này hoặc ghi rõ lý do không làm):**
+   - Rule toàn cục `globals.css`: `[data-scrub]:focus-within` phải phủ cả phần tử animation LỒNG bên trong (`[data-scrub-media]`, `[data-scrub-beam]`, `[data-scrub-wipe]`, `[data-scrub-rule]`) (dispatcher có thể đã sửa ở bước gộp phase 2).
+   - Footer `SiteFooter` gắn `scrub-inset-0` khi bật scrub cột footer; trang chủ chuyển lưới phim sang `MovieGrid` (lệch pha theo cột).
+   - SeatMap/SeatLegend: hex thô `#12697A` -> `var(--color-info-line)`; ghế lẻ (R-66) và VIP còn trống không mất khung/vạch khi hover (không gắn hover shadow); mẫu "Hỏng" trong chú thích thiếu dấu gạch.
+   - `text-[27px]` tổng tiền -> token cỡ chữ; chấp nhận fallback font cho ký tự "₫" (Orbitron không có glyph) và ghi chú.
+   - `lib/legal.ts:5` `LEGAL_DRAFT_NOTICE` còn "—"; `auth-ui.tsx:108,148` còn "8–72" (đổi cả chuỗi và test); sweep toàn bộ `—/–` còn lại trong chuỗi hiển thị.
+   - `avatar-upload.tsx:136` `chamfer-md` + `border-2` bị clip-path cắt viền: dùng shadow inset.
+   - Import `HUD_LABEL` bị chèn nhóm import bên thứ ba (5 file account): chuyển xuống nhóm `@/`.
+   - Audit-log: sentinel "-" dễ nhầm giá trị thật (`audit-log-view.tsx:42`) -> nhãn "(không có)".
+   - Soát vé: nút `ui/button` vẫn có hiệu ứng nhấc/transition 200ms ở `/staff` trái §16.1 "tắt hết": tắt ở staff layout; icon CheckinResult vẫn tròn (§16.2 ô vuông chamfer).
+   - Token `z-index` (`lib/z-index.ts`), `--dur-wipe`, `--stagger` chưa có (tokens §3.3/§4.1): thêm hoặc cập nhật tokens cho đúng thực tế.
+   - Hero: kiểm ở 1024x690 và 1366x657 với tên phim dài (3 dòng), `UnverifiedEmailBanner` hiện thì hero lệch; thẻ rạp trang chủ lệch pha `index%3` vs lưới 2 cột; `aria-label` đặt trên `div` không có role (`cinema-closed-notice`, chip đóng bán).
+   - Chạy ĐẦY ĐỦ ở integration: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` (worktree không build được do junction; `app/auth/callback/route.ts` export `classifyOAuthError` làm type-check của `next build` báo lỗi: xác nhận có từ trước trên staging hay không).
+
 ## KHÔNG làm
 Không thêm tính năng mới; không đổi nghiệp vụ; không động `apps/api`, `supabase`.
 

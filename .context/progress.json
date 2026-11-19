@@ -209,6 +209,50 @@
             "rounds": 2,
             "reportPath": ".context/review-reports/feature-cyberplex-reskin-phase-1-task-02-round-2-review.md"
           }
+        },
+        {
+          "phase": 2,
+          "task": "task-06 Admin và Soát vé",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "NORMAL",
+            "rounds": 1,
+            "reportPath": ".context/review-reports/feature-cyberplex-reskin-phase-2-task-06-round-1-review.md"
+          }
+        },
+        {
+          "phase": 2,
+          "task": "task-04 Màn khách danh mục",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "NORMAL",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/feature-cyberplex-reskin-phase-2-task-04-round-2-review.md"
+          }
+        },
+        {
+          "phase": 2,
+          "task": "task-05 Luồng đặt vé, vé, tài khoản, đăng nhập",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 1,
+            "reportPath": ".context/review-reports/feature-cyberplex-reskin-phase-2-task-05-round-1-review.md"
+          }
+        },
+        {
+          "phase": 2,
+          "task": "task-03 Trang chủ: hero ghim + QuickBookBar (R-138)",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/feature-cyberplex-reskin-phase-2-task-03-round-2-review.md"
+          }
         }
       ]
     }
@@ -688,7 +732,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-19T04:01:46.720Z",
+  "lastUpdated": "2026-11-19T07:37:13.471Z",
   "inProgressTask": null,
   "completedTasks": [
     {
