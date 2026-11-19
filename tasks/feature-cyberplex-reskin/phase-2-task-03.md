@@ -24,6 +24,11 @@ Không đụng `components/catalog/movie-card|cinema*` (task-04), `booking|ticke
 ## Repro Verification
 - Original: trang chủ hero tĩnh, chưa có đặt vé nhanh.
 - Expected: AC-31, thanh đặt vé hiện lần lượt trái → phải theo cuộn, đảo ngược khi cuộn lên.
-- Actual after: _(builder điền)_
-- Evidence: _(builder điền)_
-- Status: pending
+- Actual after: trang chủ có hero `.hs-scene > .hs-pin` (ghim 90svh chỉ khi >=768px, cao >=620px, có `animation-timeline: scroll()`, no-preference) + `QuickBookBar` 4 select gốc (Rạp, Phim, Ngày, Giờ chiếu) dùng endpoint lịch chiếu R-44 `/cinemas/:code?date=` x 7 ngày; ô luôn opacity 1.
+- Evidence: unit test `lib/__tests__/quick-book.test.ts` + `components/catalog/__tests__/quick-book-bar.test.tsx` (12 test: lọc suất CLOSED/CANCELLED/quá mốc, rạp không OPEN, 7 ngày, reset ô sau, Chưa có suất, thiếu ô báo lỗi aria-live không điều hướng, đủ 4 ô push `/dat-ve/st-1`, chưa chọn tỉnh mở ProvincePickerDialog). `pnpm --filter ./apps/web` typecheck/lint/test PASS (52 file, 647 test). Webpack build: compile OK; bước TS của `next build` lỗi sẵn có ở `.next/types/app/auth/callback/route.ts` (export `classifyOAuthError`), không thuộc task. Playwright cuộn 0 -> 90svh -> 0: CHƯA chạy được (dev server cần env Supabase, lệnh dựng lại server bị chặn quyền) - dispatcher/reviewer cần kiểm ở integration.
+- Status: BLOCKED (phần code + unit test PASS; còn thiếu Playwright scroll evidence)
+
+### Round 2 (sau reviewer STRICT round 1)
+- Actual after: MAJOR-1 bàn phím: bỏ mở hộp tỉnh bằng `onFocus`; chỉ mở khi click/mousedown, Enter/Space/ArrowUp/ArrowDown trên ô, hoặc submit; đóng hộp thì trả focus về ô đã mở. MAJOR-2: vùng `role=status aria-live=polite` luôn có trong DOM (bỏ `:empty{display:none}`), lỗi lặp được xoá rồi gán lại qua `requestAnimationFrame`. Hero thấp: cỡ chữ tên phim `min(7vw, 10svh)`, padding/margin dọc theo `svh`, 4 ô một hàng ở 768-1080, màu hex đổi sang token.
+- Evidence: test mới (Tab qua 4 ô không mở hộp và sang nút Đặt vé; Enter mở, Esc trả focus về ô; vùng live luôn có mặt và đặt lại khi submit lần hai). `apps/web`: typecheck, lint PASS; test 52 file / 650 test PASS. Playwright (next dev --webpack + API giả, tên phim 50 ký tự): không cắt nội dung ở 1366x657, 1024x690, 1280x720, 1440x900, 768x620, 1080x700 (kicker/title top >= pin top, qbar bottom <= pin bottom); 1280x720: `.qfield`/`.qbar__cta` đầu trang `opacity 1 | translate -36px | scale 0.9`, tại 90svh `1 | 0px | 1`, cuộn về 0 trả `1 | -36px | 0.9`; reduced-motion: `.hs-pin` relative, translate/scale none; mobile 390: relative, không scroll ngang.
+- Status: PASS (chờ reviewer round 2)
