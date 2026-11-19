@@ -3,6 +3,7 @@
 import { addPasswordInputSchema } from "@filmbooking/shared/schemas/identity";
 import { Loader2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,7 @@ export function AddPasswordForm({ onSuccess }: Readonly<{ onSuccess: () => void 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="add-password">Mật khẩu mới</Label>
+        <Label htmlFor="add-password" className={HUD_LABEL}>Mật khẩu mới</Label>
         <Input
           id="add-password"
           type="password"
@@ -55,7 +56,7 @@ export function AddPasswordForm({ onSuccess }: Readonly<{ onSuccess: () => void 
         <p className="text-small text-fg-muted">Ít nhất 8 ký tự, gồm chữ hoa, chữ thường và chữ số.</p>
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="add-password-confirm">Nhập lại mật khẩu</Label>
+        <Label htmlFor="add-password-confirm" className={HUD_LABEL}>Nhập lại mật khẩu</Label>
         <Input
           id="add-password-confirm"
           type="password"
@@ -66,7 +67,7 @@ export function AddPasswordForm({ onSuccess }: Readonly<{ onSuccess: () => void 
         />
       </div>
       {error ? (
-        <p role="alert" className="text-small text-danger">
+        <p role="alert" className="text-small text-danger-text">
           {error}
         </p>
       ) : null}

@@ -5,10 +5,11 @@ import type { AgeRating } from "@filmbooking/shared";
 import type { HoldSeatsResponse, SeatMapItem, SeatMapResponse } from "@filmbooking/shared/schemas/booking";
 import { AlertTriangle, Loader2, WifiOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Scrub } from "@/components/motion/scrub";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { useShowtimeSeats, type SeatChannelClient } from "@/lib/realtime/use-showtime-seats";
@@ -16,7 +17,7 @@ import { HoldCountdown } from "./hold-countdown";
 import { HoldExpiredDialog } from "./hold-expired-dialog";
 import { LoginRequiredDialog } from "./login-required-dialog";
 import { SeatLegend } from "./seat-legend";
-import { SeatMap } from "./seat-map";
+import { popElement, SeatMap } from "./seat-map";
 import {
   findOrphanSeatIds,
   isBookableType,
@@ -83,6 +84,14 @@ export function SeatPicker({ showtimeId, initialSeatMap, ageRating, ageUnknown =
   const selectedSeats = useMemo(() => seats.filter((s) => selectedIds.has(s.id)), [seats, selectedIds]);
   const orphanIds = useMemo(() => new Set(findOrphanSeatIds(seats, selectedIds)), [seats, selectedIds]);
   const total = selectedSeats.reduce((sum, s) => sum + s.price, 0);
+  const totalRef = useRef<HTMLSpanElement>(null);
+
+  // Đổi tổng tiền: nhấp nhẹ theo thời gian (không scrub). Bỏ qua lần render đầu.
+  const previousTotal = useRef(total);
+  useEffect(() => {
+    if (previousTotal.current !== total && totalRef.current) popElement(totalRef.current);
+    previousTotal.current = total;
+  }, [total]);
 
   // Ghế đang chọn của tôi bị người khác giữ/mua (realtime hoặc hết hạn) -> bỏ chọn + báo (AC-06).
   useEffect(() => {
@@ -170,58 +179,62 @@ export function SeatPicker({ showtimeId, initialSeatMap, ageRating, ageUnknown =
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <section aria-label="Chọn ghế" className="flex min-w-0 flex-col gap-4">
         {!connected && (
-          <p role="status" className="flex items-center gap-2 rounded-md bg-warning-soft px-3 py-2 text-body-sm text-warning">
+          <p role="status" className="flex items-center gap-2 border-l-[3px] border-warning bg-warning-soft px-3 py-2 text-body-sm text-warning">
             <WifiOff className="size-4" aria-hidden="true" />
             Mất kết nối. Trạng thái ghế có thể chưa cập nhật.
           </p>
         )}
         {salesClosed && (
-          <p role="alert" className="rounded-md bg-warning-soft px-3 py-2 text-body-sm text-warning">
-            Ngừng bán online — vui lòng mua tại quầy.
+          <p role="alert" className="border-l-[3px] border-warning bg-warning-soft px-3 py-2 text-body-sm text-warning">
+            Ngừng bán online - vui lòng mua tại quầy.
           </p>
         )}
         {auth === "unconfirmed" && (
-          <p role="alert" className="rounded-md bg-warning-soft px-3 py-2 text-body-sm text-warning">
+          <p role="alert" className="border-l-[3px] border-warning bg-warning-soft px-3 py-2 text-body-sm text-warning">
             Bạn cần xác nhận email trước khi chọn ghế. Hãy kiểm tra hộp thư của bạn.
           </p>
         )}
         <SeatMap seats={seats} selectedIds={selectedIds} orphanIds={orphanIds} onSeatActivate={handleActivate} />
-        <SeatLegend pricing={seatMap.pricing} seats={seats} />
+        {/* Chú thích nằm dưới sơ đồ: trên mobile vào khung nhìn sau, nên scrub trái sang phải khi cuộn tới. */}
+        <Scrub kind="ltr">
+          <SeatLegend pricing={seatMap.pricing} seats={seats} />
+        </Scrub>
         <p aria-live="polite" role="status" className="sr-only">
           {announcement}
         </p>
       </section>
 
-      <aside aria-label="Tóm tắt lựa chọn" className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface p-4 lg:sticky lg:top-4 lg:self-start">
-        <h2 className="text-h3 font-bold">Ghế đã chọn</h2>
+      <aside aria-label="Tóm tắt lựa chọn" className="frame lg:sticky lg:top-4 lg:self-start">
+       <div className="frame-in flex flex-col gap-3 p-4">
+        <h2 className="font-heading text-h3 font-bold">Ghế đã chọn</h2>
         {hold ? <HoldCountdown expiresAt={hold.expiresAt} onExpire={() => setExpired(true)} /> : null}
         {selectedSeats.length === 0 ? (
           <p className="text-body-sm text-fg-secondary">Chọn ít nhất 1 ghế (tối đa {MAX_SEATS_PER_ORDER}).</p>
         ) : (
           <ul className="flex flex-wrap gap-2" aria-label="Danh sách ghế đã chọn">
             {selectedSeats.map((s) => (
-              <li key={s.id} className="rounded-pill bg-surface-control px-3 py-1 text-body-sm font-semibold">
+              <li key={s.id} className="chamfer-sm bg-surface-control px-3 py-1 font-mono text-body-sm font-semibold">
                 {s.label}
               </li>
             ))}
           </ul>
         )}
         {orphanBlocked && (
-          <p role="alert" className="flex items-start gap-2 rounded-md bg-danger-soft px-3 py-2 text-body-sm text-danger">
+          <p role="alert" className="flex items-start gap-2 border-l-[3px] border-danger bg-danger-soft px-3 py-2 text-body-sm text-danger-text">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             Không để trống 1 ghế lẻ giữa các ghế. Vui lòng chọn lại.
           </p>
         )}
         {ageUnknown && (
-          <p role="alert" className="rounded-md bg-warning-soft px-3 py-2 text-body-sm text-warning">
+          <p role="alert" className="border-l-[3px] border-warning bg-warning-soft px-3 py-2 text-body-sm text-warning">
             Không xác định được phân loại độ tuổi của phim. Vui lòng tải lại trang để tiếp tục.
           </p>
         )}
         {needsAgeConfirm && ageRating && (
-          <div className="flex flex-col gap-2 rounded-md bg-warning-soft p-3 text-body-sm">
+          <div className="flex flex-col gap-2 border-l-[3px] border-warning bg-warning-soft p-3 text-body-sm">
             <p>
               Phim {ageRating}: chỉ dành cho khán giả từ {AGE_MIN[ageRating]} tuổi. Nhân viên có quyền yêu cầu giấy tờ và
-              từ chối vào phòng — vé không được hoàn.
+              từ chối vào phòng - vé không được hoàn.
             </p>
             <label className="flex items-center gap-2">
               <Checkbox
@@ -233,9 +246,11 @@ export function SeatPicker({ showtimeId, initialSeatMap, ageRating, ageUnknown =
             </label>
           </div>
         )}
-        <div className="flex items-center justify-between border-t border-border-subtle pt-3">
+        <div className="flex items-baseline justify-between border-t border-border pt-3">
           <span className="text-body-sm text-fg-secondary">Tạm tính</span>
-          <span className="tabular text-h3 font-bold">{formatVnd(total)}</span>
+          <span ref={totalRef} className="font-display text-[27px] font-bold leading-none tracking-tight text-brand tabular">
+            {formatVnd(total)}
+          </span>
         </div>
         <Button variant="gradient" size="lg" disabled={!canContinue} aria-busy={holding} onClick={() => void handleContinue()}>
           {holding ? (
@@ -247,7 +262,8 @@ export function SeatPicker({ showtimeId, initialSeatMap, ageRating, ageUnknown =
             "Tiếp tục"
           )}
         </Button>
-        <p className="text-center text-caption text-danger">Không hỗ trợ huỷ / hoàn vé</p>
+        <p className="text-center text-caption text-danger-text">Không hỗ trợ huỷ / hoàn vé</p>
+       </div>
       </aside>
 
       <LoginRequiredDialog open={loginOpen} onOpenChange={setLoginOpen} next={`/dat-ve/${showtimeId}`} />

@@ -73,7 +73,7 @@ export default async function DatVePage({ params }: Readonly<{ params: Promise<{
       <CinemaTag cinemaId={seatMap.showtime.cinemaId} />
       <BookingStepper currentStep={2} />
       <header className="flex flex-col gap-1">
-        <h1 className="flex flex-wrap items-center gap-2 text-h2 font-bold">
+        <h1 className="flex flex-wrap items-center gap-2 font-heading text-h2 font-bold">
           {movie?.titleVi ?? "Chọn ghế"}
           {ageRating ? <AgeBadge rating={ageRating} tone="semantic" /> : null}
         </h1>

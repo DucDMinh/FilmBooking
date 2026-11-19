@@ -61,7 +61,7 @@ export default function AccountNotificationsPage() {
 
   if (loading) {
     return (
-      <Card className="border-border-subtle bg-surface">
+      <Card className="border-border bg-surface">
         <CardHeader>
           <Skeleton className="h-6 w-52" />
           <Skeleton className="h-4 w-80" />
@@ -85,7 +85,7 @@ export default function AccountNotificationsPage() {
   }
 
   return (
-    <Card className="border-border-subtle bg-surface">
+    <Card className="border-border bg-surface">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Bell className="size-5 text-brand" aria-hidden="true" />
@@ -98,7 +98,7 @@ export default function AccountNotificationsPage() {
 
       <CardContent className="space-y-6">
         {/* Tuỳ chọn email khuyến mãi */}
-        <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-elevated p-4">
+        <div className="flex items-start gap-3 border border-border bg-surface-elevated p-4">
           <Checkbox
             id="marketing-opt-in"
             checked={marketingOptIn}
@@ -119,7 +119,7 @@ export default function AccountNotificationsPage() {
         </div>
 
         {/* Thông báo bắt buộc đối với email giao dịch */}
-        <div className="flex items-start gap-3 rounded-lg border border-info-line bg-info-soft p-4 text-info">
+        <div className="flex items-start gap-3 border border-info-line bg-info-soft p-4 text-info">
           <Info className="size-5 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="space-y-1 text-body-sm leading-normal text-fg-secondary">
             <p className="font-semibold text-fg">Email giao dịch luôn được gửi tự động</p>

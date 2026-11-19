@@ -15,10 +15,17 @@ export function errorMessage(error: unknown): string {
   return error instanceof ApiError ? error.message : GENERIC_ERROR_MESSAGE;
 }
 
+/**
+ * Nhãn trường dạng hud (mono, UPPERCASE, 11px). Dùng modifier `!` vì ui/label đặt sẵn text-small và màu chữ,
+ * mà thứ tự cascade giữa các utility cùng thuộc tính không đảm bảo; không sửa ui/label (ngoài phạm vi).
+ */
+export const HUD_LABEL =
+  "font-mono text-[length:var(--text-hud)]! font-medium uppercase tracking-[var(--tracking-hud)] text-fg-muted!";
+
 const ALERT_STYLES = {
-  danger: "border-danger-line bg-danger-soft",
-  info: "border-info-line bg-info-soft",
-  success: "border-success-line bg-success-soft",
+  danger: "border-danger bg-danger-soft",
+  info: "border-info bg-info-soft",
+  success: "border-success bg-success-soft",
 } as const;
 
 /** Khung thông báo: danger/info dùng role=alert (đọc ngay), success dùng role=status (aria-live polite). */
@@ -30,7 +37,7 @@ export function FormAlert({
   return (
     <div
       role={tone === "success" ? "status" : "alert"}
-      className={cn("rounded-md border px-3 py-2.5 text-body-sm text-fg", ALERT_STYLES[tone], className)}
+      className={cn("border-l-[3px] px-3 py-2.5 text-body-sm text-fg", ALERT_STYLES[tone], className)}
     >
       {children}
     </div>
@@ -53,7 +60,7 @@ export function AuthField({ label, error, hint, labelAside, className, ...inputP
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2">
-        <Label htmlFor={id}>{label}</Label>
+        <Label htmlFor={id} className={HUD_LABEL}>{label}</Label>
         {labelAside}
       </div>
       <Input
@@ -69,7 +76,7 @@ export function AuthField({ label, error, hint, labelAside, className, ...inputP
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="text-small text-danger">
+        <p id={errorId} role="alert" className="text-small text-danger-text">
           {error}
         </p>
       ) : null}
@@ -89,7 +96,7 @@ export function PasswordField(props: Readonly<Omit<FieldProps, "type">>) {
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
         aria-pressed={visible}
-        className="absolute right-0 bottom-0 flex size-11 items-center justify-center rounded-sm text-fg-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-ring md:size-10"
+        className="absolute right-0 bottom-0 flex size-11 items-center justify-center text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-brand md:size-10"
       >
         <Icon className="size-4" aria-hidden="true" />
       </button>
@@ -115,7 +122,7 @@ export function PasswordStrength({ password }: Readonly<{ password: string }>) {
         {SEGMENT_COLORS.map((color, index) => (
           <span
             key={color + index}
-            className={cn("h-1.5 flex-1 rounded-pill", index < level ? color : "bg-surface-control")}
+            className={cn("h-1.5 flex-1", index < level ? color : "bg-surface-control")}
           />
         ))}
       </div>

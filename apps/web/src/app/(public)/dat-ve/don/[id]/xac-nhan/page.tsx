@@ -123,12 +123,13 @@ export default function OrderConfirmPage() {
       <Link href={`/dat-ve/${summary.showtime.id}`} className="mt-1 inline-flex min-h-11 items-center text-body-sm text-link hover:underline">
         ← Đổi ghế
       </Link>
-      <h1 className="mt-2 text-h1 font-extrabold">Xác nhận đơn hàng</h1>
+      <h1 className="mt-2 font-heading text-h1 font-bold">Xác nhận đơn hàng</h1>
       <p className="mt-1 text-body-sm text-fg-secondary">Kiểm tra kỹ rạp, suất chiếu và ghế trước khi thanh toán.</p>
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_minmax(0,420px)]">
         <ShowtimeInfo summary={summary} />
-        <aside className="space-y-4 rounded-lg border border-border-subtle bg-surface p-4 sm:p-6">
-          <h2 className="text-h3 font-bold">Tổng thanh toán</h2>
+        <aside className="frame">
+         <div className="frame-in space-y-4 p-4 sm:p-6">
+          <h2 className="font-heading text-h3 font-bold">Tổng thanh toán</h2>
           <HoldCountdown initialSeconds={summary.expiresInSeconds} onExpire={markExpired} />
           <VoucherInput orderId={id} appliedCode={summary.voucher?.code ?? null} onChanged={load} />
           <PriceBreakdown summary={summary} />
@@ -140,11 +141,11 @@ export default function OrderConfirmPage() {
             ageCheck={needsAge ? { checked: ageChecked, onChange: setAgeChecked } : undefined}
           />
           {payError ? (
-            <p role="alert" className="rounded-md bg-danger-banner px-3 py-2 text-body-sm text-danger-strong">
+            <p role="alert" className="border-l-[3px] border-danger bg-danger-banner px-3 py-2 text-body-sm text-danger-strong">
               {payError}
             </p>
           ) : null}
-          <div className="max-lg:sticky max-lg:bottom-0 max-lg:-mx-4 max-lg:border-t max-lg:border-border-subtle max-lg:bg-surface max-lg:p-4 space-y-2">
+          <div className="max-lg:sticky max-lg:bottom-0 max-lg:-mx-4 max-lg:border-t max-lg:border-border max-lg:bg-surface max-lg:p-4 space-y-2">
             <Button
               variant="gradient"
               size="lg"
@@ -162,6 +163,7 @@ export default function OrderConfirmPage() {
               </p>
             ) : null}
           </div>
+         </div>
         </aside>
       </div>
       <PolicyConfirmDialog

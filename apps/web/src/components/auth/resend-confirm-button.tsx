@@ -72,7 +72,7 @@ export function ResendConfirmButton({
     <div className="space-y-2">
       <Button
         type="button"
-        variant="outline"
+        variant="secondary"
         onClick={handleResend}
         disabled={isDisabled}
         aria-disabled={isDisabled}
@@ -94,7 +94,7 @@ export function ResendConfirmButton({
         <p
           role={feedback.tone === "error" ? "alert" : "status"}
           aria-live="polite"
-          className={`text-small ${feedback.tone === "error" ? "text-danger" : "text-success"}`}
+          className={`text-small ${feedback.tone === "error" ? "text-danger-text" : "text-success"}`}
         >
           {feedback.text}
         </p>

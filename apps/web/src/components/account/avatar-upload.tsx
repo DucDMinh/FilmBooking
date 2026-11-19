@@ -133,7 +133,7 @@ export function AvatarUpload({
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      <div className="relative size-24 shrink-0 overflow-hidden rounded-full border-2 border-border bg-surface-elevated">
+      <div className="relative size-24 shrink-0 overflow-hidden chamfer-md border-2 border-border bg-surface-elevated">
         {displayUrl ? (
           <Image
             src={displayUrl}
@@ -187,7 +187,7 @@ export function AvatarUpload({
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
               disabled={isUploading}
               onClick={handleCancelPreview}
@@ -216,7 +216,7 @@ export function AvatarUpload({
         </p>
 
         {errorMessage ? (
-          <p role="alert" className="text-small font-medium text-danger">
+          <p role="alert" className="text-small font-medium text-danger-text">
             {errorMessage}
           </p>
         ) : null}

@@ -24,6 +24,6 @@ Không đụng `components/catalog|shell|common|ui` (đã làm), `admin|staff`, 
 ## Repro Verification
 - Original: luồng đặt vé kiểu CINEMO.
 - Expected: kiểu CYBERPLEX, hành vi và a11y nguyên vẹn, trang đặt vé dùng được ngay khi vào.
-- Actual after: _(builder điền)_
-- Evidence: _(builder điền)_
-- Status: pending
+- Actual after: SeatMap/SeatLegend/BookingStepper/HoldCountdown/NoRefund/order-summary/seat-picker aside, form auth + tài khoản đã sang CYBERPLEX; logic, aria-label, roving tabindex, role=timer, gating R-71, nội dung R-133 giữ nguyên. /dat-ve có layout `scrub-inset-0`.
+- Evidence: typecheck PASS, lint PASS, test 50 files/629 PASS. Playwright/smoke chưa chạy (app cần Supabase env + API). Build không chạy trong worktree (symlink node_modules); webpack compile OK, lỗi type .next/types ở app/auth/callback/route.ts là có sẵn, không thuộc scope.
+- Status: PASS (code + unit: typecheck/lint/test 629 PASS); smoke Playwright chưa chạy

@@ -30,7 +30,7 @@ export default async function KetQuaPage({ params }: Readonly<{ params: Promise<
       {order ? (
         <div className="space-y-6">
           <div className="text-center">
-            <h1 className="text-h1 font-extrabold">Đặt vé thành công</h1>
+            <h1 className="font-heading text-h1 font-bold">Đặt vé thành công</h1>
             <p className="mt-1 text-body-sm text-fg-secondary">
               Mã đặt vé của bạn là <strong className="tabular">{order.bookingCode}</strong>. Đưa mã QR bên dưới cho
               nhân viên tại rạp.

@@ -51,8 +51,8 @@ export function HoldCountdown({
   return (
     <p
       className={cn(
-        "inline-flex rounded-pill px-3 py-1 text-body-sm font-semibold tabular",
-        remaining <= 60 ? "bg-danger-banner text-danger-strong" : "bg-surface-elevated text-fg",
+        "chamfer-sm inline-flex px-3.5 py-1.5 text-body-sm font-semibold tabular",
+        remaining <= 60 ? "bg-danger-soft text-danger-text" : "bg-surface-elevated text-fg",
       )}
     >
       Còn {formatRemaining(Math.max(remaining, 0))} để giữ ghế
@@ -64,19 +64,17 @@ export function HoldCountdown({
 export function ShowtimeInfo({ summary }: Readonly<{ summary: BookingSummaryResponse }>) {
   const { cinema, movie, showtime, seats } = summary;
   return (
-    <section
-      aria-labelledby="showtime-info-title"
-      className="space-y-4 rounded-lg border border-border-subtle bg-surface p-4 sm:p-6"
-    >
-      <h2 id="showtime-info-title" className="text-h3 font-bold">
-        Thông tin suất chiếu
-      </h2>
-      <div className="rounded-md bg-surface-elevated p-4">
-        <p className="text-caption font-semibold tracking-wide text-brand">RẠP ĐÃ CHỌN</p>
-        <p className="mt-1 text-h3 font-extrabold uppercase">{cinema.name}</p>
-        <p className="mt-1 text-body-sm text-fg-secondary">{cinema.address}</p>
-      </div>
-      <div className="space-y-1">
+    <section aria-labelledby="showtime-info-title" className="frame">
+      <div className="frame-in space-y-4 p-4 sm:p-6">
+        <h2 id="showtime-info-title" className="font-heading text-h3 font-bold">
+          Thông tin suất chiếu
+        </h2>
+        <div className="border-l-[3px] border-brand bg-surface-elevated p-4">
+          <p className="hud hud-brand">Rạp đã chọn</p>
+          <p className="mt-1 font-heading text-h3 font-bold uppercase">{cinema.name}</p>
+          <p className="mt-1 text-body-sm text-fg-secondary">{cinema.address}</p>
+        </div>
+        <div className="space-y-1">
         <p className="flex flex-wrap items-center gap-2 text-body font-semibold">
           {movie.title}
           {movie.ageRating ? <AgeBadge rating={movie.ageRating as AgeRating} tone="semantic" /> : null}
@@ -89,8 +87,9 @@ export function ShowtimeInfo({ summary }: Readonly<{ summary: BookingSummaryResp
       </div>
       <p className="text-body-sm">
         <span className="text-fg-secondary">Ghế: </span>
-        <span className="font-semibold">{seats.map((s) => s.label).join(", ")}</span>
-      </p>
+          <span className="font-semibold">{seats.map((s) => s.label).join(", ")}</span>
+        </p>
+      </div>
     </section>
   );
 }
@@ -108,19 +107,19 @@ export function PriceBreakdown({ summary }: Readonly<{ summary: BookingSummaryRe
           <dd className="tabular">{formatVnd(seat.price)}</dd>
         </div>
       ))}
-      <div className="flex justify-between gap-2 border-t border-border-subtle pt-2">
+      <div className="flex justify-between gap-2 border-t border-border pt-2">
         <dt className="text-fg-secondary">Tạm tính</dt>
         <dd className="tabular">{formatVnd(pricing.subtotal)}</dd>
       </div>
       {pricing.discount > 0 ? (
         <div className="flex justify-between gap-2 text-success">
           <dt>Giảm giá{voucher ? ` (${voucher.code})` : ""}</dt>
-          <dd className="tabular">−{formatVnd(pricing.discount)}</dd>
+          <dd className="tabular">-{formatVnd(pricing.discount)}</dd>
         </div>
       ) : null}
-      <div className="flex justify-between gap-2 border-t border-border-subtle pt-2 text-h3 font-extrabold">
-        <dt>Tổng cộng</dt>
-        <dd className="tabular" data-testid="order-total">
+      <div className="flex items-baseline justify-between gap-2 border-t border-border pt-4">
+        <dt className="font-heading text-body font-bold uppercase">Tổng cộng</dt>
+        <dd className="font-display text-[27px] font-bold leading-none tracking-tight text-brand tabular" data-testid="order-total">
           {formatVnd(pricing.total)}
         </dd>
       </div>

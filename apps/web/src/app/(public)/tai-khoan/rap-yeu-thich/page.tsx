@@ -89,7 +89,7 @@ export default function FavoriteCinemasPage() {
 
   if (loading) {
     return (
-      <Card className="border-border-subtle bg-surface">
+      <Card className="border-border bg-surface">
         <CardHeader>
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-4 w-72" />
@@ -116,7 +116,7 @@ export default function FavoriteCinemasPage() {
   const availableCinemas = cinemas.filter((c) => c.id && !favoriteIds.includes(c.id));
 
   return (
-    <Card className="border-border-subtle bg-surface">
+    <Card className="border-border bg-surface">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Heart className="size-5 text-brand" aria-hidden="true" />
@@ -129,7 +129,7 @@ export default function FavoriteCinemasPage() {
 
       <CardContent className="space-y-6">
         {/* Bộ chọn thêm rạp mới */}
-        <div className="rounded-lg border border-border bg-surface-elevated p-4">
+        <div className="border border-border bg-surface-elevated p-4">
           <h2 className="text-body font-semibold text-fg">Thêm rạp yêu thích</h2>
           <p className="mt-1 text-body-sm text-fg-secondary">
             Chọn rạp từ mạng lưới CINEMO toàn quốc để thêm vào danh sách ưu tiên.
@@ -206,7 +206,7 @@ export default function FavoriteCinemasPage() {
                 return (
                   <div
                     key={id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-elevated p-3.5 transition-colors hover:border-brand/40"
+                    className="flex items-center justify-between gap-3 border border-border bg-surface-elevated p-3.5 transition-colors hover:border-brand/40"
                   >
                     <div className="min-w-0 flex-1">
                       <Link
@@ -228,7 +228,7 @@ export default function FavoriteCinemasPage() {
                       disabled={isUpdating || !cinema.id}
                       onClick={() => cinema.id && handleRemoveFavorite(cinema.id)}
                       aria-label={`Xoá ${cinema.name} khỏi danh sách yêu thích`}
-                      className="size-9 shrink-0 text-fg-muted hover:bg-danger-soft hover:text-danger"
+                      className="size-9 shrink-0 text-fg-muted hover:bg-danger-soft hover:text-danger-text"
                     >
                       <X className="size-4" aria-hidden="true" />
                     </Button>

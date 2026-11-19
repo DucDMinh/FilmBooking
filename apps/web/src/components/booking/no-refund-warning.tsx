@@ -37,15 +37,15 @@ export function NoRefundWarning({
   return (
     <section
       aria-label="Cảnh báo không huỷ, không hoàn vé"
-      className="space-y-3 rounded-md border border-warning-line bg-warning-soft p-4"
+      className="space-y-3 border-l-[3px] border-danger bg-danger-soft p-4"
     >
       <p className="flex items-start gap-2 text-body-sm">
-        <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+        <TriangleAlert className="mt-0.5 size-4 shrink-0 text-danger-strong" aria-hidden="true" />
         <span>
           Vé đã mua <strong>không thể huỷ, đổi hoặc hoàn tiền</strong>, trừ trường hợp rạp huỷ suất. Vé chỉ dùng
           tại{" "}
           <strong>
-            {cinema.name} – {cinema.address}
+            {cinema.name} - {cinema.address}
           </strong>
           , suất <strong>{formatShowTime(showtime.startsAt)}</strong> ngày{" "}
           <strong>{formatShowDate(showtime.startsAt)}</strong>.
@@ -91,7 +91,7 @@ export function PolicyConfirmDialog({
           <AlertDialogDescription asChild>
             <div className="space-y-2">
               <p>
-                Bạn sắp mua vé tại <strong>{cinema.name}</strong> – {cinema.address}, suất{" "}
+                Bạn sắp mua vé tại <strong>{cinema.name}</strong> - {cinema.address}, suất{" "}
                 <strong>{formatShowTime(showtime.startsAt)}</strong> ngày{" "}
                 <strong>{formatShowDate(showtime.startsAt)}</strong>.
               </p>

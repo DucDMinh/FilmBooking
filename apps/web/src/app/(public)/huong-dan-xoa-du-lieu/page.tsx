@@ -12,7 +12,7 @@ export default function DataDeletionPage() {
     <article className="mx-auto w-full max-w-3xl text-base leading-[1.7] text-fg-secondary">
       <h1 className="text-h1 font-bold text-fg">Hướng dẫn xoá dữ liệu</h1>
       <p className="mt-1 text-small text-fg-muted">{LEGAL_META_LINE}</p>
-      <p className="mt-4 rounded-md border border-warning-line bg-warning-soft p-3 text-body-sm text-warning">
+      <p className="mt-4 border border-warning-line bg-warning-soft p-3 text-body-sm text-warning">
         {LEGAL_DRAFT_NOTICE}
       </p>
 

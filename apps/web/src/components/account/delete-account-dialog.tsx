@@ -3,6 +3,7 @@
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 
 import { signOutAction } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -48,12 +49,12 @@ function DeleteAccountStepOne({
 }: Readonly<StepOneProps>) {
   return (
     <div className="space-y-4 py-2">
-      <div className="rounded-md border border-danger-line bg-danger-soft/60 p-4 text-body-sm text-fg">
-        <p className="font-semibold text-danger">Hành động này mang tính vĩnh viễn và không thể khôi phục:</p>
+      <div className="border border-danger-line bg-danger-soft/60 p-4 text-body-sm text-fg">
+        <p className="font-semibold text-danger-text">Hành động này mang tính vĩnh viễn và không thể khôi phục:</p>
         <ul className="mt-2 list-disc space-y-1.5 pl-5 text-body-sm text-fg-secondary">
           <li>Thông tin cá nhân (họ tên, email, số điện thoại, ảnh) sẽ bị ẩn danh hoá hoàn toàn.</li>
           <li>Lịch sử đơn hàng được lưu ẩn danh theo quy định kế toán.</li>
-          <li className="font-semibold text-danger">
+          <li className="font-semibold text-danger-text">
             Mọi vé chưa sử dụng sẽ bị mất hiệu lực và không được hoàn tiền.
           </li>
         </ul>
@@ -71,7 +72,7 @@ function DeleteAccountStepOne({
       </div>
 
       <DialogFooter className="mt-4 gap-2 sm:gap-0">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           Huỷ
         </Button>
         <Button type="button" variant="destructive" disabled={!acknowledgeLoss} onClick={onNext}>
@@ -114,14 +115,14 @@ function DeleteAccountStepTwo({
     <div className="space-y-4 py-2">
       <p className="text-body-sm text-fg-secondary">
         Để xác nhận, vui lòng gõ chính xác{" "}
-        <strong className="font-bold text-danger">{CONFIRMATION_PHRASE}</strong> vào ô bên dưới
+        <strong className="font-bold text-danger-text">{CONFIRMATION_PHRASE}</strong> vào ô bên dưới
         {hasPassword ? " cùng với mật khẩu hiện tại của bạn" : ""}.
       </p>
 
       {errorMessage ? (
         <div
           role="alert"
-          className="space-y-2 rounded-md border border-danger-line bg-danger-soft p-3 text-body-sm font-medium text-danger"
+          className="space-y-2 border border-danger-line bg-danger-soft p-3 text-body-sm font-medium text-danger-text"
         >
           <p>{errorMessage}</p>
           {isReauthRequired ? (
@@ -129,7 +130,7 @@ function DeleteAccountStepTwo({
               type="button"
               variant="outline"
               size="sm"
-              className="mt-1 border-danger-line text-danger hover:bg-danger-soft/80"
+              className="mt-1 border-danger-line text-danger-text hover:bg-danger-soft/80"
               onClick={() => {
                 window.location.href = "/dang-nhap?next=/tai-khoan";
               }}
@@ -141,7 +142,7 @@ function DeleteAccountStepTwo({
       ) : null}
 
       <div className="space-y-1.5">
-        <Label htmlFor="confirm-phrase">Cụm từ xác nhận</Label>
+        <Label htmlFor="confirm-phrase" className={HUD_LABEL}>Cụm từ xác nhận</Label>
         <Input
           id="confirm-phrase"
           value={confirmText}
@@ -154,7 +155,7 @@ function DeleteAccountStepTwo({
 
       {hasPassword ? (
         <div className="space-y-1.5">
-          <Label htmlFor="delete-password">Mật khẩu của bạn</Label>
+          <Label htmlFor="delete-password" className={HUD_LABEL}>Mật khẩu của bạn</Label>
           <Input
             id="delete-password"
             type="password"
@@ -168,7 +169,7 @@ function DeleteAccountStepTwo({
       ) : null}
 
       <DialogFooter className="mt-4 gap-2 sm:gap-0">
-        <Button type="button" variant="outline" disabled={isDeleting} onClick={onBack}>
+        <Button type="button" variant="ghost" disabled={isDeleting} onClick={onBack}>
           Quay lại
         </Button>
         <Button type="button" variant="destructive" disabled={isDeleteDisabled} onClick={onDelete}>
@@ -280,10 +281,10 @@ export function DeleteAccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md border-border-subtle bg-surface">
+      <DialogContent className="max-w-md border-border bg-surface">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger">
+            <span className="flex size-10 shrink-0 items-center justify-center chamfer-md bg-danger-soft text-danger-text">
               <AlertTriangle className="size-5" aria-hidden="true" />
             </span>
             <DialogTitle className="text-h3 font-bold text-fg">Xoá tài khoản CINEMO?</DialogTitle>

@@ -241,7 +241,7 @@ describe("LoginForm", () => {
   it("R-20: initialError='email_exists' hiển thị thông báo hướng dẫn đăng nhập bằng phương thức cũ", () => {
     render(<LoginForm initialError="email_exists" />);
     expect(
-      screen.getByText("Email này đã có tài khoản — hãy đăng nhập bằng phương thức cũ để liên kết."),
+      screen.getByText("Email này đã có tài khoản - hãy đăng nhập bằng phương thức cũ để liên kết."),
     ).toBeInTheDocument();
   });
 

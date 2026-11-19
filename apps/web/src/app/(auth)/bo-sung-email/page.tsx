@@ -92,7 +92,7 @@ function MissingEmailForm() {
         />
       </div>
       {error ? (
-        <p role="alert" className="text-small text-danger">
+        <p role="alert" className="text-small text-danger-text">
           {error}
         </p>
       ) : null}

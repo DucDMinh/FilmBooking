@@ -40,7 +40,7 @@ export function SessionsCard({
   }
 
   return (
-    <section aria-labelledby="sessions-title" className="rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+    <section aria-labelledby="sessions-title" className="border border-border bg-surface p-4 md:p-6">
       <h2 id="sessions-title" className="text-h3 font-bold">
         Phiên đăng nhập
       </h2>
@@ -49,7 +49,7 @@ export function SessionsCard({
       </p>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogTrigger asChild>
-          <Button variant="outline" className="mt-4 border-danger-line text-danger">
+          <Button variant="outline" className="mt-4 text-danger-text">
             Đăng xuất khỏi các thiết bị khác
           </Button>
         </AlertDialogTrigger>

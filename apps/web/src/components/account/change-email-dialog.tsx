@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -78,7 +79,7 @@ export function ChangeEmailDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md border-border-subtle bg-surface">
+      <DialogContent className="max-w-md border-border bg-surface">
         <form onSubmit={handleChangeEmail}>
           <DialogHeader>
             <DialogTitle>Đổi địa chỉ email</DialogTitle>
@@ -91,14 +92,14 @@ export function ChangeEmailDialog({
             {emailError ? (
               <div
                 role="alert"
-                className="rounded-md border border-danger-line bg-danger-soft p-3 text-body-sm font-medium text-danger"
+                className="border border-danger-line bg-danger-soft p-3 text-body-sm font-medium text-danger-text"
               >
                 {emailError}
               </div>
             ) : null}
 
             <div className="space-y-1.5">
-              <Label htmlFor="new-email">Địa chỉ email mới</Label>
+              <Label htmlFor="new-email" className={HUD_LABEL}>Địa chỉ email mới</Label>
               <Input
                 id="new-email"
                 type="email"
@@ -114,7 +115,7 @@ export function ChangeEmailDialog({
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               disabled={isSendingEmail}
               onClick={() => handleClose(false)}
             >

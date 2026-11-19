@@ -51,7 +51,7 @@ export function HoldCountdown({
 
   const tone =
     remaining <= 30
-      ? "bg-danger-soft text-danger"
+      ? "bg-danger-soft text-danger-text"
       : remaining <= 120
         ? "bg-warning-soft text-warning"
         : "bg-success-soft text-success";
@@ -60,11 +60,11 @@ export function HoldCountdown({
     <div
       role="timer"
       aria-live={remaining === 60 ? "assertive" : "off"}
-      className={cn("inline-flex items-center gap-2 rounded-pill px-3 py-1.5 text-body-sm font-semibold", tone, className)}
+      className={cn("chamfer-sm inline-flex items-center gap-2 px-3.5 py-1.5 text-body-sm font-semibold", tone, className)}
     >
       <Timer className="size-4" aria-hidden="true" />
       <span>
-        Giữ ghế trong <span className="tabular">{formatCountdown(remaining)}</span>
+        Giữ ghế trong <span className="font-mono font-bold tabular">{formatCountdown(remaining)}</span>
       </span>
     </div>
   );

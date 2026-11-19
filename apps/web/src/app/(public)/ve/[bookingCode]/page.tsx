@@ -19,11 +19,11 @@ export default async function ChiTietVePage({ params }: Readonly<{ params: Promi
   if (!order) notFound();
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
+    <main className="scrub-inset-0 mx-auto w-full max-w-3xl px-4 py-8">
       <Link href="/ve" className="inline-flex min-h-11 items-center text-body-sm text-link hover:underline">
         ← Vé của tôi
       </Link>
-      <h1 className="mb-4 mt-2 text-h1 font-extrabold">Chi tiết vé</h1>
+      <h1 className="mb-4 mt-2 text-h1 font-bold">Chi tiết vé</h1>
       <TicketDetail order={order} />
     </main>
   );

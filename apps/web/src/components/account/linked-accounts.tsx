@@ -146,7 +146,7 @@ export function LinkedAccounts({
 
   if (loadError) {
     return (
-      <div role="alert" className="rounded-lg border border-danger-line bg-danger-soft p-4 text-body-sm">
+      <div role="alert" className="border border-danger-line bg-danger-soft p-4 text-body-sm">
         Không tải được danh sách phương thức đăng nhập.{" "}
         <Button variant="link" onClick={() => void load()}>
           Thử lại
@@ -172,12 +172,12 @@ export function LinkedAccounts({
       </h2>
 
       {notice ? (
-        <p role="alert" className="rounded-md border border-danger-line bg-danger-soft p-3 text-body-sm">
+        <p role="alert" className="border border-danger-line bg-danger-soft p-3 text-body-sm">
           {notice}
         </p>
       ) : null}
       {needReauth ? (
-        <div role="alert" className="rounded-md border border-border bg-surface-elevated p-3 text-body-sm">
+        <div role="alert" className="border border-border bg-surface-elevated p-3 text-body-sm">
           Để liên kết tài khoản, bạn cần đăng nhập lại.{" "}
           <Link href={REAUTH_HREF} className="font-semibold text-link underline">
             Đăng nhập lại
@@ -186,7 +186,7 @@ export function LinkedAccounts({
         </div>
       ) : null}
 
-      <ul className="divide-y divide-border-subtle rounded-lg border border-border-subtle bg-surface">
+      <ul className="divide-y divide-border-subtle border border-border bg-surface">
         <li className="flex min-h-16 flex-wrap items-center gap-3 p-4">
           <Mail className="size-5 text-fg-muted" aria-hidden="true" />
           <div className="min-w-0 flex-1">

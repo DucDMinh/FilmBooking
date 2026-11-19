@@ -244,10 +244,10 @@ export function RegisterForm({ next, onRegister, turnstileRef }: Readonly<Regist
                 >
                   Chính sách bảo mật
                 </Link>
-                <span className="text-danger" aria-hidden="true"> *</span>
+                <span className="text-danger-text" aria-hidden="true"> *</span>
               </Label>
               {fieldErrors.terms ? (
-                <p role="alert" className="text-small text-danger">
+                <p role="alert" className="text-small text-danger-text">
                   {fieldErrors.terms}
                 </p>
               ) : null}
@@ -274,7 +274,7 @@ export function RegisterForm({ next, onRegister, turnstileRef }: Readonly<Regist
         <Button
           type="submit"
           variant="gradient"
-          className="w-full font-semibold shadow-cta-glow"
+          className="w-full"
           disabled={!acceptTerms || loading}
           aria-disabled={!acceptTerms || loading}
         >

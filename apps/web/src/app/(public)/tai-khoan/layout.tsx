@@ -92,9 +92,9 @@ export default function AccountLayout({ children }: Readonly<{ children: ReactNo
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-4 text-body-sm font-semibold transition-colors",
+                "chamfer-md inline-flex min-h-11 shrink-0 items-center gap-2 px-4 font-heading text-body-sm font-bold uppercase tracking-wide transition-colors",
                 active
-                  ? "bg-brand text-fg-on-brand shadow-sm"
+                  ? "bg-brand text-fg-on-brand"
                   : "border border-border bg-surface text-fg-secondary hover:bg-surface-elevated hover:text-fg",
               )}
             >
@@ -112,10 +112,10 @@ export default function AccountLayout({ children }: Readonly<{ children: ReactNo
           className="hidden w-72 shrink-0 flex-col gap-4 lg:flex"
         >
           {/* Card thông tin user */}
-          <Card className="border-border-subtle bg-surface p-5">
+          <Card className="border-border bg-surface p-5">
             {loading ? (
               <div className="flex items-center gap-3">
-                <Skeleton className="size-14 rounded-full" />
+                <Skeleton className="size-14 chamfer-md" />
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-3 w-36" />
@@ -123,7 +123,7 @@ export default function AccountLayout({ children }: Readonly<{ children: ReactNo
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="relative size-14 shrink-0 overflow-hidden rounded-full border border-border bg-surface-elevated">
+                <div className="relative size-14 shrink-0 overflow-hidden chamfer-md border border-border bg-surface-elevated">
                   {profile?.avatar_url ? (
                     <Image
                       src={profile.avatar_url}
@@ -154,7 +154,7 @@ export default function AccountLayout({ children }: Readonly<{ children: ReactNo
           {/* Menu dọc */}
           <nav
             aria-label="Menu tài khoản máy tính"
-            className="flex flex-col gap-1 rounded-lg border border-border-subtle bg-surface p-2"
+            className="flex flex-col gap-1 border border-border bg-surface p-2"
           >
             {ACCOUNT_NAV.map((item) => {
               const active = isLinkActive(item.href, "exact" in item && item.exact);
@@ -165,7 +165,7 @@ export default function AccountLayout({ children }: Readonly<{ children: ReactNo
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-11 items-center gap-3 rounded-md px-3.5 py-2.5 text-body-sm font-medium transition-colors",
+                    "flex min-h-11 items-center gap-3 px-3.5 py-2.5 text-body-sm font-medium transition-colors",
                     active
                       ? "border-l-3 border-brand bg-sidebar-active font-semibold text-fg"
                       : "text-fg-secondary hover:bg-surface-elevated hover:text-fg",

@@ -22,7 +22,7 @@ function ConfirmationContent() {
   if (status === "success") {
     return (
       <div className="space-y-6 text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
+        <div className="mx-auto flex size-14 items-center justify-center chamfer-md bg-success-soft text-success">
           <CheckCircle2 className="size-8" aria-hidden="true" />
         </div>
         <div className="space-y-2">
@@ -31,7 +31,7 @@ function ConfirmationContent() {
             Tài khoản của bạn đã được kích hoạt thành công. Giờ đây bạn có thể đặt vé tại mọi rạp trong chuỗi CINEMO.
           </p>
         </div>
-        <Button asChild variant="gradient" className="w-full font-semibold shadow-cta-glow">
+        <Button asChild variant="gradient" className="w-full">
           <Link href={next}>Tiếp tục đặt vé</Link>
         </Button>
       </div>
@@ -42,7 +42,7 @@ function ConfirmationContent() {
   if (status === "expired" || status === "error") {
     return (
       <div className="space-y-6 text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-danger-soft text-danger">
+        <div className="mx-auto flex size-14 items-center justify-center chamfer-md bg-danger-soft text-danger-text">
           <XCircle className="size-8" aria-hidden="true" />
         </div>
         <div className="space-y-2">
@@ -79,7 +79,7 @@ function ConfirmationContent() {
   // Màn 14: Sau đăng ký -> Kiểm tra hộp thư
   return (
     <div className="space-y-6 text-center">
-      <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-brand-soft text-brand">
+      <div className="mx-auto flex size-14 items-center justify-center chamfer-md bg-brand-soft text-brand">
         <Mail className="size-8" aria-hidden="true" />
       </div>
 
@@ -104,7 +104,7 @@ function ConfirmationContent() {
           <a href="mailto:">Mở ứng dụng email</a>
         </Button>
 
-        <div className="rounded-lg border border-border-subtle bg-surface-elevated/40 p-4 text-left">
+        <div className="border border-border bg-surface-elevated/40 p-4 text-left">
           <p className="text-body-sm font-medium text-fg mb-2">Chưa nhận được email?</p>
           <p className="text-small text-fg-muted mb-3">
             Kiểm tra thư mục rác (Spam) hoặc yêu cầu gửi lại nếu quá 60 giây.
