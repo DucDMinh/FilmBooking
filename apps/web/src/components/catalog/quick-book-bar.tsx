@@ -103,7 +103,6 @@ export function QuickBookBar({ cinemas, provinces, provinceCode }: Readonly<Quic
   const errorId = `${baseId}-error`;
   const [selection, setSelection] = useState(EMPTY_SELECTION);
   const [showtimes, setShowtimes] = useState<QuickBookShowtime[]>([]);
-  const [loadedAt, setLoadedAt] = useState<Date>(() => new Date());
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -135,16 +134,17 @@ export function QuickBookBar({ cinemas, provinces, provinceCode }: Readonly<Quic
       .then((loaded) => {
         if (latestRequest.current !== requestId) return;
         setShowtimes(loaded);
-        setLoadedAt(now);
       })
       .finally(() => {
         if (latestRequest.current === requestId) setLoading(false);
       });
   }, [selection.cinema]);
 
-  const sellable = selection.cinema ? sellableShowtimes(showtimes, loadedAt) : [];
+  // Tính mốc đóng bán theo thời điểm HIỆN TẠI mỗi lần render (không theo lúc tải): trang mở lâu không liệt kê suất đã quá mốc.
+  const now = new Date();
+  const sellable = selection.cinema ? sellableShowtimes(showtimes, now) : [];
   const movies = movieOptions(sellable);
-  const dates = dateOptions(sellable, selection.movie, loadedAt);
+  const dates = dateOptions(sellable, selection.movie, now);
   const times = timeOptions(sellable, selection.movie, selection.date);
   const cinemaOptions: QuickBookOption[] = openCinemas.map((cinema) => ({ value: cinema.code, label: cinema.name }));
 

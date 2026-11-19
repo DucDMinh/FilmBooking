@@ -148,7 +148,7 @@ Quy tắc fallback: `--font-heading: var(--font-chakra), var(--font-be-vietnam),
 
 | Token | Desktop | Mobile (< 768) | Họ / weight | Line-height | Dùng cho |
 |---|---|---|---|---|---|
-| `--text-display` | `clamp(48px, 8vw, 112px)` | 44 | heading 700 UPPERCASE, tracking -0.03em | 0.95 | Tên phim hero (chỉ 1 chỗ/trang) |
+| `--text-display` | `clamp(48px, 8vw, 112px)` (hero trang chủ tự đặt `clamp(36px, min(7vw, 8.5svh), 112px)` để tên phim dài 3-4 dòng không bị cắt ở laptop thấp, xem `home-hero.css`) | 44 | heading 700 UPPERCASE, tracking -0.03em | 0.95 | Tên phim hero (chỉ 1 chỗ/trang) |
 | `--text-h1` | 40 | 30 | heading 700 UPPERCASE | 1.05 | Tiêu đề trang |
 | `--text-h2` | 30 | 24 | heading 700 UPPERCASE | 1.1 | Tiêu đề section |
 | `--text-h3` | 18 | 17 | heading 700 | 1.3 | Tiêu đề card/panel, tên phim trong card |

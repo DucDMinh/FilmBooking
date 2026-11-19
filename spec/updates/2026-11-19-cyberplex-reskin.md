@@ -14,3 +14,7 @@ Yêu cầu của user (2026-11-19): thiết kế lại theo phong cách file `in
 Module: toàn bộ `apps/web` (tokens, font, component dùng chung, màn khách, admin, soát vé), thêm `components/motion` (CSS + `<Scrub>`), thêm `QuickBookBar` ở trang chủ (dùng dữ liệu lịch chiếu sẵn có, **không đổi API/DB**).
 Test: luồng đặt vé end-to-end (retest hồi quy: chọn ghế, giữ ghế, thanh toán, soát vé vẫn đúng), kiểm tra trực quan, reduced-motion, 360px, tương phản; test/snapshot phụ thuộc class CSS cũ có thể phải cập nhật.
 Tài liệu thiết kế: `skills/react-nodejs/design-tokens.md`, `.context/design-spec.md` §1 + §16, `docs/design/cyberplex/preview.html`.
+
+## Làm rõ sau spec-validator hết phase (2026-11-19, vẫn 3.5.0, chưa phát hành cho bên test ngoài scope v27)
+- **R-138:** mốc đóng bán dùng mặc định 15 phút của chuỗi (R-67), đúng như R-44 đang áp dụng; mốc riêng từng rạp (R-56) do server áp khi giữ ghế. Lý do: `CinemaDto` công khai không có mốc riêng của rạp (hạn chế có sẵn). Ghi bug riêng **CR-011** để đưa mốc hiệu lực vào dữ liệu rạp công khai và áp cho cả R-44 lẫn R-138.
+- **NFR-19:** làm rõ ngoại lệ duy nhất cho quy tắc "không giảm opacity": khối lời dẫn hero ghim (nhãn, meta, nút CTA hero) mờ dần khi cuộn qua hero vì hành động tương đương nằm ở thanh đặt vé nhanh; hiện lại khi cuộn về; luôn hiện khi đang focus.

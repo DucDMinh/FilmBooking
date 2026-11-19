@@ -442,6 +442,60 @@ for (const size of [SIZES[0], SIZES[1]]) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// (b2) ngoại lệ NFR-19: khối lời dẫn hero mờ dần khi cuộn, nhưng hành động đặt vé luôn có mặt ở QuickBookBar
+// ---------------------------------------------------------------------------------------------
+test("(b2) hero: lời dẫn + CTA hero hiện ở đầu trang rồi mờ dần; QuickBookBar luôn opacity 1; hiện lại khi cuộn về; focus ép hiện", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/", { waitUntil: "load" });
+  const state = () =>
+    page.evaluate(() => {
+      const cta = document.querySelector<HTMLElement>(".hs-cta a, .hs-cta button");
+      const lead = document.querySelector<HTMLElement>(".hs-lead");
+      const fields = [...document.querySelectorAll<HTMLElement>(".qfield, .qbar__cta")];
+      const cs = (el: HTMLElement | null) => (el ? getComputedStyle(el) : null);
+      return {
+        ctaOpacity: cs(cta)?.opacity ?? "none",
+        ctaVisibility: cs(cta)?.visibility ?? "none",
+        leadOpacity: cs(lead)?.opacity ?? "none",
+        fieldOpacities: fields.map((f) => parseFloat(getComputedStyle(f).opacity)),
+      };
+    });
+  await scrollToY(page, 0);
+  const top = await state();
+  expect(top.ctaOpacity, "CTA hero hiện ở đầu trang").toBe("1");
+  expect(top.ctaVisibility).toBe("visible");
+  expect(top.fieldOpacities.length).toBeGreaterThanOrEqual(5);
+  expect(top.fieldOpacities.every((o) => o === 1), "ô QuickBookBar opacity 1 ở đầu trang").toBe(true);
+
+  await scrollToY(page, 720);
+  const after = await state();
+  expect(Number(after.leadOpacity), "lời dẫn mờ đi sau khi cuộn qua hero").toBeLessThan(0.05);
+  expect(after.fieldOpacities.every((o) => o === 1), "ô QuickBookBar vẫn opacity 1 sau khi cuộn qua hero").toBe(true);
+
+  await scrollToY(page, 0);
+  const back = await state();
+  expect(back.ctaOpacity, "CTA hero hiện lại khi cuộn về").toBe("1");
+
+  // đang giữ focus thì luôn hiện: focus CTA ở đầu trang (lúc còn hiện), RỒI mới cuộn qua hero.
+  // (Sau khi mờ hẳn, CTA là visibility:hidden nên không thể nhận focus: đúng thiết kế.)
+  await scrollToY(page, 0);
+  const focusedAtTop = await page.evaluate(() => {
+    const cta = document.querySelector<HTMLElement>(".hs-cta a, .hs-cta button");
+    cta?.focus({ preventScroll: true });
+    return document.activeElement === cta;
+  });
+  expect(focusedAtTop, "CTA hero nhận focus được ở đầu trang").toBe(true);
+  await scrollToY(page, 720);
+  const forced = await page.evaluate(() => {
+    const cta = document.querySelector<HTMLElement>(".hs-cta a, .hs-cta button");
+    const lead = cta?.closest<HTMLElement>(".hs-lead") ?? null;
+    return { stillFocused: document.activeElement === cta, opacity: lead ? getComputedStyle(lead).opacity : "none", visibility: lead ? getComputedStyle(lead).visibility : "none" };
+  });
+  expect(forced.opacity, "đang focus: khối lời dẫn ép hiện dù đã cuộn qua hero").toBe("1");
+  expect(forced.visibility).toBe("visible");
+});
+
+// ---------------------------------------------------------------------------------------------
 // (g) hero không bị cắt ở màn thấp; không lỗi console
 // ---------------------------------------------------------------------------------------------
 for (const size of [

@@ -274,7 +274,7 @@ Mỗi màn: **Mục đích · R-xx · Bố cục (D = desktop, M = mobile < 768)
 - **SEO:** SSR/ISR, meta + OG (R-46).
 
 ### Bổ sung — Danh sách & tìm phim `/phim`
-- **R:** R-43, R-40, R-45. Dùng layout 05: thanh lọc (ô tìm tên, Thể loại, Rạp, Ngày, Định dạng 2D/3D; tỉnh lấy từ header) + Tabs Đang chiếu/Sắp chiếu + lưới `MovieCard` (D 5 cột, tablet 3, M 2). M: bộ lọc trong Sheet "Bộ lọc (3)". Empty "Không tìm thấy phim phù hợp" + "Xoá bộ lọc". Lọc lưu URL.
+- **R:** R-43, R-40, R-45. Dùng layout 05: thanh lọc (ô tìm tên, Thể loại, Rạp, Ngày, Định dạng 2D/3D; tỉnh lấy từ header) + Tabs Đang chiếu/Sắp chiếu + lưới `MovieCard` (D 4 cột (>= 1024px), tablet 3 (560-1023px), M 2 (< 560px; lệch pha theo cột, `--i` bằng `:nth-child`)). M: bộ lọc trong Sheet "Bộ lọc (3)". Empty "Không tìm thấy phim phù hợp" + "Xoá bộ lọc". Lọc lưu URL.
 
 ### 02 — Chi tiết phim `/phim/[slug]`
 - **R:** R-41, R-42, R-44, R-45, R-46, R-57, R-67, R-31.
@@ -844,7 +844,7 @@ Lượt "phóng to" 0.86 → 1.05 → 1 là phần gây chú ý theo yêu cầu:
 **Hiện muộn để thấy rõ chuyển động (yêu cầu user 2026-11-19, lần 3):** phần tử KHÔNG bắt đầu khi vừa ló ở mép dưới màn hình (lúc đó người dùng khó nhìn). Timeline có **inset đáy** `--scrub-inset: min(36%, 300px)`: `view(block 0px var(--scrub-inset))` và `view-timeline-inset: 0px var(--scrub-inset)`, nên phần tử chỉ bắt đầu khi đã lên cao hơn mép dưới ít nhất ~300px (36% màn, tối đa 300px) và hoàn tất khi còn cách mép dưới ≥ 200px. Đã đo bằng Playwright (màn 1280×800): thẻ phim bắt đầu khi top ở y≈495, xong ở y≈330; ghế/tóm tắt bắt đầu y≈450-650, xong y≈230-590.
 - **Lưới nhiều hàng (lưới phim):** KHÔNG dùng timeline chung của cả lưới (thẻ hàng dưới hoàn tất khi mới lộ ~135px, vẫn "hiện sớm"). Mỗi thẻ dùng `view()` riêng, lệch pha theo **cột**: `:nth-child(4n+k){--i:k-1;--n:4}`, tablet `2n`, mobile `--i:0`.
 - **Nhóm nhỏ xếp dọc (chip, hàng ghế, chú thích):** dùng `view-timeline` chung của khối (phần tử nhỏ cao ~28px thì timeline riêng quá ngắn).
-- **Ngoại lệ `--scrub-inset: 0px`:** `SiteFooter` (không còn chỗ cuộn để vượt dòng inset), trang `/dat-ve/*`, trang đăng nhập/tài khoản/lỗi (trang ngắn, nội dung có thể nằm sẵn trong 300px đáy mà không cuộn được thì sẽ không bao giờ hiện). Quy tắc: trang chỉ dùng inset khi dưới nội dung scrub còn ≥ 300px chỗ cuộn (trang công khai luôn có footer).
+- **Ngoại lệ `--scrub-inset: 0px`:** `SiteFooter` (không còn chỗ cuộn để vượt dòng inset), trang `/dat-ve/*`, trang ngắn bất kỳ nếu có dùng scrub (hiện các trang đăng nhập/tài khoản/lỗi chưa dùng scrub nên không cần): nội dung nằm sẵn trong 300px đáy mà không cuộn được thì sẽ không bao giờ hiện. Quy tắc: trang chỉ dùng inset khi dưới nội dung scrub còn ≥ 300px chỗ cuộn (trang công khai luôn có footer).
 
 **Lệch pha "từng cái một":** `range = entry A  →  entry A + 38%`, `A = i × 62% / n`. Phần tử thứ `i` trong nhóm `n` phần tử bắt đầu muộn hơn phần tử trước một đoạn cuộn, nên lần lượt hiện từng cái; cuộn ngược thì thu lại theo thứ tự ngược. Phần tử đơn (không nhóm): `i = 0`.
 
@@ -875,7 +875,7 @@ Lượt "phóng to" 0.86 → 1.05 → 1 là phần gây chú ý theo yêu cầu:
 |---|---|---|
 | Ảnh nền | 0 → 90 | `scale 1 → 1.3`, `translateY -5%` (máy quay tiến vào) |
 | Dòng 1 / dòng 2 (outline) tên phim | 0 → 90 | **tách đôi**: dòng 1 sang trái `-9vw`, dòng 2 sang phải `+9vw` |
-| Kicker, meta, CTA hero | 4 → 34 | mờ đi + bay lên `-8svh` |
+| Kicker, meta, CTA hero (`.hs-lead`, **ngoại lệ duy nhất của NFR-19**) | 4 → 34 | mờ đi + bay lên `-8svh`, `visibility:hidden` sau đó; hiện lại khi cuộn về đầu trang; `:focus-within` ép hiện. Hành động "Đặt vé" tương đương nằm ở `QuickBookBar` (luôn opacity 1). Test e2e kiểm cả hai |
 | `QuickBookBar` | 0 → 60 | bay lên giữa màn `-26svh`, `scale 1.04` |
 | Ô Rạp, Phim, Ngày, Giờ, nút Đặt vé (`i = 0..4`) | `14 + 10i` → `36 + 10i` | **hiện lần lượt trái → phải**: **opacity luôn 1** (NFR-12: nhãn và chữ không bao giờ mờ dưới ngưỡng tương phản), trượt từ trái 36px, pop 0.9 → 1.05 → 1, vạch dưới vẽ ra và nhãn đổi `fg-muted → brand` |
 | Vạch dưới từng ô | `22 + 10i` → `40 + 10i` | vẽ `scaleX 0 → 1`; nhãn ô đổi `fg-muted → brand` |
