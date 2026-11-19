@@ -61,14 +61,14 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "fixed z-50 flex flex-col gap-4 overflow-y-auto border-border bg-popover text-popover-foreground shadow-overlay transition duration-200 ease-out data-[state=closed]:animate-out data-[state=open]:animate-in",
+          "fixed z-50 flex flex-col gap-4 overflow-y-auto border-line-brand bg-panel text-popover-foreground shadow-overlay transition duration-200 ease-out data-[state=closed]:animate-out data-[state=open]:animate-in",
           sideClasses[side],
           className,
         )}
         {...props}
       >
         {children}
-        <SheetPrimitive.Close className="absolute top-2 right-2 inline-flex size-11 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+        <SheetPrimitive.Close className="absolute top-2 right-2 inline-flex size-11 items-center justify-center border border-border text-fg-secondary transition-colors hover:border-danger hover:bg-danger hover:text-fg-on-brand focus-visible:ring-2 focus-visible:ring-ring">
           <X className="size-4" aria-hidden="true" />
           <span className="sr-only">Đóng</span>
         </SheetPrimitive.Close>
@@ -101,7 +101,7 @@ function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPr
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      className={cn("text-h3 font-bold", className)}
+      className={cn("font-heading text-h3 font-bold uppercase", className)}
       {...props}
     />
   );

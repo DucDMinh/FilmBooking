@@ -49,13 +49,13 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-lg border border-border bg-popover p-6 text-popover-foreground shadow-overlay duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto panel-cyber p-6 text-popover-foreground outline-hidden duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-96 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-96",
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-2 right-2 inline-flex size-11 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+        <DialogPrimitive.Close className="absolute top-4 right-5 inline-flex size-11 items-center justify-center border border-border text-fg-secondary transition-colors hover:border-danger hover:bg-danger hover:text-fg-on-brand focus-visible:ring-2 focus-visible:ring-ring">
           <X className="size-4" aria-hidden="true" />
           <span className="sr-only">Đóng</span>
         </DialogPrimitive.Close>
@@ -68,7 +68,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-1.5 pr-8 text-left", className)}
+      className={cn("flex flex-col gap-1.5 pr-10 text-left", className)}
       {...props}
     />
   );
@@ -88,7 +88,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-h3 font-bold", className)}
+      className={cn("font-heading text-h3 font-bold uppercase", className)}
       {...props}
     />
   );

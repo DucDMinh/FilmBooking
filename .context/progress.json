@@ -181,6 +181,25 @@
       ],
       "note": "spec_version 3.4.0, scope v26. HIGH_RISK_MIGRATION (drop set_cinema_status, đổi quyền cột cinemas, job huỷ suất/đơn hàng loạt): không promote production khi chưa verify staging; có rollback trong migration. Residual: không chặn bán vé mới trong 7 ngày chờ (PO chấp nhận); docs/BRD.md chưa cập nhật (CR riêng); trang /rap/<mã> khi API 5xx vẫn hiện 404 (hành vi cũ); mới chỉ có jsdom test cho giao diện web, chưa xem trên trình duyệt thật (web :3000 của user trỏ API cũ cho tới khi restart pnpm dev); pnpm db:test nguyên bản FAIL do data demo (có từ trước); account.test.tsx flake timeout khi máy tải. Cần restart API/web. Validator hết phase: GAPS FOUND (0 CRITICAL/HIGH) đã xử lý G-1/G-3/G-5/G-6.",
       "updatedAt": "2026-11-18T04:21:54.461Z"
+    },
+    {
+      "id": "cyberplex-reskin",
+      "title": "Re-skin UI CYBERPLEX + chuyển động theo cuộn + QuickBookBar (spec 3.5.0: R-138, NFR-19, AC-31, AC-32; CR-010)",
+      "class": "MODIFY",
+      "status": "in_progress",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 Nền tảng: tokens, font, scrub CSS, <Scrub>, components/ui",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/feature-cyberplex-reskin-phase-1-task-01-round-2-review.md"
+          }
+        }
+      ]
     }
   ],
   "bugs": [
@@ -658,7 +677,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-18T04:21:54.462Z",
+  "lastUpdated": "2026-11-19T03:40:37.545Z",
   "inProgressTask": null,
   "completedTasks": [
     {

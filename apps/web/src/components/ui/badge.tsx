@@ -4,19 +4,20 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-// Tone khớp design-tokens §1.4/§1.8: nền soft + viền line + chữ cùng tông. Badge luôn có chữ.
-// neutral dùng text-fg-secondary (muted trên neutral-soft chỉ 3.91:1 — fail AA).
+// Tone khớp design-tokens §1.4: nền soft + chữ cùng tông (không viền: border không đi theo clip-path chamfer-sm).
+// Chữ lỗi dùng danger-text (danger #FF003C chỉ đạt 4.33 trên bề mặt sáng). Badge luôn có chữ (không chỉ dựa vào màu).
+// neutral dùng text-fg-secondary (muted trên neutral-soft chỉ 3.91:1 - fail AA).
 const badgeVariants = cva(
-  "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-pill border px-3 py-0.5 text-small font-semibold whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3",
+  "chamfer-sm inline-flex min-h-7 w-fit shrink-0 items-center justify-center gap-1.5 overflow-hidden px-2.5 py-1 font-heading text-hud font-bold tracking-[0.12em] whitespace-nowrap uppercase [&>svg]:pointer-events-none [&>svg]:size-3",
   {
     variants: {
       tone: {
-        neutral: "border-transparent bg-neutral-soft text-fg-secondary",
-        success: "border-success-line bg-success-soft text-success",
-        warning: "border-warning-line bg-warning-soft text-warning",
-        danger: "border-danger-line bg-danger-soft text-danger",
-        info: "border-info-line bg-info-soft text-info",
-        brand: "border-transparent bg-brand-soft text-brand-hover",
+        neutral: "bg-neutral-soft text-fg-secondary",
+        success: "bg-success-soft text-success",
+        warning: "bg-warning-soft text-warning",
+        danger: "bg-danger-soft text-danger-text",
+        info: "bg-info-soft text-info",
+        brand: "bg-brand-soft text-brand",
       },
     },
     defaultVariants: { tone: "neutral" },

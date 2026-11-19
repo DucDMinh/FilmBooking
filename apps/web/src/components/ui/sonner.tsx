@@ -11,10 +11,10 @@ function Toaster(props: ToasterProps) {
       toastOptions={{
         classNames: {
           toast:
-            "!rounded-md !border-border !bg-popover !text-popover-foreground !shadow-overlay",
+            "toast-in !rounded-none !border-border !border-l-[3px] !border-l-brand !bg-surface !text-popover-foreground !shadow-overlay",
           description: "!text-fg-secondary",
-          success: "!border-success-line",
-          error: "!border-danger-line",
+          success: "!border-l-success",
+          error: "!border-l-danger",
         },
       }}
       {...props}

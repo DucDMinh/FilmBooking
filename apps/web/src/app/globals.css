@@ -1,80 +1,128 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* 1) Token thương hiệu CINEMO — sinh cả CSS var lẫn class Tailwind (bg-surface, text-fg-secondary, bg-seat-vip...) */
+/*
+ * Token CYBERPLEX (re-skin của CINEMO, 2026-11-19) - nguồn sự thật: skills/react-nodejs/design-tokens.md.
+ * Tên token giữ nguyên bản CINEMO (--color-brand, --color-fg-*, --color-seat-*...), chỉ đổi giá trị,
+ * nên code đã build không phải đổi class. Chỉ dark (T1): token đặt trên :root, không light mode.
+ * Sinh cả CSS var lẫn class Tailwind (bg-surface, text-fg-secondary, bg-seat-vip...).
+ */
 @theme {
-  --color-bg: #0B0D12;
-  --color-chrome: #111620;
-  --color-surface: #151A24;
-  --color-surface-elevated: #1B222E;
-  --color-surface-input: #121721;
-  --color-surface-control: #202634;
-  --color-border: #2B3340;            /* trùng tên shadcn — cùng ý nghĩa (viền trang trí) */
-  --color-border-subtle: #252C39;
-  --color-border-input: #66768C;
-  --color-overlay: rgb(5 6 9 / 0.72);
+  --color-bg: #070709;
+  --color-chrome: #0B0B10;
+  --color-surface: #111116;
+  --color-surface-elevated: #1B1B24;
+  --color-surface-input: #0A0A0F;
+  --color-surface-control: #17171E;
+  --color-surface-tab: #0D0D12;       /* nền tab chưa chọn (design-spec §16.3) */
+  --color-panel: #101015;             /* nền panel dialog/sheet */
+  --color-border: rgb(255 255 255 / 0.10);   /* trùng tên shadcn - viền trang trí, không mang thông tin */
+  --color-border-subtle: rgb(255 255 255 / 0.07);
+  --color-border-input: #6E6E86;      /* viền input/checkbox: 3.80 với surface (WCAG 1.4.11) */
+  --color-frame: rgb(255 255 255 / 0.16);    /* khung 1px của nút ghost */
+  --color-line-brand: rgb(252 238 9 / 0.25); /* viền khung card chamfer mặc định */
+  --color-overlay: rgb(4 4 7 / 0.84);
 
-  --color-fg: #F5F6F8;                /* = textPrimary */
-  --color-fg-secondary: #AAB3C1;      /* = textSecondary */
-  --color-fg-muted: #7E8999;          /* = textMuted */
-  --color-fg-on-brand: #0B0D12;       /* chữ trên coral / ghế chọn / ghế giữ */
-  --color-link: #FF927E;
+  --color-fg: #E8E8EF;
+  --color-fg-secondary: #A0A0B0;
+  --color-fg-muted: #8A8AA0;          /* >= 5.06 trên mọi bề mặt (ref #74748A chỉ 4.13) */
+  --color-fg-on-brand: #07070A;       /* chữ trên vàng / crimson / cyan / ghế chọn (T5) */
+  --color-link: #FCEE09;
 
-  --color-brand: #F06D5B;             /* = accent (handoff) */
-  --color-brand-hover: #FF8A76;       /* = accentHover */
-  --color-brand-soft: #3A2226;
-  --color-sidebar-active: #292331;
+  --color-brand: #FCEE09;             /* hành động chính duy nhất (T2) */
+  --color-brand-hover: #FFF75E;
+  --color-brand-soft: #2A2706;
+  --color-brand-line: #5E5710;
+  --color-sidebar-active: #17171E;    /* alias cũ (tai-khoan layout); = --sidebar-accent */
 
-  --color-success: #8FE0B1;  --color-success-strong: #9BE6BA;
-  --color-success-soft: #1D3931;  --color-success-line: #2F6B53;  --color-success-banner: #15372D;
-  --color-warning: #F2B17D;  --color-warning-soft: #3A2C20;  --color-warning-line: #7A5A3C;
-  --color-danger: #F07173;   --color-danger-strong: #FFB0A2;
-  --color-danger-soft: #34232B;  --color-danger-line: #7F464B;  --color-danger-banner: #3A1F25;
-  --color-info: #9DB7E0;     --color-info-soft: #1E2A3D;  --color-info-line: #3B5274;
-  --color-neutral-soft: #252D3A;
+  --color-success: #2FF2A0;  --color-success-strong: #8CFFCB;
+  --color-success-soft: #0A2A1E;  --color-success-line: #12684A;  --color-success-banner: #06241A;
+  --color-warning: #FF9F1A;  --color-warning-soft: #2A1C08;  --color-warning-line: #7A4F10;
+  /* danger (#FF003C) chỉ làm NỀN với chữ fg-on-brand; chữ/icon lỗi dùng danger-text (4.33 trên elevated nếu dùng danger). */
+  --color-danger: #FF003C;   --color-danger-hover: #FF2E5F;  --color-danger-text: #FF4D6D;  --color-danger-strong: #FF8FA3;
+  --color-danger-soft: #2A0A12;  --color-danger-line: #7A1830;  --color-danger-banner: #2E0912;
+  --color-info: #37E6FF;     --color-info-soft: #08262C;  --color-info-line: #12697A;
+  --color-neutral-soft: #1E1E27;
   --color-age-pill: #191D2A;
 
-  --color-seat-available: #263847;  --color-seat-available-line: #4F7591;
-  --color-seat-selected: #EF715F;
-  --color-seat-held: #B07C49;
-  --color-seat-sold: #4A505C;       --color-seat-sold-mark: #8A919C;
-  --color-seat-vip: #485B78;        --color-seat-vip-line: #7A8EAD;
-  --color-seat-locked: #1B222E;     --color-seat-locked-line: #5C6B80;
-  --color-seat-sweetbox: #6B3F5E;   --color-seat-sweetbox-line: #C77A9E;
-  --color-seat-screen: #7D8998;
+  --color-seat-available: #1C2230;  --color-seat-available-line: #5A6A86;
+  --color-seat-selected: #FCEE09;
+  --color-seat-held: #FF9F1A;
+  --color-seat-sold: #2A2A33;       --color-seat-sold-mark: #8A8AA0;
+  --color-seat-vip: #12333D;        --color-seat-vip-line: #37E6FF;
+  --color-seat-locked: #1B1B24;     --color-seat-locked-line: #6A6A80;
+  --color-seat-sweetbox: #3B1226;   --color-seat-sweetbox-line: #FF4D8D;
+  --color-seat-screen: #9A9AB0;
 
-  --font-weight-regular: 450;
-  --font-weight-medium: 550;
-  --font-weight-semibold: 650;
-  --font-weight-bold: 750;
-  --font-weight-heavy: 850;
+  /* Be Vietnam Pro / Chakra Petch là font tĩnh (không có trục weight lẻ): chỉ dùng các mốc có file. */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 900;
 
-  --text-display: 44px;  --text-display--line-height: 1.05;
-  --text-h1: 32px;       --text-h1--line-height: 1.15;
-  --text-h2: 24px;       --text-h2--line-height: 1.25;
-  --text-h3: 18px;       --text-h3--line-height: 1.35;
-  --text-body: 14px;     --text-body--line-height: 1.5;
-  --text-body-sm: 13px;  --text-body-sm--line-height: 1.45;
-  --text-small: 12px;    --text-small--line-height: 1.4;
-  --text-caption: 10px;  --text-caption--line-height: 1.3;
+  --text-display: clamp(48px, 8vw, 112px);  --text-display--line-height: 0.95;
+  --text-h1: 40px;       --text-h1--line-height: 1.05;
+  --text-h2: 30px;       --text-h2--line-height: 1.1;
+  --text-h3: 18px;       --text-h3--line-height: 1.3;
+  --text-body: 15px;     --text-body--line-height: 1.65;
+  --text-body-sm: 13px;  --text-body-sm--line-height: 1.5;
+  --text-small: 12px;    --text-small--line-height: 1.45;
+  --text-hud: 11px;      --text-hud--line-height: 1.8;
+  --text-caption: 11px;  --text-caption--line-height: 1.3;   /* sàn 11px (tham chiếu 8.5-10.5px bị nâng) */
 
-  --radius-seat: 6px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-hero: 22px;
-  --radius-pill: 9999px;
+  --tracking-hud: 0.16em;
+  --tracking-btn: 0.08em;
 
-  --shadow-overlay: 0 8px 28px rgb(0 0 0 / 0.26);
-  --shadow-cta-glow: 0 6px 20px rgb(240 109 91 / 0.28);
+  /* Radius 0 (T4): hình khối là chamfer (clip-path), không bo tròn. Giữ tên cũ để class rounded-* cũ vẫn biên dịch (ra vuông). */
+  --radius-seat: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-hero: 0px;
+  --radius-pill: 0px;
+
+  --shadow-overlay: 0 14px 40px rgb(0 0 0 / 0.6);
 
   --breakpoint-2xl: 1440px;
 }
 
-/* 2) Biến shadcn/ui — chỉ dark, đặt thẳng trên :root */
+/* Font: next/font gắn biến lên <html>; fallback trong var() để global-error (không nạp font) không làm hỏng font-family. */
+@theme inline {
+  --font-display: var(--font-orbitron, system-ui), "Orbitron", system-ui, sans-serif;   /* chỉ wordmark + số/ASCII (T3) */
+  --font-heading: var(--font-chakra, system-ui), var(--font-be-vietnam, system-ui), system-ui, sans-serif;
+  --font-sans: var(--font-be-vietnam, system-ui), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains, ui-monospace), ui-monospace, "Courier New", monospace;
+}
+
+/* 2) Biến shadcn/ui + token hình khối/chuyển động - chỉ dark, đặt thẳng trên :root */
 :root {
   color-scheme: dark;
-  --gradient-brand: linear-gradient(135deg, #FF6B56, #E63C58);
+
+  /* Chamfer: cắt chéo góc trên-phải và dưới-trái (design-tokens §3.1) */
+  --cut-lg: 24px;  --cut-md: 12px;  --cut-sm: 7px;  --cut-seat: 4px;
+  --clip-card: polygon(0 0, calc(100% - var(--cut-lg)) 0, 100% var(--cut-lg), 100% 100%, var(--cut-lg) 100%, 0 calc(100% - var(--cut-lg)));
+  --clip-btn: polygon(0 0, calc(100% - var(--cut-md)) 0, 100% var(--cut-md), 100% 100%, var(--cut-md) 100%, 0 calc(100% - var(--cut-md)));
+  --clip-chip: polygon(0 0, calc(100% - var(--cut-sm)) 0, 100% var(--cut-sm), 100% 100%, var(--cut-sm) 100%, 0 calc(100% - var(--cut-sm)));
+  --clip-seat: polygon(0 0, calc(100% - var(--cut-seat)) 0, 100% var(--cut-seat), 100% 100%, var(--cut-seat) 100%, 0 calc(100% - var(--cut-seat)));
+
+  /* Chỉ trang trí (viền khung, vạch dưới tiêu đề). KHÔNG làm nền nút. */
+  --gradient-brand: linear-gradient(100deg, rgb(252 238 9 / 0.85), rgb(255 0 60 / 0.55) 46%, rgb(252 238 9 / 0.35));
+  --shadow-hard-brand: drop-shadow(5px 5px 0 rgb(255 0 60 / 0.9));
+  --shadow-hard-danger: drop-shadow(5px 5px 0 rgb(252 238 9 / 0.55));
+
+  /* Chuyển động theo thời gian (hover, dialog, toast). Chuyển động theo cuộn dùng linear, không có duration. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-hover: 200ms;
+  --dur-enter: 560ms;
+
+  /* Scrub (design-tokens §4, design-spec §16.4) */
+  --enter-x: 56px;  --enter-y: 48px;
+  --scale-from: 0.86;  --scale-peak: 1.05;
+  --scrub-spread: 62%;                 /* tổng lệch pha giữa phần tử đầu và cuối của một nhóm */
+  --scrub-span: 38%;                   /* độ dài đoạn cuộn của mỗi phần tử */
+  --scrub-inset: min(36%, 300px);      /* hiện muộn: chỉ bắt đầu khi đã lên cao hơn mép dưới ngần này */
 
   --background: var(--color-bg);
   --foreground: var(--color-fg);
@@ -88,28 +136,27 @@
   --secondary-foreground: var(--color-fg);
   --muted: var(--color-surface-elevated);
   --muted-foreground: var(--color-fg-muted);
-  --accent: var(--color-surface-elevated);       /* shadcn: nền hover item, KHÔNG phải coral */
+  --accent: var(--color-surface-elevated);       /* shadcn: nền hover item, KHÔNG phải màu thương hiệu */
   --accent-foreground: var(--color-fg);
   --destructive: var(--color-danger);
   --destructive-foreground: var(--color-fg-on-brand);
+  --border: var(--color-border);
   --input: var(--color-border-input);
   --ring: var(--color-brand);
-  --chart-1: #F06D5B; --chart-2: #8FE0B1; --chart-3: #9DB7E0; --chart-4: #F2B17D; --chart-5: #C77A9E;
+  --chart-1: #FCEE09; --chart-2: #37E6FF; --chart-3: #FF003C; --chart-4: #2FF2A0; --chart-5: #FF9F1A;
   --sidebar: var(--color-chrome);
   --sidebar-foreground: var(--color-fg-secondary);
   --sidebar-primary: var(--color-brand);
   --sidebar-primary-foreground: var(--color-fg-on-brand);
   --sidebar-accent: var(--color-sidebar-active);
   --sidebar-accent-foreground: var(--color-fg);
-  --sidebar-border: #29303C;
+  --sidebar-border: rgb(255 255 255 / 0.09);
   --sidebar-ring: var(--color-brand);
-  --radius: 12px;
+  --radius: 0px;
 }
 
 /* 3) Map biến shadcn → class Tailwind (bg-primary, bg-accent, border-input, ring-ring ...) */
 @theme inline {
-  --font-sans: var(--font-inter), "Inter", ui-sans-serif, Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -146,7 +193,24 @@
   body {
     @apply bg-background text-foreground font-sans text-body font-regular antialiased;
   }
-  :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+  /* Heading tiếng Việt luôn Chakra Petch (có subset vietnamese); không bao giờ Orbitron (T3). */
+  h1, h2, h3, h4 { font-family: var(--font-heading); }
+  ::selection { background: var(--color-brand); color: var(--color-fg-on-brand); }
+
+  /* Focus (T7): outline cho phần tử thường; phần tử clip-path vẽ vòng inset vì clip-path cắt mất outline ngoài. */
+  :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 3px; }
+  .chamfer-lg:focus-visible,
+  .chamfer-md:focus-visible,
+  .chamfer-sm:focus-visible,
+  .chamfer-seat:focus-visible,
+  .frame:focus-visible,
+  .btn-primary:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-inset, var(--color-brand));
+  }
+  /* Nền vàng: vòng focus tối để còn thấy. Dùng cho .btn-primary, chip/tab đang chọn. */
+  .btn-primary:focus-visible { --focus-inset: var(--color-fg-on-brand); }
+
   /* iOS: tránh auto-zoom khi focus */
   @media (max-width: 767.98px) {
     input, select, textarea { font-size: 16px; }
@@ -156,16 +220,157 @@
   }
 }
 
-@utility bg-gradient-brand { background-image: var(--gradient-brand); color: var(--color-fg-on-brand); }
+/* ---- Hình khối: chamfer (clip-path) --------------------------------------------------------- */
+@utility chamfer-lg { clip-path: var(--clip-card); }
+@utility chamfer-md { clip-path: var(--clip-btn); }
+@utility chamfer-sm { clip-path: var(--clip-chip); }
+@utility chamfer-seat { clip-path: var(--clip-seat); }
+
+/* Khung viền chamfer 2 lớp (CSS border không đi theo clip-path): <div class="frame"><div class="frame-in">…</div></div>.
+   Màu khung đổi qua --frame-color (màu hoặc gradient). */
+@utility frame {
+  padding: 1px;
+  background: var(--frame-color, var(--color-line-brand));
+  clip-path: var(--clip-card);
+}
+@utility frame-in {
+  height: 100%;
+  background: var(--color-surface);
+  clip-path: var(--clip-card);
+}
+
+/* Panel một lớp (dialog): chamfer + viền gradient 1px trên các cạnh thẳng. Không cần phần tử bọc nên giữ nguyên
+   API className của DialogContent. */
+@utility panel-cyber {
+  clip-path: var(--clip-card);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--color-panel), var(--color-panel)) padding-box,
+    var(--gradient-brand) border-box;
+}
+
+/* Nhãn HUD: mono 11px UPPERCASE; đổi màu bằng hud-brand / hud-danger (không ghi đè thuộc tính color). */
+@utility hud {
+  font-family: var(--font-mono);
+  font-size: var(--text-hud);
+  line-height: 1.8;
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--hud-color, var(--color-fg-muted));
+}
+@utility hud-brand { --hud-color: var(--color-brand); }
+@utility hud-danger { --hud-color: var(--color-danger-text); }
+
+/* Nút chính: vàng đặc + chamfer. Component Button dùng cùng bộ class; utility này cho phần tử không đi qua Button. */
+@utility btn-primary {
+  background-color: var(--color-brand);
+  color: var(--color-fg-on-brand);
+  clip-path: var(--clip-btn);
+}
+
+/* Tương thích ngược: trước đây là gradient coral. Nay nút chính là vàng đặc (gradient chỉ để trang trí). */
+@utility bg-gradient-brand { background-color: var(--color-brand); color: var(--color-fg-on-brand); }
 @utility tabular { font-variant-numeric: tabular-nums; }
 
-/* Thang chữ mobile (< 768px) theo design-tokens §2.2 */
+/* Vạch gradient dưới tiêu đề section + tia quét poster. Gắn thêm data-scrub-rule / data-scrub-beam để chạy theo cuộn. */
+@utility rule-brand {
+  display: block;
+  height: 2px;
+  width: 120px;
+  margin-top: 14px;
+  background: var(--gradient-brand);
+  transform-origin: left;
+}
+@utility scrub-beam {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 0;
+  height: 3px;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--color-brand) 16%, var(--color-fg) 50%, var(--color-brand) 84%, transparent);
+  box-shadow: 0 0 14px 3px rgb(252 238 9 / 0.7);
+}
+
+/* Footer, các trang /dat-ve, trang ngắn: không còn chỗ cuộn để vượt inset đáy nên phải về 0 (design-spec §16.4). */
+@utility scrub-inset-0 { --scrub-inset: 0px; }
+
+/* Thang chữ mobile (< 768px) + quãng trượt nhỏ hơn (design-tokens §2.2, §4.1) */
 @media (max-width: 767.98px) {
   :root {
-    --text-display: 32px;
-    --text-h1: 26px;
-    --text-h2: 20px;
+    --text-display: 44px;
+    --text-h1: 30px;
+    --text-h2: 24px;
     --text-h3: 17px;
-    --text-caption: 11px;
+    --enter-x: 24px;
+    --enter-y: 28px;
+    --scale-from: 0.92;
   }
+}
+
+/* =====================================================================================================
+   CHUYỂN ĐỘNG THEO CUỘN (CSS scroll-driven animations, KHÔNG JS) - design-spec §16.4
+   Tiến độ animation = vị trí cuộn: cuộn xuống hiện dần, cuộn lên thu về. Chỉ animate translate/scale/opacity
+   (thuộc tính riêng lẻ, không `transform`, để hover của chính phần tử dùng `transform` mà không xung đột);
+   không dùng các class translate-x/translate-y/scale của Tailwind trên phần tử [data-scrub]. Không có glitch (WCAG 2.3.1).
+   Cấu trúc sao chép từ docs/design/cyberplex/preview.html (đã kiểm bằng Playwright).
+   ===================================================================================================== */
+@keyframes scrubPop {
+  0%   { opacity: 0; translate: var(--fx, 0) var(--fy, 0); scale: var(--scale-from); }
+  70%  { opacity: 1; translate: 0 0; scale: var(--scale-peak); }
+  100% { opacity: 1; translate: 0 0; scale: 1; }
+}
+/* drawX (animate transform) và beamLine (animate top) là ngoại lệ có chủ đích, giữ đúng theo preview đã kiểm. */
+@keyframes wipeIn { from { clip-path: inset(-8px 100% -8px -8px); } to { clip-path: inset(-8px -8px -8px -8px); } }
+@keyframes drawX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes beamOpen { from { clip-path: inset(-40px -40px 100% -40px); } to { clip-path: inset(-40px -40px -40px -40px); } }
+@keyframes beamLine { 0% { top: 0; opacity: 1; } 85% { opacity: 1; } 100% { top: calc(100% + 6px); opacity: 0; } }
+
+/* Hướng đi của từng kiểu */
+[data-scrub="ltr"]   { --fx: calc(var(--enter-x) * -1); --fy: 0px; }
+[data-scrub="left"]  { --fx: calc(var(--enter-x) * -1); --fy: 0px; }
+[data-scrub="right"] { --fx: var(--enter-x); --fy: 0px; }
+[data-scrub="down"]  { --fx: 0px; --fy: calc(var(--enter-y) * -1); }
+[data-scrub="beam"]  { --fx: 0px; --fy: -28px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* Nhóm: một timeline chung, các con lệch pha theo --i / --n => "từng cái một" */
+    [data-scrub-group] { view-timeline: --grp block; view-timeline-inset: 0px var(--scrub-inset); --tl: --grp; }
+
+    [data-scrub],
+    [data-scrub-wipe],
+    [data-scrub-rule],
+    [data-scrub="beam"] [data-scrub-media],
+    [data-scrub="beam"] [data-scrub-beam] {
+      animation-timeline: var(--tl, view(block 0px var(--scrub-inset)));
+      animation-fill-mode: both;
+      animation-timing-function: linear;
+      --a: calc(var(--i, 0) * var(--scrub-spread) / var(--n, 1));
+      animation-range: entry var(--a) entry calc(var(--a) + var(--scrub-span));
+    }
+    [data-scrub] { animation-name: scrubPop; }
+    /* Chống kẹt ẩn: phần tử (hoặc con) đang focus luôn hiện đủ */
+    [data-scrub]:focus-within { animation: none; opacity: 1; translate: 0 0; scale: 1; }
+    [data-scrub-wipe] { animation-name: wipeIn; animation-range: entry 0% entry 55%; }
+    [data-scrub-rule] { animation-name: drawX; animation-range: entry 20% entry 70%; }
+    [data-scrub="beam"] [data-scrub-media] { animation-name: beamOpen; }
+    [data-scrub="beam"] [data-scrub-beam] { animation-name: beamLine; }
+  }
+}
+
+/* Toast vào: translateY 12px về 0 trong 300ms. Dùng thuộc tính `translate` riêng lẻ vì Sonner tự điều khiển `transform`. */
+@keyframes toastIn { from { translate: 0 12px; } to { translate: 0 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .toast-in { animation: toastIn 300ms var(--ease-out); }
+}
+
+@media print {
+  [data-scrub],
+  [data-scrub-wipe],
+  [data-scrub-rule],
+  [data-scrub] [data-scrub-media],
+  [data-scrub] [data-scrub-beam] { animation: none !important; }
 }

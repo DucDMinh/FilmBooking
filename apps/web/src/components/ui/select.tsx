@@ -28,9 +28,9 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        "flex h-11 w-full items-center justify-between gap-2 rounded-sm border border-input bg-surface-input px-3 text-base whitespace-nowrap text-foreground transition-colors duration-150 outline-hidden md:h-10 md:text-body",
-        "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
-        "disabled:cursor-not-allowed disabled:opacity-45 aria-invalid:border-danger aria-invalid:ring-danger/30",
+        "flex h-11 w-full items-center justify-between gap-2 rounded-none border border-input bg-surface-input px-3 text-base whitespace-nowrap text-foreground transition-colors duration-150 outline-hidden md:h-10 md:text-body",
+        "focus-visible:border-brand focus-visible:ring-1 focus-visible:ring-brand",
+        "disabled:cursor-not-allowed disabled:opacity-45 aria-invalid:border-danger aria-invalid:ring-1 aria-invalid:ring-danger",
         "data-[placeholder]:text-muted-foreground *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2",
         className,
       )}
@@ -86,7 +86,7 @@ function SelectContent({
         data-slot="select-content"
         position={position}
         className={cn(
-          "relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border border-border bg-popover text-popover-foreground shadow-overlay data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          "relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-none border border-border bg-popover text-popover-foreground shadow-overlay data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",
           className,
@@ -131,7 +131,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex min-h-11 w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-body outline-hidden select-none md:min-h-9",
+        "relative flex min-h-11 w-full cursor-default items-center gap-2 rounded-none py-1.5 pr-8 pl-2 text-body outline-hidden select-none md:min-h-9",
         "focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
         className,
       )}

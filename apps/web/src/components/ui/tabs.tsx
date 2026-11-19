@@ -20,10 +20,7 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
-      className={cn(
-        "inline-flex w-full items-center gap-1 overflow-x-auto border-b border-border",
-        className,
-      )}
+      className={cn("inline-flex w-full items-center gap-1.5 overflow-x-auto p-px", className)}
       {...props}
     />
   );
@@ -37,9 +34,10 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "-mb-px inline-flex min-h-11 shrink-0 items-center justify-center gap-2 border-b-2 border-transparent px-4 text-body-sm font-semibold whitespace-nowrap text-fg-secondary transition-colors duration-150 outline-hidden",
-        "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-45",
-        "data-[state=active]:border-brand data-[state=active]:text-foreground",
+        "chamfer-md inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-surface-tab px-5 font-heading text-body-sm font-bold tracking-btn whitespace-nowrap text-fg-secondary uppercase transition-colors duration-150 outline-hidden",
+        "hover:text-foreground disabled:pointer-events-none disabled:opacity-45",
+        // Tab đang chọn nền vàng: vòng focus inset (global, T7) đổi sang tối để còn thấy.
+        "data-[state=active]:bg-brand data-[state=active]:text-fg-on-brand data-[state=active]:[--focus-inset:var(--color-fg-on-brand)]",
         className,
       )}
       {...props}

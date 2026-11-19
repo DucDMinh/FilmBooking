@@ -52,7 +52,7 @@ function DropdownMenuItem({
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
       data-variant={variant}
-      className={cn(itemBase, "data-[variant=destructive]:text-danger", className)}
+      className={cn(itemBase, "data-[variant=destructive]:text-danger-text", className)}
       {...props}
     />
   );

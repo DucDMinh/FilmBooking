@@ -74,7 +74,7 @@ function FormLabel({ className, ...props }: React.ComponentProps<typeof Label>) 
     <Label
       data-slot="form-label"
       data-error={!!error}
-      className={cn("data-[error=true]:text-danger", className)}
+      className={cn("data-[error=true]:text-danger-text", className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -116,7 +116,7 @@ function FormMessage({ className, children, ...props }: React.ComponentProps<"p"
       data-slot="form-message"
       id={formMessageId}
       role="alert"
-      className={cn("text-small text-danger", className)}
+      className={cn("text-small text-danger-text", className)}
       {...props}
     >
       {body}
