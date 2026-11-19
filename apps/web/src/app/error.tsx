@@ -14,10 +14,10 @@ export default function ErrorPage({ error, retry }: { error: unknown; retry: () 
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center gap-4 px-4 py-12 text-center">
-      <p className="text-display font-heavy text-danger tabular" aria-hidden="true">
+      <p className="font-display text-display font-heavy text-danger-text tabular" aria-hidden="true">
         500
       </p>
-      <h1 className="text-h1 font-bold">Đã có lỗi xảy ra</h1>
+      <h1 className="text-h1 font-bold uppercase">Đã có lỗi xảy ra</h1>
       <p className="text-body text-fg-secondary">
         Hệ thống gặp sự cố ngoài ý muốn. Bạn có thể thử lại hoặc quay về trang chủ.
       </p>

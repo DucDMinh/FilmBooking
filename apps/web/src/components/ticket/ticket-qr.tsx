@@ -3,6 +3,7 @@
 import { Maximize2, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 
@@ -55,9 +56,9 @@ function FullscreenTicket({
       role="dialog"
       aria-modal="true"
       aria-label={`Vé toàn màn hình ${label}`}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-white p-4 text-neutral-900"
+      className="fixed inset-0 z-60 flex flex-col items-center justify-center gap-4 bg-white p-4 text-neutral-900"
     >
-      <p className="text-h3 font-bold">{label}</p>
+      <p className="font-heading text-h3 font-bold">{label}</p>
       <QRCodeSVG value={token} size={304} level="M" role="img" aria-label="Mã QR vé" style={{ maxWidth: "100%" }} />
       <Button ref={closeRef} variant="secondary" onClick={onClose}>
         <X aria-hidden="true" /> Đóng
@@ -81,13 +82,15 @@ export function TicketQr({ token, label }: Readonly<{ token: string; label: stri
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="inline-block rounded-md bg-white p-3" data-testid="ticket-qr" data-qr-value={token}>
+      <div className="inline-block bg-white p-3" data-testid="ticket-qr" data-qr-value={token}>
         <QRCodeSVG value={token} size={240} level="M" role="img" aria-label="Mã QR vé" style={{ maxWidth: "100%" }} />
       </div>
       <Button ref={openerRef} variant="secondary" onClick={() => setFullscreen(true)}>
         <Maximize2 aria-hidden="true" /> Mở vé toàn màn hình
       </Button>
-      {fullscreen ? <FullscreenTicket token={token} label={label} onClose={close} /> : null}
+      {/* Portal ra <body>: tổ tiên có clip-path (chamfer) sẽ cắt phần tử fixed và tạo stacking context, làm overlay
+          chỉ hiện trong thẻ và không vượt header. fullscreen chỉ true sau khi bấm (client) nên không đụng SSR. */}
+      {fullscreen ? createPortal(<FullscreenTicket token={token} label={label} onClose={close} />, document.body) : null}
     </div>
   );
 }

@@ -28,7 +28,7 @@ export interface HeaderUser {
 }
 
 /**
- * Header khách (design-spec §5.1): desktop 72px, mobile 56px, sticky.
+ * Header khách (design-spec §5.1 + §16.3 CYBERPLEX): desktop 78px, mobile 56px, sticky, nền chrome 88% + blur.
  * `user` do layout cấp (phiên Supabase nối ở layer 5); chưa có → hiện nút "Đăng nhập".
  */
 export function SiteHeader({ user }: Readonly<{ user?: HeaderUser | null }>) {
@@ -36,20 +36,27 @@ export function SiteHeader({ user }: Readonly<{ user?: HeaderUser | null }>) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const accountHref = user ? "/tai-khoan" : "/dang-nhap";
-  const isActive =(href: string) => pathname === href || pathname.startsWith(`${href}/`);
-  const linkClass = (href: string) =>
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  // Gạch chân vàng quét trái -> phải (scaleX) khi hover/active; vùng chạm >= 44px.
+  const navLinkClass = (href: string) =>
     cn(
-      "inline-flex min-h-11 items-center rounded-sm px-3 text-body-sm font-semibold transition-colors hover:text-fg",
-      isActive(href) ? "text-fg" : "text-fg-secondary",
+      "relative inline-flex min-h-11 items-center whitespace-nowrap px-3 font-heading text-small font-semibold uppercase tracking-[0.12em] transition-colors hover:text-brand",
+      "after:absolute after:inset-x-3 after:bottom-2 after:h-0.5 after:origin-left after:bg-brand after:transition-transform after:duration-250 hover:after:scale-x-100",
+      isActive(href) ? "text-fg after:scale-x-100" : "text-fg-secondary after:scale-x-0",
+    );
+  const sheetLinkClass = (href: string) =>
+    cn(
+      "inline-flex min-h-11 items-center px-3 font-heading text-body-sm font-semibold uppercase tracking-[0.12em] transition-colors hover:text-brand",
+      isActive(href) ? "text-brand" : "text-fg-secondary",
     );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-chrome">
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4 md:h-18 md:px-6">
+    <header className="sticky top-0 z-40 border-b border-border bg-chrome/88 backdrop-blur-[10px]">
+      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4 md:h-[78px] md:px-6">
         <Link
           href="/"
-          aria-label="CINEMO – Trang chủ"
-          className="inline-flex min-h-11 items-center rounded-sm text-2xl font-heavy tracking-wide text-brand"
+          aria-label="CINEMO - Trang chủ"
+          className="inline-flex min-h-11 items-center font-display text-base font-heavy tracking-[0.02em] text-fg"
         >
           CINEMO
         </Link>
@@ -60,7 +67,7 @@ export function SiteHeader({ user }: Readonly<{ user?: HeaderUser | null }>) {
               key={item.href}
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
-              className={linkClass(item.href)}
+              className={navLinkClass(item.href)}
             >
               {item.label}
             </Link>
@@ -70,18 +77,16 @@ export function SiteHeader({ user }: Readonly<{ user?: HeaderUser | null }>) {
         <div className="ml-auto flex items-center gap-2">
           {user ? (
             <>
-            <Button asChild variant="secondary" className="hidden md:inline-flex">
-              <Link href="/tai-khoan">
-                <User aria-hidden="true" />
-                {user.displayName}
-              </Link>
-            </Button>
-            <SignOutButton variant="outline" size="sm" className="ml-auto" />
+              <Button asChild variant="ghost" className="hidden md:inline-flex">
+                <Link href="/tai-khoan">
+                  <User aria-hidden="true" />
+                  {user.displayName}
+                </Link>
+              </Button>
+              <SignOutButton variant="ghost" size="sm" className="ml-auto" />
             </>
-            
-            
           ) : (
-            <Button asChild variant="secondary" className="hidden md:inline-flex">
+            <Button asChild variant="ghost" className="hidden md:inline-flex">
               <Link href="/dang-nhap">Đăng nhập</Link>
             </Button>
           )}
@@ -111,7 +116,7 @@ export function SiteHeader({ user }: Readonly<{ user?: HeaderUser | null }>) {
                 href={item.href}
                 aria-current={isActive(item.href) ? "page" : undefined}
                 onClick={() => setMenuOpen(false)}
-                className={cn(linkClass(item.href), "text-body")}
+                className={sheetLinkClass(item.href)}
               >
                 {item.label}
               </Link>
@@ -120,7 +125,7 @@ export function SiteHeader({ user }: Readonly<{ user?: HeaderUser | null }>) {
               href={accountHref}
               aria-current={isActive(accountHref) ? "page" : undefined}
               onClick={() => setMenuOpen(false)}
-              className={cn(linkClass(accountHref), "text-body")}
+              className={sheetLinkClass(accountHref)}
             >
               {user ? "Tài khoản" : "Đăng nhập"}
             </Link>

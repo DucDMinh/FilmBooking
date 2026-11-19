@@ -101,13 +101,15 @@ export function PaymentResult({
     return (
       <div
         role="status"
-        className="flex flex-col items-center gap-3 rounded-lg border border-border-subtle bg-surface px-4 py-10 text-center"
+        className="frame"
       >
-        <Loader2 className="size-8 animate-spin text-brand" aria-hidden="true" />
-        <h1 className="text-h2 font-extrabold">Đang xác nhận thanh toán</h1>
-        <p className="max-w-md text-body-sm text-fg-secondary">
-          Vui lòng chờ trong giây lát và không đóng trang này. Vé sẽ hiển thị ngay khi thanh toán được xác nhận.
-        </p>
+        <div className="frame-in flex flex-col items-center gap-3 px-4 py-10 text-center">
+          <Loader2 className="size-8 animate-spin text-brand motion-reduce:animate-none" aria-hidden="true" />
+          <h1 className="text-h2 font-bold uppercase">Đang xác nhận thanh toán</h1>
+          <p className="max-w-md text-body-sm text-fg-secondary">
+            Vui lòng chờ trong giây lát và không đóng trang này. Vé sẽ hiển thị ngay khi thanh toán được xác nhận.
+          </p>
+        </div>
       </div>
     );
   }

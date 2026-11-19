@@ -10,13 +10,13 @@ const DESCRIPTIONS: Record<AgeRating, string> = {
   T18: "phim dành cho khán giả từ 18 tuổi trở lên",
 };
 
-// Tone semantic theo design-tokens §1.7 (nền soft + chữ cùng tông, tỉ lệ ≥ 6:1).
+// Tone semantic theo design-tokens §1.6 (nền soft + chữ cùng tông). Chữ lỗi/T18 dùng danger-text, không dùng danger.
 const SEMANTIC_TONE: Record<AgeRating, string> = {
   P: "bg-success-soft text-success",
   K: "bg-info-soft text-info",
   T13: "bg-warning-soft text-warning",
-  T16: "bg-brand-soft text-brand-hover",
-  T18: "bg-danger-banner text-danger-strong",
+  T16: "bg-brand-soft text-brand",
+  T18: "bg-danger-soft text-danger-text",
 };
 
 export function AgeBadge({
@@ -29,8 +29,8 @@ export function AgeBadge({
       role="img"
       aria-label={`Phân loại ${rating}: ${DESCRIPTIONS[rating]}`}
       className={cn(
-        "inline-flex min-w-8 items-center justify-center rounded-pill px-2 py-0.5 text-caption font-semibold",
-        tone === "semantic" ? SEMANTIC_TONE[rating] : "bg-age-pill text-fg",
+        "chamfer-sm inline-flex min-h-6 min-w-8 items-center justify-center px-2 py-0.5 font-heading text-caption font-bold tracking-wide",
+        tone === "semantic" ? SEMANTIC_TONE[rating] : "bg-age-pill text-white",
         className,
       )}
     >

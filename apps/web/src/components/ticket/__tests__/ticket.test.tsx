@@ -189,7 +189,7 @@ describe("TicketDetail", () => {
     expect(screen.getByText(/2 ghế/)).toBeInTheDocument();
     expect(screen.getByText(/Một mã QR cho cả đơn/)).toBeInTheDocument();
     expect(screen.getAllByText("HN01-7K3P9Q").length).toBeGreaterThan(0);
-    expect(screen.getByText(/CINEMO Long Biên — 12 Nguyễn Văn Cừ/)).toBeInTheDocument();
+    expect(screen.getByText(/CINEMO Long Biên - 12 Nguyễn Văn Cừ/)).toBeInTheDocument();
     expect(screen.getByText(/quét tại rạp/)).toBeInTheDocument();
     expect(screen.getByText("Vé không hỗ trợ huỷ / đổi / hoàn tiền.")).toBeInTheDocument();
     expect(screen.queryByText("Đã soát vé")).not.toBeInTheDocument();
@@ -216,6 +216,18 @@ describe("TicketDetail", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(release).toHaveBeenCalled();
     Reflect.deleteProperty(navigator, "wakeLock");
+  });
+
+  it("overlay toàn màn hình render dưới <body>, không nằm trong tổ tiên chamfer/clip-path, z cao hơn header", async () => {
+    const user = userEvent.setup();
+    render(<TicketDetail order={order()} />);
+    await user.click(screen.getAllByRole("button", { name: /Mở vé toàn màn hình/ })[0]!);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog.closest("[class*='chamfer-']")).toBeNull();
+    expect(dialog).toHaveClass("z-60");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("QR thường >= 240px", () => {

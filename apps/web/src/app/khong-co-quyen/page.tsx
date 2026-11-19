@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 export default function ForbiddenPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center gap-4 px-4 py-12 text-center">
-      <p className="text-display font-heavy text-warning tabular" aria-hidden="true">
+      <p className="font-display text-display font-heavy text-warning tabular" aria-hidden="true">
         403
       </p>
-      <h1 className="text-h1 font-bold">Bạn không có quyền truy cập trang này</h1>
+      <h1 className="text-h1 font-bold uppercase">Bạn không có quyền truy cập trang này</h1>
       <p className="text-body text-fg-secondary">
         Tài khoản của bạn chưa được cấp quyền xem nội dung này. Nếu cho rằng đây là nhầm lẫn, hãy liên hệ quản trị viên.
       </p>

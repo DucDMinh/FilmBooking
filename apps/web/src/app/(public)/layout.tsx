@@ -48,10 +48,12 @@ export default async function PublicLayout({ children }: Readonly<{ children: Re
     <div className="flex min-h-dvh flex-col">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-brand focus:px-4 focus:py-3 focus:text-fg-on-brand"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-brand focus:px-4 focus:py-3 focus:text-fg-on-brand"
       >
         Bỏ qua tới nội dung chính
       </a>
+      {/* Scanline chỉ ở trang khách (design-tokens §3.3); /admin và /staff không đi qua layout này. */}
+      <div className="scanline" aria-hidden="true" />
       {staffHome ? <StaffAreaGuard home={staffHome} /> : null}
       <SiteHeader user={headerUser} />
       <UnverifiedEmailBanner email={email} emailConfirmed={emailConfirmed} />

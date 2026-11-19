@@ -297,6 +297,31 @@
 /* Footer, các trang /dat-ve, trang ngắn: không còn chỗ cuộn để vượt inset đáy nên phải về 0 (design-spec §16.4). */
 @utility scrub-inset-0 { --scrub-inset: 0px; }
 
+/* Lớp phủ scanline (design-tokens §3.3): CHỈ gắn ở layout (public), không /admin, /staff. Cố định, không bắt chuột,
+   z-index 12 (dưới header 40). Tắt khi in (quy tắc cuối file). */
+@utility scanline {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  opacity: 0.04;
+  background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.5) 0 1px, transparent 1px 3px);
+}
+
+/* Nền lưới 84px (design-tokens §3.3), mask radial từ đỉnh. Là lớp trang trí tuyệt đối: đặt trong cha `relative isolate`,
+   KHÔNG áp lên phần tử chứa nội dung (mask sẽ làm mờ cả chữ). Chỉ hero trang chủ và 404. */
+@utility grid-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 84px 84px;
+  mask-image: radial-gradient(120% 80% at 50% 0%, #000 10%, transparent 78%);
+}
+
 /* Thang chữ mobile (< 768px) + quãng trượt nhỏ hơn (design-tokens §2.2, §4.1) */
 @media (max-width: 767.98px) {
   :root {
@@ -374,3 +399,6 @@
   [data-scrub] [data-scrub-media],
   [data-scrub] [data-scrub-beam] { animation: none !important; }
 }
+
+/* Scanline là trang trí, không in. Đặt sau khối trên để test scrub (cắt theo @media print đầu tiên) không bị lẫn. */
+@media print { .scanline { display: none; } }

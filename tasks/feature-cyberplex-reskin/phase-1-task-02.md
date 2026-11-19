@@ -26,6 +26,13 @@ Không đổi logic điều hướng, auth, tìm kiếm, chọn tỉnh, đồng 
 ## Repro Verification
 - Original: header/footer/badge/vé kiểu CINEMO coral.
 - Expected: kiểu CYBERPLEX, hành vi giữ nguyên, a11y (`aria-*`, focus) giữ nguyên.
-- Actual after: _(builder điền)_
-- Evidence: _(builder điền)_
-- Status: pending
+- Actual after: header 78px/56px nền chrome 88% + blur, logo Orbitron, nav Chakra Petch UPPERCASE gạch chân vàng scaleX, nút Đăng nhập ghost; footer 4 cột; AgeBadge/Badge/EmptyState/ErrorState/Skeleton/vé QR/404/500/403 theo CYBERPLEX; hành vi, `aria-*`, `role` giữ nguyên.
+- Evidence: `pnpm --filter ./apps/web typecheck` exit 0; `lint` exit 0; `test` 628/628 PASS (50 file); `build` exit 0. Chưa kiểm trực quan trên trình duyệt (Playwright thuộc task sau). `CountdownTimer` nằm ở `components/booking/hold-countdown.tsx` (ngoài phạm vi, để phase 2).
+- Status: PASS (builder), chờ reviewer
+
+## Repro Verification (round 2)
+- Reviewer round 1 FAIL: M1 overlay "Mở vé toàn màn hình" bị `clip-path` của khung chamfer cắt, `z-50` không vượt header.
+- Sửa: `FullscreenTicket` render qua `createPortal(..., document.body)` (chỉ sau khi bấm, nên an toàn SSR), z-60 theo thang tokens; Wake Lock, ESC, focus, `alt` QR giữ nguyên. Test mới: overlay là con trực tiếp của `body`, không có tổ tiên `chamfer-*`, có `z-60`.
+- MINOR: m1 focus `TicketCard` (inset 2px brand trên `frame-in` khi link focus-visible), m2 `whitespace-nowrap` nav, m3 panel QR `p-5` (> cut 24px), m4 sửa thụt lề. m5, m6 bỏ qua theo chỉ đạo.
+- Evidence: typecheck exit 0, lint exit 0, test 629/629 PASS, build exit 0.
+- Status: PASS (builder), chờ reviewer round 2.

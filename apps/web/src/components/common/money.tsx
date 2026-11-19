@@ -14,7 +14,7 @@ export function DateTime({
 }: Readonly<{ value: Date | string; className?: string }>) {
   const instant = typeof value === "string" ? new Date(value) : value;
   // Dữ liệu API lỗi không được làm vỡ cả cây render.
-  if (Number.isNaN(instant.getTime())) return <span className={className}>—</span>;
+  if (Number.isNaN(instant.getTime())) return <span className={className}>-</span>;
   return (
     <time dateTime={instant.toISOString()} className={cn("tabular", className)}>
       {formatVnDateTime(instant)}

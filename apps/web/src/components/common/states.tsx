@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-/** Trạng thái rỗng (design-spec §6): icon trong vòng tròn, tiêu đề, mô tả, tối đa 1 CTA. */
+/** Trạng thái rỗng (design-spec §6, §16.3): icon 32px trong ô chamfer, tiêu đề, mô tả, tối đa 1 CTA. Khung chamfer 2 lớp. */
 export function EmptyState({
   title,
   description,
@@ -23,18 +23,15 @@ export function EmptyState({
   className?: string;
 }>) {
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center gap-3 rounded-lg border border-border-subtle bg-surface px-4 py-10 text-center",
-        className,
-      )}
-    >
-      <span className="flex size-14 items-center justify-center rounded-pill bg-surface-elevated text-fg-muted">
-        <Icon className="size-8" aria-hidden="true" />
-      </span>
-      <h2 className="text-h3 font-bold">{title}</h2>
-      {description ? <p className="max-w-md text-body-sm text-fg-secondary">{description}</p> : null}
-      {action}
+    <div className={cn("frame", className)}>
+      <div className="frame-in flex flex-col items-center gap-3 px-4 py-10 text-center">
+        <span className="chamfer-md flex size-14 items-center justify-center bg-surface-elevated text-fg-muted">
+          <Icon className="size-8" aria-hidden="true" />
+        </span>
+        <h2 className="text-h3 font-bold">{title}</h2>
+        {description ? <p className="max-w-md text-body-sm text-fg-secondary">{description}</p> : null}
+        {action}
+      </div>
     </div>
   );
 }
@@ -47,26 +44,24 @@ export function ErrorState({
   className,
 }: Readonly<{ title?: string; description?: string; onRetry?: () => void; className?: string }>) {
   return (
-    <div
-      role="alert"
-      className={cn(
-        "flex flex-col items-center gap-3 rounded-lg border border-danger-line bg-danger-soft px-4 py-10 text-center",
-        className,
-      )}
-    >
-      <AlertTriangle className="size-8 text-danger" aria-hidden="true" />
-      <h2 className="text-h3 font-bold">{title}</h2>
-      <p className="max-w-md text-body-sm text-fg-secondary">{description}</p>
-      {onRetry ? (
-        <Button variant="secondary" onClick={onRetry}>
-          Thử lại
-        </Button>
-      ) : null}
+    <div role="alert" className={cn("frame [--frame-color:var(--color-danger-line)]", className)}>
+      <div className="frame-in flex flex-col items-center gap-3 bg-danger-soft! px-4 py-10 text-center">
+        <span className="chamfer-md flex size-14 items-center justify-center bg-danger-banner text-danger-text">
+          <AlertTriangle className="size-8" aria-hidden="true" />
+        </span>
+        <h2 className="text-h3 font-bold">{title}</h2>
+        <p className="max-w-md text-body-sm text-fg-secondary">{description}</p>
+        {onRetry ? (
+          <Button variant="secondary" onClick={onRetry}>
+            Thử lại
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-/** Khung chờ cùng hình khối nội dung thật; không spinner toàn trang. */
+/** Khung chờ cùng hình khối nội dung thật; không spinner toàn trang. Shimmer opacity do Skeleton lo (tắt khi reduced-motion). */
 export function LoadingState({
   rows = 3,
   label = "Đang tải…",
@@ -76,7 +71,7 @@ export function LoadingState({
     <div role="status" aria-busy="true" className={cn("space-y-3", className)}>
       <span className="sr-only">{label}</span>
       {Array.from({ length: rows }, (_, index) => (
-        <Skeleton key={index} className="h-14 w-full rounded-md" />
+        <Skeleton key={index} className="h-14 w-full" />
       ))}
     </div>
   );

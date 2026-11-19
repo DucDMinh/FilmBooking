@@ -72,11 +72,11 @@ export function UnverifiedEmailBanner({
 
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="sm"
           disabled={countdown > 0 || isSending}
           onClick={handleResend}
-          className="min-h-11 border-warning-line bg-surface/60 text-warning hover:bg-surface hover:text-fg sm:min-h-9"
+          className="text-warning hover:text-fg"
         >
           {isSending ? (
             <>

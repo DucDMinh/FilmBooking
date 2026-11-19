@@ -96,9 +96,9 @@ describe("SiteFooter", () => {
 });
 
 describe("DateTime không hợp lệ", () => {
-  it("hiển thị — thay vì ném lỗi", () => {
+  it("hiển thị - thay vì ném lỗi", () => {
     render(<DateTime value="khong-phai-ngay" />);
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("-")).toBeInTheDocument();
   });
 });
 
