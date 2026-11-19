@@ -11,6 +11,8 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test && node --test scripts/*.test.mjs",
     "build": "pnpm -r --if-present build",
+    "dev": "pnpm db:start && pnpm dev:apps",
+    "dev:apps": "pnpm -r --parallel --if-present dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:start": "supabase start",

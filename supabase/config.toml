@@ -257,12 +257,12 @@ otp_expiry = 86400
 # không gửi thật. Staging/prod cấu hình SMTP trong Supabase Dashboard với cùng giá trị này
 # (config.toml chỉ áp dụng cho local; secret lấy từ env RESEND_API_KEY, không commit).
 [auth.email.smtp]
-enabled = false
-host = "smtp.resend.com"
+enabled = true
+host = "smtp.gmail.com"
 port = 465
-user = "resend"
-pass = "env(RESEND_API_KEY)"
-admin_email = "no-reply@filmbooking.example"
+user = "palmsight.app@gmail.com"
+pass = "env(SMTP_PASS)"
+admin_email = "palmsight.app@gmail.com"
 sender_name = "CINEMO"
 
 # Template mail Auth tiếng Việt, thương hiệu CINEMO (supabase/templates/*.html).
