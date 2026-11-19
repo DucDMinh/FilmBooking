@@ -101,7 +101,7 @@ export function AffectedResolutionForm({
       onSubmit={handleSubmit}
       noValidate
       aria-label="Ghi kết quả xử lý"
-      className="space-y-4 rounded-lg border border-border-subtle bg-surface p-4 md:p-6"
+      className="space-y-4 border border-border-subtle bg-surface p-4 md:p-6"
     >
       <h2 className="text-h3 font-bold">Ghi kết quả xử lý</h2>
       <p className="text-body-sm text-fg-muted">
@@ -139,7 +139,7 @@ export function AffectedResolutionForm({
         />
       </div>
       {errors._form ? (
-        <p role="alert" className="text-small text-danger">
+        <p role="alert" className="text-small text-danger-text">
           {errors._form}
         </p>
       ) : null}

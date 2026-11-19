@@ -32,9 +32,9 @@ export default async function StaffLayout({ children }: Readonly<{ children: Rea
   return (
     <div className="min-h-dvh bg-background">
       <header className="flex h-14 items-center border-b border-border bg-chrome px-4 md:h-18 md:px-6">
-        <span className="text-h3 font-heavy tracking-wide text-brand">CINEMO</span>
-        <span className="ml-2 text-body-sm font-heavy tracking-wide text-fg-secondary">/ SOÁT VÉ</span>
-        <SignOutButton variant="outline" size="sm" className="ml-auto" />
+        <span className="font-display text-body font-heavy tracking-[0.02em] text-fg">CINEMO</span>
+        <span className="hud hud-brand ml-3">Soát vé</span>
+        <SignOutButton variant="secondary" size="sm" className="ml-auto" />
       </header>
       {children}
     </div>

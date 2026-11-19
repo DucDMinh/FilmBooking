@@ -195,7 +195,7 @@ export function CinemaForm({
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-6">
       {errors._form ? (
-        <p role="alert" className="rounded-md border border-danger-line bg-danger-soft p-3 text-body-sm text-danger">
+        <p role="alert" className="border border-danger-line bg-danger-soft p-3 text-body-sm text-danger-text">
           {errors._form}
         </p>
       ) : null}
@@ -210,7 +210,7 @@ export function CinemaForm({
           onChange={(value) => set("code")(value.toUpperCase())}
           error={errors.code}
           disabled={Boolean(cinema) && !isAdmin}
-          hint="2–10 ký tự in hoa/số, duy nhất, in trên vé."
+          hint="2-10 ký tự in hoa/số, duy nhất, in trên vé."
         />
         <Field id="provinceCode" label="Tỉnh/thành" required error={errors.provinceCode}>
           {isAdmin ? (
@@ -228,7 +228,7 @@ export function CinemaForm({
             </Select>
           ) : (
             <p id="provinceCode" className="text-body-sm text-fg-secondary">
-              {form.provinceCode || "—"}
+              {form.provinceCode || "-"}
             </p>
           )}
         </Field>
@@ -236,7 +236,7 @@ export function CinemaForm({
         <TextField id="address" label="Địa chỉ" required value={form.address} onChange={set("address")} error={errors.address} className="md:col-span-2" />
         <TextField id="hotline" label="Hotline" value={form.hotline} onChange={set("hotline")} error={errors.hotline} />
         <TextField id="email" label="Email" type="email" value={form.email} onChange={set("email")} error={errors.email} />
-        <TextField id="openingHours" label="Giờ mở cửa" value={form.openingHours} onChange={set("openingHours")} error={errors.openingHours} hint="Ví dụ: 08:00 – 23:30" />
+        <TextField id="openingHours" label="Giờ mở cửa" value={form.openingHours} onChange={set("openingHours")} error={errors.openingHours} hint="Ví dụ: 08:00 - 23:30" />
         {!cinema ? (
           <Field id="status" label="Trạng thái" required error={errors.status}>
             <Select value={form.status} onValueChange={set("status")}>
@@ -256,7 +256,7 @@ export function CinemaForm({
           <Field id="status-readonly" label="Trạng thái">
             <p id="status-readonly" className="text-body-sm text-fg-secondary">
               {CINEMA_STATUS_LABELS[cinema.status]}
-              {isAdmin ? " — đổi tại danh sách rạp (Đổi trạng thái, có hiệu lực sau 7 ngày)." : ""}
+              {isAdmin ? " - đổi tại danh sách rạp (Đổi trạng thái, có hiệu lực sau 7 ngày)." : ""}
             </p>
           </Field>
         )}
@@ -266,7 +266,7 @@ export function CinemaForm({
         <TextField id="latitude" label="Vĩ độ" inputMode="decimal" value={form.latitude} onChange={set("latitude")} error={errors.latitude} />
         <TextField id="longitude" label="Kinh độ" inputMode="decimal" value={form.longitude} onChange={set("longitude")} error={errors.longitude} />
         <TextField id="amenities" label="Tiện ích" value={form.amenities} onChange={set("amenities")} error={errors.amenities} hint="Ngăn cách bằng dấu phẩy: Bãi đỗ xe, Thang máy…" className="md:col-span-2" />
-        <ImageUploadField id="imageUrl" label="Ảnh đại diện rạp" bucket="cinema-images" cinemaId={cinema?.id} value={form.imageUrl} onChange={set("imageUrl")} error={errors.imageUrl} previewClassName="aspect-video w-48 rounded-md border border-border-subtle object-cover" hint="JPG, PNG hoặc WebP, tối đa 5 MB" />
+        <ImageUploadField id="imageUrl" label="Ảnh đại diện rạp" bucket="cinema-images" cinemaId={cinema?.id} value={form.imageUrl} onChange={set("imageUrl")} error={errors.imageUrl} previewClassName="aspect-video w-48 border border-border-subtle object-cover" hint="JPG, PNG hoặc WebP, tối đa 5 MB" />
       </FormSection>
 
       <FormSection title="Cấu hình rạp">

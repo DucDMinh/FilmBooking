@@ -36,7 +36,7 @@ const APPLIES_LABEL: Record<VoucherDto["appliesTo"], string> = {
 };
 
 const SELECT_CLASS =
-  "h-11 w-full rounded-md border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
+  "h-11 w-full border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 
 interface FormState {
   code: string;
@@ -124,7 +124,7 @@ export function describeDiscount(v: Pick<VoucherDto, "discountType" | "discountV
 
 /** Thông điệp tiếng Việt theo trường (schema zod/API trả tiếng Anh). */
 const FIELD_ERRORS: Record<string, string> = {
-  code: "Mã gồm 3–32 ký tự: A–Z, 0–9, _ hoặc -.",
+  code: "Mã gồm 3-32 ký tự: A-Z, 0-9, _ hoặc -.",
   discountValue: "Giá trị giảm phải là số nguyên từ 1 (tối đa 100 nếu giảm theo %).",
   maxDiscount: "Giảm tối đa phải là số nguyên từ 1 hoặc để trống.",
   validFrom: "Thời điểm bắt đầu không hợp lệ.",
@@ -144,9 +144,9 @@ function voucherStatus(v: VoucherDto, now: number): { label: string; variant: "s
 }
 
 function formatDay(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleDateString("vi-VN");
 }
 
@@ -213,7 +213,7 @@ export function VoucherForm({ open, voucher, onOpenChange, onSaved }: Readonly<V
 
   const fieldError = (name: string) =>
     errors[name] ? (
-      <p role="alert" className="text-caption text-danger">
+      <p role="alert" className="text-caption text-danger-text">
         {errors[name]}
       </p>
     ) : null;
@@ -397,7 +397,7 @@ export function VoucherManager({ role }: Readonly<{ role: AdminRole }>) {
       {status === "ready" && data && data.items.length === 0 ? <EmptyState title="Chưa có voucher" /> : null}
       {status === "ready" && data && data.items.length > 0 ? (
         <>
-          <div className="overflow-x-auto rounded-lg border border-border-subtle">
+          <div className="overflow-x-auto border border-border-subtle">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -419,7 +419,7 @@ export function VoucherManager({ role }: Readonly<{ role: AdminRole }>) {
                       <TableCell className="tabular">{describeDiscount(v)}</TableCell>
                       <TableCell>{APPLIES_LABEL[v.appliesTo]}</TableCell>
                       <TableCell className="tabular">
-                        {formatDay(v.validFrom)} – {formatDay(v.validTo)}
+                        {formatDay(v.validFrom)} - {formatDay(v.validTo)}
                       </TableCell>
                       <TableCell className="tabular">{v.totalUsesLimit ?? "Không giới hạn"}</TableCell>
                       <TableCell>
@@ -427,7 +427,7 @@ export function VoucherManager({ role }: Readonly<{ role: AdminRole }>) {
                       </TableCell>
                       {isAdmin ? (
                         <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => openForm(v)} aria-label={`Sửa voucher ${v.code}`}>
+                          <Button variant="ghost" className="shadow-none bg-transparent" size="sm" onClick={() => openForm(v)} aria-label={`Sửa voucher ${v.code}`}>
                             Sửa
                           </Button>
                         </TableCell>

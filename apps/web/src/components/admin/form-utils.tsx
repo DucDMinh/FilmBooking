@@ -96,7 +96,7 @@ export function Field({
       {children}
       {hint && !error ? <p className="text-small text-fg-muted">{hint}</p> : null}
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-small text-danger">
+        <p id={`${id}-error`} role="alert" className="text-small text-danger-text">
           {error}
         </p>
       ) : null}
@@ -148,7 +148,7 @@ export function TextField({
 
 export function FormSection({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
-    <section className="space-y-4 rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+    <section className="space-y-4 border border-border-subtle bg-surface p-4 md:p-6">
       <h2 className="text-h3 font-bold">{title}</h2>
       <div className="grid gap-4 md:grid-cols-2">{children}</div>
     </section>
@@ -163,7 +163,7 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h1 className="text-h1 font-heavy">{title}</h1>
+        <h1 className="font-heading text-h1 font-bold uppercase">{title}</h1>
         {description ? <p className="mt-1 text-body-sm text-fg-muted">{description}</p> : null}
       </div>
       {action}

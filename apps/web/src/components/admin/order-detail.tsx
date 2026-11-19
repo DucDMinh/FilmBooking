@@ -104,7 +104,7 @@ function ResolveForm({
       onSubmit={(e) => void submit(e)}
       noValidate
       aria-label="Xử lý đơn thủ công"
-      className="space-y-4 rounded-lg border border-danger-line bg-surface p-4 md:p-6"
+      className="space-y-4 border border-danger-line bg-surface p-4 md:p-6"
     >
       <h2 className="text-h3 font-bold">Xử lý đơn thủ công</h2>
       <fieldset className="space-y-2">
@@ -140,7 +140,7 @@ function ResolveForm({
       ) : null}
       <TextField id="resolve-note" label="Ghi chú" value={note} onChange={setNote} error={errors.note} />
       {errors.form ? (
-        <p role="alert" className="text-body-sm text-danger">
+        <p role="alert" className="text-body-sm text-danger-text">
           {errors.form}
         </p>
       ) : null}
@@ -170,7 +170,7 @@ function OrderBody({
   const statusView = orderStatusView(order);
   return (
     <div className="space-y-4">
-      <section className="space-y-4 rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+      <section className="space-y-4 border border-border-subtle bg-surface p-4 md:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-h3 font-bold">{order.bookingCode ?? "Đơn chưa có mã đặt vé"}</h2>
           <Badge tone={statusView.tone}>{statusView.label}</Badge>
@@ -183,8 +183,8 @@ function OrderBody({
           <Fact label="Suất chiếu">
             <DateTime value={order.showtimeStartsAt} />
           </Fact>
-          <Fact label="Email">{order.contactEmail ?? "—"}</Fact>
-          <Fact label="Số điện thoại">{order.contactPhone ?? "—"}</Fact>
+          <Fact label="Email">{order.contactEmail ?? "-"}</Fact>
+          <Fact label="Số điện thoại">{order.contactPhone ?? "-"}</Fact>
           <Fact label="Tổng tiền">
             <Money amount={order.totalAmount} />
             {order.discountAmount > 0 ? <span className="text-small text-fg-muted"> (giảm {order.discountAmount.toLocaleString("vi-VN")} đ)</span> : null}
@@ -204,7 +204,7 @@ function OrderBody({
           </p>
         ) : null}
       </section>
-      <section className="space-y-2 rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+      <section className="space-y-2 border border-border-subtle bg-surface p-4 md:p-6">
         <h2 className="text-h3 font-bold">Vé ({order.tickets.length})</h2>
         {order.tickets.length === 0 ? (
           <p className="text-body-sm text-fg-muted">Chưa có vé.</p>
@@ -228,7 +228,7 @@ function OrderBody({
           </ul>
         )}
       </section>
-      <section className="space-y-2 rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+      <section className="space-y-2 border border-border-subtle bg-surface p-4 md:p-6">
         <h2 className="text-h3 font-bold">Thanh toán</h2>
         {order.payments.length === 0 ? (
           <p className="text-body-sm text-fg-muted">Chưa có giao dịch.</p>
@@ -245,13 +245,13 @@ function OrderBody({
           </ul>
         )}
       </section>
-      <section className="space-y-3 rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+      <section className="space-y-3 border border-border-subtle bg-surface p-4 md:p-6">
         <h2 className="text-h3 font-bold">Lịch sử trạng thái</h2>
         <OrderTimeline history={order.statusHistory} />
       </section>
       {pendingReview && canResolve ? <ResolveForm order={order} onResolved={onResolved} onConflict={onConflict} /> : null}
       {pendingReview && !canResolve ? (
-        <p role="note" className="rounded-lg border border-border-subtle bg-surface p-4 text-body-sm text-fg-secondary">
+        <p role="note" className="border border-border-subtle bg-surface p-4 text-body-sm text-fg-secondary">
           Đơn đang chờ xử lý thủ công. Chỉ Admin hoặc Quản lý rạp này được ghi xử lý.
         </p>
       ) : null}
@@ -266,7 +266,7 @@ export function OrderDetail({ code }: Readonly<{ code: string }>) {
   // Thông báo xung đột sống ở đây (không bị unmount khi chi tiết tải lại).
   const [conflict, setConflict] = useState<string | null>(null);
   const banner = conflict ? (
-    <p role="alert" className="mb-4 rounded-lg border border-danger-line bg-danger-soft p-4 text-body-sm text-danger">
+    <p role="alert" className="mb-4 border border-danger-line bg-danger-soft p-4 text-body-sm text-danger-text">
       {conflict}
     </p>
   ) : null;

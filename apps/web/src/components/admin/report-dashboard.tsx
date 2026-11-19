@@ -145,7 +145,7 @@ export function ReportDashboard() {
           <CancelledShowtimesReport filter={showtimeFilter} />
         </>
       ) : (
-        <p role="alert" className="text-body-sm text-danger">
+        <p role="alert" className="text-body-sm text-danger-text">
           Khoảng ngày không hợp lệ: ngày bắt đầu phải trước hoặc bằng ngày kết thúc.
         </p>
       )}

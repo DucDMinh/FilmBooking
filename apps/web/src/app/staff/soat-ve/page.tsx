@@ -108,7 +108,7 @@ export default function ScanTicketPage() {
         <p className="text-body-sm text-fg-secondary">Đang làm việc tại {cinema.name}</p>
         <Link
           href="/staff/chon-rap"
-          className="inline-flex min-h-11 items-center rounded-full bg-success-soft px-3 text-body-sm font-semibold text-success"
+          className="chamfer-sm inline-flex min-h-11 items-center bg-success-soft px-3 text-body-sm font-semibold text-success"
         >
           {cinema.code} • Đổi rạp
         </Link>
@@ -127,15 +127,15 @@ export default function ScanTicketPage() {
         <Button type="submit">Tra cứu vé</Button>
       </form>
       {error ? (
-        <div role="alert" className="flex items-center justify-between gap-2 text-body-sm text-danger">
+        <div role="alert" className="flex items-center justify-between gap-2 text-body-sm text-danger-text">
           <p>{error}</p>
-          <Button type="button" variant="outline" onClick={retryAfterError}>
+          <Button type="button" variant="secondary" onClick={retryAfterError}>
             Thử lại
           </Button>
         </div>
       ) : null}
       <section aria-label="Lịch sử quét gần đây">
-        <h2 className="mb-2 text-h3 font-bold">Quét gần đây</h2>
+        <h2 className="mb-2 font-heading text-h3 font-bold uppercase">Quét gần đây</h2>
         <ul className="space-y-1 text-body-sm text-fg-secondary">
           {history.length === 0 ? <li>Chưa có lượt quét.</li> : null}
           {history.map((h, i) => (

@@ -91,7 +91,7 @@ export default function AdminCinemasPage() {
               <TableRow key={cinema.id}>
                 <TableCell className="font-semibold">{cinema.code}</TableCell>
                 <TableCell>{cinema.name}</TableCell>
-                <TableCell>{cinema.provinceCode ?? "—"}</TableCell>
+                <TableCell>{cinema.provinceCode ?? "-"}</TableCell>
                 <TableCell>{cinema.address}</TableCell>
                 <TableCell>{cinema.roomCount}</TableCell>
                 <TableCell>
@@ -119,7 +119,7 @@ export default function AdminCinemasPage() {
                     </Button>
                     {isAdmin ? (
                       <Button
-                        variant="ghost"
+                        variant="ghost" className="shadow-none bg-transparent"
                         size="sm"
                         onClick={() => setStatusTarget(cinema)}
                         aria-label={`Đổi trạng thái rạp ${cinema.name}`}

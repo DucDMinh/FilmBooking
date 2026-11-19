@@ -86,7 +86,7 @@ export function SeatLockPanel({ cinemaId, showtimeId, seats, disabled, onChanged
             value={reason}
             disabled={disabled || busy}
             onChange={(e) => setReason(e.target.value as typeof reason)}
-            className="h-11 rounded-sm border border-input bg-surface-input px-2 text-base md:h-10 md:text-body"
+            className="h-11 border border-input bg-surface-input px-2 text-base md:h-10 md:text-body"
           >
             {REASONS.map((r) => (
               <option key={r.value} value={r.value}>
@@ -98,13 +98,13 @@ export function SeatLockPanel({ cinemaId, showtimeId, seats, disabled, onChanged
         <Button type="button" disabled={disabled || busy || toLock.length === 0} onClick={lock}>
           Khoá {toLock.length} ghế
         </Button>
-        <Button type="button" variant="outline" disabled={disabled || busy || toUnlock.length === 0} onClick={unlock}>
+        <Button type="button" variant="secondary" disabled={disabled || busy || toUnlock.length === 0} onClick={unlock}>
           Mở khoá {toUnlock.length} ghế
         </Button>
       </div>
       {chosenLabels ? <p className="text-body-sm text-fg-secondary">Đã chọn: {chosenLabels}</p> : null}
       {error ? (
-        <p role="alert" className="text-body-sm text-danger">
+        <p role="alert" className="text-body-sm text-danger-text">
           {error}
         </p>
       ) : null}

@@ -60,7 +60,7 @@ export function RoomLayoutPanel({
   return (
     <div className="space-y-4">
       {canEdit && (
-        <Button type="button" variant="outline" className="min-h-11" onClick={() => setCopyOpen(true)}>
+        <Button type="button" variant="secondary" className="min-h-11" onClick={() => setCopyOpen(true)}>
           Sao chép sơ đồ từ phòng khác
         </Button>
       )}

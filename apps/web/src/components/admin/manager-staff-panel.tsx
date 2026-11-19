@@ -51,7 +51,7 @@ export function ManagerStaffPanel({ cinemas }: Readonly<{ cinemas: readonly Scop
           <label className="space-y-1.5 text-body-sm font-semibold">
             Rạp
             <select
-              className="block h-11 rounded-md border border-border-input bg-transparent px-3 text-body-sm font-normal"
+              className="block h-11 border border-border-input bg-transparent px-3 text-body-sm font-normal"
               value={cinemaId}
               onChange={(e) => setCinemaId(e.target.value)}
             >
@@ -85,14 +85,14 @@ export function ManagerStaffPanel({ cinemas }: Readonly<{ cinemas: readonly Scop
               {staff.map((s) => (
                 <TableRow key={s.userId}>
                   <TableCell>
-                    <div className="font-semibold">{s.fullName ?? "—"}</div>
+                    <div className="font-semibold">{s.fullName ?? "-"}</div>
                     <div className="text-small text-fg-muted">{s.email ?? s.userId}</div>
                   </TableCell>
                   <TableCell>{ASSIGNMENT_ROLE_LABELS[s.role]}</TableCell>
                   <TableCell className="text-right">
                     {s.role === "STAFF" ? (
                       <Button
-                        variant="ghost"
+                        variant="ghost" className="shadow-none bg-transparent"
                         size="sm"
                         aria-label={`Gỡ ${s.email ?? s.userId}`}
                         onClick={() =>

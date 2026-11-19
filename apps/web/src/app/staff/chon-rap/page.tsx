@@ -42,7 +42,7 @@ export default function ChooseCinemaPage() {
   }
 
   if (failed) {
-    return <p className="p-6 text-body text-danger">Không tải được danh sách rạp. Vui lòng tải lại trang.</p>;
+    return <p className="p-6 text-body text-danger-text">Không tải được danh sách rạp. Vui lòng tải lại trang.</p>;
   }
   if (!cinemas) return <p className="p-6 text-body text-fg-secondary">Đang tải…</p>;
   if (cinemas.length === 0) {
@@ -58,7 +58,7 @@ export default function ChooseCinemaPage() {
           <label
             key={cinema.id}
             className={cn(
-              "flex min-h-14 cursor-pointer items-start gap-3 rounded-md border p-3",
+              "flex min-h-14 cursor-pointer items-start gap-3 border p-3",
               selected === cinema.id ? "border-brand bg-surface" : "border-border",
             )}
           >

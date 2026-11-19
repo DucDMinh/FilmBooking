@@ -21,7 +21,7 @@ function TodoCard({
   children,
 }: Readonly<{ title: string; count: number; href?: string; hrefLabel?: string; empty: string; children: ReactNode }>) {
   return (
-    <section className="space-y-3 rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+    <section className="space-y-3 border border-border-subtle bg-surface p-4 md:p-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-h3 font-bold">
           {title} <Badge tone={count > 0 ? "danger" : "neutral"}>{count}</Badge>

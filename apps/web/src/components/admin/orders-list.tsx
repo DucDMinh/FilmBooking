@@ -54,7 +54,7 @@ function StatusBadge({ order }: Readonly<{ order: OrderSummaryDto }>) {
 
 function OrdersTable({ items }: Readonly<{ items: readonly OrderSummaryDto[] }>) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border-subtle">
+    <div className="overflow-x-auto border border-border-subtle">
       <Table>
         <TableHeader>
           <TableRow>
@@ -81,7 +81,7 @@ function OrdersTable({ items }: Readonly<{ items: readonly OrderSummaryDto[] }>)
               </TableCell>
               <TableCell>{order.cinemaName}</TableCell>
               <TableCell>
-                <span className="block">{order.contactEmail ?? "—"}</span>
+                <span className="block">{order.contactEmail ?? "-"}</span>
                 <span className="block text-small text-fg-muted">{order.contactPhone ?? ""}</span>
               </TableCell>
               <TableCell>
@@ -207,7 +207,7 @@ export function OrderSearch() {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={(e) => void submit(e)} className="grid gap-4 rounded-lg border border-border-subtle bg-surface p-4 md:grid-cols-3 md:p-6">
+      <form onSubmit={(e) => void submit(e)} className="grid gap-4 border border-border-subtle bg-surface p-4 md:grid-cols-3 md:p-6">
         <TextField id="order-code" label="Mã đặt vé" value={draft.bookingCode} onChange={set("bookingCode")} />
         <TextField id="order-email" label="Email" value={draft.email} onChange={set("email")} />
         <TextField id="order-phone" label="Số điện thoại" value={draft.phone} onChange={set("phone")} inputMode="numeric" />
@@ -220,7 +220,7 @@ export function OrderSearch() {
             id="order-status"
             value={draft.status}
             onChange={(e) => set("status")(e.target.value)}
-            className="h-11 w-full rounded-md border border-border-input bg-transparent px-3 text-body-sm"
+            className="h-11 w-full border border-border-input bg-transparent px-3 text-body-sm"
           >
             <option value="">Tất cả</option>
             {ORDER_STATUSES.map((status) => (
@@ -236,7 +236,7 @@ export function OrderSearch() {
           </Button>
         </div>
         {lookupError ? (
-          <p role="alert" className="text-body-sm text-danger md:col-span-3">
+          <p role="alert" className="text-body-sm text-danger-text md:col-span-3">
             {lookupError}
           </p>
         ) : null}

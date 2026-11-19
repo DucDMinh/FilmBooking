@@ -105,7 +105,7 @@ function ShowtimeSchedule({ cinema }: Readonly<{ cinema: ScopedCinema }>) {
             id="sch-room"
             value={roomFilter}
             onChange={(e) => setRoomFilter(e.target.value)}
-            className="h-11 rounded-sm border border-input bg-surface-input px-2 text-base md:h-10 md:text-body"
+            className="h-11 border border-input bg-surface-input px-2 text-base md:h-10 md:text-body"
           >
             <option value="">Tất cả phòng</option>
             {data?.rooms.map((r) => (
@@ -129,7 +129,7 @@ function ShowtimeSchedule({ cinema }: Readonly<{ cinema: ScopedCinema }>) {
       </div>
 
       {lastResult ? (
-        <div role="status" className="rounded-md border border-success-line bg-success-soft p-3 text-success">
+        <div role="status" className="border border-success-line bg-success-soft p-3 text-success">
           Đã huỷ {lastResult.cancelledShowtimesCount} suất; {lastResult.affectedOrdersCount} đơn chuyển sang Bị ảnh
           hưởng, {lastResult.emailsEnqueuedCount} email đã xếp hàng gửi.{" "}
           <Link href={`/admin/don-bi-anh-huong${q}`} className="font-semibold underline">
@@ -149,7 +149,7 @@ function ShowtimeSchedule({ cinema }: Readonly<{ cinema: ScopedCinema }>) {
           <h2 className="text-h3 font-bold">{room.name}</h2>
           <ul className="space-y-2">
             {items.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 rounded-md border border-border bg-surface p-3">
+              <li key={s.id} className="flex items-center gap-3 border border-border bg-surface p-3">
                 <input
                   type="checkbox"
                   className="size-5"
@@ -160,7 +160,7 @@ function ShowtimeSchedule({ cinema }: Readonly<{ cinema: ScopedCinema }>) {
                 />
                 <Link href={`/admin/lich-chieu/${s.id}${q}`} className="min-w-0 flex-1">
                   <span className="tabular font-bold">
-                    {formatVnTime(s.startsAt)}–{formatVnTime(s.endsAt)}
+                    {formatVnTime(s.startsAt)}-{formatVnTime(s.endsAt)}
                   </span>{" "}
                   <span className={s.status === "CANCELLED" ? "line-through" : undefined}>{movieTitle(s.movieId)}</span>
                   <span className="block text-body-sm text-fg-secondary">
@@ -194,7 +194,7 @@ function ShowtimeSchedule({ cinema }: Readonly<{ cinema: ScopedCinema }>) {
 export default function ShowtimesPage() {
   return (
     <div className="space-y-4">
-      <h1 className="text-h2 font-bold">Lịch chiếu</h1>
+      <h1 className="text-h2 font-bold uppercase">Lịch chiếu</h1>
       <ShowtimeCinemaGate>{(cinema) => <ShowtimeSchedule cinema={cinema} />}</ShowtimeCinemaGate>
     </div>
   );

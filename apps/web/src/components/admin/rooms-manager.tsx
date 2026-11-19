@@ -180,7 +180,7 @@ export function RoomsManager({
             <TableRow key={room.id}>
               <TableCell className="font-semibold">{room.name}</TableCell>
               <TableCell>{room.supportedFormats.join(" / ")}</TableCell>
-              <TableCell className="tabular">{room.seatCount ?? "—"}</TableCell>
+              <TableCell className="tabular">{room.seatCount ?? "-"}</TableCell>
               <TableCell>
                 <Badge tone={room.status === "ACTIVE" ? "success" : "warning"}>
                   {STATUS_LABEL[room.status] ?? room.status}
@@ -194,7 +194,7 @@ export function RoomsManager({
                   Sơ đồ ghế
                 </Link>
                 {canEdit && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => openDialog(room)}>
+                  <Button type="button" variant="ghost" className="shadow-none bg-transparent" size="sm" onClick={() => openDialog(room)}>
                     Sửa
                   </Button>
                 )}
@@ -259,12 +259,12 @@ export function RoomsManager({
               </div>
             )}
             {error && (
-              <p role="alert" className="text-body-sm text-danger">
+              <p role="alert" className="text-body-sm text-danger-text">
                 {error}
               </p>
             )}
             <DialogFooter>
-              <Button type="button" variant="outline" className="min-h-11" onClick={() => setEditing(null)}>
+              <Button type="button" variant="secondary" className="min-h-11" onClick={() => setEditing(null)}>
                 Huỷ
               </Button>
               <Button type="submit" className="min-h-11" disabled={submitting}>

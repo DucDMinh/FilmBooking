@@ -76,7 +76,7 @@ export function ConfirmActionDialog({
           <DialogDescription>{text.body}</DialogDescription>
         </DialogHeader>
         {error ? (
-          <p role="alert" className="text-small text-danger">
+          <p role="alert" className="text-small text-danger-text">
             {error}
           </p>
         ) : null}

@@ -110,12 +110,12 @@ export function CinemaStatusDialog({
         <DialogHeader>
           <DialogTitle>Đổi trạng thái rạp</DialogTitle>
           <DialogDescription>
-            {cinema.name} — hiện đang: {CINEMA_STATUS_LABELS[cinema.status]}
+            {cinema.name} - hiện đang: {CINEMA_STATUS_LABELS[cinema.status]}
           </DialogDescription>
         </DialogHeader>
 
         {cinema.scheduledStatus ? (
-          <p className="rounded-md border border-warning-line bg-warning-soft p-3 text-body-sm">
+          <p className="border border-warning-line bg-warning-soft p-3 text-body-sm">
             Đang chờ: {CINEMA_STATUS_LABELS[cinema.scheduledStatus]} từ ngày {pendingDate}. Hẹn lại sẽ
             thay lịch cũ và gửi lại email cho toàn bộ khách hàng.
           </p>
@@ -141,7 +141,7 @@ export function CinemaStatusDialog({
         </div>
 
         {mode === "schedule" ? (
-          <div className="space-y-2 rounded-md border border-border-subtle bg-surface-elevated p-3 text-body-sm">
+          <div className="space-y-2 border border-border-subtle bg-surface-elevated p-3 text-body-sm">
             <p>
               Thay đổi có hiệu lực vào {effectiveDate} (sau {CINEMA_STATUS_DELAY_DAYS} ngày). Rạp giữ
               nguyên trạng thái hiện tại cho tới lúc đó. Hệ thống gửi email tới toàn bộ khách hàng ngay bây giờ.
@@ -158,14 +158,14 @@ export function CinemaStatusDialog({
         ) : null}
 
         {mode === "cancel" ? (
-          <p className="rounded-md border border-warning-line bg-warning-soft p-3 text-body-sm">
+          <p className="border border-warning-line bg-warning-soft p-3 text-body-sm">
             Huỷ lịch sẽ giữ rạp ở trạng thái {CINEMA_STATUS_LABELS[cinema.status]} và gửi email đính chính cho toàn bộ
             khách hàng.
           </p>
         ) : null}
 
         {error ? (
-          <p role="alert" className="text-small text-danger">
+          <p role="alert" className="text-small text-danger-text">
             {error}
           </p>
         ) : null}

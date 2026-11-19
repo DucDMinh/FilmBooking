@@ -51,10 +51,10 @@ function NavList({ items, cinemaId = null, onNavigate }: Readonly<NavProps & { o
                 aria-current={active ? "page" : undefined}
                 onClick={onNavigate}
                 className={cn(
-                  "flex min-h-11 items-center rounded-sm px-3 text-body-sm font-semibold transition-colors outline-hidden",
+                  "flex min-h-11 items-center border-l-[3px] border-l-transparent px-3 font-heading text-body-sm font-semibold tracking-[0.04em] transition-colors outline-hidden",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-chrome",
                   active
-                    ? "border-l-[3px] border-l-brand bg-sidebar-accent font-bold text-fg"
+                    ? "border-l-brand bg-sidebar-accent font-bold text-fg"
                     : "text-fg-secondary hover:bg-surface-elevated/60 hover:text-fg",
                 )}
               >
@@ -105,7 +105,7 @@ export function AdminMobileNav({ items, cinemaId }: Readonly<NavProps>) {
             <NavList items={items} cinemaId={cinemaId} onNavigate={() => setOpen(false)} />
           </div>
           <div className="border-t border-border p-3">
-            <SignOutButton variant="outline" className="w-full" />
+            <SignOutButton variant="secondary" className="w-full" />
           </div>
         </SheetContent>
       </Sheet>

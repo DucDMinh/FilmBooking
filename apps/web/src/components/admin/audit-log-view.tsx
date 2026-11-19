@@ -31,7 +31,7 @@ const ACTION_TONE: Record<AuditLogDto["action"], "success" | "info" | "danger"> 
 };
 
 const SELECT_CLASS =
-  "h-11 w-full rounded-md border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
+  "h-11 w-full border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 
 export interface AuditDiffRow {
   field: string;
@@ -39,7 +39,7 @@ export interface AuditDiffRow {
   after: string;
 }
 
-const ABSENT = "—";
+const ABSENT = "-";
 
 function formatValue(value: unknown): string {
   if (value === undefined) return ABSENT;
@@ -91,7 +91,7 @@ function AuditDiffSheet({ log, cinemaName, onClose }: Readonly<{ log: AuditLogDt
                 {rows.map((row) => (
                   <tr key={row.field} className="border-t border-border-subtle align-top">
                     <td className="py-1.5 pr-2 font-mono">{row.field}</td>
-                    <td className="break-all py-1.5 pr-2 font-mono text-danger">{row.before}</td>
+                    <td className="break-all py-1.5 pr-2 font-mono text-danger-text">{row.before}</td>
                     <td className="break-all py-1.5 font-mono text-success">{row.after}</td>
                   </tr>
                 ))}
@@ -252,7 +252,7 @@ function AuditLogList({ cinemas }: Readonly<{ cinemas: readonly AdminCinemaDto[]
                         <button
                           type="button"
                           className="min-h-11 underline decoration-dotted md:min-h-0"
-                          title={`${log.actorId} — bấm để lọc theo người này`}
+                          title={`${log.actorId} - bấm để lọc theo người này`}
                           aria-label={`Lọc theo người thực hiện ${log.actorId}`}
                           onClick={() => filterByActor(log.actorId as string)}
                         >
@@ -336,7 +336,7 @@ export function AuditLogAdminPage() {
 
   return (
     <div>
-      <PageHeader title="Audit log" description="Ai đã thay đổi gì, ở rạp nào, khi nào — kèm giá trị trước/sau." />
+      <PageHeader title="Audit log" description="Ai đã thay đổi gì, ở rạp nào, khi nào - kèm giá trị trước/sau." />
       {body}
     </div>
   );
