@@ -15,7 +15,7 @@ evidence:
   reportPath: .context/review-reports/feature-cyberplex-reskin-phase-3-task-07-round-1-review.md
   round: 1
   verdict: PASS
-next: "close-out: spec-publisher (test-scope) + spec-validator het phase + archive CR-010"
+next: "CR-010 da dong (spec 3.5.0, scope 27). Con lai: CR-011 pending"
 loopSignal: none
 approvals: [{gate: phase_plan, at: 2026-11-19, ok: true, note: "auto proceed"}]
 batchQueue: []

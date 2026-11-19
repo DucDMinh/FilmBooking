@@ -186,7 +186,7 @@
       "id": "cyberplex-reskin",
       "title": "Re-skin UI CYBERPLEX + chuyển động theo cuộn + QuickBookBar (spec 3.5.0: R-138, NFR-19, AC-31, AC-32; CR-010)",
       "class": "MODIFY",
-      "status": "in_progress",
+      "status": "done",
       "phases": [
         {
           "phase": 1,
@@ -265,6 +265,11 @@
             "reportPath": ".context/review-reports/feature-cyberplex-reskin-phase-3-task-07-round-1-review.md"
           }
         }
+      ],
+      "specVersion": "3.5.0",
+      "scopeVersion": 27,
+      "followUp": [
+        "CR-011 (BUG, pending): mốc đóng bán online riêng của rạp chưa có trong dữ liệu công khai (R-44, R-138 dùng mặc định 15 phút)"
       ]
     }
   ],
@@ -743,7 +748,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-19T08:21:55.344Z",
+  "lastUpdated": "2026-11-19T08:33:15.738Z",
   "inProgressTask": null,
   "completedTasks": [
     {

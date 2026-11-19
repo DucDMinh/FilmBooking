@@ -1,7 +1,7 @@
 ---
 id: cyberplex-reskin
 type: feature                       # ADDITIVE (R-138 thanh đặt vé nhanh) + MODIFY (giao diện); không đổi nghiệp vụ đặt vé/thanh toán
-status: in_progress
+status: done
 created: 2026-11-19
 ---
 
