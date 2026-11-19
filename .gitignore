@@ -36,3 +36,7 @@ next-env.d.ts
 
 # Next dev tự sinh file hướng dẫn cho agent; không commit
 apps/web/AGENTS.md
+
+# graphify: graph tự sinh (~13 MB, build lại bằng `graphify update .`) và bản sao lưu settings do installer tạo
+graphify-out/
+*.graphify-bak
