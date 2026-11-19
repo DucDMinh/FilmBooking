@@ -283,7 +283,7 @@ describe("HomePage (SSR)", () => {
     expect(movieCard).toHaveTextContent(sampleNowShowingMovie.titleVi);
 
     // Rạp chiếu
-    expect(screen.getByText("CINEMO Long Biên")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CINEMO Long Biên" })).toBeInTheDocument();
   });
 
   it("hiển thị EmptyState khi danh sách phim rỗng", async () => {
