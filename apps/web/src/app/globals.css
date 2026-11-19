@@ -379,6 +379,11 @@
     [data-scrub] { animation-name: scrubPop; }
     /* Chống kẹt ẩn: phần tử (hoặc con) đang focus luôn hiện đủ */
     [data-scrub]:focus-within { animation: none; opacity: 1; translate: 0 0; scale: 1; }
+    /* phần tử animation lồng bên trong một [data-scrub] đang giữ focus cũng phải hiện (poster clip-path, vạch, wipe) */
+    [data-scrub]:focus-within [data-scrub-media],
+    [data-scrub]:focus-within [data-scrub-wipe],
+    [data-scrub]:focus-within [data-scrub-rule] { animation: none; clip-path: none; transform: none; }
+    [data-scrub]:focus-within [data-scrub-beam] { animation: none; opacity: 0; }
     [data-scrub-wipe] { animation-name: wipeIn; animation-range: entry 0% entry 55%; }
     [data-scrub-rule] { animation-name: drawX; animation-range: entry 20% entry 70%; }
     [data-scrub="beam"] [data-scrub-media] { animation-name: beamOpen; }
