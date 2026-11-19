@@ -8,7 +8,7 @@ agent: design
 status: done
 attempt: 0
 interrupted: false
-updatedAt: 2026-11-11T11:00:00+07:00
+updatedAt: 2026-11-19T00:00:00+07:00
 filesTouched: [skills/react-nodejs/design-tokens.md]
 filesNew: [.context/design-spec.md, docs/design/cinemo/**]
 evidence:
@@ -27,3 +27,5 @@ batchQueue: []
 - 2026-11-11T10:00:00+07:00 user bỏ design cũ, dùng handoff CINEMO (copy vào docs/design/cinemo/). design-spec cũ đã xoá; design-tokens.md sẽ bị ghi đè. Redo step design (không tăng attempt).
 - 2026-11-11T11:00:00+07:00 design DONE (resume sau turn-limit): tokens 557 dòng, design-spec 734 dòng §1–§14; 37 màn MVP + 25 khối bổ sung; 8 điểm cần user quyết
 - 2026-11-11 user confirm tokens CINEMO + 8 quyết định §12 (đều theo đề xuất)
+- 2026-11-19 (lần 2) user phản hồi: chuyển động phải THEO CUỘN, cuộn lên thu về (tham khảo open-design.ai) -> viết lại §16.4/16.5, tokens §4, preview (CSS scroll-driven, Playwright PASS), cập nhật CR-010.
+- 2026-11-19 /design re-skin CYBERPLEX DONE: tokens viết lại, design-spec §1 + §16, docs/design/cyberplex/preview.html. User confirm (4/4 theo mặc định). Bàn giao: /change, CR-010 (spec/changes/2026-11-19-cyberplex-reskin.md), không chạy /graph.

@@ -1,4 +1,4 @@
-# Design Spec — FilmBooking (CINEMO)
+# Design Spec — FilmBooking (CINEMO, skin CYBERPLEX)
 
 > Sinh bởi `.agent/design.md` (Phase 3), ngày 2026-11-11. **Trạng thái: chờ user confirm tokens** (checkpoint ở session chính) trước khi Graph chia layer.
 > **Nguồn sự thật thiết kế:** handoff CINEMO `docs/design/cinemo/` (40 SVG: 37 desktop 1440×1000, 3 mobile 390×844; `tokens/design-tokens.json`; `prototype/index.html`; `CINEMO-contact-sheet.jpg`). Tài liệu này **chuyển handoff thành tài liệu build**, không sáng tác phong cách khác. Thay thế hoàn toàn design-spec cũ.
@@ -7,8 +7,10 @@
 > **Scope change 2026-11-12 — CR `remove-showtime-exchange` (spec 3.0.0, PO duyệt):** khi rạp huỷ suất, phương án xử lý duy nhất là **hoàn tiền thủ công**; mọi nhãn/nút/bộ lọc/phương án khác ở màn 24/34, màn vé của khách, soát vé và email đều bỏ. Nội dung hướng dẫn khách: **liên hệ CSKH** — hotline rạp, mặc định tổng đài giả lập `1900 0000`.
 > Token: `skills/react-nodejs/design-tokens.md` (tên khái niệm §1; tên CSS thực thi §4.2). Stack: Next.js App Router + Tailwind v4 + shadcn/ui (Radix) + lucide-react.
 
+> **2026-11-19 RE-SKIN (user đã confirm, §16.8):** phong cách đổi sang CYBERPLEX (vàng điện/crimson, chamfer, HUD mono) + kịch bản chuyển động nhóm A (đặt vé, trái sang phải) / nhóm B (bên dưới, trên xuống hoặc hai bên). **§16 là nguồn sự thật cho màu, font, hình khối, chuyển động; thắng mọi câu mô tả cũ trong §3-§14.** Nghiệp vụ, route, requirement không đổi.
+
 ## Mục lục
-1. Ngôn ngữ thiết kế CINEMO
+1. Ngôn ngữ thiết kế (CYBERPLEX trên nền CINEMO)
 2. Quyết định thiết kế
 3. IA / sitemap & route
 4. Bảng 40 màn handoff → route → R-xx
@@ -22,23 +24,27 @@
 12. Điểm cần user quyết
 13. Ma trận phủ R-xx MVP → màn
 14. Pre-Flight check
+15. Quyết định của user (2026-11-11)
+16. Re-skin CYBERPLEX và chuyển động (2026-11-19)
 
 ---
 
-## 1. Ngôn ngữ thiết kế CINEMO
+## 1. Ngôn ngữ thiết kế (CYBERPLEX trên nền CINEMO, re-skin 2026-11-19)
 
-**Design Read (§0 taste-skill):** web đặt vé chuỗi rạp, tiếng Việt, dark-cinema "rạp tối, poster làm chủ, một màu nhấn coral" — khách cần chọn nhanh suất/ghế trên điện thoại, nhân sự cần bảng dày đặc thông tin trên desktop, soát vé cần kết quả đọc được trong một liếc mắt.
+> **Re-skin 2026-11-19 theo yêu cầu user:** phong cách lấy từ `index-cyberplex-enhanced (2).html`. **Chỉ đổi "da"** (màu, font, hình khối góc, chuyển động). Route, bố cục, component, trạng thái, requirement **không đổi**. Mọi chỗ trong §3-§14 còn nói "coral", "gradient", "radius 16/22", "mint", "Inter", "overline 10/750" phải đọc theo **bảng quy đổi §16.2**. Chi tiết chuyển động ở **§16.4**. Token: `skills/react-nodejs/design-tokens.md` (đã viết lại).
 
-**Dials (§1):** `DESIGN_VARIANCE = 3` (bám handoff, bố cục quy củ) · `MOTION_INTENSITY = 2` (chỉ chuyển màu/opacity, không parallax) · `VISUAL_DENSITY`: khách `4`, admin `7`, soát vé `3`.
+**Design Read (§0 taste-skill):** web đặt vé chuỗi rạp tiếng Việt cho khán giả trẻ đi buổi tối; cyberpunk vàng điện + crimson trên nền đen, góc cắt chamfer, nhãn HUD mono. **Mọi chuyển động chạy theo cuộn chuột** (cuộn xuống hiện dần, cuộn lên thu về). Phần **đặt vé** lướt vào từ trái sang phải để mắt đi theo luồng mua; phần **bên dưới** rơi từ trên xuống hoặc ép vào từ hai bên, từng phần tử một, phóng to lên để gây chú ý.
 
-Đặc trưng rút ra từ handoff:
-- **Phân lớp bằng màu nền, không bằng bóng:** bg `#0B0D12` → chrome `#111620` (header/sidebar) → surface `#151A24` (card/panel, viền `#252C39`, radius 16) → elevated `#1B222E` (popover/dialog).
-- **Coral là tín hiệu hành động duy nhất:** nút CTA gradient `#FF6B56 → #E63C58`, chip ngày đang chọn, ghế đang chọn, thanh active sidebar, link `#FF927E`. Không dùng coral cho trang trí.
-- **Mint `#8FE0B1` = trạng thái tốt / thời gian còn**, cam `#F2B17D` = lưu ý (độ tuổi, sắp hết giờ), đỏ hồng `#F07173` = lỗi. Badge dùng mẫu "nền tối ngả màu + chữ sáng cùng tông", bo pill.
-- **Typography Inter, tương phản trọng lượng mạnh:** display 44/850 UPPERCASE cho tên phim hero; tiêu đề trang 25–32/750; body 13–14/450; overline 10–11/750 UPPERCASE tracking rộng ("BƯỚC 2 / 5", "RẠP ĐÃ CHỌN", "PHIM NỔI BẬT").
-- **Rạp luôn nổi bật:** tên rạp in hoa đậm + địa chỉ đầy đủ ở xác nhận đơn, thanh toán, vé (BRD: vé chỉ dùng tại rạp ghi trên vé).
-- **Bố cục:** khách — header 72px (logo, nav, chọn tỉnh/thành, tìm kiếm, đăng nhập), nội dung max 1300, lưới 2 cột "nội dung + aside 370px" cho luồng đặt vé. Admin — sidebar 250 + topbar 72 (breadcrumb, **bộ chọn phạm vi rạp**, thông báo, avatar), tiêu đề trang + mô tả, thanh filter, DataTable, phân trang. Soát vé — header riêng không sidebar, nhãn rạp mint góc phải.
-- **Mobile 390:** header 56 (logo, tìm, menu), chip tỉnh/thành, bottom nav 4 mục (Trang chủ / Rạp / Vé / Tài khoản), thanh tóm tắt dính đáy ở luồng đặt vé.
+**Dials (§1):** `DESIGN_VARIANCE = 6` (chamfer, hero lệch, outline text) · `MOTION_INTENSITY`: **khách 8**, admin 3, soát vé 1 · `VISUAL_DENSITY`: khách 4, admin 7, soát vé 3.
+
+Đặc trưng:
+- **Phân lớp bằng nền + viền mảnh:** bg `#070709` → chrome `#0B0B10` → surface `#111116` → elevated `#1B1B24`; viền `rgb(255 255 255 / .10)`; khung nhấn bằng viền chamfer 1px vàng-crimson.
+- **Vàng `#FCEE09` là tín hiệu hành động duy nhất** (CTA, chip/ghế đang chọn, focus, tổng tiền). Crimson `#FF003C` = khẩn/nguy hiểm. Cyan `#37E6FF` = thông tin/VIP. Success `#2FF2A0` và warning `#FF9F1A` là bổ sung để phủ trạng thái nghiệp vụ.
+- **Chamfer** (cắt góc 45°) 3 cỡ 24/12/7px là hình khối duy nhất; input, bảng, hàng dữ liệu vuông.
+- **Font theo vai trò:** Chakra Petch (heading tiếng Việt), Be Vietnam Pro (nội dung), JetBrains Mono (nhãn HUD, mã), Orbitron (wordmark `CINEMO` và số/ASCII). Orbitron **không** có glyph tiếng Việt.
+- **Rạp luôn nổi bật:** tên rạp in hoa đậm + địa chỉ đầy đủ ở xác nhận đơn, thanh toán, vé (BRD).
+- **Bố cục:** khách - header 78px (logo, nav, chọn tỉnh/thành, tìm kiếm, đăng nhập), nội dung max 1340, lưới "nội dung + aside 370px" cho luồng đặt vé. Admin - sidebar 250 + topbar 72. Soát vé - header riêng không sidebar.
+- **Mobile 390:** header 56, chip tỉnh/thành, bottom nav 4 mục, thanh tóm tắt dính đáy ở luồng đặt vé.
 
 ## 2. Quyết định thiết kế
 
@@ -49,8 +55,8 @@
 | D3 | Cảnh báo không huỷ/không hoàn (R-71, R-133): **khối cảnh báo inline** trong aside màn Xác nhận (giữ handoff 08) có checkbox gating nút Thanh toán **+ AlertDialog xác nhận cuối** khi bấm "Thanh toán" nhắc lại `{Tên rạp} – {Địa chỉ}`, `suất {giờ} ngày {ngày}`. Xem "Điểm cần user quyết" #2 (phương án chỉ inline). | R-71 ghi "hộp thoại cảnh báo"; handoff có component "Warning modal / No cancellation & refund". |
 | D4 | Admin, Cinema Manager, Staff **dùng chung một shell `/admin`**; sidebar lọc theo vai trò; bộ chọn phạm vi rạp ở topbar (Admin: "Toàn chuỗi" + từng rạp; Manager/Staff: chỉ rạp được gán, ẩn "Toàn chuỗi"). Soát vé `/staff/soat-ve` là màn **toàn màn hình riêng** như handoff 17 (~~POS `/pos`, 29~~ — REMOVED 2.0.0). | Handoff 18–40, 40 ghi "Dữ liệu chỉ giới hạn trong rạp được phân công"; R-39. |
 | D5 | Màn đích sau đăng nhập của nhân sự ở MVP = **"Việc cần làm"** (`/admin`): đơn cần xử lý, đơn bị ảnh hưởng chưa xử lý, email lỗi, suất sắp bắt đầu. KPI doanh thu/biểu đồ của handoff 18/40 là **dashboard R-118 (GĐ2)** — không build. | R-118 = GĐ2. |
-| D6 | Icon dùng **lucide-react** thay glyph ký tự trong SVG. | Taste-skill §4: SVG icon, không emoji/glyph. |
-| D7 | Không dùng bóng đổ cho card; overlay (dialog/popover/sheet) dùng `--shadow-overlay`. | Handoff. |
+| D6 | Icon dùng **lucide-react** thay glyph ký tự. | Taste-skill §4: không emoji/glyph. |
+| D7 | Card không đổ bóng mờ (phân lớp bằng nền + viền). Nút vàng hover dùng **bóng lệch cứng** `5px 5px 0` crimson (không blur). Overlay dùng `--shadow-overlay`. | Tham chiếu CYBERPLEX. |
 | D8 | Mục nav "Khuyến mãi" của handoff **ẩn ở MVP** (không có requirement trang khuyến mãi công khai). | Không có R-xx. |
 | D9 | Khu "Rạp nổi bật gần bạn" / "3,2 km" (01, 30) đổi thành **"Rạp yêu thích"** (R-31, khi đăng nhập có rạp yêu thích) hoặc **"Rạp tại {tỉnh/thành}"**; không xin định vị, không hiển thị khoảng cách. | R-36 gợi ý rạp gần nhất = GĐ2. |
 
@@ -567,6 +573,8 @@ Kết quả: toast + điều hướng `/admin/don-bi-anh-huong?showtime=…` nơ
 
 ## 11. Điều chỉnh so với handoff
 
+> Bảng 11.1 mô tả điều chỉnh cho palette CINEMO (coral). Từ 2026-11-19 palette là CYBERPLEX: các điều chỉnh tương đương (chữ trên nút, viền input, ghế) nằm ở `design-tokens.md` §7 và §16.6 của tài liệu này.
+
 ### 11.1 Thị giác / a11y (chi tiết + tỉ lệ ở `design-tokens.md` §5–§6)
 
 | # | Handoff | Điều chỉnh | Lý do |
@@ -605,6 +613,8 @@ Kết quả: toast + điều hướng `/admin/don-bi-anh-huong?showtime=…` nơ
 ---
 
 ## 12. Điểm cần user quyết
+
+> Bảng dưới là các quyết định palette CINEMO ngày 2026-11-11 (đã chốt ở §15; mục 1 "nút coral" không còn áp dụng). Câu hỏi mới của re-skin 2026-11-19 ở **§16.6**.
 
 | # | Câu hỏi | Mặc định đang spec | Phương án khác |
 |---|---|---|---|
@@ -728,11 +738,11 @@ Ngoài ra phần MVP của R-119 (báo cáo suất bị huỷ, quyết định #
 | Nhãn ghế | `aria-label` hàng/số/loại/trạng thái/giá; `aria-live` thông báo chọn/đổi realtime | PASS (spec §5.3) |
 | Vùng chạm | Nút/chip/nav ≥ 44×44; ghế 32×28 (D) / 28×26 (M) < 44 → bù bằng zoom + danh sách ghế đã chọn có nút bỏ ≥ 44 | Chấp nhận có bù (ghi rõ) |
 | Mobile ≥ 360 | Mọi màn có bố cục M; không scroll ngang trang (SeatMap/DateStrip cuộn trong vùng riêng); input 16px | PASS (spec) |
-| Font tiếng Việt | Inter variable subset `vietnamese`; line-height display ≥ 1.05 cho chữ hoa có dấu | PASS |
+| Font tiếng Việt | ~~Inter~~ (đã thay 2026-11-19): Chakra Petch / Be Vietnam Pro / JetBrains Mono subset `vietnamese`; Orbitron chỉ ASCII. Xem §16.7 | PASS |
 | Reduced motion | Tắt transition (trừ opacity) | PASS |
 | Không light mode | Quyết định D1 / T1, `color-scheme: dark` | Ghi nhận |
 | Nội dung BRD bắt buộc | Tên + địa chỉ rạp ở 08, 09, 10, 32; đồng hồ 10' trên mọi bước sau chọn ghế; cảnh báo không huỷ/không hoàn ở 06, 08 (+ dialog), 10, 32, điều khoản | PASS |
-| Anti-slop (taste-skill §4/§9) | Không emoji làm icon (lucide); không gradient tím-xanh generic (dùng palette handoff); 1 CTA gradient/màn; câu chữ cụ thể theo màn, không lặp mô tả chung | PASS |
+| Anti-slop (taste-skill §4/§9) | Không emoji làm icon (lucide); không gradient tím-xanh generic; 1 CTA `primary`/màn; câu chữ cụ thể theo màn. Re-skin 2026-11-19: xem §16.7 | PASS |
 | GĐ2 không lọt vào MVP | 07, 18/40 KPI, combo, phạm vi voucher, lấp đầy/so sánh/CSV báo cáo, rạp gần nhất — đều đánh dấu không build | PASS |
 | Diagram archify | Không làm (chưa cài — theo brief) | Bỏ qua |
 
@@ -748,3 +758,194 @@ Ngoài ra phần MVP của R-119 (báo cáo suất bị huỷ, quyết định #
 | 6 | QR: nền trắng toàn màn + Wake Lock + nhắc tự tăng độ sáng (giới hạn trình duyệt) |
 | 7 | Kéo thả đổi giờ lưới lịch chiếu: để sau |
 | 8 | Nhãn tuổi theo chữ quy định VN (P / K / T13 / T16 / T18) |
+
+
+---
+
+## 16. Re-skin CYBERPLEX và chuyển động (2026-11-19)
+
+> Nguồn: `index-cyberplex-enhanced (2).html` (CSS, script cuộn, cấu trúc section) + yêu cầu user: **phần đặt vé vào từ trái sang phải; phần bên dưới vào từ trên xuống dưới hoặc từ hai bên, từng cái một, phóng to lên để gây chú ý.** Token chi tiết: `skills/react-nodejs/design-tokens.md`. Bản xem thử chạy được: `docs/design/cyberplex/preview.html`.
+
+### 16.1 Phạm vi áp dụng theo bề mặt
+
+| Bề mặt | Da | Scanline/lưới | Chuyển động nhóm A/B | Ghi chú |
+|---|---|---|---|---|
+| Khách: `(public)`, `booking`, `account`, `(auth)` | Đầy đủ (màu, font, chamfer, HUD) | Scanline toàn trang; lưới chỉ hero + 404 | **Có** (dials 8) | |
+| Admin / Manager `/admin/*` | Màu, font, chamfer ở nút/badge/dialog; card dữ liệu vuông hoặc `--cut-sm` | Tắt | Không. Chỉ dialog/toast 200ms (fade + scale .96 → 1) | Bảng dày đặc, đọc nhanh (dials 3) |
+| Soát vé `/staff/soat-ve` | Màu, font; **không** chamfer cắt nội dung | Tắt | **Tắt hết.** Kết quả hiện tức thì, không hiệu ứng | Tốc độ quét, ánh sáng ngoài trời (dials 1) |
+
+### 16.2 Bảng quy đổi ngôn ngữ CINEMO cũ → CYBERPLEX (đọc §3-§14 theo bảng này)
+
+| Cũ (trong §3-§14) | Mới |
+|---|---|
+| coral, `brand`, `accent` coral, `#F06D5B` | **vàng** `brand` `#FCEE09` |
+| nút gradient, "CTA gradient", `bg-gradient-brand` | nút `primary`: vàng đặc, chamfer `--cut-md`, chữ `#07070A` UPPERCASE |
+| mint, `success` mint | `success` `#2FF2A0` |
+| radius 8 (input, chip ngày) | vuông (input), chamfer `--cut-sm` (chip) |
+| radius 12 (nút, khối cảnh báo, toast) | chamfer `--cut-md` |
+| radius 16 (card, panel, dialog, bảng) | chamfer `--cut-lg` (khách) · `--cut-sm` hoặc vuông (admin) |
+| radius 22 (hero, vé điện tử, poster lớn) | hero: full-bleed không bo; `QrTicket`: chamfer `--cut-lg` |
+| pill (badge, chip giờ, nhãn tuổi, mã rạp, avatar) | chamfer `--cut-sm`; avatar vuông chamfer `--cut-sm` |
+| vòng tròn ✓/✕ (kết quả, trạng thái) | ô vuông chamfer `--cut-md` có icon lucide |
+| overline UPPERCASE 10-11/750 ("BƯỚC 2 / 4", "RẠP ĐÃ CHỌN") | `hud` (mono 11px UPPERCASE tracking .16em, `fg-muted`; chữ nhấn `brand`) |
+| display 44/850, h1 32/760 (Inter) | Chakra Petch 700 UPPERCASE; số/ASCII lớn Orbitron |
+| hero `gradient hero` radius 22 cao ~360 | hero `min-height: 100svh` (khách), ảnh nền phim + lớp phủ tối + `QuickBookBar` ở đáy |
+| viền input `#66768C`, `border` `#2B3340` | `border-input` `#6E6E86`, `border` `rgb(255 255 255 / .10)` |
+| `--shadow-cta-glow` | bỏ; dùng `shadow-hard-brand` khi hover |
+| `Inter`, `tabular-nums` | Be Vietnam Pro; số tiền/giờ: `font-mono` hoặc `font-display` + `tabular-nums` |
+
+### 16.3 Ghi đè theo component (chỉ phần khác §5)
+
+| Component | Spec mới |
+|---|---|
+| `SiteHeader` | 78px, nền `chrome/88%` + blur 10px, viền dưới `border`. Logo `CINEMO` Orbitron 900 16px. Nav: Chakra Petch 600 12px UPPERCASE tracking .12em, hover/active gạch chân vàng `scaleX` 250ms trái → phải. Nút "Đăng nhập" `ghost`. |
+| `MovieCard` | Khung chamfer `--cut-lg`, viền gradient vàng-crimson; hover/focus: viền chuyển crimson → vàng, poster `scale(1.045)` 700ms, thanh CTA "Đặt vé" trượt lên từ đáy poster (hover/focus-within; **luôn hiện** trên thiết bị `hover: none`). **Phim sắp chiếu không có CTA** (R-45), chỉ hiện "Khởi chiếu dd/MM". Quầng sáng theo chuột (`--mx/--my`) chỉ khi `hover: hover` và không reduced-motion. Điểm số mono vàng. `AgeRatingBadge` giữ góc trên-trái poster (nhãn tuổi bắt buộc, R-42), các nhãn khác (định dạng, "ĐANG CHIẾU") đặt **dưới** ảnh trong thân card (taste §9.F cấm nhãn đè ảnh). |
+| `CinemaCard` | Khung chamfer `--cut-lg`, nền `linear-gradient(160deg, #14141B, #0C0C11 72%)`, tên rạp Chakra Petch 700 UPPERCASE, địa chỉ `fg-secondary`, hàng chỉ số mono vàng (số phòng, định dạng). |
+| `DateStrip` | Chip chamfer `--cut-sm` 2 dòng ("HÔM NAY" hud / "11" Orbitron); chọn = nền vàng + chữ tối. |
+| `ShowtimeChip` | Chamfer `--cut-sm`, giờ mono 15px; hover viền vàng; disabled giữ `aria-disabled` + tooltip như cũ. ≥ 44×44. |
+| `BookingStepper` | 4 đoạn thanh 3px: đã qua `success`, hiện tại `brand` (kèm `hud` "BƯỚC 2 / 4"), chưa tới `border`. |
+| `SeatMap` | Ô ghế chamfer `--cut-seat`; thanh màn hình `seat-screen` có **tia quét** (gradient trắng-vàng quét từ trái sang phải) gắn với tiến độ cuộn của nhóm. Ghế chọn: `scale 1 → 1.15 → 1` 160ms. |
+| `BookingSummary` | Khung chamfer `--cut-lg`; **tổng tiền** Orbitron 27px vàng; hàng "RẠP" `hud` + tên rạp Chakra Petch. |
+| `CountdownTimer` | Chip chamfer; số mono; success > 2', warning ≤ 2', danger-text ≤ 30s (+ `aria-live` như cũ). Không nhấp nháy liên tục. |
+| `NoRefundNotice` panel | Nền `danger-soft`, viền trái 3px `danger`, tiêu đề `danger-strong`; không chamfer cắt chữ. |
+| `QrTicket` | Chamfer `--cut-lg`, viền nét đứt `border-input`, mã đặt vé mono vàng viền đứt (như `.code` của tham chiếu), QR nền trắng. |
+| `Dialog/Sheet/AlertDialog` | Panel chamfer `--cut-lg` + viền gradient 1px; nền `#101015`; header có `hud` kicker + tiêu đề Chakra Petch; nút đóng 44×44 viền `border`, hover crimson. Vào: fade + `scale .96 → 1` 200ms. |
+| `Toast` | Nền `#111116`, viền trái 3px (vàng/success/danger), `shadow-overlay`, vào `translateY(12px) → 0` 300ms. |
+| `Input/Select/Textarea` | **Vuông**, nền `surface-input`, viền `border-input`, focus viền vàng. Nhãn trên ô là `hud`. Lỗi: viền `danger`, chữ `danger-text` dưới ô. |
+| `Tabs` (Đang chiếu / Sắp chiếu) | Dải chamfer `--cut-md`, mỗi tab nền `#0D0D12`, active vàng + chữ tối. |
+| `DataTable` | Vuông, hàng 56px, header `hud`, hover `surface-elevated`; chỉ kẻ ngang dưới hàng (taste §9.F). |
+| `AdminShell` | Sidebar `chrome`, mục active: nền `sidebar-accent` + vạch trái 3px vàng; badge vai trò chamfer-sm `brand-soft`. |
+| `StaffHeader` / `CheckinResult` | Giữ cấu trúc; hợp lệ = banner `success-banner`, thất bại = `danger-banner`; chữ kết quả Chakra Petch 700 20px + icon, **không** hiệu ứng. |
+| `SiteFooter` | 4 cột (thương hiệu, Rạp, Hỗ trợ, Pháp lý), kẻ trên `border`, link hover vàng. Không dòng phiên bản, không dòng giờ/địa phương trang trí. |
+| `EmptyState` / `ErrorState` / 404 | Icon lucide 32px trong ô chamfer `surface-elevated`; 404 dùng `--grid-bg` + tiêu đề lớn. |
+| `QuickBookBar` **(mới, §16.5)** | Khung viền gradient vàng-crimson chamfer `--cut-lg`, 4 ô (Rạp, Phim, Ngày, Giờ) + nút "Đặt vé". Nhãn ô `hud` 11px, giá trị Be Vietnam Pro 14px. |
+
+### 16.4 Kịch bản chuyển động: GẮN VỚI VỊ TRÍ CUỘN (scrub, đảo ngược được)
+
+> **Điều chỉnh 2026-11-19 (lần 2, theo phản hồi của user):** bản đầu hiểu sai thành "vào cảnh một lần khi tới khung nhìn". Yêu cầu đúng: **chuyển động chạy theo cuộn chuột, cuộn xuống thì hiện dần, cuộn lên thì thu về**, như trang tham khảo `open-design.ai` (tiến độ animation = vị trí cuộn; hero thu phóng theo cuộn, khối sticky chạy theo tiến độ) và như script `cyberplex-scroll-motion` trong file tham chiếu (`--hp`, `--sp`, `--fp`). Bản xem thử `docs/design/cyberplex/preview.html` đã viết lại theo mô hình này và **đã kiểm bằng Playwright** (cuộn xuống/lên, đọc `getComputedStyle`).
+
+**Cơ chế (không JS):** CSS scroll-driven animations. Tiến độ animation do trình duyệt tính từ vị trí cuộn, chạy trên compositor, tự đảo chiều khi cuộn ngược.
+- Phần tử đơn: `animation-timeline: view()`, range `entry`.
+- Nhóm: container có `view-timeline: --grp block`, các con dùng timeline đó và **lệch pha theo `--i` / `--n`** để hiện "từng cái một".
+- Hero ghim: `animation-timeline: scroll(root block)` với range theo `svh`.
+- Không `window.addEventListener('scroll')` (taste §5.D), không GSAP, không thư viện.
+
+**Keyframe "pop" chung** (cả hai nhóm; khác nhau ở hướng trượt `--fx/--fy`). Dùng thuộc tính riêng lẻ `translate`/`scale` (không dùng `transform`) để không xung đột với hover:
+
+```
+ 0%   opacity 0; translate(var(--fx), var(--fy)); scale(var(--scale-from))   /* 0.86 */
+ 70%  opacity 1; translate(0, 0);                 scale(var(--scale-peak))   /* 1.05 */
+ 100% opacity 1; translate(0, 0);                 scale(1)
+ timing: linear (1:1 với cuộn), fill: both
+```
+
+Lượt "phóng to" 0.86 → 1.05 → 1 là phần gây chú ý theo yêu cầu: phần tử lớn lên rồi hạ về đúng cỡ khi cuộn tới.
+
+**Hiện muộn để thấy rõ chuyển động (yêu cầu user 2026-11-19, lần 3):** phần tử KHÔNG bắt đầu khi vừa ló ở mép dưới màn hình (lúc đó người dùng khó nhìn). Timeline có **inset đáy** `--scrub-inset: min(36%, 300px)`: `view(block 0px var(--scrub-inset))` và `view-timeline-inset: 0px var(--scrub-inset)`, nên phần tử chỉ bắt đầu khi đã lên cao hơn mép dưới ít nhất ~300px (36% màn, tối đa 300px) và hoàn tất khi còn cách mép dưới ≥ 200px. Đã đo bằng Playwright (màn 1280×800): thẻ phim bắt đầu khi top ở y≈495, xong ở y≈330; ghế/tóm tắt bắt đầu y≈450-650, xong y≈230-590.
+- **Lưới nhiều hàng (lưới phim):** KHÔNG dùng timeline chung của cả lưới (thẻ hàng dưới hoàn tất khi mới lộ ~135px, vẫn "hiện sớm"). Mỗi thẻ dùng `view()` riêng, lệch pha theo **cột**: `:nth-child(4n+k){--i:k-1;--n:4}`, tablet `2n`, mobile `--i:0`.
+- **Nhóm nhỏ xếp dọc (chip, hàng ghế, chú thích):** dùng `view-timeline` chung của khối (phần tử nhỏ cao ~28px thì timeline riêng quá ngắn).
+- **Ngoại lệ `--scrub-inset: 0px`:** `SiteFooter` (không còn chỗ cuộn để vượt dòng inset), trang `/dat-ve/*`, trang đăng nhập/tài khoản/lỗi (trang ngắn, nội dung có thể nằm sẵn trong 300px đáy mà không cuộn được thì sẽ không bao giờ hiện). Quy tắc: trang chỉ dùng inset khi dưới nội dung scrub còn ≥ 300px chỗ cuộn (trang công khai luôn có footer).
+
+**Lệch pha "từng cái một":** `range = entry A  →  entry A + 38%`, `A = i × 62% / n`. Phần tử thứ `i` trong nhóm `n` phần tử bắt đầu muộn hơn phần tử trước một đoạn cuộn, nên lần lượt hiện từng cái; cuộn ngược thì thu lại theo thứ tự ngược. Phần tử đơn (không nhóm): `i = 0`.
+
+**Nhóm A. Đặt vé: trái sang phải** (`--fx: calc(var(--enter-x) * -1); --fy: 0`):
+
+| Vùng | Thứ tự `i` | Ghi chú |
+|---|---|---|
+| **Hero + `QuickBookBar` (trang chủ)** | Xem bảng "Hero ghim" bên dưới | Phần đặt vé sáng dần **từ trái sang phải** khi cuộn |
+| Lịch chiếu (`/phim/[slug]`, `/lich-chieu`, `/rap/[code]`) | `DateStrip` từng chip (0..3), rồi mỗi `ShowtimeGroup` | Nhóm = khối lịch chiếu |
+| Chọn ghế (06), xác nhận (08), thanh toán (09), kết quả (10) | Stepper (4 đoạn), khối rạp/suất, màn hình, từng hàng ghế A → H, chú thích, **`BookingSummary` (phải, cuối)** | Xem "Trang luồng đặt vé" dưới |
+| Feedback tức thì (không scrub) | Chọn ghế: ô scale 1 → 1.15 → 1 (160ms); tổng tiền: số scale 1 → 1.08 → 1 | Time-based, vì là phản hồi thao tác |
+
+**Nhóm B. Phần bên dưới: trên xuống hoặc hai bên:**
+
+| Vùng | Hướng | Cách vào |
+|---|---|---|
+| Tiêu đề section (`hud` + h2 + vạch) | Trên xuống (`--fy: calc(var(--enter-y) * -1)`) | h2 **wipe** `clip-path` trái → phải, vạch gradient vẽ `scaleX 0 → 1` (scrub, đảo ngược được). **Không có glitch nhấp nháy** (bỏ sau spec-validator vòng 1: nhấp nháy theo tốc độ cuộn có thể vượt 3 lần/giây, WCAG 2.3.1) |
+| Lưới phim (`/`, `/phim`) | Trên xuống (`--fy: -28px`) | Nhóm `n` = số thẻ, `i` theo thứ tự đọc. Mỗi thẻ: pop + **tia vàng quét từ trên xuống mở poster** (`clip-path` + vạch `top: 0 → 100%`, cùng range) |
+| "Rạp yêu thích / Rạp tại {tỉnh}", `/rap`, danh sách phim ở `/rap/[code]` | **Hai bên**: lẻ `left` (từ trái), chẵn `right` (từ phải) | Pop; trượt `--enter-x` |
+| Khối 2 cột, mô tả, chỉ số | Hai bên | Cột trái từ trái, cột phải từ phải |
+| `SiteFooter` | Hai bên | Cột lẻ từ trái, chẵn từ phải |
+| Bảng màu / lưới ô nhỏ | Trên xuống | `data-scrub="down"` theo nhóm |
+| Đổi tab / bộ lọc (nội dung thay tại chỗ) | Không scrub | Nội dung mới hiển thị đủ ngay (đã ở trong khung nhìn) |
+
+**Hero ghim (desktop ≥ 768px và cao ≥ 620px):** `.scene` cao `190svh - header`, `.pin` `position: sticky` cao `100svh - header`. Khoảng cuộn ghim = **90svh**, mọi animation dùng `scroll(root block)` với range tính bằng `svh`:
+
+| Phần tử | Range (svh) | Thay đổi |
+|---|---|---|
+| Ảnh nền | 0 → 90 | `scale 1 → 1.3`, `translateY -5%` (máy quay tiến vào) |
+| Dòng 1 / dòng 2 (outline) tên phim | 0 → 90 | **tách đôi**: dòng 1 sang trái `-9vw`, dòng 2 sang phải `+9vw` |
+| Kicker, meta, CTA hero | 4 → 34 | mờ đi + bay lên `-8svh` |
+| `QuickBookBar` | 0 → 60 | bay lên giữa màn `-26svh`, `scale 1.04` |
+| Ô Rạp, Phim, Ngày, Giờ, nút Đặt vé (`i = 0..4`) | `14 + 10i` → `36 + 10i` | **hiện lần lượt trái → phải**: **opacity luôn 1** (NFR-12: nhãn và chữ không bao giờ mờ dưới ngưỡng tương phản), trượt từ trái 36px, pop 0.9 → 1.05 → 1, vạch dưới vẽ ra và nhãn đổi `fg-muted → brand` |
+| Vạch dưới từng ô | `22 + 10i` → `40 + 10i` | vẽ `scaleX 0 → 1`; nhãn ô đổi `fg-muted → brand` |
+| Vệt sáng quét qua thanh | 10 → 80 | `translateX -100% → 100%` |
+| Nút "Đặt vé" "lên đạn" | 76 → 90 | `filter: brightness(1.25) drop-shadow(...)` crimson, đảo ngược được (không vòng lặp) |
+
+Sau 90svh hero nhả ghim và trang cuộn tiếp. **Mobile / màn thấp:** không ghim, không scrub hero, `QuickBookBar` hiện sáng sẵn (đang ở trong khung nhìn, cần dùng được ngay).
+
+**Trang luồng đặt vé (`/dat-ve/*`):** phần nằm trong khung nhìn lúc vào trang có tiến độ đã hoàn tất nên **hiện đủ ngay, không chờ animation** (đồng hồ giữ ghế đang chạy). Chỉ phần ở dưới màn hình (mobile: chú thích, khối tóm tắt) mới scrub khi cuộn tới. Phần tử chỉ thu về khi nó nằm ở mép dưới khung nhìn, nên **ghế/ghế đã chọn đang thấy không bao giờ bị thu về**. Không có animation thoát ở mép trên (phần tử đã hiện giữ nguyên khi trôi lên khỏi đỉnh).
+
+**Chống kẹt ẩn và focus (bắt buộc):** `[data-scrub]:focus-within { animation: none; opacity: 1; translate: 0 0; scale: 1 }` (cả khi chứa phần tử đang focus), để người dùng bàn phím luôn thấy phần tử đang nhận focus. Quy tắc `--scrub-inset` được **kiểm bằng test, không dựa phán đoán**: Playwright mở từng route khách ở 390×844, 1280×800, 1440×900, 1920×1080, cuộn tới cuối, khẳng định **không còn `[data-scrub]` nào có `opacity < 1`** và không scroll ngang (AC-32). Route/phần tử nào kẹt thì đặt `--scrub-inset: 0px` hoặc bỏ scrub ở đó.
+
+**Điều kiện áp dụng (bắt buộc):**
+- Bọc trong `@media (prefers-reduced-motion: no-preference)` **và** `@supports (animation-timeline: view())`. Ngoài điều kiện: nội dung **hiển thị tĩnh, đủ, không ẩn** (không cần `MotionGate`, không cần script, không CLS).
+- Trình duyệt hỗ trợ: Chrome/Edge 115+, Safari 26+. Firefox: hiển thị tĩnh (chấp nhận; xem 16.6 #9).
+- `@media print`: tắt.
+- Admin, soát vé: **không** dùng (§16.1).
+- Mobile (< 768): `--enter-x: 24px`, `--enter-y: 28px`, `--scale-from: .92`; không ghim hero.
+
+### 16.5 Triển khai (ràng buộc cho Builder)
+
+- **Không JS cho chuyển động.** Thêm vào `globals.css`: keyframes `scrubPop`, `wipeIn`, `drawX`, `beamOpen`, `beamLine` và khối `@supports` như trong `docs/design/cyberplex/preview.html` (nguồn tham chiếu đã kiểm; sao chép nguyên cấu trúc).
+- Tiện ích React tối giản (server component, chỉ gắn thuộc tính): `<ScrubGroup n>` thêm `data-scrub-group`; `<Scrub kind="ltr|left|right|down|beam" i n>` thêm `data-scrub` + `style={{'--i': i, '--n': n}}`. Không state, không effect.
+- Section có phần tử scrub bọc `overflow-x: clip` (không `hidden`, vì `hidden` phá `position: sticky` và tạo scroll container mới làm sai `view()`).
+- Hero: cấu trúc `.scene > .pin` như preview; chỉ trang chủ.
+- `view()` đo theo hộp layout (không bị `translate/scale` làm lệch), nên không có vòng lặp phản hồi. Không gán `will-change` thủ công.
+- `QuickBookBar` là `<form>` 4 `<select>` gốc, đích `/dat-ve/[showtimeId]`, báo lỗi ô thiếu bằng nhãn `hud` đỏ. Vì được ghim và sáng dần nên ở trạng thái "chưa sáng" vẫn đọc và bấm được: chỉ lệch vị trí/cỡ và chưa có vạch dưới, **opacity luôn 1**.
+- Kiểm bắt buộc (acceptance): script Playwright cuộn tới các mốc, đọc `getComputedStyle(...).opacity/translate/scale`; **cuộn lên phải trả lại giá trị cũ** (xem mẫu: preview đã cho kết quả: ô `QuickBookBar` đầu trang `opacity 1, translate -36px, scale .9`; sau 90svh `1, 0, 1`; về lại đầu trang trả `1/-36px/.9`). Thêm: không scroll ngang, CLS < 0.1, bật `reduced-motion` thì mọi phần tử `opacity 1, translate 0, scale 1`.
+
+### 16.6 Điều chỉnh và điểm cần user quyết
+
+| # | Câu hỏi | Mặc định đã spec | Phương án khác |
+|---|---|---|---|
+| 1 | **Font heading tiếng Việt.** Orbitron/Rajdhani của tham chiếu không có glyph tiếng Việt (đã kiểm tra bằng Google Fonts API), dấu sẽ rơi sang font khác ngay trong từ. | **Chakra Petch** cho mọi heading; Orbitron chỉ cho wordmark + số/ASCII. | (b) Orbitron cho heading, chấp nhận chữ có dấu bị fallback lệch gu. (c) Saira (có Vietnamese, mềm hơn). |
+| 2 | **Admin và Soát vé có "cyberpunk" đầy đủ không?** | Chỉ màu + font + chamfer nút/badge; không scanline/lưới/chuyển động (đọc bảng nhanh, soát vé ngoài trời). | Cùng độ nặng như trang khách. |
+| 3 | **Nút chính.** | Vàng đặc, chữ tối. | Crimson đặc (như `btn--red` của tham chiếu), nhưng crimson đang mang nghĩa "nguy hiểm", dễ nhầm với nút huỷ. |
+| 4 | **Hero cuộn.** Tham chiếu ghim hero và cuộn như video. | **Ghim 90svh trên desktop** (cần để thanh đặt vé sáng dần trái → phải theo cuộn), mobile/màn thấp không ghim. **Đã chốt (user "ok" ở checkpoint 2026-11-19).** | Không ghim (mất hiệu ứng thanh đặt vé theo cuộn ở đầu trang). |
+| 9 | **Firefox** chưa hỗ trợ scroll-driven animations (Chrome/Edge 115+, Safari 26+ có). | Hiển thị **tĩnh, đủ nội dung**, không lỗi. | Thêm dự phòng bằng `IntersectionObserver` vào-một-lần cho Firefox (thêm ~1 task, ~3% người dùng). |
+| 5 | **Mục "hành trình điện ảnh" và "định dạng phòng chiếu" của tham chiếu.** Không có requirement trong spec. | **Không build.** Nhịp "từ hai bên" áp cho Rạp/footer thay thế. | Thêm qua `/change` (ADDITIVE) nếu muốn trang chủ giàu nội dung hơn. |
+| 6 | **`QuickBookBar`** là component mới (lối tắt, dùng dữ liệu lịch chiếu có sẵn, không đổi nghiệp vụ). | Có, ở đáy hero trang chủ. | Bỏ, chỉ giữ CTA hero. |
+| 7 | **Bỏ các yếu tố tham chiếu thuộc diện "AI tell"/hại a11y:** con trỏ tuỳ biến, chữ dọc, nhãn `SEC.0x`, scroll cue, màn boot, SFX. | Bỏ hết (tokens §0). | Thêm lại từng thứ nếu muốn đúng 100% tham chiếu (con trỏ tuỳ biến hại bàn phím/màn cảm ứng). |
+| 8 | **Triển khai.** Dự án đã build xong và đang ở chế độ bảo trì; `/design` theo template kết thúc bằng bàn giao `/graph`. | Khuyến nghị đi qua **`/change` (MODIFY, chỉ UI)**: spec delta ghi "re-skin, không đổi nghiệp vụ", chia task: tokens + font + utility, shell + component dùng chung, màn khách, motion, admin/soát vé. | `/graph` chia task thẳng (bỏ qua change-request). |
+
+### 16.7 Pre-Flight (taste-skill §14)
+
+| Hạng mục | Kết quả |
+|---|---|
+| Brief inference, dials, design system | Có (§1). Aesthetic tự định nghĩa, gọi đúng tên "cyberpunk HUD". shadcn tuỳ biến hoàn toàn (radius 0, chamfer) |
+| Em-dash trong chuỗi giao diện | Quy tắc T8; phần mới viết không có chuỗi UI chứa `—`/`–`. Builder thay `–` trong copy cũ bằng `-` khi gặp |
+| Theme lock / Color lock / Shape lock | Dark duy nhất; vàng là accent tương tác duy nhất, crimson/cyan khoá theo vai trò (**override có chủ đích** "max 1 accent" vì brief); chamfer là hình khối duy nhất |
+| Tương phản | Bảng tokens §6, mọi chữ ≥ 4.5, UI ≥ 3. Hai chỗ tham chiếu fail đã sửa (`#74748A`, viền input); crimson làm chữ trên elevated đã tách `danger-text` |
+| Focus | Vòng inset cho phần tử clip-path (T7), outline cho phần tử còn lại |
+| Font tiếng Việt | Chakra Petch/Be Vietnam/JetBrains có `vietnamese`; Orbitron cấm chuỗi có dấu |
+| Motion motivated | A = dẫn mắt theo luồng mua (hierarchy); B = kể nội dung theo trình tự (storytelling); feedback ghế/tổng tiền; tia quét poster = "máy chiếu"; mỗi cái có lý do một câu |
+| Motion claimed = shown | Dial 8 cho khách; kịch bản §16.4; bản xem thử đã kiểm bằng Playwright (cuộn xuống/lên, giá trị computed đảo ngược đúng, không scroll ngang, không lỗi console) |
+| Reduced motion, `window scroll` | Có (§16.4, §16.5). Cơ chế là CSS scroll-driven, không có scroll listener |
+| Marquee | Không dùng |
+| Hero | ≤ 4 phần tử chữ (kicker, tên phim 2 dòng, meta, CTA); không scroll cue, không dải chữ trang trí, không nhãn phiên bản |
+| Section layout repetition | Lưới poster, thẻ rạp hai bên, khối footer, bảng lịch: ≥ 4 họ bố cục |
+| Nhãn đè ảnh | Chỉ nhãn tuổi bắt buộc pháp lý (R-42) |
+| Viewport | `min-h-[100dvh]`, hero `100svh`; không `h-screen` |
+| Mobile | Mọi màn có bố cục M (§7-§9), chuyển động giảm quãng, không scroll ngang |
+| Diagram archify | Bỏ qua (chưa cài, không bắt buộc) |
+
+### 16.8 Quyết định của user (2026-11-19, checkpoint design)
+
+| # (§16.6) | Quyết định |
+|---|---|
+| 1 | Admin + Soát vé giữ mặc định (màu + font + chamfer nút/badge; không scanline/lưới/chuyển động A-B) |
+| 2 | Nút chính vàng đặc, chữ tối |
+| 3 | Build `QuickBookBar`; không build "hành trình điện ảnh" / "định dạng phòng chiếu" |
+| 4 | Triển khai qua `/change` (MODIFY, chỉ UI): `spec/changes/2026-11-19-cyberplex-reskin.md`, CR-010 |
+| (không hỏi) | Font heading Chakra Petch, hero ghim 90svh trên desktop (mobile không ghim), bỏ con trỏ tuỳ biến/chữ dọc/nhãn SEC/scroll cue: giữ theo mặc định, user "ok" |

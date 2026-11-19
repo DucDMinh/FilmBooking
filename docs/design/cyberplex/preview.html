@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>CINEMO - Xem thử re-skin CYBERPLEX (chuyển động theo cuộn)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bar:64px;
+    --color-bg:#070709; --color-surface:#111116; --color-surface-elevated:#1B1B24; --color-surface-input:#0A0A0F;
+    --color-border:rgb(255 255 255 / .10); --color-border-input:#6E6E86;
+    --color-fg:#E8E8EF; --color-fg-secondary:#A0A0B0; --color-fg-muted:#8A8AA0; --color-fg-on-brand:#07070A;
+    --color-brand:#FCEE09; --color-brand-hover:#FFF75E; --color-brand-soft:#2A2706;
+    --color-danger:#FF003C; --color-danger-text:#FF4D6D; --color-danger-soft:#2A0A12;
+    --color-info:#37E6FF; --color-info-soft:#08262C;
+    --color-success:#2FF2A0; --color-success-soft:#0A2A1E;
+    --color-warning:#FF9F1A; --color-warning-soft:#2A1C08;
+    --font-display:'Orbitron',system-ui,sans-serif;
+    --font-heading:'Chakra Petch','Be Vietnam Pro',system-ui,sans-serif;
+    --font-sans:'Be Vietnam Pro',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+    --cut-lg:24px; --cut-md:12px; --cut-sm:7px; --cut-seat:4px;
+    --clip-card:polygon(0 0,calc(100% - var(--cut-lg)) 0,100% var(--cut-lg),100% 100%,var(--cut-lg) 100%,0 calc(100% - var(--cut-lg)));
+    --clip-btn:polygon(0 0,calc(100% - var(--cut-md)) 0,100% var(--cut-md),100% 100%,var(--cut-md) 100%,0 calc(100% - var(--cut-md)));
+    --clip-chip:polygon(0 0,calc(100% - var(--cut-sm)) 0,100% var(--cut-sm),100% 100%,var(--cut-sm) 100%,0 calc(100% - var(--cut-sm)));
+    --clip-seat:polygon(0 0,calc(100% - var(--cut-seat)) 0,100% var(--cut-seat),100% 100%,var(--cut-seat) 100%,0 calc(100% - var(--cut-seat)));
+    --gradient-brand:linear-gradient(100deg,rgb(252 238 9 / .85),rgb(255 0 60 / .55) 46%,rgb(252 238 9 / .35));
+    /* scrub tokens */
+    --enter-x:56px; --enter-y:48px; --scale-from:.86; --scale-peak:1.05;
+    --scrub-spread:62%; --scrub-span:38%;
+    --scrub-inset:min(36%, 300px); /* hiện muộn: chỉ bắt đầu khi phần tử đã lên cao hơn mép dưới ít nhất ngần này */
+  }
+  @media (max-width:767px){ :root{ --enter-x:24px; --enter-y:28px; --scale-from:.92; } }
+  *,*::before,*::after{box-sizing:border-box}
+  html{scroll-behavior:auto}
+  body{margin:0;background:var(--color-bg);color:var(--color-fg);font:400 15px/1.65 var(--font-sans);overflow-x:clip;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;z-index:12;pointer-events:none;opacity:.04;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.5) 0 1px,transparent 1px 3px)}
+  h1,h2,h3,h4,p{margin:0}
+  a{color:inherit;text-decoration:none}
+  button,select,input{font:inherit;color:inherit}
+  ::selection{background:var(--color-brand);color:var(--color-fg-on-brand)}
+  :focus-visible{outline:2px solid var(--color-brand);outline-offset:3px}
+  .btn:focus-visible,.chip:focus-visible,.seat:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--focus-inset,var(--color-brand))}
+  .btn-primary:focus-visible{--focus-inset:#07070A}
+
+  .shell{width:min(1340px,calc(100% - 96px));margin-inline:auto}
+  @media(max-width:900px){.shell{width:calc(100% - 48px)}} @media(max-width:560px){.shell{width:calc(100% - 32px)}}
+  .hud{font:400 11px/1.8 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--color-fg-muted)}
+  .hud--brand{color:var(--color-brand)} .hud--danger{color:var(--color-danger-text)}
+  .h2,.h3{font-family:var(--font-heading);font-weight:700;text-transform:uppercase;margin:0}
+  .h2{font-size:clamp(24px,3.4vw,30px);line-height:1.1}
+  .h3{font-size:18px;line-height:1.3}
+
+  /* ===== chamfer, nút, chip ===== */
+  .frame{background:var(--frame-color,rgb(252 238 9 / .25));padding:1px;clip-path:var(--clip-card)}
+  .frame>.in{clip-path:var(--clip-card);background:var(--color-surface);height:100%}
+  .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:0 24px;border:0;background:transparent;font:700 13px/1 var(--font-heading);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;clip-path:var(--clip-btn);cursor:pointer;transition:background-color .2s,filter .2s,transform .2s}
+  .btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--color-brand);color:var(--color-fg-on-brand)}
+  .btn-primary:hover{background:var(--color-brand-hover);filter:drop-shadow(5px 5px 0 rgba(255,0,60,.9))}
+  .btn-ghost{padding:1px;background:rgba(255,255,255,.16);color:var(--color-fg)}
+  .btn-ghost>span{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:44px;padding:0 23px;background:var(--color-surface);clip-path:var(--clip-btn)}
+  .btn-ghost:hover{background:rgba(252,238,9,.7)}
+  .btn-danger{background:var(--color-danger);color:var(--color-fg-on-brand)}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;min-height:28px;font:700 11px/1.6 var(--font-heading);letter-spacing:.12em;text-transform:uppercase;clip-path:var(--clip-chip);white-space:nowrap;border:0}
+  .chip--brand{background:var(--color-brand-soft);color:var(--color-brand)}
+  .chip--danger{background:var(--color-danger-soft);color:var(--color-danger-text)}
+  .chip--info{background:var(--color-info-soft);color:var(--color-info)}
+  .chip--success{background:var(--color-success-soft);color:var(--color-success)}
+  .chip--warning{background:var(--color-warning-soft);color:var(--color-warning)}
+  .chip--age{background:#191D2A;color:#fff}
+
+  /* =====================================================================
+     CHUYỂN ĐỘNG THEO CUỘN (scroll-driven animations, không JS)
+     Tiến độ animation = vị trí cuộn. Cuộn xuống: hiện dần. Cuộn lên: thu về.
+     ===================================================================== */
+  @keyframes scrubPop{
+    0%  {opacity:0;translate:var(--fx,0) var(--fy,0);scale:var(--scale-from)}
+    70% {opacity:1;translate:0 0;scale:var(--scale-peak)}
+    100%{opacity:1;translate:0 0;scale:1}
+  }
+  @keyframes wipeIn{from{clip-path:inset(-8px 100% -8px -8px)}to{clip-path:inset(-8px -8px -8px -8px)}}
+  @keyframes drawX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes beamOpen{from{clip-path:inset(-40px -40px 100% -40px)}to{clip-path:inset(-40px -40px -40px -40px)}}
+  @keyframes beamLine{0%{top:0;opacity:1}85%{opacity:1}100%{top:calc(100% + 6px);opacity:0}}
+
+  /* hướng đi của từng kiểu */
+  [data-scrub="ltr"]  {--fx:calc(var(--enter-x) * -1);--fy:0px}
+  [data-scrub="left"] {--fx:calc(var(--enter-x) * -1);--fy:0px}
+  [data-scrub="right"]{--fx:var(--enter-x);--fy:0px}
+  [data-scrub="down"] {--fx:0px;--fy:calc(var(--enter-y) * -1)}
+  [data-scrub="beam"] {--fx:0px;--fy:-28px}
+
+  .rule{display:block;height:2px;width:120px;margin-top:14px;background:var(--gradient-brand);transform-origin:left}
+  .film__beam{position:absolute;left:-2px;right:-2px;top:0;height:3px;z-index:5;opacity:0;pointer-events:none;background:linear-gradient(90deg,transparent,var(--color-brand) 16%,#fff 50%,var(--color-brand) 84%,transparent);box-shadow:0 0 14px 3px rgba(252,238,9,.7)}
+
+  @media (prefers-reduced-motion:no-preference){
+   @supports (animation-timeline:view()){
+    /* nhóm: một timeline chung, các con lệch pha theo --i / --n => "từng cái một" */
+    [data-scrub-group]{view-timeline:--grp block;view-timeline-inset:0px var(--scrub-inset);--tl:--grp}
+    [data-scrub],.sec-head .h2,.sec-head .rule,
+    [data-scrub="beam"] .film__media,[data-scrub="beam"] .film__beam{
+      animation-timeline:var(--tl,view(block 0px var(--scrub-inset)));
+      animation-fill-mode:both;animation-timing-function:linear;
+      --a:calc(var(--i,0) * var(--scrub-spread) / var(--n,1));
+      animation-range:entry var(--a) entry calc(var(--a) + var(--scrub-span));
+    }
+    [data-scrub]{animation-name:scrubPop}
+    [data-scrub]:focus-within{animation:none;opacity:1;translate:0 0;scale:1}
+    .sec-head .h2{animation-name:wipeIn;animation-range:entry 0% entry 55%}
+    .sec-head .rule{animation-name:drawX;animation-range:entry 20% entry 70%}
+    [data-scrub="beam"] .film__media{animation-name:beamOpen}
+    [data-scrub="beam"] .film__beam{animation-name:beamLine}
+   }
+  }
+
+  /* ===== HERO ghim + QuickBookBar sáng dần theo cuộn ===== */
+  .topbar{position:sticky;top:0;z-index:40;height:var(--bar);background:rgba(7,7,9,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--color-border)}
+  .topbar .shell{display:flex;align-items:center;justify-content:space-between;gap:16px;height:100%}
+  .logo{font:900 16px/1 var(--font-display);letter-spacing:.02em}
+  .nav{display:flex;gap:22px}
+  .nav a{font:600 12px/1 var(--font-heading);letter-spacing:.12em;text-transform:uppercase;color:var(--color-fg-secondary);padding:10px 0}
+  .nav a:hover{color:var(--color-brand)}
+  @media(max-width:700px){.nav{display:none}}
+
+  .scene{position:relative}
+  .pin{position:relative;min-height:calc(100svh - var(--bar));display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;isolation:isolate;border-bottom:1px solid var(--color-border)}
+  .hero__bg{position:absolute;inset:0;z-index:-3;background:radial-gradient(70% 55% at 78% 26%,rgba(255,0,60,.22),transparent 70%),linear-gradient(135deg,#1A0A14 0%,#0B0B14 52%,#070709 100%)}
+  .hero__grid{position:absolute;inset:0;z-index:-2;background-image:linear-gradient(to right,rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.035) 1px,transparent 1px);background-size:84px 84px;-webkit-mask-image:radial-gradient(120% 80% at 50% 0%,#000 10%,transparent 78%);mask-image:radial-gradient(120% 80% at 50% 0%,#000 10%,transparent 78%)}
+  .hero__body{padding:60px 0 28px}
+  .hero__title{font:700 clamp(44px,9vw,112px)/.95 var(--font-heading);text-transform:uppercase;letter-spacing:-.03em;margin:14px 0 0}
+  .hero__title .line{display:block;width:fit-content}
+  .hero__title .line--outline{color:transparent;-webkit-text-stroke:1.5px rgba(232,232,239,.72)}
+  .hero__meta{margin-top:20px;color:var(--color-fg-secondary);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .hero__cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:24px}
+  .qbar{position:relative;z-index:3;margin-bottom:34px}
+  .qbar__frame{background:var(--gradient-brand);padding:1px;clip-path:var(--clip-card)}
+  .qbar__in{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;background:linear-gradient(180deg,#15151C,#0C0C11);clip-path:var(--clip-card);position:relative}
+  @media(max-width:1080px){.qbar__in{grid-template-columns:repeat(2,minmax(0,1fr))} .qbar__cta{grid-column:1/-1}}
+  @media(max-width:520px){.qbar__in{grid-template-columns:1fr}}
+  .qfield{position:relative;display:flex;flex-direction:column;gap:3px;padding:14px 18px 13px;border-right:1px solid rgba(255,255,255,.07)}
+  .qfield label{font:400 11px/1.4 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--color-fg-muted)}
+  .qfield select{appearance:none;width:100%;min-height:30px;border:0;background:transparent;font:500 14px var(--font-sans);color:var(--color-fg);cursor:pointer}
+  .qfield select option{background:#111116}
+  .qfield::after{content:"";position:absolute;left:18px;right:18px;bottom:0;height:2px;background:linear-gradient(90deg,var(--color-brand),var(--color-danger));transform:scaleX(0);transform-origin:left}
+  .qbar__cta{display:flex;align-items:stretch;padding:10px}
+  .qbar__cta .btn{width:100%;min-height:62px}
+  .qbar__sweep{position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,transparent 38%,rgba(252,238,9,.14) 50%,transparent 62%);transform:translateX(-100%)}
+
+  @keyframes bgZoom{to{scale:1.3;translate:0 -5%}}
+  @keyframes splitL{to{translate:-9vw 0}}
+  @keyframes splitR{to{translate:9vw 0}}
+  @keyframes leadOut{to{opacity:0;translate:0 -8svh}}
+  @keyframes qRise{to{translate:0 -26svh;scale:1.04}}
+  @keyframes lit{
+    0%  {opacity:1;translate:-36px 0;scale:.9}
+    70% {opacity:1;translate:0 0;scale:1.05}
+    100%{opacity:1;translate:0 0;scale:1}
+  }
+  @keyframes litLabel{to{color:var(--color-brand)}}
+  @keyframes sweepX{to{transform:translateX(100%)}}
+  @keyframes armed{to{filter:brightness(1.25) drop-shadow(0 0 10px rgba(255,0,60,.8))}}
+
+  /* ghim hero + scrub: chỉ desktop đủ cao; mobile để tĩnh (đã sáng sẵn) */
+  @media (min-width:768px) and (min-height:620px) and (prefers-reduced-motion:no-preference){
+   @supports (animation-timeline:scroll()){
+    .scene{height:calc(190svh - var(--bar))}
+    .pin{position:sticky;top:var(--bar);height:calc(100svh - var(--bar))}
+    .hero__bg,.line,.hero-lead,.qbar,.qfield,.qfield::after,.qfield label,.qbar__cta,.qbar__sweep,.qbar__cta .btn{
+      animation-timeline:scroll(root block);animation-fill-mode:both;animation-timing-function:linear
+    }
+    .hero__bg{animation-name:bgZoom;animation-range:0svh 90svh}
+    .line.l1{animation-name:splitL;animation-range:0svh 90svh}
+    .line.l2{animation-name:splitR;animation-range:0svh 90svh}
+    .hero-lead{animation-name:leadOut;animation-range:4svh 34svh}
+    .qbar{animation-name:qRise;animation-range:0svh 60svh}
+    .qfield,.qbar__cta{animation-name:lit;animation-range:calc(14svh + var(--i) * 10svh) calc(36svh + var(--i) * 10svh)}
+    .qfield::after{animation-name:drawX;animation-range:calc(22svh + var(--i) * 10svh) calc(40svh + var(--i) * 10svh)}
+    .qfield label{animation-name:litLabel;animation-range:calc(22svh + var(--i) * 10svh) calc(40svh + var(--i) * 10svh)}
+    .qbar__sweep{animation-name:sweepX;animation-range:10svh 80svh}
+    .qbar__cta .btn{animation-name:armed;animation-range:76svh 90svh}
+   }
+  }
+
+  /* ===== trang xem thử ===== */
+  .section{padding-block:96px;position:relative}
+  @media(max-width:900px){.section{padding-block:64px}}
+  .clip-x{overflow-x:clip}
+  .sec-head{margin-bottom:36px}
+  .sec-head p.lead{color:var(--color-fg-secondary);max-width:62ch;margin-top:12px}
+
+  .booking{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:24px;align-items:start}
+  @media(max-width:1000px){.booking{grid-template-columns:1fr}}
+  .stepper{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px}
+  .step{padding-top:8px;border-top:3px solid var(--color-border);font:400 11px/1.4 var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--color-fg-muted)}
+  .step.is-done{border-color:var(--color-success);color:var(--color-success)}
+  .step.is-now{border-color:var(--color-brand);color:var(--color-brand)}
+  .panel{padding:22px}
+  .screen{height:7px;background:#9A9AB0;width:70%;margin:6px auto 30px;border-radius:2px}
+  .seat-rows{display:flex;flex-direction:column;gap:8px;align-items:center;overflow-x:auto;padding-bottom:6px}
+  .seat-row{display:flex;gap:8px;align-items:center}
+  .seat-row .lbl{width:18px;font:400 11px var(--font-mono);color:var(--color-fg-muted);text-align:center}
+  .seat{width:32px;height:28px;border:0;padding:0;background:#1C2230;color:var(--color-fg-secondary);font:500 11px var(--font-mono);clip-path:var(--clip-seat);cursor:pointer;position:relative;box-shadow:inset 0 0 0 1px #5A6A86;transition:background-color .12s}
+  .seat:hover{background:#26304a}
+  .seat.vip{background:#12333D;box-shadow:inset 0 2px 0 var(--color-info),inset 0 0 0 1px #12697A;color:var(--color-fg)}
+  .seat.sweet{width:72px;background:#3B1226;box-shadow:inset 0 0 0 1px #FF4D8D;color:var(--color-fg)}
+  .seat.sold{background:#2A2A33;box-shadow:none;color:#8A8AA0;cursor:not-allowed}
+  .seat.sold::before{content:"×";font-size:14px} .seat.sold span{display:none}
+  .seat.sel{background:var(--color-brand);color:var(--color-fg-on-brand);box-shadow:none;font-weight:700}
+  .seat.pulse{animation:seatPop 160ms ease-out}
+  @keyframes seatPop{50%{transform:scale(1.15)}}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;font-size:12px;color:var(--color-fg-secondary)}
+  .legend span{display:inline-flex;align-items:center;gap:8px}
+  .legend i{display:inline-block;width:18px;height:16px;clip-path:var(--clip-seat)}
+  .sum dl{margin:0;display:grid;gap:12px}
+  .sum .row{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--color-fg-secondary)}
+  .sum .total{display:flex;justify-content:space-between;align-items:baseline;padding-top:16px;margin-top:16px;border-top:1px solid var(--color-border)}
+  .sum .total b{font:700 27px var(--font-display);color:var(--color-brand);letter-spacing:-.02em}
+  .sum .total b.bump{animation:seatPop .2s ease-out}
+  .cinema-name{font:700 16px/1.3 var(--font-heading);text-transform:uppercase}
+  .dates{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .date{padding:8px 14px;min-height:52px;background:var(--color-surface);border:0;clip-path:var(--clip-chip);text-align:center;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+  .date small{display:block;font:400 11px var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--color-fg-muted)}
+  .date b{font:700 18px var(--font-display)}
+  .date.on{background:var(--color-brand);color:var(--color-fg-on-brand);box-shadow:none} .date.on small{color:var(--color-fg-on-brand)}
+  .show-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--color-border)}
+  .times{display:flex;gap:8px;flex-wrap:wrap}
+  .time{min-width:64px;min-height:44px;padding:0 14px;background:var(--color-surface-elevated);border:0;clip-path:var(--clip-chip);font:500 15px var(--font-mono);cursor:pointer}
+  .time:hover{background:var(--color-brand);color:var(--color-fg-on-brand)}
+
+  .film-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}
+  @media(max-width:1180px){.film-grid{grid-template-columns:repeat(2,minmax(0,1fr))}} @media(max-width:560px){.film-grid{grid-template-columns:1fr}}
+  .film{position:relative;--n:4}
+  /* lệch pha theo CỘT (không theo thứ tự toàn lưới): thẻ nào cũng có timeline riêng nên hoàn tất khi còn nằm cao trên màn */
+  .film:nth-child(4n+1){--i:0}.film:nth-child(4n+2){--i:1}.film:nth-child(4n+3){--i:2}.film:nth-child(4n+4){--i:3}
+  @media(max-width:1180px){.film{--n:2}.film:nth-child(2n+1){--i:0}.film:nth-child(2n+2){--i:1}}
+  @media(max-width:560px){.film{--n:1}.film:nth-child(n){--i:0}}
+  .film .frame{--frame-color:linear-gradient(150deg,rgba(252,238,9,.55),rgba(252,238,9,.12) 42%,rgba(255,0,60,.4));transition:filter .3s}
+  .film:hover .frame,.film:focus-within .frame{--frame-color:linear-gradient(150deg,var(--color-danger),rgba(252,238,9,.8) 48%,var(--color-danger));filter:drop-shadow(0 18px 34px rgba(0,0,0,.65))}
+  .film__media{position:relative;aspect-ratio:2/3;overflow:hidden;display:flex;align-items:flex-end;padding:16px;background:var(--poster)}
+  .film__media::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,#070709 4%,rgba(7,7,9,.72) 26%,transparent 62%)}
+  .film__age{position:absolute;top:12px;left:12px;z-index:2}
+  .film__ttl{font:700 20px/1.15 var(--font-heading);text-transform:uppercase;z-index:1;position:relative}
+  .film__cta{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;transform:translateY(calc(100% + 16px));transition:transform .32s cubic-bezier(.16,1,.3,1)}
+  .film:hover .film__cta,.film:focus-within .film__cta{transform:none}
+  @media(hover:none){.film__cta{transform:none;position:static;margin:10px 12px 0}}
+  .film__cta .btn{width:100%;min-height:44px}
+  .film__body{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px 16px;border-top:1px solid var(--color-border)}
+  .film__meta{font-size:12.5px;color:var(--color-fg-secondary)}
+  .film__score{font:500 16px var(--font-mono);color:var(--color-brand)}
+
+  .cin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+  @media(max-width:1023px){.cin-grid{grid-template-columns:1fr}}
+  .cin{display:flex;flex-direction:column;gap:14px;padding:26px;background:linear-gradient(160deg,#14141B,#0C0C11 72%)}
+  .cin p{font-size:14px;color:var(--color-fg-secondary);line-height:1.7}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding-top:16px;border-top:1px solid var(--color-border)}
+  .stats b{display:block;font:500 22px var(--font-mono);color:var(--color-brand)}
+  .stats span{font:400 11px/1.5 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--color-fg-muted)}
+
+  .footer{border-top:1px solid var(--color-border);padding-block:44px 34px}
+  .footer__grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
+  @media(max-width:900px){.footer__grid{grid-template-columns:1fr 1fr}} @media(max-width:560px){.footer__grid{grid-template-columns:1fr}}
+  .footer__col{display:flex;flex-direction:column;gap:8px}
+  .footer__col a{font-size:13px;color:var(--color-fg-secondary);width:fit-content}
+  .footer__col a:hover{color:var(--color-brand)}
+
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .sw{padding:12px;background:var(--color-surface);border:1px solid var(--color-border)}
+  .sw i{display:block;height:44px;margin-bottom:10px;border:1px solid rgba(255,255,255,.1)}
+  .sw b{display:block;font:500 12px var(--font-mono)} .sw span{font-size:11.5px;color:var(--color-fg-secondary)}
+  .type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  @media(max-width:760px){.type-grid{grid-template-columns:1fr}}
+  .type-card{padding:20px;background:var(--color-surface);border:1px solid var(--color-border)}
+  .type-card .big{font-size:30px;line-height:1.15;margin:10px 0;text-transform:uppercase}
+  .bad{font-family:'Orbitron',sans-serif;font-weight:900} .good{font-family:var(--font-heading);font-weight:700}
+  .row-wrap{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .input{min-height:46px;padding:10px 12px;background:var(--color-surface-input);border:1px solid var(--color-border-input);font:400 14px var(--font-sans);width:260px;max-width:100%}
+  .input:focus{border-color:var(--color-brand);outline:none}
+  .note{font-size:13px;color:var(--color-fg-secondary);max-width:70ch;margin-top:10px}
+  code{font:500 12.5px var(--font-mono);color:var(--color-brand)}
+  .unsupported{display:none;padding:10px 16px;background:var(--color-warning-soft);color:var(--color-warning);font-size:13px}
+  @supports not (animation-timeline:view()){.unsupported{display:block}}
+</style>
+</head>
+<body>
+
+<div class="unsupported" role="status">Trình duyệt này chưa hỗ trợ scroll-driven animation (cần Chrome/Edge 115+ hoặc Safari 26+). Nội dung hiển thị tĩnh, đúng như thiết kế dự phòng.</div>
+
+<header class="topbar">
+  <div class="shell">
+    <a class="logo" href="#top">CINEMO</a>
+    <nav class="nav" aria-label="Mục xem thử"><a href="#dat-ve">Đặt vé</a><a href="#phim">Phim</a><a href="#rap">Rạp</a></nav>
+    <a class="btn btn-ghost" href="#"><span>Đăng nhập</span></a>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO ghim, QuickBookBar sáng dần từ trái sang phải theo cuộn -->
+  <div class="scene">
+    <section class="pin" aria-label="Phim nổi bật">
+      <div class="hero__bg"></div><div class="hero__grid"></div>
+      <div class="shell hero__body">
+        <p class="hud hud--brand hero-lead">Phim nổi bật</p>
+        <h1 class="hero__title">
+          <span class="line l1">Vệt sáng</span>
+          <span class="line l2 line--outline">cuối cùng</span>
+        </h1>
+        <p class="hero__meta hero-lead"><span>Khởi chiếu 14.11.2026</span><span class="chip chip--age">T16</span><span class="chip chip--info">2D Phụ đề</span></p>
+        <div class="hero__cta hero-lead"><a class="btn btn-primary" href="#dat-ve">Đặt vé ngay</a><a class="btn btn-ghost" href="#phim"><span>Xem trailer</span></a></div>
+      </div>
+      <div class="shell qbar" aria-label="Đặt vé nhanh">
+        <form class="qbar__frame" onsubmit="return false">
+          <div class="qbar__in" id="qin">
+            <div class="qfield" style="--i:0"><label for="qb1">Rạp</label>
+              <select id="qb1"><option value="">Chọn rạp</option><option>CINEMO Long Biên</option><option>CINEMO Cầu Giấy</option><option>CINEMO Hà Đông</option></select></div>
+            <div class="qfield" style="--i:1"><label for="qb2">Phim</label>
+              <select id="qb2"><option value="">Chọn phim</option><option>Vệt sáng cuối cùng</option><option>Đêm Hà Nội</option><option>Mưa trên phố cổ</option></select></div>
+            <div class="qfield" style="--i:2"><label for="qb3">Ngày</label>
+              <select id="qb3"><option value="">Chọn ngày</option><option>Hôm nay 19/11</option><option>Thứ Sáu 20/11</option><option>Thứ Bảy 21/11</option></select></div>
+            <div class="qfield" style="--i:3"><label for="qb4">Giờ chiếu</label>
+              <select id="qb4"><option value="">Chọn giờ</option><option>19:30</option><option>21:45</option></select></div>
+            <div class="qbar__cta" style="--i:4"><button class="btn btn-primary" type="submit">Đặt vé</button></div>
+            <span class="qbar__sweep" aria-hidden="true"></span>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <!-- NHÓM A: lịch chiếu + chọn ghế, trái sang phải theo cuộn -->
+  <section class="section clip-x" id="dat-ve" style="background:#09090c;border-bottom:1px solid var(--color-border)">
+    <div class="shell">
+      <div class="sec-head">
+        <p class="hud hud--brand">Nhóm A</p>
+        <h2 class="h2">Đặt vé: trái sang phải</h2>
+        <span class="rule"></span>
+        <p class="lead">Cuộn xuống, từng phần tử trượt từ trái vào và phóng 0.86 → 1.05 → 1 theo đúng vị trí cuộn. Cuộn lên, chúng thu ngược về. Thứ tự: ngày, các suất, bước, màn hình, từng hàng ghế, chú thích, rồi khối tóm tắt bên phải.</p>
+      </div>
+
+      <div data-scrub-group>
+        <div class="dates" role="group" aria-label="Chọn ngày">
+          <button class="date on" data-scrub="ltr" style="--i:0;--n:14"><small>Hôm nay</small><b>19</b></button>
+          <button class="date" data-scrub="ltr" style="--i:1;--n:14"><small>Thứ sáu</small><b>20</b></button>
+          <button class="date" data-scrub="ltr" style="--i:2;--n:14"><small>Thứ bảy</small><b>21</b></button>
+          <button class="date" data-scrub="ltr" style="--i:3;--n:14"><small>Chủ nhật</small><b>22</b></button>
+        </div>
+        <div class="show-row" data-scrub="ltr" style="--i:4;--n:14">
+          <div><p class="cinema-name">CINEMO Long Biên</p><p style="font-size:13px;color:var(--color-fg-secondary)">27 Cổ Linh, Long Biên · 2D Phụ đề</p></div>
+          <div class="times"><button class="time">17:15</button><button class="time">19:30</button><button class="time">21:45</button></div>
+        </div>
+
+        <div class="stepper" style="margin-top:28px" aria-label="Bước 2 trên 4: Chọn ghế">
+          <div class="step is-done" data-scrub="ltr" style="--i:5;--n:14">1 Chọn suất</div>
+          <div class="step is-now" data-scrub="ltr" style="--i:6;--n:14">2 Chọn ghế</div>
+          <div class="step" data-scrub="ltr" style="--i:7;--n:14">3 Xác nhận</div>
+          <div class="step" data-scrub="ltr" style="--i:8;--n:14">4 Thanh toán</div>
+        </div>
+        <div class="booking">
+          <div class="frame"><div class="in panel">
+            <div data-scrub="ltr" style="margin-bottom:18px;--i:9;--n:14">
+              <p class="hud">Rạp đã chọn</p>
+              <p class="cinema-name">CINEMO Long Biên</p>
+              <p style="color:var(--color-fg-secondary);font-size:13px">Phòng 03 · 19:30 · 20/11/2026</p>
+            </div>
+            <div class="screen" data-scrub="ltr" style="--i:9;--n:14" aria-hidden="true"></div>
+            <div class="seat-rows" id="seatRows" role="grid" aria-label="Sơ đồ ghế"></div>
+            <div class="legend" id="legend" data-scrub="ltr" style="--i:12;--n:14"></div>
+          </div></div>
+          <aside class="frame sum" id="sum" data-scrub="ltr" style="--i:13;--n:14" aria-live="polite"><div class="in panel">
+            <p class="hud">Phim</p>
+            <p class="cinema-name" style="margin-bottom:12px">Vệt sáng cuối cùng <span class="chip chip--brand" style="margin-left:6px">T16</span></p>
+            <dl>
+              <div class="row"><dt>Ghế đã chọn</dt><dd id="sumSeats" style="margin:0;color:var(--color-fg)">Chưa chọn</dd></div>
+              <div class="row"><dt>Số ghế</dt><dd id="sumCount" style="margin:0">0</dd></div>
+            </dl>
+            <div class="total"><span class="hud">Tạm tính</span><b id="sumTotal">0đ</b></div>
+            <button class="btn btn-primary" style="width:100%;margin-top:18px" id="sumBtn" disabled>Tiếp tục</button>
+            <p class="hud hud--danger" style="margin-top:10px">Không hỗ trợ huỷ / hoàn vé</p>
+          </div></aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NHÓM B: phim, từ trên xuống -->
+  <section class="section clip-x" id="phim">
+    <div class="shell">
+      <div class="sec-head">
+        <p class="hud hud--brand">Nhóm B</p>
+        <h2 class="h2">Phim đang chiếu</h2>
+        <span class="rule"></span>
+        <p class="lead">Từng thẻ rơi từ trên xuống theo thứ tự đọc; tia vàng mở poster từ trên xuống rồi thẻ phóng lên một nhịp. Cuộn ngược là thẻ thu lại theo thứ tự ngược.</p>
+      </div>
+      <div class="film-grid" id="films"></div>
+    </div>
+  </section>
+
+  <!-- NHÓM B: rạp hai bên, tiêu đề, footer -->
+  <section class="section clip-x" id="rap" style="background:#09090c;border-top:1px solid var(--color-border)">
+    <div class="shell">
+      <div class="sec-head">
+        <p class="hud hud--brand">Nhóm B</p>
+        <h2 class="h2">Rạp tại Hà Nội</h2>
+        <span class="rule"></span>
+        <p class="lead">Thẻ lẻ chạy vào từ trái, thẻ chẵn từ phải, lần lượt từng thẻ theo vị trí cuộn.</p>
+      </div>
+      <div class="cin-grid" data-scrub-group>
+        <article class="frame" data-scrub="left" style="--i:0;--n:3"><div class="in cin"><p class="hud hud--brand">HN01</p><h3 class="h3">CINEMO Long Biên</h3><p>Tầng 5, TTTM Aeon Mall Long Biên, 27 Cổ Linh, Long Biên, Hà Nội.</p><div class="stats"><div><b>6</b><span>Phòng</span></div><div><b>1.240</b><span>Ghế</span></div><div><b>2D/3D</b><span>Định dạng</span></div></div><a class="btn btn-ghost" href="#"><span>Xem lịch chiếu</span></a></div></article>
+        <article class="frame" data-scrub="right" style="--i:1;--n:3"><div class="in cin"><p class="hud hud--brand">HN02</p><h3 class="h3">CINEMO Cầu Giấy</h3><p>Tầng 4, Indochina Plaza, 241 Xuân Thuỷ, Cầu Giấy, Hà Nội.</p><div class="stats"><div><b>5</b><span>Phòng</span></div><div><b>980</b><span>Ghế</span></div><div><b>2D</b><span>Định dạng</span></div></div><a class="btn btn-ghost" href="#"><span>Xem lịch chiếu</span></a></div></article>
+        <article class="frame" data-scrub="left" style="--i:2;--n:3"><div class="in cin"><p class="hud hud--brand">HN03</p><h3 class="h3">CINEMO Hà Đông</h3><p>Tầng 3, Vincom Plaza, 2 Quang Trung, Hà Đông, Hà Nội.</p><div class="stats"><div><b>4</b><span>Phòng</span></div><div><b>760</b><span>Ghế</span></div><div><b>2D/3D</b><span>Định dạng</span></div></div><a class="btn btn-ghost" href="#"><span>Xem lịch chiếu</span></a></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section clip-x" id="tokens">
+    <div class="shell">
+      <div class="sec-head">
+        <p class="hud hud--brand">Token</p>
+        <h2 class="h2">Bảng màu và font</h2>
+        <span class="rule"></span>
+        <p class="lead">Vàng là hành động. Crimson là khẩn cấp. Cyan là thông tin. Mọi chữ đạt tối thiểu 4.5:1 (<code>design-tokens.md</code> §6).</p>
+      </div>
+      <div class="swatches" data-scrub-group>
+        <div class="sw" data-scrub="down" style="--i:0;--n:10"><i style="background:#070709"></i><b>bg</b><span>#070709</span></div>
+        <div class="sw" data-scrub="down" style="--i:1;--n:10"><i style="background:#111116"></i><b>surface</b><span>#111116</span></div>
+        <div class="sw" data-scrub="down" style="--i:2;--n:10"><i style="background:#1B1B24"></i><b>elevated</b><span>#1B1B24</span></div>
+        <div class="sw" data-scrub="down" style="--i:3;--n:10"><i style="background:#FCEE09"></i><b>brand</b><span>#FCEE09 · hành động</span></div>
+        <div class="sw" data-scrub="down" style="--i:4;--n:10"><i style="background:#FF003C"></i><b>danger (nền)</b><span>#FF003C · chữ tối 5.09</span></div>
+        <div class="sw" data-scrub="down" style="--i:5;--n:10"><i style="background:#FF4D6D"></i><b>danger-text</b><span>#FF4D6D · chữ 5.3+</span></div>
+        <div class="sw" data-scrub="down" style="--i:6;--n:10"><i style="background:#37E6FF"></i><b>info / VIP</b><span>#37E6FF</span></div>
+        <div class="sw" data-scrub="down" style="--i:7;--n:10"><i style="background:#2FF2A0"></i><b>success</b><span>#2FF2A0 · bổ sung</span></div>
+        <div class="sw" data-scrub="down" style="--i:8;--n:10"><i style="background:#FF9F1A"></i><b>warning</b><span>#FF9F1A · bổ sung</span></div>
+        <div class="sw" data-scrub="down" style="--i:9;--n:10"><i style="background:#8A8AA0"></i><b>fg-muted</b><span>#8A8AA0 · 5.58 (ref 4.13)</span></div>
+      </div>
+      <div class="type-grid" style="margin-top:28px">
+        <div class="type-card"><p class="hud hud--danger">Orbitron: không có glyph tiếng Việt</p><p class="big bad">Phim đang chiếu, Đêm Hà Nội</p><p class="note">Dấu rơi sang font khác ngay trong từ (Orbitron chỉ có subset <code>latin</code>). Chỉ dùng cho wordmark và số.</p></div>
+        <div class="type-card"><p class="hud hud--brand">Chakra Petch: dùng cho mọi heading</p><p class="big good">Phim đang chiếu, Đêm Hà Nội</p><p class="note">Có subset <code>vietnamese</code>. Số tiền: <b style="font-family:var(--font-display);color:var(--color-brand)">325.000đ</b>, mã: <b style="font-family:var(--font-mono);color:var(--color-brand)">HN01-7K3P9Q</b></p></div>
+      </div>
+      <div class="row-wrap" style="margin-top:28px">
+        <button class="btn btn-primary">Thanh toán</button><button class="btn btn-ghost"><span>Xem trailer</span></button><button class="btn btn-danger">Huỷ suất</button>
+        <span class="chip chip--brand">T16</span><span class="chip chip--success">Đã thanh toán</span><span class="chip chip--warning">Chờ xử lý</span><span class="chip chip--danger">Cần xử lý</span><span class="chip chip--info">Đã check-in</span>
+        <input class="input" placeholder="Nhập mã voucher" aria-label="Mã voucher">
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer clip-x" style="--scrub-inset:0px">
+    <div class="shell">
+      <div class="footer__grid" data-scrub-group>
+        <div class="footer__col" data-scrub="left" style="--i:0;--n:4"><span class="logo">CINEMO</span><span style="font-size:13px;color:var(--color-fg-secondary);max-width:30ch">Đặt vé xem phim tại chuỗi rạp CINEMO. Vé chỉ có giá trị tại rạp ghi trên vé.</span></div>
+        <div class="footer__col" data-scrub="right" style="--i:1;--n:4"><span class="hud">Rạp chiếu</span><a href="#">Long Biên</a><a href="#">Cầu Giấy</a><a href="#">Hà Đông</a></div>
+        <div class="footer__col" data-scrub="left" style="--i:2;--n:4"><span class="hud">Hỗ trợ</span><a href="#">Hotline 1900 0000</a><a href="#">Hướng dẫn xoá dữ liệu</a></div>
+        <div class="footer__col" data-scrub="right" style="--i:3;--n:4"><span class="hud">Pháp lý</span><a href="#">Điều khoản</a><a href="#">Chính sách bảo mật</a></div>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var films = [
+    ['Vệt sáng cuối cùng','T16','118 phút · 2D Phụ đề','8,4','linear-gradient(180deg,#FCEE09,#FF003C 45%,#14091A)'],
+    ['Đêm Hà Nội','T13','104 phút · 2D Lồng tiếng','7,9','linear-gradient(180deg,#0F4C5C,#37E6FF 45%,#07131A)'],
+    ['Mưa trên phố cổ','P','96 phút · 2D Phụ đề','8,1','linear-gradient(180deg,#4A1A5E,#FF4D8D 45%,#12091C)'],
+    ['Hạ cánh lúc nửa đêm','T18','127 phút · 3D Phụ đề','7,6','linear-gradient(180deg,#0E5C4A,#2FF2A0 45%,#07130F)'],
+    ['Con đường Tây Bắc','K','101 phút · 2D Lồng tiếng','8,0','linear-gradient(180deg,#7A1830,#FF9F1A 45%,#140A08)'],
+    ['Bóng ma rạp cũ','T16','92 phút · 2D Phụ đề','7,2','linear-gradient(180deg,#1B1B24,#FF003C 50%,#070709)'],
+    ['Thành phố không ngủ','T13','112 phút · 3D Phụ đề','8,3','linear-gradient(180deg,#12333D,#FCEE09 50%,#070709)'],
+    ['Lời hứa tháng Mười','P','99 phút · 2D Lồng tiếng','7,8','linear-gradient(180deg,#3B1226,#FF4D8D 50%,#0A0A0F)']
+  ];
+  document.getElementById('films').innerHTML = films.map(function (f, i) {
+    return '<article class="film" data-scrub="beam" ><div class="frame"><div class="in">' +
+      '<div class="film__media" style="--poster:' + f[4] + '"><span class="chip chip--age film__age" role="img" aria-label="Phân loại ' + f[1] + '">' + f[1] + '</span>' +
+      '<span class="film__ttl">' + f[0] + '</span><span class="film__beam" aria-hidden="true"></span>' +
+      '<div class="film__cta"><a class="btn btn-primary" href="#">Đặt vé</a></div></div>' +
+      '<div class="film__body"><span class="film__meta">' + f[2] + '</span><span class="film__score">' + f[3] + '</span></div>' +
+      '</div></div></article>';
+  }).join('');
+
+  var rows = 'ABCDE'.split(''), seatsEl = document.getElementById('seatRows'), price = {n:90000,v:110000,s:320000};
+  var sold = {'B4':1,'B5':1,'C7':1,'C8':1,'D2':1,'A9':1,'E10':1};
+  function seat(id, cls, p, wide) {
+    return '<button class="seat ' + cls + '" role="gridcell" data-id="' + id + '" data-p="' + p + '" ' +
+      (cls === 'sold' ? 'aria-disabled="true" aria-label="Ghế ' + id + ', đã bán"' : 'aria-pressed="false" aria-label="Ghế ' + id + (cls==='vip'?', VIP':'') + (wide?', Sweetbox':'') + ', còn trống"') +
+      '><span>' + id.replace(/^[A-Z]/, '').replace('-', '') + '</span></button>';
+  }
+  rows.forEach(function (r, ri) {
+    var div = document.createElement('div'); div.className = 'seat-row'; div.setAttribute('role','row');
+    div.dataset.scrub = 'ltr'; div.style.setProperty('--i', 9 + ri); div.style.setProperty('--n', 14);
+    var h = '<span class="lbl">' + r + '</span>';
+    if (r === 'E') { for (var i = 1; i <= 4; i++) h += seat(r + (i*2-1) + '-' + (i*2), 'sweet', price.s, true); }
+    else { for (var c = 1; c <= 12; c++) { var id = r + c, t = (r === 'D' && c > 3 && c < 10) ? 'vip' : ''; h += seat(id, sold[id] ? 'sold' : t, t ? price.v : price.n, false); } }
+    div.innerHTML = h + '<span class="lbl">' + r + '</span>';
+    seatsEl.appendChild(div);
+  });
+  var sel = {};
+  seatsEl.addEventListener('click', function (e) {
+    var b = e.target.closest('.seat'); if (!b || b.classList.contains('sold')) return;
+    var id = b.dataset.id, on = !sel[id];
+    if (on) sel[id] = +b.dataset.p; else delete sel[id];
+    b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on);
+    b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse');
+    var ids = Object.keys(sel), tot = ids.reduce(function (s, k) { return s + sel[k]; }, 0);
+    document.getElementById('sumSeats').textContent = ids.length ? ids.join(', ') : 'Chưa chọn';
+    document.getElementById('sumCount').textContent = ids.length;
+    var t = document.getElementById('sumTotal'); t.textContent = tot.toLocaleString('vi-VN') + 'đ';
+    t.classList.remove('bump'); void t.offsetWidth; t.classList.add('bump');
+    document.getElementById('sumBtn').disabled = !ids.length;
+  });
+  document.getElementById('legend').innerHTML =
+    '<span><i style="background:#1C2230;box-shadow:inset 0 0 0 1px #5A6A86"></i>Còn trống 90.000đ</span>' +
+    '<span><i style="background:#FCEE09"></i>Đang chọn</span>' +
+    '<span><i style="background:#12333D;box-shadow:inset 0 2px 0 #37E6FF"></i>VIP 110.000đ</span>' +
+    '<span><i style="background:#3B1226;box-shadow:inset 0 0 0 1px #FF4D8D"></i>Sweetbox 320.000đ</span>' +
+    '<span><i style="background:#2A2A33"></i>Đã bán (×)</span>';
+})();
+</script>
+</body>
+</html>
