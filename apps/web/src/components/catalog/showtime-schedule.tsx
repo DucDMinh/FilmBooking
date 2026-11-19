@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Calendar, Clock, MapPin } from "lucide-react";
 import { toVnParts } from "@filmbooking/shared";
 import type { MovieDto, ShowtimeDto } from "@filmbooking/shared/schemas/catalog";
+import { DateChipText, dateChipClass, ShowtimeClosedChip, ShowtimeLinkChip } from "@/components/catalog/chips";
 import { EmptyState } from "@/components/common/states";
+import { Scrub, ScrubGroup } from "@/components/motion/scrub";
 import { getVnDateString, ONE_DAY_MS } from "@/lib/vn-date";
 import { cn } from "@/lib/utils";
 
@@ -101,33 +102,41 @@ export interface ScheduleDateStripProps {
   selectedDate: string;
   onSelect: (date: string) => void;
   now?: Date;
+  /** Class thêm cho dải (vd `scrub-inset-0` khi dải nằm sẵn trong khung nhìn lúc vào trang). */
+  className?: string;
 }
 
-/** Dải 7 ngày chọn lịch chiếu (controlled) — dùng chung cho ShowtimeSchedule và trang /lich-chieu. */
-export function ScheduleDateStrip({ selectedDate, onSelect, now = new Date() }: Readonly<ScheduleDateStripProps>) {
+/**
+ * Dải 7 ngày chọn lịch chiếu (controlled) - dùng chung cho ShowtimeSchedule và trang /lich-chieu.
+ * Nhóm A (đặt vé): từng chip hiện lần lượt từ trái sang phải theo một timeline chung của dải (design-spec §16.4).
+ */
+export function ScheduleDateStrip({
+  selectedDate,
+  onSelect,
+  now = new Date(),
+  className,
+}: Readonly<ScheduleDateStripProps>) {
+  const days = generateNext7Days(now);
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-      {generateNext7Days(now).map((day) => {
+    <ScrubGroup n={days.length} className={cn("flex gap-2 overflow-x-auto px-1 py-1 scrollbar-none", className)}>
+      {days.map((day, index) => {
         const isSelected = day.dateString === selectedDate;
         return (
-          <button
+          <Scrub
             key={day.dateString}
+            as="button"
+            kind="ltr"
+            i={index}
             type="button"
             onClick={() => onSelect(day.dateString)}
-            className={cn(
-              "flex min-h-[44px] min-w-[88px] flex-col items-center justify-center rounded-sm px-3 py-2 text-center transition-colors focus-visible:outline-2 focus-visible:outline-brand",
-              isSelected
-                ? "bg-brand text-fg-on-brand font-semibold shadow-sm"
-                : "bg-surface-control text-fg-secondary hover:bg-surface-elevated hover:text-fg",
-            )}
+            className={dateChipClass(isSelected)}
             aria-pressed={isSelected}
           >
-            <span className="text-caption uppercase tracking-wider">{day.label}</span>
-            <span className="text-body font-bold">{day.subLabel}</span>
-          </button>
+            <DateChipText label={day.label} subLabel={day.subLabel} selected={isSelected} />
+          </Scrub>
         );
       })}
-    </div>
+    </ScrubGroup>
   );
 }
 
@@ -164,7 +173,7 @@ export function ShowtimeSchedule({
     return (
       <div className={cn("w-full py-8", className)}>
         <EmptyState
-          title="Sắp chiếu — Lịch chiếu sẽ được cập nhật sớm"
+          title="Sắp chiếu - Lịch chiếu sẽ được cập nhật sớm"
           description={
             movie.releaseDate
               ? `Phim dự kiến khởi chiếu vào ngày ${movie.releaseDate}. Vui lòng quay lại sau để cập nhật lịch chiếu mới nhất.`
@@ -220,75 +229,58 @@ export function ShowtimeSchedule({
             const cinemaCutoff = group.cinema.onlineCutoffMinutes ?? onlineCutoffMinutes;
 
             return (
-              <div
+              <Scrub
                 key={group.cinema.code}
-                className="rounded-lg border border-border-subtle bg-surface p-4 sm:p-6"
+                kind="ltr"
+                className="frame"
               >
-                <div className="mb-4 flex flex-col gap-1 border-b border-border pb-3 sm:flex-row sm:items-baseline sm:justify-between">
-                  <h3 className="text-h3 font-bold text-fg">{group.cinema.name}</h3>
-                  {group.cinema.address && (
-                    <p className="flex items-center gap-1.5 text-small text-fg-secondary">
-                      <MapPin className="size-3.5 shrink-0 text-fg-muted" aria-hidden="true" />
-                      <span>{group.cinema.address}</span>
-                    </p>
-                  )}
-                </div>
+                <div className="frame-in p-4 sm:p-6">
+                  <div className="mb-4 flex flex-col gap-1 border-b border-border pb-3 sm:flex-row sm:items-baseline sm:justify-between">
+                    <h3 className="font-heading text-h3 font-bold uppercase text-fg">{group.cinema.name}</h3>
+                    {group.cinema.address && (
+                      <p className="flex items-center gap-1.5 text-small text-fg-secondary">
+                        <MapPin className="size-3.5 shrink-0 text-fg-muted" aria-hidden="true" />
+                        <span>{group.cinema.address}</span>
+                      </p>
+                    )}
+                  </div>
 
-                <div className="space-y-4">
-                  {Array.from(groupedByFormat.entries()).map(([formatLabel, showtimes]) => (
-                    <div key={formatLabel} className="space-y-2">
-                      <span className="text-caption font-semibold uppercase tracking-wider text-fg-muted">
-                        {formatLabel}
-                      </span>
-                      <div className="flex flex-wrap gap-2.5">
-                        {showtimes.map((st) => {
-                          const isClosed = isShowtimeOnlineClosed(
-                            st.startsAt,
-                            st.status,
-                            cinemaCutoff,
-                            now,
-                          );
-                          const startTimeStr = formatVnTime(st.startsAt);
-                          const endTimeStr = formatVnTime(st.endsAt);
+                  <div className="space-y-4">
+                    {Array.from(groupedByFormat.entries()).map(([formatLabel, showtimes]) => (
+                      <div key={formatLabel} className="space-y-2">
+                        <span className="hud">{formatLabel}</span>
+                        <div className="flex flex-wrap gap-2.5">
+                          {showtimes.map((st) => {
+                            const isClosed = isShowtimeOnlineClosed(st.startsAt, st.status, cinemaCutoff, now);
+                            const startTimeStr = formatVnTime(st.startsAt);
+                            const endTimeStr = formatVnTime(st.endsAt);
 
-                          if (isClosed) {
+                            if (isClosed) {
+                              return (
+                                <ShowtimeClosedChip
+                                  key={st.id}
+                                  time={startTimeStr}
+                                  ariaLabel={`Suất chiếu ${startTimeStr} đến ${endTimeStr}: Đã đóng bán online, vui lòng mua tại quầy`}
+                                />
+                              );
+                            }
+
                             return (
-                              <div
+                              <ShowtimeLinkChip
                                 key={st.id}
-                                className="flex min-h-[44px] flex-col items-center justify-center rounded-sm border border-border-subtle bg-surface-control/40 px-3 py-1.5 text-fg-muted opacity-80 cursor-not-allowed"
-                                aria-label={`Suất chiếu ${startTimeStr} đến ${endTimeStr}: Đã đóng bán online, vui lòng mua tại quầy`}
-                              >
-                                <span className="text-body font-bold tabular tracking-tight">
-                                  {startTimeStr}
-                                </span>
-                                <span className="text-[11px] font-semibold text-warning">
-                                  Mua tại quầy
-                                </span>
-                              </div>
+                                href={`/dat-ve/${st.id}`}
+                                time={startTimeStr}
+                                detail={`~ ${endTimeStr}`}
+                                ariaLabel={`Đặt vé suất ${startTimeStr} đến ${endTimeStr}`}
+                              />
                             );
-                          }
-
-                          return (
-                            <Link
-                              key={st.id}
-                              href={`/dat-ve/${st.id}`}
-                              className="group flex min-h-[44px] min-w-[76px] flex-col items-center justify-center rounded-sm border border-border-subtle bg-surface-control px-3.5 py-1.5 text-fg transition-all hover:border-brand hover:bg-surface-elevated focus-visible:outline-2 focus-visible:outline-brand"
-                              aria-label={`Đặt vé suất ${startTimeStr} đến ${endTimeStr}`}
-                            >
-                              <span className="text-body font-bold tabular tracking-tight group-hover:text-brand">
-                                {startTimeStr}
-                              </span>
-                              <span className="text-[10px] tabular text-fg-muted">
-                                ~ {endTimeStr}
-                              </span>
-                            </Link>
-                          );
-                        })}
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </Scrub>
             );
           })}
         </div>

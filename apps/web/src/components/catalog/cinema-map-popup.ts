@@ -25,10 +25,10 @@ export function buildCinemaPopup(
   directionsUrl: string,
 ): HTMLElement {
   const root = document.createElement("div");
-  root.style.cssText = "font-family: inherit; color: #151A24; padding: 4px 2px;";
+  root.style.cssText = "font-family: inherit; color: var(--color-fg); padding: 4px 2px;";
   root.append(
-    textDiv(cinemaName, "font-weight: 700; font-size: 14px; margin-bottom: 4px;"),
-    textDiv(address, "font-size: 12px; color: #4A505C; margin-bottom: 8px;"),
+    textDiv(cinemaName, "font-family: var(--font-heading); text-transform: uppercase; font-weight: 700; font-size: 14px; margin-bottom: 4px;"),
+    textDiv(address, "font-size: 12px; color: var(--color-fg-secondary); margin-bottom: 8px;"),
   );
 
   if (isSafeLink(directionsUrl)) {
@@ -38,7 +38,7 @@ export function buildCinemaPopup(
     link.rel = "noopener noreferrer";
     link.textContent = "Chỉ đường trên Google Maps →";
     link.style.cssText =
-      "display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; color: #F06D5B; text-decoration: underline;";
+      "display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; color: var(--color-link); text-decoration: underline;";
     root.append(link);
   }
   return root;

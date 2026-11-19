@@ -5,6 +5,7 @@ import { FilterX, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 
+import { FIELD_CLASS, FIELD_LABEL_CLASS } from "@/components/catalog/filter-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -118,12 +119,13 @@ export function MovieFilters() {
       role="search"
       aria-label="Bộ lọc phim"
       onSubmit={handleSubmit}
-      className="rounded-lg border border-border-subtle bg-surface p-4 space-y-4"
+      className="frame"
     >
+    <div className="frame-in space-y-4 p-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Tìm kiếm từ khoá */}
         <div className="space-y-1.5">
-          <label htmlFor="filter-q" className="text-small font-medium text-fg-secondary">
+          <label htmlFor="filter-q" className={FIELD_LABEL_CLASS}>
             Từ khoá
           </label>
           <div className="relative">
@@ -142,7 +144,7 @@ export function MovieFilters() {
 
         {/* Thể loại */}
         <div className="space-y-1.5">
-          <label htmlFor="filter-genre" className="text-small font-medium text-fg-secondary">
+          <label htmlFor="filter-genre" className={FIELD_LABEL_CLASS}>
             Thể loại
           </label>
           <select
@@ -153,7 +155,7 @@ export function MovieFilters() {
               setGenre(e.target.value);
               applyFilters({ genre: e.target.value });
             }}
-            className="flex h-11 w-full rounded-sm border border-input bg-surface-input px-3 text-base text-foreground transition-colors duration-150 outline-hidden focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 md:h-10 md:text-body"
+            className={FIELD_CLASS}
           >
             <option value="">Tất cả thể loại</option>
             {COMMON_GENRES.map((g) => (
@@ -166,7 +168,7 @@ export function MovieFilters() {
 
         {/* Độ tuổi */}
         <div className="space-y-1.5">
-          <label htmlFor="filter-age" className="text-small font-medium text-fg-secondary">
+          <label htmlFor="filter-age" className={FIELD_LABEL_CLASS}>
             Độ tuổi
           </label>
           <select
@@ -177,7 +179,7 @@ export function MovieFilters() {
               setAgeRating(e.target.value);
               applyFilters({ ageRating: e.target.value });
             }}
-            className="flex h-11 w-full rounded-sm border border-input bg-surface-input px-3 text-base text-foreground transition-colors duration-150 outline-hidden focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 md:h-10 md:text-body"
+            className={FIELD_CLASS}
           >
             <option value="">Tất cả độ tuổi</option>
             {AGE_RATINGS.map((rating: AgeRating) => (
@@ -190,7 +192,7 @@ export function MovieFilters() {
 
         {/* Trạng thái */}
         <div className="space-y-1.5">
-          <label htmlFor="filter-status" className="text-small font-medium text-fg-secondary">
+          <label htmlFor="filter-status" className={FIELD_LABEL_CLASS}>
             Trạng thái
           </label>
           <select
@@ -201,7 +203,7 @@ export function MovieFilters() {
               setStatus(e.target.value);
               applyFilters({ status: e.target.value });
             }}
-            className="flex h-11 w-full rounded-sm border border-input bg-surface-input px-3 text-base text-foreground transition-colors duration-150 outline-hidden focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 md:h-10 md:text-body"
+            className={FIELD_CLASS}
           >
             <option value="">Tất cả trạng thái</option>
             <option value="now_showing">Đang chiếu</option>
@@ -229,6 +231,7 @@ export function MovieFilters() {
           </Button>
         ) : null}
       </div>
+    </div>
     </form>
   );
 }

@@ -90,8 +90,11 @@ export function ProvincePickerDialog({
         className="sm:max-w-md"
       >
         <DialogHeader>
-          <div className="flex items-center gap-2 text-brand">
-            <MapPin className="size-5" aria-hidden="true" />
+          <div className="space-y-1">
+            <p className="hud hud-brand flex items-center gap-2">
+            <MapPin className="size-4" aria-hidden="true" />
+              Khu vực
+            </p>
             <DialogTitle>Chọn tỉnh / thành phố</DialogTitle>
           </div>
           <DialogDescription>
@@ -114,8 +117,8 @@ export function ProvincePickerDialog({
                   variant={isSelected ? "default" : "secondary"}
                   onClick={() => handleSelect(prov.code)}
                   className={cn(
-                    "h-12 w-full justify-between px-3 text-body-sm font-medium",
-                    isSelected && "font-bold shadow-sm",
+                    "h-12 w-full justify-between px-3 text-body-sm",
+                    isSelected && "font-bold",
                   )}
                 >
                   <span className="truncate">{prov.name}</span>

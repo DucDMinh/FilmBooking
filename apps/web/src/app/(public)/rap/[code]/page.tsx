@@ -10,7 +10,10 @@ import {
   closedCinemaTitle,
 } from "@/components/catalog/cinema-closed-notice";
 import { CinemaTag } from "@/lib/monitoring/cinema-tag";
+import { DateChipText, dateChipClass, ShowtimeLinkChip } from "@/components/catalog/chips";
 import { FavoriteButton } from "@/components/catalog/favorite-button";
+import { SectionHeading } from "@/components/catalog/section-heading";
+import { Scrub, ScrubGroup } from "@/components/motion/scrub";
 import { AgeBadge } from "@/components/common/age-badge";
 import { EmptyState } from "@/components/common/states";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +23,6 @@ import { PUBLIC_CACHE } from "@/lib/api/cache";
 import { buildDirectionsUrl } from "@/lib/map-links";
 import { buildCinemaJsonLd, serializeCinemaJsonLd } from "@/lib/seo/cinema-jsonld";
 import { getServerAccessToken } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
 import type { AgeRating } from "@filmbooking/shared";
 import type { CinemaDto, ShowtimeDto } from "@filmbooking/shared/schemas/catalog";
 import { toVnParts } from "@filmbooking/shared/time";
@@ -212,11 +214,11 @@ export default async function CinemaDetailPage({
         </nav>
 
         {/* Thông tin rạp (Hero header) */}
-        <header className="rounded-2xl border border-border bg-chrome p-6 md:p-8">
+        <header className="frame"><div className="frame-in bg-chrome p-6 md:p-8">
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-overline uppercase tracking-wider text-brand">
+                <span className="hud hud-brand">
                   CINEMO {cinema.code}
                 </span>
                 <Badge tone="success">
@@ -224,7 +226,7 @@ export default async function CinemaDetailPage({
                 </Badge>
               </div>
 
-              <h1 className="text-h1 font-heavy tracking-tight text-fg">
+              <h1 className="text-h1 font-bold tracking-tight text-fg uppercase">
                 {cinema.name}
               </h1>
 
@@ -298,13 +300,11 @@ export default async function CinemaDetailPage({
               </Button>
             </div>
           </div>
-        </header>
+        </div></header>
 
         {/* Bản đồ vị trí (Client-only lazy Leaflet, tile OSM France) */}
         <section aria-labelledby="map-heading" className="space-y-3">
-          <h2 id="map-heading" className="text-h3 font-bold text-fg">
-            Vị trí trên bản đồ
-          </h2>
+          <SectionHeading id="map-heading" title="Vị trí trên bản đồ" />
           <CinemaMap
             latitude={cinema.latitude}
             longitude={cinema.longitude}
@@ -316,41 +316,33 @@ export default async function CinemaDetailPage({
         {/* Lịch chiếu phim tại rạp (R-37, R-42) */}
         <section aria-labelledby="showtimes-heading" className="space-y-6">
           <div className="space-y-4">
-            <h2 id="showtimes-heading" className="text-h2 font-bold text-fg">
-              Lịch chiếu phim
-            </h2>
+            <SectionHeading id="showtimes-heading" title="Lịch chiếu phim" />
 
-            {/* Dải chọn ngày 7 ngày liên tiếp (DateStrip) */}
-            <div
-              className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none"
+            {/* Dải chọn ngày 7 ngày liên tiếp (DateStrip), nhóm A: từng chip trái sang phải */}
+            <ScrubGroup
+              n={days.length}
+              className="flex items-center gap-2 overflow-x-auto px-1 py-1 scrollbar-none"
               role="tablist"
               aria-label="Chọn ngày chiếu phim"
             >
-              {days.map((d) => {
+              {days.map((d, index) => {
                 const isSelected = selectedDate === d.dateStr;
                 return (
-                  <Link
+                  <Scrub
+                    as={Link}
+                    kind="ltr"
+                    i={index}
                     key={d.dateStr}
                     href={`/rap/${encodeURIComponent(code)}?date=${d.dateStr}`}
                     role="tab"
                     aria-selected={isSelected}
-                    className={cn(
-                      "flex min-h-14 min-w-24 shrink-0 flex-col items-center justify-center rounded-xl px-4 py-2 text-center transition-all",
-                      isSelected
-                        ? "bg-brand text-fg-on-brand shadow-md"
-                        : "border border-border-subtle bg-surface text-fg-secondary hover:border-border hover:text-fg",
-                    )}
+                    className={dateChipClass(isSelected)}
                   >
-                    <span className="text-overline uppercase font-bold tracking-wider">
-                      {d.label}
-                    </span>
-                    <span className="text-body font-heavy">
-                      {d.displayDate}
-                    </span>
-                  </Link>
+                    <DateChipText label={d.label ?? ""} subLabel={d.displayDate} selected={isSelected} />
+                  </Scrub>
                 );
               })}
-            </div>
+            </ScrubGroup>
           </div>
 
           {/* Danh sách phim & suất chiếu */}
@@ -361,15 +353,14 @@ export default async function CinemaDetailPage({
             />
           ) : (
             <div className="space-y-6">
-              {movieGroups.map(({ movie, slots }) => {
+              {movieGroups.map(({ movie, slots }, index) => {
                 const rating = movie.ageRating as AgeRating;
                 return (
-                  <div
-                    key={movie.slug}
-                    className="flex flex-col gap-5 rounded-2xl border border-border-subtle bg-surface p-5 md:flex-row md:items-start md:p-6"
-                  >
+                  // Hai bên (nhóm B): lẻ từ trái, chẵn từ phải.
+                  <Scrub key={movie.slug} kind={index % 2 === 0 ? "left" : "right"} className="frame">
+                  <div className="frame-in flex flex-col gap-5 p-5 md:flex-row md:items-start md:p-6">
                     {/* Poster phim */}
-                    <div className="relative aspect-2/3 w-28 shrink-0 overflow-hidden rounded-lg bg-surface-elevated md:w-36">
+                    <div className="chamfer-sm relative aspect-2/3 w-28 shrink-0 overflow-hidden bg-surface-elevated md:w-36">
                       {movie.posterUrl ? (
                         <img
                           src={movie.posterUrl}
@@ -393,7 +384,7 @@ export default async function CinemaDetailPage({
                             {movie.durationMinutes} phút
                           </span>
                         </div>
-                        <h3 className="text-h3 font-bold text-fg">
+                        <h3 className="font-heading text-h3 font-bold uppercase text-fg">
                           <Link href={`/phim/${movie.slug}`} className="hover:text-brand">
                             {movie.titleVi}
                           </Link>
@@ -402,7 +393,7 @@ export default async function CinemaDetailPage({
 
                       {/* Suất chiếu */}
                       <div className="space-y-2">
-                        <span className="text-overline uppercase tracking-wider text-fg-muted">
+                        <span className="hud">
                           Suất chiếu (Giờ Việt Nam)
                         </span>
                         <div className="flex flex-wrap gap-2.5">
@@ -413,27 +404,19 @@ export default async function CinemaDetailPage({
                             if (isCancelled) return null;
 
                             return (
-                              <Button
+                              <ShowtimeLinkChip
                                 key={st.id}
-                                asChild
-                                variant="outline"
-                                className="group flex min-h-12 flex-col items-center justify-center rounded-xl border-border px-4 py-2 hover:border-brand hover:bg-brand-soft"
-                              >
-                                <Link href={`/dat-ve/${st.id}`}>
-                                  <span className="text-body font-heavy text-fg group-hover:text-brand-hover">
-                                    {startTime}
-                                  </span>
-                                  <span className="text-caption text-fg-muted group-hover:text-fg-secondary">
-                                    {st.format} • {st.languageMode}
-                                  </span>
-                                </Link>
-                              </Button>
+                                href={`/dat-ve/${st.id}`}
+                                time={startTime}
+                                detail={`${st.format} • ${st.languageMode}`}
+                              />
                             );
                           })}
                         </div>
                       </div>
                     </div>
                   </div>
+                  </Scrub>
                 );
               })}
             </div>

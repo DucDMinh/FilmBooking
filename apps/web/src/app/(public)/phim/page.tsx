@@ -3,8 +3,9 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { Film } from "lucide-react";
 
-import { MovieCard } from "@/components/catalog/movie-card";
+import { MovieCard, MovieGrid } from "@/components/catalog/movie-card";
 import { MovieFilters } from "@/components/catalog/movie-filters";
+import { SectionHeading } from "@/components/catalog/section-heading";
 import { EmptyState } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api/client";
@@ -12,7 +13,7 @@ import { PUBLIC_CACHE } from "@/lib/api/cache";
 import type { MovieDto } from "@filmbooking/shared/schemas/catalog";
 
 export const metadata: Metadata = {
-  title: "Danh sách & tìm kiếm phim – CINEMO",
+  title: "Danh sách & tìm kiếm phim - CINEMO",
   description:
     "Tra cứu lịch chiếu, thể loại, thông tin các bộ phim hot nhất đang và sắp chiếu tại cụm rạp CINEMO trên toàn quốc.",
 };
@@ -56,11 +57,12 @@ export default async function MoviesPage(props: MoviesPageProps) {
   return (
     <div className="space-y-8">
       {/* Header trang */}
-      <div className="space-y-2 border-b border-border pb-6">
-        <h1 className="text-h1 font-bold text-fg">Khám phá phim chiếu rạp</h1>
-        <p className="text-body text-fg-secondary max-w-2xl">
-          Tìm kiếm những bộ phim bom tấn đỉnh cao đang và sắp chiếu tại các cụm rạp CINEMO trên toàn quốc.
-        </p>
+      <div className="border-b border-border pb-6">
+        <SectionHeading
+          level="h1"
+          title="Khám phá phim chiếu rạp"
+          description="Tìm kiếm những bộ phim bom tấn đỉnh cao đang và sắp chiếu tại các cụm rạp CINEMO trên toàn quốc."
+        />
       </div>
 
       {/* Bộ lọc phim */}
@@ -76,11 +78,11 @@ export default async function MoviesPage(props: MoviesPageProps) {
         </div>
 
         {movies.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+          <MovieGrid>
             {movies.map((movie: MovieDto) => (
               <MovieCard key={movie.id} movie={movie} />
             ))}
-          </div>
+          </MovieGrid>
         ) : (
           <EmptyState
             title="Không tìm thấy phim phù hợp"

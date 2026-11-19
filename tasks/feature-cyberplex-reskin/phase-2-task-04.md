@@ -23,6 +23,11 @@ Không đụng `app/(public)/page.tsx` (task-03), `booking|ticket|account|auth|a
 ## Repro Verification
 - Original: màn danh mục kiểu CINEMO, không chuyển động theo cuộn.
 - Expected: kiểu CYBERPLEX + nhóm A/B, hiện muộn (`--scrub-inset`).
-- Actual after: _(builder điền)_
-- Evidence: _(builder điền)_
-- Status: pending
+- Actual after: màn phim/rạp/lịch chiếu dùng ngôn ngữ CYBERPLEX (chamfer, viền gradient, hud, chip chamfer-sm, marker vàng). Chuyển động theo cuộn bằng CSS: tiêu đề section `Scrub kind="down"` + wipe + vạch; lưới phim `kind="beam"` view() riêng, lệch pha theo cột bằng `:nth-child` trong CSS module; rạp lẻ left / chẵn right; DateStrip là `ScrubGroup`, ShowtimeGroup `Scrub ltr` timeline riêng; đổi ngày/bộ lọc không scrub lại (phần tử mới chỉ theo vị trí cuộn).
+- Evidence: `pnpm --filter ./apps/web typecheck` PASS, `lint` PASS, `test` 50 files / 629 tests PASS. Playwright KHÔNG chạy (cần API + DB Supabase, không dựng trong worktree): chưa đo bằng trình duyệt hàng 2 hoàn tất, thu về khi cuộn lên, reduced-motion, 360px không scroll ngang.
+- Status: PASS (code + unit); BLOCKED phần smoke Playwright, cần kiểm ở integration
+
+### Round 2 (sau reviewer FAIL round 1)
+- MAJOR-1: `movie-card.module.css` thêm `.card:focus-within [data-scrub-media] { animation: none; clip-path: none }` và `[data-scrub-beam] { animation: none; opacity: 0 }` (không sửa globals.css). Các animation lồng khác trong scope (wipe/rule của SectionHeading) không chứa phần tử focusable nên không cần.
+- MAJOR-2: `ScheduleDateStrip` nhận thêm prop `className`; `ScheduleDateNav` (/lich-chieu) truyền `scrub-inset-0`. Dải ngày dùng chung ở `/phim/[slug]` và `/rap/[code]` giữ nguyên hiện muộn vì nằm dưới màn hình lúc vào trang.
+- Evidence: typecheck PASS, lint PASS, test 50 files / 629 tests PASS. Playwright vẫn chưa chạy (cần API/DB).

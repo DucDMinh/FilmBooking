@@ -238,7 +238,7 @@ describe("ShowtimeSchedule (showtime-schedule.tsx)", () => {
     expect(screen.getByRole("link", { name: /Đặt vé suất 15:00/i })).toBeInTheDocument();
   });
 
-  it("phim sắp chiếu chưa có suất hiển thị thông báo 'Sắp chiếu — Lịch chiếu sẽ được cập nhật sớm' (R-45)", () => {
+  it("phim sắp chiếu chưa có suất hiển thị thông báo 'Sắp chiếu - Lịch chiếu sẽ được cập nhật sớm' (R-45)", () => {
     const comingSoonMovie: MovieDto = {
       ...MOCK_MOVIE,
       availability: "coming_soon",
@@ -255,7 +255,7 @@ describe("ShowtimeSchedule (showtime-schedule.tsx)", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Sắp chiếu — Lịch chiếu sẽ được cập nhật sớm" }),
+      screen.getByRole("heading", { name: "Sắp chiếu - Lịch chiếu sẽ được cập nhật sớm" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Đặt vé/i })).not.toBeInTheDocument();
   });

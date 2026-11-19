@@ -4,14 +4,14 @@ import Link from "next/link";
 
 import { CinemaMap } from "@/components/catalog/cinema-map";
 import { FavoriteButton } from "@/components/catalog/favorite-button";
+import { SectionHeading } from "@/components/catalog/section-heading";
 import { EmptyState } from "@/components/common/states";
+import { Scrub } from "@/components/motion/scrub";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api/client";
 import { PUBLIC_CACHE } from "@/lib/api/cache";
 import { getServerAccessToken } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
 import type { CinemaDto, ProvinceDto } from "@filmbooking/shared/schemas/catalog";
 
 export const metadata: Metadata = {
@@ -22,6 +22,16 @@ export const metadata: Metadata = {
 
 interface RapPageProps {
   searchParams: Promise<{ province?: string }>;
+}
+
+/** Tab tỉnh/thành (design-spec §16.3 Tabs): chamfer-md, đang chọn nền vàng chữ tối; focus vẽ inset vì clip-path. */
+function provinceTabClass(active: boolean): string {
+  return [
+    "chamfer-md inline-flex min-h-11 items-center justify-center px-5 font-heading text-body-sm font-bold tracking-btn uppercase transition-colors duration-200 outline-hidden focus-visible:shadow-[inset_0_0_0_2px_var(--focus-inset,var(--color-brand))]",
+    active
+      ? "bg-brand text-fg-on-brand [--focus-inset:var(--color-fg-on-brand)]"
+      : "bg-surface-control text-fg-secondary shadow-[inset_0_0_0_1px_var(--color-frame)] hover:text-fg hover:shadow-[inset_0_0_0_1px_var(--color-brand)]",
+  ].join(" ");
 }
 
 export default async function RapPage({ searchParams }: Readonly<RapPageProps>) {
@@ -58,35 +68,20 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
   return (
     <div className="space-y-8">
       {/* Hero header */}
-      <div className="space-y-3">
-        <span className="text-overline uppercase tracking-wider text-brand">
-          Mạng lưới CINEMO toàn quốc
-        </span>
-        <h1 className="text-h1 font-heavy tracking-tight text-fg">
-          Hệ thống rạp chiếu phim
-        </h1>
-        <p className="max-w-2xl text-body text-fg-secondary">
-          Không gian trải nghiệm điện ảnh chuẩn quốc tế với công nghệ âm thanh vòm đỉnh cao,
-          ghế ngồi êm ái và dịch vụ tận tâm tại các thành phố lớn.
-        </p>
-      </div>
+      <SectionHeading
+        level="h1"
+        kicker="Mạng lưới CINEMO toàn quốc"
+        title="Hệ thống rạp chiếu phim"
+        description="Không gian trải nghiệm điện ảnh chuẩn quốc tế với công nghệ âm thanh vòm đỉnh cao, ghế ngồi êm ái và dịch vụ tận tâm tại các thành phố lớn."
+      />
 
       {/* Bộ lọc theo tỉnh/thành (R-34, R-35) */}
       <section aria-labelledby="province-filter-heading" className="space-y-3">
         <h2 id="province-filter-heading" className="sr-only">
           Lọc rạp theo tỉnh thành
         </h2>
-        <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          <Link
-            href="/rap"
-            className={cn(
-              "inline-flex min-h-11 items-center justify-center rounded-pill px-5 text-body-sm font-semibold transition-colors",
-              !province
-                ? "bg-brand text-fg-on-brand"
-                : "border border-border-subtle bg-surface text-fg-secondary hover:border-border hover:text-fg",
-            )}
-            aria-current={!province ? "page" : undefined}
-          >
+        <div className="flex flex-wrap items-center gap-2 pb-2">
+          <Link href="/rap" className={provinceTabClass(!province)} aria-current={!province ? "page" : undefined}>
             Tất cả khu vực
           </Link>
           {provinces.map((p) => {
@@ -95,12 +90,7 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
               <Link
                 key={p.code}
                 href={`/rap?province=${encodeURIComponent(p.code)}`}
-                className={cn(
-                  "inline-flex min-h-11 items-center justify-center rounded-pill px-5 text-body-sm font-semibold transition-colors",
-                  isActive
-                    ? "bg-brand text-fg-on-brand"
-                    : "border border-border-subtle bg-surface text-fg-secondary hover:border-border hover:text-fg",
-                )}
+                className={provinceTabClass(isActive)}
                 aria-current={isActive ? "page" : undefined}
               >
                 {p.name}
@@ -111,12 +101,8 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
       </section>
 
       {/* Danh sách rạp */}
-      <section aria-labelledby="cinema-list-heading" className="space-y-4">
-        <div className="flex items-center justify-between border-b border-border pb-3">
-          <h2 id="cinema-list-heading" className="text-h3 font-bold text-fg">
-            {selectedProvinceName} ({cinemas.length} rạp)
-          </h2>
-        </div>
+      <section aria-labelledby="cinema-list-heading" className="space-y-6">
+        <SectionHeading id="cinema-list-heading" title={`${selectedProvinceName} (${cinemas.length} rạp)`} />
 
         {cinemas.length === 0 ? (
           <EmptyState
@@ -136,99 +122,88 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
           />
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {cinemas.map((cinema) => {
+            {cinemas.map((cinema, index) => {
               const cinemaId = cinema.id ?? "";
               const isFav = Boolean(cinemaId && favoriteIds.includes(cinemaId));
 
               return (
-                <Card
+                // Hai bên (nhóm B): thẻ lẻ vào từ trái, thẻ chẵn vào từ phải; mỗi thẻ có timeline cuộn riêng.
+                <Scrub
+                  as="article"
                   key={cinema.code}
-                  className="flex flex-col justify-between border-border-subtle bg-surface transition-colors hover:border-border"
+                  kind={index % 2 === 0 ? "left" : "right"}
+                  className="frame h-full"
                 >
-                  <CardHeader className="space-y-2 pb-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <span className="text-overline text-brand">
-                          CINEMO {cinema.code}
-                        </span>
-                        <h3 className="text-h3 font-bold text-fg">
-                          <Link
-                            href={`/rap/${cinema.code}`}
-                            className="transition-colors hover:text-brand"
-                          >
-                            {cinema.name}
-                          </Link>
-                        </h3>
+                  <div className="frame-in flex h-full flex-col justify-between gap-4 bg-[linear-gradient(160deg,var(--color-surface),var(--color-bg)_72%)] p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <span className="hud hud-brand">CINEMO {cinema.code}</span>
+                          <h3 className="font-heading text-h3 font-bold uppercase text-fg">
+                            <Link href={`/rap/${cinema.code}`} className="transition-colors hover:text-brand">
+                              {cinema.name}
+                            </Link>
+                          </h3>
+                        </div>
+                        <FavoriteButton
+                          cinemaId={cinemaId}
+                          cinemaCode={cinema.code}
+                          cinemaName={cinema.name}
+                          initialFavorite={isFav}
+                          isAuthenticated={isAuthenticated}
+                          variant="ghost"
+                          size="icon"
+                        />
                       </div>
-                      <FavoriteButton
-                        cinemaId={cinemaId}
-                        cinemaCode={cinema.code}
-                        cinemaName={cinema.name}
-                        initialFavorite={isFav}
-                        isAuthenticated={isAuthenticated}
-                        variant="ghost"
-                        size="icon"
-                      />
-                    </div>
-                  </CardHeader>
 
-                  <CardContent className="space-y-3 text-body-sm text-fg-secondary">
-                    <div className="flex items-start gap-2.5">
-                      <MapPin className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
-                      <span>{cinema.address}</span>
-                    </div>
+                      <div className="space-y-3 text-body-sm text-fg-secondary">
+                        <div className="flex items-start gap-2.5">
+                          <MapPin className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
+                          <span>{cinema.address}</span>
+                        </div>
 
-                    {cinema.hotline ? (
-                      <div className="flex items-center gap-2.5">
-                        <Phone className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                        <a
-                          href={`tel:${cinema.hotline}`}
-                          className="font-medium text-fg hover:text-brand hover:underline"
-                        >
-                          {cinema.hotline}
-                        </a>
-                      </div>
-                    ) : null}
+                        {cinema.hotline ? (
+                          <div className="flex items-center gap-2.5">
+                            <Phone className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                            <a
+                              href={`tel:${cinema.hotline}`}
+                              className="font-mono font-medium text-brand hover:underline"
+                            >
+                              {cinema.hotline}
+                            </a>
+                          </div>
+                        ) : null}
 
-                    {cinema.openingHours ? (
-                      <div className="flex items-center gap-2.5">
-                        <Clock className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                        <span>{cinema.openingHours}</span>
-                      </div>
-                    ) : null}
+                        {cinema.openingHours ? (
+                          <div className="flex items-center gap-2.5">
+                            <Clock className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                            <span className="font-mono">{cinema.openingHours}</span>
+                          </div>
+                        ) : null}
 
-                    {cinema.amenities && cinema.amenities.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {cinema.amenities.slice(0, 3).map((item) => (
-                          <Badge
-                            key={item}
-                            tone="neutral"
-                            className="bg-surface-elevated text-caption text-fg-secondary"
-                          >
-                            {item}
-                          </Badge>
-                        ))}
-                        {cinema.amenities.length > 3 ? (
-                          <Badge
-                            tone="neutral"
-                            className="bg-surface-elevated text-caption text-fg-muted"
-                          >
-                            +{cinema.amenities.length - 3}
-                          </Badge>
+                        {cinema.amenities && cinema.amenities.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {cinema.amenities.slice(0, 3).map((item) => (
+                              <Badge key={item} tone="neutral">
+                                {item}
+                              </Badge>
+                            ))}
+                            {cinema.amenities.length > 3 ? (
+                              <Badge tone="neutral">+{cinema.amenities.length - 3}</Badge>
+                            ) : null}
+                          </div>
                         ) : null}
                       </div>
-                    ) : null}
-                  </CardContent>
+                    </div>
 
-                  <CardFooter className="pt-3">
                     <Button asChild variant="secondary" className="w-full">
                       <Link href={`/rap/${cinema.code}`}>
                         <Film className="size-4" aria-hidden="true" />
                         Xem chi tiết & Lịch chiếu
                       </Link>
                     </Button>
-                  </CardFooter>
-                </Card>
+                  </div>
+                </Scrub>
               );
             })}
           </div>
@@ -237,15 +212,8 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
 
       {/* Bản đồ vị trí trực quan rạp đại diện (R-34, R-37, Defect 5) */}
       {featuredCinema ? (
-        <section aria-labelledby="cinema-map-heading" className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 id="cinema-map-heading" className="text-h3 font-bold text-fg">
-              Vị trí rạp ({featuredCinema.name})
-            </h2>
-            <span className="text-body-sm text-fg-secondary">
-              Bản đồ trực quan
-            </span>
-          </div>
+        <section aria-labelledby="cinema-map-heading" className="space-y-4">
+          <SectionHeading id="cinema-map-heading" title={`Vị trí rạp (${featuredCinema.name})`} />
           <CinemaMap
             cinemaName={featuredCinema.name}
             address={featuredCinema.address}

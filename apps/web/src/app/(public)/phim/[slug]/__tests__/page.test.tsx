@@ -146,6 +146,6 @@ describe("/phim/[slug] page (bug phim-detail: 6 ngày còn lại luôn rỗng, �
   it("phim sắp chiếu chưa có suất vẫn hiện EmptyState 'Sắp chiếu'", async () => {
     mockApi("coming_soon", []);
     await renderPage();
-    expect(screen.getByText(/Sắp chiếu — Lịch chiếu sẽ được cập nhật sớm/)).toBeInTheDocument();
+    expect(screen.getByText(/Sắp chiếu - Lịch chiếu sẽ được cập nhật sớm/)).toBeInTheDocument();
   });
 });

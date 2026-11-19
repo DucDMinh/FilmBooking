@@ -63,19 +63,19 @@ export function CinemaClosedNotice({ cinema }: Readonly<{ cinema: CinemaDto }>) 
         <span className="font-semibold text-fg" aria-current="page">{cinema.name}</span>
       </nav>
 
-      <section className="mx-auto flex max-w-2xl flex-col items-center gap-5 rounded-2xl border border-border bg-chrome p-6 text-center md:p-10">
-        <span className="flex size-16 items-center justify-center rounded-pill bg-surface-elevated text-fg-muted">
+      <section className="frame mx-auto max-w-2xl"><div className="frame-in flex flex-col items-center gap-5 bg-chrome p-6 text-center md:p-10">
+        <span className="chamfer-md flex size-16 items-center justify-center bg-surface-elevated text-fg-muted">
           <DoorClosed className="size-8" aria-hidden="true" />
         </span>
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <span className="text-overline uppercase tracking-wider text-brand">CINEMO {cinema.code}</span>
+          <span className="hud hud-brand">CINEMO {cinema.code}</span>
           <Badge tone={copy.tone}>{copy.badge}</Badge>
         </div>
-        <h1 className="text-h1 font-heavy tracking-tight text-fg">{copy.title(cinema.name)}</h1>
+        <h1 className="text-h1 font-bold tracking-tight text-fg uppercase">{copy.title(cinema.name)}</h1>
         <p className="max-w-prose text-body text-fg-secondary">{copy.description}</p>
 
         {reopenDate ? (
-          <p className="flex items-start gap-2 rounded-md border border-info-line bg-info-soft p-3 text-left text-body-sm text-info">
+          <p className="chamfer-sm flex items-start gap-2 bg-info-soft p-3 text-left text-body-sm text-info">
             <CalendarClock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <span>
               {status === "COMING_SOON" ? "Rạp dự kiến khai trương và mở cửa từ ngày" : "Rạp dự kiến mở cửa trở lại từ ngày"}{" "}
@@ -103,7 +103,7 @@ export function CinemaClosedNotice({ cinema }: Readonly<{ cinema: CinemaDto }>) 
         <Button asChild size="lg" className="min-h-11 w-full sm:w-auto">
           <Link href="/rap">Xem các rạp khác</Link>
         </Button>
-      </section>
+      </div></section>
     </div>
   );
 }
@@ -127,7 +127,7 @@ export function CinemaScheduleBanner({ cinema }: Readonly<{ cinema: CinemaDto }>
   return (
     <div
       role="status"
-      className="flex items-start gap-3 rounded-md border border-warning-line bg-warning-soft p-4 text-body-sm text-fg"
+      className="chamfer-sm flex items-start gap-3 border-l-4 border-warning bg-warning-soft p-4 text-body-sm text-fg"
     >
       <CalendarClock className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
       <div className="space-y-1">

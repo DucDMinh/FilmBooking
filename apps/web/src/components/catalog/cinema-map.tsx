@@ -9,6 +9,7 @@ import { buildDirectionsUrl, hasValidCoordinates } from "@/lib/map-links";
 import { cn } from "@/lib/utils";
 
 import { buildCinemaPopup } from "./cinema-map-popup";
+import styles from "./cinema-map.module.css";
 
 export interface CinemaMapProps {
   latitude: number | null;
@@ -75,24 +76,15 @@ export function CinemaMap({
           maxZoom: 20,
         }).addTo(map);
 
-        // Marker icon tùy biến dùng SVG màu brand CINEMO (#F06D5B), không bị phụ thuộc ảnh tĩnh của Leaflet
+        // Marker vàng chamfer (token brand), glyph tối; bóng đổ ở lớp ngoài vì clip-path cắt box-shadow.
         const customPinHtml = `
-          <div style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: #F06D5B;
-            border: 2px solid #FFFFFF;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            cursor: pointer;
-          ">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
+          <div style="filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.55)); cursor: pointer;">
+            <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: var(--color-brand); color: var(--color-fg-on-brand); clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
           </div>
         `;
 
@@ -109,7 +101,7 @@ export function CinemaMap({
           title: cinemaName,
         }).addTo(map);
 
-        marker.bindPopup(buildCinemaPopup(cinemaName, address, directionsUrl));
+        marker.bindPopup(buildCinemaPopup(cinemaName, address, directionsUrl), { className: styles.popup });
         setIsLoaded(true);
       } catch (err) {
         console.error("Failed to initialize Leaflet map:", err);
@@ -136,55 +128,54 @@ export function CinemaMap({
 
   if (!hasCoords || hasError) {
     return (
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center gap-3 rounded-lg border border-border-subtle bg-surface p-6 text-center",
-          className,
-        )}
-      >
-        <div className="flex size-12 items-center justify-center rounded-pill bg-surface-elevated text-fg-muted">
-          <MapPin className="size-6 text-fg-muted" aria-hidden="true" />
+      <div className={cn("frame", className)}>
+        <div className="frame-in flex flex-col items-center justify-center gap-3 p-6 text-center">
+          <div className="chamfer-md flex size-12 items-center justify-center bg-surface-elevated text-fg-muted">
+            <MapPin className="size-6 text-fg-muted" aria-hidden="true" />
+          </div>
+          <div>
+            <h3 className="font-heading text-body font-semibold uppercase text-fg">Vị trí rạp</h3>
+            <p className="mt-1 max-w-sm text-body-sm text-fg-secondary">{address}</p>
+          </div>
+          <Button asChild variant="secondary" size="sm" className="mt-2">
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="size-4" aria-hidden="true" />
+              Tìm địa chỉ trên Google Maps
+            </a>
+          </Button>
         </div>
-        <div>
-          <h3 className="text-body font-semibold text-fg">Vị trí rạp</h3>
-          <p className="mt-1 max-w-sm text-body-sm text-fg-secondary">{address}</p>
-        </div>
-        <Button asChild variant="secondary" size="sm" className="mt-2">
-          <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="size-4" aria-hidden="true" />
-            Tìm địa chỉ trên Google Maps
-          </a>
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className={cn("relative overflow-hidden rounded-lg border border-border-subtle bg-surface", className)}>
-      {!isLoaded ? (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface p-4">
-          <Skeleton className="h-full w-full rounded-md" />
-        </div>
-      ) : null}
+    <div className={cn("frame", styles.map, className)}>
+      <div className="frame-in relative overflow-hidden">
+        {!isLoaded ? (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface p-4">
+            <Skeleton className="h-full w-full rounded-none" />
+          </div>
+        ) : null}
 
-      <div
-        ref={containerRef}
-        aria-label={`Bản đồ vị trí rạp ${cinemaName}`}
-        role="region"
-        className="h-80 w-full min-h-[320px] rounded-lg md:h-96"
-      />
+        <div
+          ref={containerRef}
+          aria-label={`Bản đồ vị trí rạp ${cinemaName}`}
+          role="region"
+          className="h-80 w-full min-h-[320px] md:h-96"
+        />
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle bg-surface-elevated px-4 py-3">
-        <div className="flex items-center gap-2 text-body-sm text-fg-secondary">
-          <MapPin className="size-4 shrink-0 text-brand" aria-hidden="true" />
-          <span className="truncate font-medium text-fg">{address}</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-elevated px-4 py-3">
+          <div className="flex items-center gap-2 text-body-sm text-fg-secondary">
+            <MapPin className="size-4 shrink-0 text-brand" aria-hidden="true" />
+            <span className="truncate font-medium text-fg">{address}</span>
+          </div>
+          <Button asChild variant="secondary" size="sm" className="shrink-0">
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
+              <Navigation className="size-4" aria-hidden="true" />
+              Mở chỉ đường (Google Maps)
+            </a>
+          </Button>
         </div>
-        <Button asChild variant="secondary" size="sm" className="shrink-0">
-          <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
-            <Navigation className="size-4" aria-hidden="true" />
-            Mở chỉ đường (Google Maps)
-          </a>
-        </Button>
       </div>
     </div>
   );
