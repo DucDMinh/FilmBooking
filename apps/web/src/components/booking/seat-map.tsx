@@ -20,7 +20,7 @@ export interface SeatMapProps {
 // Ô ghế là chamfer (clip-path cắt mất border), nên viền vẽ bằng box-shadow inset (design-tokens §1.5, §6).
 // Trạng thái luôn có dấu hiệu ngoài màu (✓, đồng hồ, ×, ổ khoá, nét đứt) để không chỉ dựa vào màu (NFR-12).
 const STATE_CLASS: Record<SeatVisualState, string> = {
-  free: "bg-seat-available text-fg shadow-[inset_0_0_0_1px_var(--color-seat-available-line)] hover:shadow-[inset_0_0_0_1px_var(--color-brand)]",
+  free: "bg-seat-available text-fg shadow-[inset_0_0_0_1px_var(--color-seat-available-line)]",
   selected: "bg-seat-selected text-fg-on-brand font-bold [--seat-focus:var(--color-fg-on-brand)]",
   held: "bg-seat-held text-fg-on-brand [--seat-focus:var(--color-fg-on-brand)]",
   sold: "bg-seat-sold text-seat-sold-mark",
@@ -29,7 +29,7 @@ const STATE_CLASS: Record<SeatVisualState, string> = {
 };
 
 const TYPE_CLASS: Record<string, string> = {
-  VIP: "bg-seat-vip shadow-[inset_0_2px_0_var(--color-seat-vip-line),inset_0_0_0_1px_#12697A]",
+  VIP: "bg-seat-vip shadow-[inset_0_2px_0_var(--color-seat-vip-line),inset_0_0_0_1px_var(--color-info-line)]",
   SWEETBOX: "bg-seat-sweetbox shadow-[inset_0_0_0_1px_var(--color-seat-sweetbox-line)]",
 };
 
@@ -40,6 +40,8 @@ function seatClass(seat: SeatMapItem, state: SeatVisualState, orphan: boolean): 
     "outline-hidden focus-visible:shadow-[inset_0_0_0_2px_var(--seat-focus,var(--color-brand))]",
     STATE_CLASS[state],
     typeClass,
+    // Hover chỉ đổi viền ghế thường; VIP/SWEETBOX giữ vạch loại ghế, ghế lẻ giữ khung danger (không bị hover ghi đè).
+    state === "free" && !typeClass && !orphan && "hover:shadow-[inset_0_0_0_1px_var(--color-brand)]",
     state === "free" ? "cursor-pointer" : "cursor-default",
     // Ghế lẻ (R-66): khung danger inset (ring ngoài sẽ bị clip-path cắt).
     orphan && "shadow-[inset_0_0_0_2px_var(--color-danger)]",

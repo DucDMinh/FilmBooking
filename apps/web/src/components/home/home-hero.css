@@ -327,26 +327,17 @@
   }
 }
 
-/* ---- Lưới phim trang chủ: mỗi thẻ có timeline riêng, lệch pha theo CỘT (design-spec §16.4); mobile i = 0 ---- */
-.home-movie-grid > [data-scrub] {
+/* ---- Lưới thẻ rạp trang chủ: mỗi thẻ có timeline riêng, lệch pha theo CỘT thực (1 / 2 / 3 cột khớp grid-cols của page.tsx) ---- */
+.home-cinema-grid > [data-scrub] {
   --i: 0;
   --n: 1;
 }
-@media (min-width: 640px) {
-  .home-movie-grid > [data-scrub]:nth-child(3n + 1) { --i: 0; --n: 3; }
-  .home-movie-grid > [data-scrub]:nth-child(3n + 2) { --i: 1; --n: 3; }
-  .home-movie-grid > [data-scrub]:nth-child(3n + 3) { --i: 2; --n: 3; }
-}
 @media (min-width: 768px) {
-  .home-movie-grid > [data-scrub]:nth-child(4n + 1) { --i: 0; --n: 4; }
-  .home-movie-grid > [data-scrub]:nth-child(4n + 2) { --i: 1; --n: 4; }
-  .home-movie-grid > [data-scrub]:nth-child(4n + 3) { --i: 2; --n: 4; }
-  .home-movie-grid > [data-scrub]:nth-child(4n + 4) { --i: 3; --n: 4; }
+  .home-cinema-grid > [data-scrub]:nth-child(2n + 1) { --i: 0; --n: 2; }
+  .home-cinema-grid > [data-scrub]:nth-child(2n + 2) { --i: 1; --n: 2; }
 }
 @media (min-width: 1024px) {
-  .home-movie-grid > [data-scrub]:nth-child(5n + 1) { --i: 0; --n: 5; }
-  .home-movie-grid > [data-scrub]:nth-child(5n + 2) { --i: 1; --n: 5; }
-  .home-movie-grid > [data-scrub]:nth-child(5n + 3) { --i: 2; --n: 5; }
-  .home-movie-grid > [data-scrub]:nth-child(5n + 4) { --i: 3; --n: 5; }
-  .home-movie-grid > [data-scrub]:nth-child(5n + 5) { --i: 4; --n: 5; }
+  .home-cinema-grid > [data-scrub]:nth-child(3n + 1) { --i: 0; --n: 3; }
+  .home-cinema-grid > [data-scrub]:nth-child(3n + 2) { --i: 1; --n: 3; }
+  .home-cinema-grid > [data-scrub]:nth-child(3n + 3) { --i: 2; --n: 3; }
 }

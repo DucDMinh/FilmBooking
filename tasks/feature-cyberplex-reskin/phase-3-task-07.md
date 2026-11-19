@@ -40,6 +40,6 @@ Rải rác `apps/web/src/**` (chuỗi/class), `apps/web/e2e/*` (mới), docs as-
 ## Repro Verification
 - Original: còn dấu gạch dài, class cũ, chưa có test chuyển động.
 - Expected: sạch; test cuộn PASS; CLS/LCP đạt.
-- Actual after: _(builder điền)_
-- Evidence: _(builder điền)_
-- Status: pending
+- Actual after (07a, phần quét sạch, builder): HẾT dấu gạch dài trong chuỗi hiển thị (còn 3: `legal.ts`, `auth-ui.tsx` x2, đã đổi + cập nhật test); `#12697A` thô trong SeatMap/SeatLegend -> `var(--color-info-line)`; hover ghế không còn ghi đè vạch VIP / khung ghế lẻ; mẫu "Hỏng" có gạch; sentinel audit-log "(không có)"; import `HUD_LABEL` về nhóm `@/`; avatar-upload viền bằng lớp overlay inset; staff tắt transition/transform (`.staff-static`); icon CheckinResult ô vuông chamfer-md; `role="group"` cho chip đóng bán; aria-label QuickBookBar lên `<form>` + dọn rAF/setTimeout; trang chủ dùng `MovieGrid` (xoá `.home-movie-grid`), lưới rạp lệch pha theo cột thật (`.home-cinema-grid`); SiteFooter gắn `ScrubGroup.scrub-inset-0`; tokens §3.4 khớp thực tế (`--dur-wipe`, `--stagger`, z-index đã bỏ/ghi lại). Giữ có chủ ý: `text-[27px]` tổng tiền (không có token 27px), `bg-white text-neutral-900` ở `ticket-qr` (mã QR cần nền trắng), radius `rounded-*` (token radius đều 0px).
+- Evidence (07a): `pnpm lint` sạch; typecheck (tsconfig.verify.json, src only) 0 lỗi; `pnpm test` 52 file / 650 test PASS. Phần B (Playwright e2e + Lighthouse + a11y thủ công) CHƯA làm, sang lượt sau.
+- Status: 07a PASS (quét sạch); 07b (e2e/Lighthouse) pending

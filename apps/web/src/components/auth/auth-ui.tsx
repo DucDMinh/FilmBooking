@@ -105,7 +105,7 @@ export function PasswordField(props: Readonly<Omit<FieldProps, "type">>) {
 }
 
 const CHECKLIST: ReadonlyArray<{ label: string; failedBy: PasswordIssue[] }> = [
-  { label: "8–72 ký tự", failedBy: ["TOO_SHORT", "TOO_LONG"] },
+  { label: "8-72 ký tự", failedBy: ["TOO_SHORT", "TOO_LONG"] },
   { label: "Có chữ hoa", failedBy: ["MISSING_UPPERCASE"] },
   { label: "Có chữ thường", failedBy: ["MISSING_LOWERCASE"] },
   { label: "Có chữ số", failedBy: ["MISSING_DIGIT"] },
@@ -145,6 +145,6 @@ export function PasswordStrength({ password }: Readonly<{ password: string }>) {
 /** Chuẩn hoá nơi dùng chung: ô trống/độ dài/luật mật khẩu cho form đăng ký & đặt lại. */
 export function passwordFieldError(password: string): string | null {
   return checkPasswordPolicy(password).length > 0
-    ? "Mật khẩu 8–72 ký tự, gồm chữ hoa, chữ thường và chữ số."
+    ? "Mật khẩu 8-72 ký tự, gồm chữ hoa, chữ thường và chữ số."
     : null;
 }

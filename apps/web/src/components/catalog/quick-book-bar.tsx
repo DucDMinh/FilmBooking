@@ -110,9 +110,20 @@ export function QuickBookBar({ cinemas, provinces, provinceCode }: Readonly<Quic
   const latestRequest = useRef(0);
   /** Phần tử đã mở hộp chọn tỉnh: đóng hộp thì trả focus về đó (Radix không có trigger để trả). */
   const pickerTrigger = useRef<HTMLElement | null>(null);
+  /** Hẹn giờ đang chờ (trả focus, đọc lại lỗi): dọn khi gỡ component để không setState/focus sau unmount. */
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const errorFrame = useRef<number | undefined>(undefined);
 
   const hasProvince = Boolean(provinceCode);
   const openCinemas = hasProvince ? cinemas.filter((cinema) => cinema.status === "OPEN") : [];
+
+  useEffect(
+    () => () => {
+      clearTimeout(focusTimer.current);
+      if (errorFrame.current !== undefined) cancelAnimationFrame(errorFrame.current);
+    },
+    [],
+  );
 
   // Chọn rạp -> tải suất 7 ngày của rạp đó bằng đúng nguồn lịch chiếu R-44; bỏ kết quả của lần gọi cũ.
   useEffect(() => {
@@ -147,13 +158,15 @@ export function QuickBookBar({ cinemas, provinces, provinceCode }: Readonly<Quic
     if (open) return;
     // Sau khi Radix gỡ focus scope của hộp thoại.
     const trigger = pickerTrigger.current;
-    setTimeout(() => trigger?.focus(), 0);
+    clearTimeout(focusTimer.current);
+    focusTimer.current = setTimeout(() => trigger?.focus(), 0);
   }
 
   /** Đặt chuỗi lỗi; lỗi lặp y hệt được xoá rồi gán lại để vùng live đọc lại. */
   function announceError(message: string) {
     setErrorText("");
-    requestAnimationFrame(() => setErrorText(message));
+    if (errorFrame.current !== undefined) cancelAnimationFrame(errorFrame.current);
+    errorFrame.current = requestAnimationFrame(() => setErrorText(message));
   }
 
   function change(field: QuickBookField, value: string) {
@@ -223,8 +236,8 @@ export function QuickBookBar({ cinemas, provinces, provinceCode }: Readonly<Quic
   ];
 
   return (
-    <div className="qbar" aria-label="Đặt vé nhanh">
-      <form className="qbar__frame" noValidate onSubmit={handleSubmit} data-testid="quick-book-bar">
+    <div className="qbar">
+      <form className="qbar__frame" aria-label="Đặt vé nhanh" noValidate onSubmit={handleSubmit} data-testid="quick-book-bar">
         <div className="qbar__in">
           {rows.map(({ field, ...row }, index) => (
             <QuickField

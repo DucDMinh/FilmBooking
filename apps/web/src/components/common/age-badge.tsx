@@ -30,7 +30,7 @@ export function AgeBadge({
       aria-label={`Phân loại ${rating}: ${DESCRIPTIONS[rating]}`}
       className={cn(
         "chamfer-sm inline-flex min-h-6 min-w-8 items-center justify-center px-2 py-0.5 font-heading text-caption font-bold tracking-wide",
-        tone === "semantic" ? SEMANTIC_TONE[rating] : "bg-age-pill text-white",
+        tone === "semantic" ? SEMANTIC_TONE[rating] : "bg-age-pill text-fg",
         className,
       )}
     >

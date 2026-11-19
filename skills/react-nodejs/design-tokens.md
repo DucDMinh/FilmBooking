@@ -217,7 +217,7 @@ Không dùng gradient chữ cho tiêu đề lớn (taste §9.A). Nút chính là
 | `--layout-bottom-nav-h` | 64px + `env(safe-area-inset-bottom)` |
 | `--layout-booking-aside` | 370px |
 | Breakpoints | `sm 640` · `md 768` · `lg 1024` · `xl 1280` · `2xl 1440` |
-| Z-index | `header 40` · `scanline 12` · `dialog 60` · `toast 80`. Khai trong `lib/z-index.ts`, không `z-[n]` tuỳ ý |
+| Z-index | Thực tế đang dùng (không có file `lib/z-index.ts`): `scanline 12` · `header 40` · `dialog / dropdown / overlay 50` (mặc định shadcn) · `ticket QR toàn màn hình 60`; toast do Sonner tự quản. Không thêm `z-[n]` tuỳ ý, cần tầng mới thì chọn trong dãy trên |
 
 Dùng `min-h-[100dvh]`, không `h-screen`. Hero: `min-height: 100svh`.
 
@@ -337,7 +337,7 @@ Giữ cấu trúc 3 khối (`@theme`, `:root`, `@theme inline`) và 2 `@utility`
   --gradient-brand: linear-gradient(100deg, rgb(252 238 9 / .85), rgb(255 0 60 / .55) 46%, rgb(252 238 9 / .35));
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --dur-enter: 560ms;  --dur-wipe: 700ms;  --stagger: 90ms;
+  --dur-enter: 560ms;
   --enter-x: 56px;  --enter-y: 48px;  --scale-from: 0.86;  --scale-peak: 1.05;
 
   /* biến shadcn: xem §5.1 */

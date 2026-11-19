@@ -396,11 +396,11 @@ const LOG: AuditLogDto = {
 describe("AuditLogAdminPage", () => {
   it("diffAuditData: chỉ các trường khác nhau; INSERT/DELETE", () => {
     expect(diffAuditData(LOG.beforeData, LOG.afterData)).toEqual([
-      { field: "note", before: "-", after: "x" },
+      { field: "note", before: "(không có)", after: "x" },
       { field: "price", before: "100000", after: "120000" },
     ]);
-    expect(diffAuditData(null, { a: 1 })).toEqual([{ field: "a", before: "-", after: "1" }]);
-    expect(diffAuditData({ a: 1 }, null)).toEqual([{ field: "a", before: "1", after: "-" }]);
+    expect(diffAuditData(null, { a: 1 })).toEqual([{ field: "a", before: "(không có)", after: "1" }]);
+    expect(diffAuditData({ a: 1 }, null)).toEqual([{ field: "a", before: "1", after: "(không có)" }]);
   });
 
   it("buildAuditQuery: bỏ trường rỗng, báo lỗi actor sai", () => {

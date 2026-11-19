@@ -3,9 +3,9 @@
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { HUD_LABEL } from "@/components/auth/auth-ui";
 
 import { signOutAction } from "@/app/auth/actions";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {

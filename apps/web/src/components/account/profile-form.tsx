@@ -3,18 +3,18 @@
 import { AlertTriangle, Check, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { HUD_LABEL } from "@/components/auth/auth-ui";
-import { cn } from "@/lib/utils";
 
 import { AvatarUpload } from "@/components/account/avatar-upload";
 import { ChangeEmailDialog } from "@/components/account/change-email-dialog";
 import { DeleteAccountDialog } from "@/components/account/delete-account-dialog";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiFetch } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 
 export interface ProfileData {
   id: string;

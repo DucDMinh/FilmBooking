@@ -3,8 +3,8 @@
 import { addPasswordInputSchema } from "@filmbooking/shared/schemas/identity";
 import { Loader2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { HUD_LABEL } from "@/components/auth/auth-ui";
 
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

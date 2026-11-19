@@ -30,7 +30,7 @@ export default async function StaffLayout({ children }: Readonly<{ children: Rea
   if (!resolveAdminRole(await loadMe(accessToken))) redirect("/khong-co-quyen");
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="staff-static min-h-dvh bg-background">
       <header className="flex h-14 items-center border-b border-border bg-chrome px-4 md:h-18 md:px-6">
         <span className="font-display text-body font-heavy tracking-[0.02em] text-fg">CINEMO</span>
         <span className="hud hud-brand ml-3">Soát vé</span>

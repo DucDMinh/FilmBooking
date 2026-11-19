@@ -27,12 +27,14 @@ const STATE_ITEMS: readonly { label: string; swatch: string; mark?: ReactNode }[
   {
     label: "Hỏng",
     swatch: "border border-dashed border-seat-locked-line bg-seat-locked opacity-60",
+    // Gạch ngang giống chữ gạch của ô ghế hỏng trong SeatMap.
+    mark: <span className="h-px w-2.5 bg-fg-muted" aria-hidden="true" />,
   },
 ];
 
 const TYPE_SWATCH: Record<string, string> = {
   NORMAL: FREE_SWATCH,
-  VIP: "bg-seat-vip shadow-[inset_0_2px_0_var(--color-seat-vip-line),inset_0_0_0_1px_#12697A]",
+  VIP: "bg-seat-vip shadow-[inset_0_2px_0_var(--color-seat-vip-line),inset_0_0_0_1px_var(--color-info-line)]",
   SWEETBOX: "bg-seat-sweetbox shadow-[inset_0_0_0_1px_var(--color-seat-sweetbox-line)]",
 };
 

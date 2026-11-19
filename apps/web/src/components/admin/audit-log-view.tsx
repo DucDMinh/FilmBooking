@@ -39,7 +39,7 @@ export interface AuditDiffRow {
   after: string;
 }
 
-const ABSENT = "-";
+const ABSENT = "(không có)";
 
 function formatValue(value: unknown): string {
   if (value === undefined) return ABSENT;

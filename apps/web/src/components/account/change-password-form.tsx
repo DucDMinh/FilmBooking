@@ -4,9 +4,9 @@ import { checkPasswordPolicy, PASSWORD_ISSUE_MESSAGES } from "@filmbooking/share
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { HUD_LABEL } from "@/components/auth/auth-ui";
 
 import { changePasswordAction } from "@/app/auth/actions";
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

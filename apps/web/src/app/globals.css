@@ -405,5 +405,9 @@
   [data-scrub] [data-scrub-beam] { animation: none !important; }
 }
 
+/* Soát vé (/staff): tắt hết chuyển động trang trí (spec §16.1). Nút ui/button vẫn có class nhấc/transition,
+   nên tắt ở đây bằng wrapper để không phải đổi API Button. */
+.staff-static :is(button, a, [role="button"]) { transition: none !important; transform: none !important; }
+
 /* Scanline là trang trí, không in. Đặt sau khối trên để test scrub (cắt theo @media print đầu tiên) không bị lẫn. */
 @media print { .scanline { display: none; } }

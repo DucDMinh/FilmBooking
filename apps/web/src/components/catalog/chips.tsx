@@ -66,6 +66,7 @@ export function ShowtimeLinkChip({
 export function ShowtimeClosedChip({ time, ariaLabel }: Readonly<{ time: string; ariaLabel: string }>) {
   return (
     <div
+      role="group"
       aria-label={ariaLabel}
       aria-disabled="true"
       title="Đã đóng bán online, vui lòng mua tại quầy"

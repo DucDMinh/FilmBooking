@@ -133,7 +133,7 @@ export function AvatarUpload({
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      <div className="relative size-24 shrink-0 overflow-hidden chamfer-md border-2 border-border bg-surface-elevated">
+      <div className="relative size-24 shrink-0 overflow-hidden chamfer-md bg-surface-elevated">
         {displayUrl ? (
           <Image
             src={displayUrl}
@@ -152,6 +152,11 @@ export function AvatarUpload({
             <User className="size-10" aria-hidden="true" />
           </div>
         )}
+        {/* Viền vẽ đè lên ảnh: chamfer clip-path cắt border thật, còn shadow inset của chính khung bị ảnh che mất. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 shadow-[inset_0_0_0_2px_var(--color-border)]"
+        />
       </div>
 
       <div className="flex flex-col gap-2">

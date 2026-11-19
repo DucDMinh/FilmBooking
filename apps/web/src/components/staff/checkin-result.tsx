@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { CircleAlert, CircleCheck, CircleX } from "lucide-react";
+import { AlertTriangle, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -119,7 +119,7 @@ export function CheckinResult({
   const hint = HINT[response.result];
   const retry = RETRY_RESULTS.includes(response.result);
   const ok = response.result === "OK";
-  const Icon = ok ? CircleCheck : response.result === "USED" ? CircleX : CircleAlert;
+  const Icon = ok ? Check : response.result === "USED" ? X : AlertTriangle;
   return (
     <section
       role="alert"
@@ -130,7 +130,9 @@ export function CheckinResult({
       )}
     >
       <div className="flex items-center gap-3">
-        <Icon aria-hidden="true" className="size-10 shrink-0" />
+        <span className="chamfer-md flex size-14 shrink-0 items-center justify-center bg-surface-elevated">
+          <Icon aria-hidden="true" className="size-8" strokeWidth={3} />
+        </span>
         <h2 className="font-heading text-[20px] leading-tight font-bold">{HEADLINE[response.result]}</h2>
       </div>
       {response.message ? <p className="text-body text-fg">{response.message}</p> : null}

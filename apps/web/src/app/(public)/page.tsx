@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { ChevronRight, Film, MapPin, Phone } from "lucide-react";
 
-import { MovieCard } from "@/components/catalog/movie-card";
+import { MovieCard, MovieGrid } from "@/components/catalog/movie-card";
 import { ProvincePickerDialog } from "@/components/catalog/province-picker-dialog";
 import { QuickBookBar } from "@/components/catalog/quick-book-bar";
 import { EmptyState } from "@/components/common/states";
@@ -150,13 +150,11 @@ export default async function HomePage(props: HomePageProps) {
         </div>
 
         {displayMovies.length > 0 ? (
-          <div className="home-movie-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 md:gap-6 lg:grid-cols-5">
+          <MovieGrid>
             {displayMovies.map((movie: MovieDto) => (
-              <Scrub key={movie.id} kind="beam">
-                <MovieCard movie={movie} />
-              </Scrub>
+              <MovieCard key={movie.id} movie={movie} />
             ))}
-          </div>
+          </MovieGrid>
         ) : (
           <EmptyState
             title={activeTab === "now_showing" ? "Chưa có phim đang chiếu" : "Chưa có phim sắp chiếu"}
@@ -193,9 +191,9 @@ export default async function HomePage(props: HomePageProps) {
         </div>
 
         {cinemas.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+          <div className="home-cinema-grid grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
             {cinemas.map((cinema: CinemaDto, index) => (
-              <Scrub key={cinema.code} kind={index % 2 === 0 ? "left" : "right"} i={index % 3} n={3}>
+              <Scrub key={cinema.code} kind={index % 2 === 0 ? "left" : "right"}>
                 <article
                   data-testid={`cinema-card-${cinema.code}`}
                   className="frame h-full transition-colors hover:[--frame-color:var(--color-brand)]"

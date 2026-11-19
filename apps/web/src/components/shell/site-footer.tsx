@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Scrub, ScrubGroup } from "@/components/motion/scrub";
+
 export const LEGAL_LINKS = [
   { href: "/dieu-khoan", label: "Điều khoản sử dụng" },
   { href: "/chinh-sach-bao-mat", label: "Chính sách bảo mật" },
@@ -37,22 +39,32 @@ function FooterColumn({
 
 /**
  * Footer 4 cột (design-spec §16.3): thương hiệu, Rạp, Hỗ trợ, Pháp lý.
- * Chưa gắn scrub: khi gắn ở task sau, footer phải kèm `scrub-inset-0` (không còn chỗ cuộn để vượt inset đáy).
+ * Chuyển động nhóm B (§16.4): một timeline chung cho cả hàng cột, cột lẻ vào từ trái, cột chẵn từ phải.
+ * Footer nằm cuối trang, không còn chỗ cuộn để vượt inset đáy nên nhóm kèm `scrub-inset-0`.
  */
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border bg-chrome">
-      <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 md:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-        <div className="flex flex-col gap-3">
+    <footer className="overflow-x-clip border-t border-border bg-chrome">
+      <ScrubGroup
+        n={4}
+        className="scrub-inset-0 mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 md:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1fr]"
+      >
+        <Scrub kind="left" i={0} className="flex flex-col gap-3">
           <span className="font-display text-base font-heavy tracking-[0.02em] text-fg">CINEMO</span>
           <p className="max-w-[30ch] text-body-sm text-fg-secondary">
             Đặt vé xem phim tại chuỗi rạp CINEMO. Vé chỉ có giá trị tại rạp và suất chiếu ghi trên vé.
           </p>
-        </div>
-        <FooterColumn title="Rạp chiếu" links={CINEMA_LINKS} />
-        <FooterColumn title="Hỗ trợ" links={SUPPORT_LINKS} />
-        <FooterColumn title="Pháp lý" links={LEGAL_LINKS} />
-      </div>
+        </Scrub>
+        <Scrub kind="right" i={1}>
+          <FooterColumn title="Rạp chiếu" links={CINEMA_LINKS} />
+        </Scrub>
+        <Scrub kind="left" i={2}>
+          <FooterColumn title="Hỗ trợ" links={SUPPORT_LINKS} />
+        </Scrub>
+        <Scrub kind="right" i={3}>
+          <FooterColumn title="Pháp lý" links={LEGAL_LINKS} />
+        </Scrub>
+      </ScrubGroup>
       <p className="mx-auto w-full max-w-7xl px-4 pb-8 text-small text-fg-muted md:px-6">
         © CINEMO. Vé đã mua không hỗ trợ huỷ hoặc hoàn tiền.
       </p>

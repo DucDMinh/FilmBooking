@@ -308,12 +308,12 @@ describe("RegisterForm", () => {
     await user.type(pwdInput, "abc");
 
     expect(screen.getByTestId("password-strength")).toBeInTheDocument();
-    expect(screen.getByText(/8–72 ký tự/)).toBeInTheDocument();
+    expect(screen.getByText(/8-72 ký tự/)).toBeInTheDocument();
 
     await user.clear(pwdInput);
     await user.type(pwdInput, "Password123");
 
-    expect(screen.getByText("8–72 ký tự")).toHaveClass("text-success");
+    expect(screen.getByText("8-72 ký tự")).toHaveClass("text-success");
     expect(screen.getByText("Có chữ hoa")).toHaveClass("text-success");
     expect(screen.getByText("Có chữ thường")).toHaveClass("text-success");
     expect(screen.getByText("Có chữ số")).toHaveClass("text-success");

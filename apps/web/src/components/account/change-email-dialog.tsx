@@ -3,8 +3,8 @@
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { HUD_LABEL } from "@/components/auth/auth-ui";
 
+import { HUD_LABEL } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
