@@ -186,7 +186,7 @@ export function SeatLayoutEditor({
               className="min-h-11"
               onClick={() => setTool(t.tool)}
             >
-              <span aria-hidden className={cn("mr-2 inline-block size-4 rounded-sm border", t.cellClass)} />
+              <span aria-hidden className={cn("mr-2 inline-block size-4 border", t.cellClass)} />
               {t.label}
               <kbd className="ml-2 text-caption text-fg-muted">{t.key}</kbd>
             </Button>
@@ -196,11 +196,11 @@ export function SeatLayoutEditor({
       <p className="text-body-sm text-fg-secondary">
         {readOnly
           ? "Bạn chỉ có quyền xem sơ đồ ghế."
-          : "Chọn loại ô, rồi nhấn vào ô để đặt. Bàn phím: mũi tên di chuyển, phím 1–5 đặt loại ghế, 0 hoặc Delete xoá ô."}
+          : "Chọn loại ô, rồi nhấn vào ô để đặt. Bàn phím: mũi tên di chuyển, phím 1-5 đặt loại ghế, 0 hoặc Delete xoá ô."}
       </p>
 
-      <div className="overflow-x-auto rounded-lg border border-border-subtle p-3">
-        <div className="mx-auto mb-3 h-1.5 w-[70%] rounded-pill bg-seat-screen" aria-hidden />
+      <div className="overflow-x-auto border border-border-subtle p-3">
+        <div className="mx-auto mb-3 h-1.5 w-[70%] bg-seat-screen" aria-hidden />
         <div
           role="grid"
           aria-label="Sơ đồ ghế"
@@ -233,7 +233,7 @@ export function SeatLayoutEditor({
                     tabIndex={active.r === r && active.c === col ? 0 : -1}
                     style={cell?.type === "sweetbox" ? { gridColumn: "span 2" } : undefined}
                     className={cn(
-                      "flex h-9 min-w-9 items-center justify-center rounded-sm border text-caption focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+                      "flex h-9 min-w-9 items-center justify-center border text-caption focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
                       def.cellClass,
                     )}
                     onFocus={() => setActive({ r, c: col })}
@@ -250,7 +250,7 @@ export function SeatLayoutEditor({
       </div>
 
       {(error ?? saveError) && (
-        <p role="alert" className="text-body-sm text-danger">
+        <p role="alert" className="text-body-sm text-danger-text">
           {error ?? saveError}
         </p>
       )}

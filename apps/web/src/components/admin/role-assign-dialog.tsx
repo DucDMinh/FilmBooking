@@ -25,7 +25,7 @@ export const ASSIGNMENT_ROLE_LABELS: Record<StaffAssignmentRole, string> = {
 };
 
 const SELECT_CLASS =
-  "h-11 w-full rounded-md border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-45";
+  "h-11 w-full border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-45";
 
 /** AC-16 / R-105: Manager chỉ gán Staff; Admin gán được Staff hoặc Manager. Chỉ để ẩn UI — API vẫn trả 403. */
 export function assignableRoles(viewer: AdminRole): StaffAssignmentRole[] {
@@ -154,7 +154,7 @@ export function RoleAssignDialog({
             </select>
           </Field>
           {error ? (
-            <p role="alert" className="text-small text-danger">
+            <p role="alert" className="text-small text-danger-text">
               {error}
             </p>
           ) : null}

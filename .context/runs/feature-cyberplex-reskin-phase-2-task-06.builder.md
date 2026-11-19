@@ -1,0 +1,2 @@
+# builder phase-2-task-06
+Da lam: script Node thay co hoc (text-danger->text-danger-text, bo rounded-*, dau -/– -> -), ghost trong bang shadow-none bg-transparent, outline->secondary (giu outline: huy tat ca suat, xoa suat), AdminShell badge vai tro + wordmark Orbitron, sidebar vach trai, PageHeader/h1 uppercase, CheckinResult 20px heading, staff layout hud, soat-ve chip chamfer-sm, revenue bar bg-chart-1. Test sua 4 cho dau gach. Con thieu: Playwright smoke.

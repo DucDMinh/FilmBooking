@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { SignOutButton } from "@/components/common/sign-out-button";
+import { Badge } from "@/components/ui/badge";
 
 import { AdminMobileNav, AdminSidebar } from "./admin-sidebar";
 import { CinemaSelector, type ScopeCinemaWithStatus } from "./cinema-selector";
@@ -33,6 +34,8 @@ function resolveInitialCinemas(
   return initialCinemas;
 }
 
+const ROLE_LABEL: Record<AdminRole, string> = { ADMIN: "Admin", MANAGER: "Quản lý", STAFF: "Nhân viên" };
+
 /** Khung /admin: sidebar 250 + topbar 72 với bộ chọn phạm vi rạp (design-spec D4). */
 export function AdminShell({ role, cinemas: initialCinemas, children }: Readonly<AdminShellProps>) {
   const canSeeAll = role === "ADMIN";
@@ -59,7 +62,8 @@ export function AdminShell({ role, cinemas: initialCinemas, children }: Readonly
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-chrome px-4 md:h-18 md:px-6">
           <AdminMobileNav items={items} cinemaId={scope} />
-          <span className="text-h3 font-heavy tracking-wide text-brand">CINEMO</span>
+          <span className="font-display text-body font-heavy tracking-[0.02em] text-fg">CINEMO</span>
+          <Badge tone="brand" data-testid="admin-role-badge">{ROLE_LABEL[role]}</Badge>
           <div className="ml-auto flex items-center gap-2">
             <CinemaSelector
               cinemas={cinemas}
@@ -69,7 +73,7 @@ export function AdminShell({ role, cinemas: initialCinemas, children }: Readonly
               onCinemasLoaded={setCinemas}
             />
             {/* Dưới md nút nằm trong menu điều hướng (Sheet) để topbar không chật. */}
-            <SignOutButton variant="outline" size="sm" className="hidden md:inline-flex" />
+            <SignOutButton variant="secondary" size="sm" className="hidden md:inline-flex" />
           </div>
         </header>
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>

@@ -12,7 +12,7 @@ export function OrderTimeline({ history }: Readonly<{ history: readonly OrderSta
     <ol aria-label="Lịch sử trạng thái" className="space-y-4 border-l border-border-subtle pl-4">
       {history.map((item, index) => (
         <li key={`${item.timestamp}-${index}`} className="relative space-y-1">
-          <span aria-hidden="true" className="absolute top-1.5 -left-[21px] size-2.5 rounded-pill bg-brand" />
+          <span aria-hidden="true" className="absolute top-1.5 -left-[21px] size-2.5 bg-brand" />
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={ORDER_STATUS_TONE[item.status] ?? "neutral"}>{ORDER_STATUS_LABEL[item.status] ?? item.status}</Badge>
             <DateTime value={item.timestamp} className="text-small text-fg-muted" />

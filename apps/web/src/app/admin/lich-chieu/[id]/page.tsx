@@ -166,20 +166,20 @@ function ShowtimeDetail({ data, reload }: Readonly<{ data: Loaded; reload: () =>
     <div className="space-y-6">
       <header className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-h2 font-bold">{movie?.titleVi ?? "Suất chiếu"}</h1>
+          <h1 className="text-h2 font-bold uppercase">{movie?.titleVi ?? "Suất chiếu"}</h1>
           <Badge tone={SHOWTIME_STATUS_TONE[status]}>{SHOWTIME_STATUS_LABEL[status]}</Badge>
         </div>
         <p className="text-body-sm text-fg-secondary">
-          {cinema.name} • {roomName} • {formatVnDate(st.startsAt)} {formatVnTime(st.startsAt)}–
+          {cinema.name} • {roomName} • {formatVnDate(st.startsAt)} {formatVnTime(st.startsAt)}-
           {formatVnTime(st.endsAt)} • {st.format} • <span data-testid="sold-count">{soldCount}/{capacity} vé đã bán</span>
         </p>
       </header>
 
       {notice ? <p role="status" className="text-success">{notice}</p> : null}
-      {error ? <p role="alert" className="text-danger">{error}</p> : null}
+      {error ? <p role="alert" className="text-danger-text">{error}</p> : null}
       {conflictsView ? <ConflictList conflicts={conflictsView} rooms={rooms} movies={movies} /> : null}
 
-      <section aria-label="Sửa suất" className="space-y-3 rounded-md border border-border p-4">
+      <section aria-label="Sửa suất" className="space-y-3 border border-border p-4">
         <h2 className="text-h3 font-bold">Thời gian & phòng</h2>
         <fieldset disabled={editLocked} className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1">
@@ -188,7 +188,7 @@ function ShowtimeDetail({ data, reload }: Readonly<{ data: Loaded; reload: () =>
               id="ed-room"
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}
-              className="h-11 w-full rounded-sm border border-input bg-surface-input px-2 text-base disabled:opacity-45 md:h-10 md:text-body"
+              className="h-11 w-full border border-input bg-surface-input px-2 text-base disabled:opacity-45 md:h-10 md:text-body"
             >
               {rooms
                 .filter((r) => r.id === st.roomId || (r.status === "ACTIVE" && r.supportedFormats.includes(st.format)))

@@ -120,7 +120,7 @@ function PriceCell({ label, amount, source, inheritedView, editable, busy, onSav
   if (!editable) {
     return (
       <div className="flex flex-col items-start gap-1">
-        {amount === null ? <span className="text-fg-muted">—</span> : <Money amount={amount} />}
+        {amount === null ? <span className="text-fg-muted">-</span> : <Money amount={amount} />}
         {badge}
       </div>
     );
@@ -137,12 +137,12 @@ function PriceCell({ label, amount, source, inheritedView, editable, busy, onSav
           value={text}
           onChange={(e) => setText(e.target.value)}
           className="tabular w-28"
-          placeholder="—"
+          placeholder="-"
         />
         <span className="text-caption text-fg-muted">đ</span>
       </div>
       {error ? (
-        <p role="alert" className="text-caption text-danger">
+        <p role="alert" className="text-caption text-danger-text">
           {error}
         </p>
       ) : null}
@@ -157,7 +157,7 @@ function PriceCell({ label, amount, source, inheritedView, editable, busy, onSav
           <Button
             type="button"
             size="sm"
-            variant="ghost"
+            variant="ghost" className="shadow-none bg-transparent"
             disabled={busy}
             onClick={onDelete}
             aria-label={`Xoá ghi đè ${label}`}
@@ -292,7 +292,7 @@ export function PriceMatrix({ role, memberships }: Readonly<PriceMatrixProps>) {
           </p>
         )}
       </div>
-      <div className="overflow-x-auto rounded-lg border border-border-subtle">
+      <div className="overflow-x-auto border border-border-subtle">
         <Table>
           <TableHeader>
             <TableRow>
@@ -432,7 +432,7 @@ export function HolidayManager({ role }: Readonly<{ role: AdminRole }>) {
             Thêm ngày lễ
           </Button>
           {formError ? (
-            <p role="alert" className="w-full text-caption text-danger">
+            <p role="alert" className="w-full text-caption text-danger-text">
               {formError}
             </p>
           ) : null}
@@ -442,7 +442,7 @@ export function HolidayManager({ role }: Readonly<{ role: AdminRole }>) {
       {status === "error" ? <ErrorState onRetry={() => void load()} /> : null}
       {status === "ready" && holidays.length === 0 ? <EmptyState title="Chưa có ngày lễ" /> : null}
       {status === "ready" && holidays.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-border-subtle">
+        <div className="overflow-x-auto border border-border-subtle">
           <Table>
             <TableHeader>
               <TableRow>
@@ -460,7 +460,7 @@ export function HolidayManager({ role }: Readonly<{ role: AdminRole }>) {
                     <TableCell>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" disabled={busy} aria-label={`Xoá ngày lễ ${h.name}`}>
+                          <Button variant="ghost" className="shadow-none bg-transparent" size="icon" disabled={busy} aria-label={`Xoá ngày lễ ${h.name}`}>
                             <Trash2 aria-hidden="true" />
                           </Button>
                         </AlertDialogTrigger>

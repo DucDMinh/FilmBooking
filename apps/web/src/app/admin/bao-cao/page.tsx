@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Báo cáo" };
 export default function Page() {
   return (
     <div className="space-y-4">
-      <h1 className="text-h2 font-bold">Báo cáo</h1>
+      <h1 className="text-h2 font-bold uppercase">Báo cáo</h1>
       <ReportDashboard />
     </div>
   );

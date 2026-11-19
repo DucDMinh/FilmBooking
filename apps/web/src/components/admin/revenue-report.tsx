@@ -40,7 +40,7 @@ export function aggregateByDay(rows: readonly RevenueReportItemDto[]): DayTotal[
 function RevenueBarChart({ days }: Readonly<{ days: readonly DayTotal[] }>) {
   const max = Math.max(...days.map((d) => d.netRevenue), 1);
   return (
-    <div className="overflow-x-auto rounded-lg border border-border-subtle bg-surface p-3">
+    <div className="overflow-x-auto border border-border-subtle bg-surface p-3">
       <div
         role="img"
         aria-label={`Biểu đồ doanh thu thuần theo ngày, ${days.length} ngày, cao nhất ${formatVnd(max)}`}
@@ -51,7 +51,7 @@ function RevenueBarChart({ days }: Readonly<{ days: readonly DayTotal[] }>) {
           <div
             key={day.date}
             title={`${formatReportDate(day.date)}: ${formatVnd(day.netRevenue)}`}
-            className="min-w-2.5 flex-1 rounded-t-sm bg-brand"
+            className="min-w-2.5 flex-1 bg-chart-1"
             style={{ height: `${Math.max((day.netRevenue / max) * 100, day.netRevenue > 0 ? 2 : 0)}%` }}
           />
         ))}

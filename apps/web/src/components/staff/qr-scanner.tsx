@@ -59,7 +59,7 @@ export function QrScanner({ onScan, paused = false }: Readonly<QrScannerProps>) 
     <div className="space-y-2">
       <div
         id={elementId}
-        className={`aspect-square w-full overflow-hidden rounded-lg border border-border bg-surface ${status === "unavailable" ? "hidden" : ""}`}
+        className={`aspect-square w-full overflow-hidden border border-border bg-surface ${status === "unavailable" ? "hidden" : ""}`}
       />
       <p className="text-body-sm text-fg-secondary" role="status">
         {status === "starting" && "Đang bật camera…"}

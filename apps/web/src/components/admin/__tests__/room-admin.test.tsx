@@ -107,9 +107,9 @@ describe("RoomsManager", () => {
     expect(apiFetch).not.toHaveBeenCalled();
   });
 
-  it("hiện — khi không đọc được số ghế; Staff không thấy nút thêm/sửa", () => {
+  it("hiện - khi không đọc được số ghế; Staff không thấy nút thêm/sửa", () => {
     render(<RoomsManager cinemaId="c1" rooms={[room({ seatCount: null })]} canEdit={false} />);
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("-")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sửa" })).toBeNull();
     expect(screen.queryByRole("button", { name: /Thêm phòng/ })).toBeNull();
   });

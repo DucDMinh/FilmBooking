@@ -156,7 +156,7 @@ export function MovieForm({ movie }: Readonly<{ movie?: AdminMovie }>) {
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-6">
       {errors._form ? (
-        <p role="alert" className="rounded-md border border-danger-line bg-danger-soft p-3 text-body-sm text-danger">
+        <p role="alert" className="border border-danger-line bg-danger-soft p-3 text-body-sm text-danger-text">
           {errors._form}
         </p>
       ) : null}
@@ -221,14 +221,14 @@ export function MovieForm({ movie }: Readonly<{ movie?: AdminMovie }>) {
             value={form.description}
             onChange={(event) => set("description")(event.target.value)}
             aria-invalid={errors.description ? true : undefined}
-            className="w-full rounded-sm border border-input bg-surface-input px-3 py-2 text-base text-foreground outline-hidden focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 aria-invalid:border-danger md:text-body"
+            className="w-full border border-input bg-surface-input px-3 py-2 text-base text-foreground outline-hidden focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 aria-invalid:border-danger md:text-body"
           />
         </Field>
       </FormSection>
 
       <FormSection title="Tài nguyên media">
-        <ImageUploadField id="posterUrl" label="Poster (ảnh 2:3)" bucket="posters" value={form.posterUrl} onChange={set("posterUrl")} error={errors.posterUrl} previewClassName="aspect-[2/3] w-28 rounded-md border border-border-subtle object-cover" hint="JPG, PNG hoặc WebP, tối đa 5 MB" />
-        <ImageUploadField id="bannerUrl" label="Banner (ảnh 16:9)" bucket="banners" value={form.bannerUrl} onChange={set("bannerUrl")} error={errors.bannerUrl} previewClassName="aspect-video w-48 rounded-md border border-border-subtle object-cover" hint="JPG, PNG hoặc WebP, tối đa 5 MB" />
+        <ImageUploadField id="posterUrl" label="Poster (ảnh 2:3)" bucket="posters" value={form.posterUrl} onChange={set("posterUrl")} error={errors.posterUrl} previewClassName="aspect-[2/3] w-28 border border-border-subtle object-cover" hint="JPG, PNG hoặc WebP, tối đa 5 MB" />
+        <ImageUploadField id="bannerUrl" label="Banner (ảnh 16:9)" bucket="banners" value={form.bannerUrl} onChange={set("bannerUrl")} error={errors.bannerUrl} previewClassName="aspect-video w-48 border border-border-subtle object-cover" hint="JPG, PNG hoặc WebP, tối đa 5 MB" />
         <TextField id="trailerUrl" label="Trailer (URL YouTube)" type="url" value={form.trailerUrl} onChange={set("trailerUrl")} error={errors.trailerUrl} />
       </FormSection>
 

@@ -77,30 +77,30 @@ export function AffectedOrderDetail({ orderId }: Readonly<{ orderId: string }>) 
           </Link>
         }
       />
-      <dl className="space-y-2 rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+      <dl className="space-y-2 border border-border-subtle bg-surface p-4 md:p-6">
         <Row label="Trạng thái xử lý">
           <Badge tone={order.status === "affected" ? "danger" : "success"}>{ORDER_STATUS_LABEL[order.status]}</Badge>
         </Row>
         <Row label="Khách">
-          {order.contactName ?? "—"} • {order.contactEmail ?? "—"} • {order.contactPhone ?? "—"}
+          {order.contactName ?? "-"} • {order.contactEmail ?? "-"} • {order.contactPhone ?? "-"}
         </Row>
         <Row label="Suất chiếu">
           {order.movieTitle} • {order.cinemaName} • {order.roomName} • {formatVnDate(order.showtimeStartsAt)}{" "}
           {formatVnTime(order.showtimeStartsAt)}
         </Row>
-        <Row label="Ghế">{order.seatLabels.join(", ") || "—"}</Row>
+        <Row label="Ghế">{order.seatLabels.join(", ") || "-"}</Row>
         <Row label="Giá trị đơn">{formatVnd(order.totalAmount)}</Row>
-        <Row label="Lý do huỷ">{order.cancelReason ?? "—"}</Row>
+        <Row label="Lý do huỷ">{order.cancelReason ?? "-"}</Row>
         {order.status === "refunded_manual" ? (
           <>
-            <Row label="Số tiền đã hoàn">{order.refundedAmount === null ? "—" : formatVnd(order.refundedAmount)}</Row>
-            <Row label="Mã giao dịch">{order.refundReference ?? "—"}</Row>
-            <Row label="Ghi chú">{order.note ?? "—"}</Row>
+            <Row label="Số tiền đã hoàn">{order.refundedAmount === null ? "-" : formatVnd(order.refundedAmount)}</Row>
+            <Row label="Mã giao dịch">{order.refundReference ?? "-"}</Row>
+            <Row label="Ghi chú">{order.note ?? "-"}</Row>
           </>
         ) : null}
       </dl>
 
-      <section className="space-y-3 rounded-lg border border-border-subtle bg-surface p-4 md:p-6">
+      <section className="space-y-3 border border-border-subtle bg-surface p-4 md:p-6">
         <h2 className="text-h3 font-bold">Email thông báo</h2>
         <div className="flex flex-wrap items-center gap-3">
           <EmailBadge status={order.emailStatus} />

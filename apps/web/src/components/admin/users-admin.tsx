@@ -106,8 +106,8 @@ function AdminUsersPanel({ selfId, cinemas }: Readonly<{ selfId: string; cinemas
                   return (
                     <TableRow key={user.id}>
                       <TableCell>
-                        <div className="font-semibold">{user.fullName ?? "—"}</div>
-                        <div className="text-small text-fg-muted">{user.email ?? "—"}</div>
+                        <div className="font-semibold">{user.fullName ?? "-"}</div>
+                        <div className="text-small text-fg-muted">{user.email ?? "-"}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
@@ -116,7 +116,7 @@ function AdminUsersPanel({ selfId, cinemas }: Readonly<{ selfId: string; cinemas
                         </div>
                       </TableCell>
                       <TableCell>
-                        {user.assignments.length === 0 ? "—" : null}
+                        {user.assignments.length === 0 ? "-" : null}
                         <ul className="space-y-1">
                           {user.assignments.map((a) => {
                             const cinemaName = cinemaNames.get(a.cinemaId) ?? a.cinemaId.slice(0, 8);
@@ -126,7 +126,7 @@ function AdminUsersPanel({ selfId, cinemas }: Readonly<{ selfId: string; cinemas
                                   {cinemaName} ({a.role === "MANAGER" ? "Manager" : "Staff"})
                                 </span>
                                 <Button
-                                  variant="ghost"
+                                  variant="ghost" className="shadow-none bg-transparent"
                                   size="sm"
                                   aria-label={`Gỡ ${name} khỏi ${cinemaName}`}
                                   onClick={() =>
@@ -151,7 +151,7 @@ function AdminUsersPanel({ selfId, cinemas }: Readonly<{ selfId: string; cinemas
                             Gán vai trò
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="ghost" className="shadow-none bg-transparent"
                             size="sm"
                             disabled={isSelf}
                             title={isSelf ? "Không thể tự khoá tài khoản của mình" : undefined}
@@ -161,7 +161,7 @@ function AdminUsersPanel({ selfId, cinemas }: Readonly<{ selfId: string; cinemas
                             {user.locked ? "Mở khoá" : "Khoá"}
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="ghost" className="shadow-none bg-transparent"
                             size="sm"
                             disabled={isSelf}
                             title={isSelf ? "Không thể tự gỡ quyền Admin của mình" : undefined}

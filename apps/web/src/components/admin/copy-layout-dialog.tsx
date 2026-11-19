@@ -154,13 +154,13 @@ export function CopyLayoutDialog({
             Nếu phòng nguồn có lưới (hàng × cột) khác phòng này, kích thước lưới của phòng này sẽ đổi theo phòng nguồn.
           </p>
           {error && (
-            <p role="alert" className="text-body-sm text-danger">
+            <p role="alert" className="text-body-sm text-danger-text">
               {error}
             </p>
           )}
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="secondary" className="min-h-11" onClick={() => onOpenChange(false)}>
             Huỷ
           </Button>
           <Button type="button" className="min-h-11" disabled={!sourceRoomId || submitting} onClick={submit}>

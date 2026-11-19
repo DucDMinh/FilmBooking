@@ -113,7 +113,7 @@ function SettingsEditor({
                 aria-invalid={errors[key] ? true : undefined}
                 aria-describedby={errors[key] ? `${id}-error` : undefined}
                 onChange={(e) => setDraft((prev) => ({ ...prev, [key]: e.target.value }))}
-                className="w-full rounded-sm border border-input bg-surface-input px-3 py-2 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-45 md:text-body"
+                className="w-full border border-input bg-surface-input px-3 py-2 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-45 md:text-body"
               />
             </Field>
           );

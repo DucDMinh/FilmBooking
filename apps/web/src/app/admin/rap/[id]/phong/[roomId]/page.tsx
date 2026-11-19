@@ -38,7 +38,7 @@ export default async function RoomLayoutPage({ params }: Readonly<{ params: Prom
           ← Phòng chiếu
         </Link>
         <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="text-h1 font-extrabold">{layout.room.name}</h1>
+          <h1 className="text-h1 font-bold uppercase">{layout.room.name}</h1>
           <Badge tone={layout.room.status === "ACTIVE" ? "success" : "warning"}>
             {layout.room.status === "ACTIVE" ? "Hoạt động" : "Bảo trì"}
           </Badge>

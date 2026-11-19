@@ -14,7 +14,7 @@ export default function CreateShowtimePage() {
       <Link href="/admin/lich-chieu" className="text-body-sm text-link hover:underline">
         ← Lịch chiếu
       </Link>
-      <h1 className="text-h2 font-bold">Tạo suất chiếu</h1>
+      <h1 className="text-h2 font-bold uppercase">Tạo suất chiếu</h1>
       <ShowtimeCinemaGate>
         {(cinema) => (
           <>

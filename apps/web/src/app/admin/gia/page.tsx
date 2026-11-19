@@ -16,7 +16,7 @@ export default async function Page() {
   const role = resolveAdminRole(me) ?? "STAFF";
   return (
     <div className="space-y-4">
-      <h1 className="text-h2 font-bold">Bảng giá</h1>
+      <h1 className="text-h2 font-bold uppercase">Bảng giá</h1>
       <PriceMatrix role={role} memberships={me.cinemas} />
       <p className="text-body-sm">
         <Link className="text-link underline-offset-4 hover:underline" href="/admin/ngay-le">

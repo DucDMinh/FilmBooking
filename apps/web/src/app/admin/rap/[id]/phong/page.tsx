@@ -50,7 +50,7 @@ export default async function RoomsPage({ params }: Readonly<{ params: Promise<{
         <Link href="/admin/rap" className="text-body-sm text-fg-secondary hover:underline">
           ← Rạp chiếu
         </Link>
-        <h1 className="mt-1 text-h1 font-extrabold">Phòng chiếu</h1>
+        <h1 className="mt-1 text-h1 font-bold uppercase">Phòng chiếu</h1>
       </div>
       <RoomsManager cinemaId={cinemaId} rooms={items} canEdit={access.canEdit} />
     </div>

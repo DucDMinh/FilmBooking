@@ -118,7 +118,7 @@ export function CancelShowtimesDialog(props: Readonly<CancelShowtimesDialogProps
               maxLength={500}
               rows={4}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full rounded-sm border border-input bg-surface-input p-3 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring/40 md:text-body"
+              className="w-full border border-input bg-surface-input p-3 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring/40 md:text-body"
             />
             <p className="text-body-sm text-fg-secondary">Lý do này được gửi trong email thông báo cho khách.</p>
           </div>
@@ -126,7 +126,7 @@ export function CancelShowtimesDialog(props: Readonly<CancelShowtimesDialogProps
 
         {step === "preview" && preview ? (
           <div className="space-y-3">
-            <p className="rounded-md border border-border bg-surface-elevated p-3 text-body font-semibold" data-testid="cancel-preview">
+            <p className="border border-border bg-surface-elevated p-3 text-body font-semibold" data-testid="cancel-preview">
               {previewSummary(preview)}
             </p>
             <p>
@@ -142,7 +142,7 @@ export function CancelShowtimesDialog(props: Readonly<CancelShowtimesDialogProps
 
         {step === "confirm" ? (
           <div className="space-y-3">
-            <div role="alert" className="rounded-md border border-danger-line bg-danger-soft p-3 text-danger">
+            <div role="alert" className="border border-danger-line bg-danger-soft p-3 text-danger-text">
               Không thể hoàn tác. Suất sẽ ngừng bán trên web; vé không thể check-in.
             </div>
             <Label htmlFor="cancel-code">Gõ mã rạp {cinemaCode} để xác nhận</Label>
@@ -151,13 +151,13 @@ export function CancelShowtimesDialog(props: Readonly<CancelShowtimesDialogProps
         ) : null}
 
         {error ? (
-          <p role="alert" className="text-body-sm text-danger">
+          <p role="alert" className="text-body-sm text-danger-text">
             {error}
           </p>
         ) : null}
 
         <DialogFooter>
-          <Button type="button" variant="outline" disabled={busy} onClick={() => handleOpenChange(false)}>
+          <Button type="button" variant="secondary" disabled={busy} onClick={() => handleOpenChange(false)}>
             Để sau
           </Button>
           {step === "reason" ? (

@@ -118,6 +118,6 @@ describe("ShowtimeBulkForm (AC-14)", () => {
 
     const list = await screen.findByTestId("conflict-list");
     expect(list).toHaveTextContent("Phòng 01");
-    expect(list).toHaveTextContent("Phim B 18:30–20:30");
+    expect(list).toHaveTextContent("Phim B 18:30-20:30");
   });
 });

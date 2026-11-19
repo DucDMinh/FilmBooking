@@ -24,6 +24,6 @@ Không đụng `components/catalog|booking|ticket|account|auth|shell|common|ui`,
 ## Repro Verification
 - Original: admin/soát vé coral.
 - Expected: da CYBERPLEX nhẹ, không chuyển động, dữ liệu đọc rõ.
-- Actual after: _(builder điền)_
-- Evidence: _(builder điền)_
-- Status: pending
+- Actual after: admin/soát vé dùng màu CYBERPLEX qua token (vàng/chrome/sidebar-accent), font heading Chakra Petch, nút/badge chamfer từ `components/ui`, card/bảng/ô nhập vuông (đã bỏ mọi `rounded-*`), `text-danger` -> `text-danger-text`, không dấu `—`/`–` trong chuỗi hiển thị, không Scrub/scanline/chuyển động.
+- Evidence: typecheck PASS; lint PASS; test 629/629 PASS (4 test bám dấu `—`/`–` cũ sửa sang `-`); grep: không `Scrub|data-scrub|scanline|rounded|coral|cta-glow` trong admin/staff, scanline chỉ ở `(public)/layout.tsx`; `next build --webpack` compile OK nhưng fail type-check ở `.next/types/app/auth/callback/route.ts` (`classifyOAuthError` export từ route.ts, ngoài scope, có từ trước). `pnpm build` (turbopack) không chạy được trong worktree do junction node_modules. Playwright smoke KHÔNG chạy (cần API/đăng nhập).
+- Status: PASS (chờ reviewer)

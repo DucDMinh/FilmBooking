@@ -131,7 +131,7 @@ export function CheckinResult({
     >
       <div className="flex items-center gap-3">
         <Icon aria-hidden="true" className="size-10 shrink-0" />
-        <h2 className="text-h1 font-heavy">{HEADLINE[response.result]}</h2>
+        <h2 className="font-heading text-[20px] leading-tight font-bold">{HEADLINE[response.result]}</h2>
       </div>
       {response.message ? <p className="text-body text-fg">{response.message}</p> : null}
       {retry && scannedCode ? <p className="text-body text-fg">Mã: {scannedCode}</p> : null}
@@ -141,7 +141,7 @@ export function CheckinResult({
         ref={nextRef}
         type="button"
         size="lg"
-        variant="gradient"
+        variant="default"
         className="mt-auto w-full"
         onClick={onNext}
       >

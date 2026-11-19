@@ -15,7 +15,7 @@ export default async function Page() {
   const role = resolveAdminRole(me) ?? "STAFF";
   return (
     <div className="space-y-4">
-      <h1 className="text-h2 font-bold">Voucher</h1>
+      <h1 className="text-h2 font-bold uppercase">Voucher</h1>
       <VoucherManager role={role} />
     </div>
   );

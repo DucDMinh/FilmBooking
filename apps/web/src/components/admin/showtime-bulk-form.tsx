@@ -33,7 +33,7 @@ export interface ShowtimeBulkFormProps {
 }
 
 const selectClass =
-  "h-11 w-full rounded-sm border border-input bg-surface-input px-2 text-base md:h-10 md:text-body";
+  "h-11 w-full border border-input bg-surface-input px-2 text-base md:h-10 md:text-body";
 
 /** Danh sách suất xung đột (AC-14, R-50): suất dự kiến + suất đã có gây trùng. */
 export function ConflictList({
@@ -44,15 +44,15 @@ export function ConflictList({
   const roomName = (id: string) => rooms.find((r) => r.id === id)?.name ?? "Phòng";
   const movieTitle = (id: string) => movies.find((m) => m.id === id)?.titleVi ?? "phim khác";
   return (
-    <div role="alert" className="space-y-2 rounded-md border border-danger-line bg-danger-soft p-3 text-danger">
+    <div role="alert" className="space-y-2 border border-danger-line bg-danger-soft p-3 text-danger-text">
       <p className="font-semibold">Trùng lịch chiếu ({conflicts.length} suất)</p>
       <ul className="list-disc space-y-1 pl-5 text-body-sm" data-testid="conflict-list">
         {conflicts.map((c) => (
           <li key={`${c.roomId}|${c.startsAt}`}>
-            {roomName(c.roomId)} {formatVnDate(c.startsAt)} {formatVnTime(c.startsAt)}–{formatVnTime(c.endsAt)}
+            {roomName(c.roomId)} {formatVnDate(c.startsAt)} {formatVnTime(c.startsAt)}-{formatVnTime(c.endsAt)}
             {c.conflictsWith.length > 0
               ? ` trùng với ${c.conflictsWith
-                  .map((w) => `${movieTitle(w.movieId)} ${formatVnTime(w.startsAt)}–${formatVnTime(w.endsAt)}`)
+                  .map((w) => `${movieTitle(w.movieId)} ${formatVnTime(w.startsAt)}-${formatVnTime(w.endsAt)}`)
                   .join(", ")}`
               : " trùng với một suất khác trong cùng yêu cầu"}
           </li>
@@ -161,7 +161,7 @@ export function ShowtimeBulkForm({ cinemaId, onCreated }: Readonly<ShowtimeBulkF
       <div className="space-y-1">
         <Label htmlFor="st-movie">Phim *</Label>
         <select id="st-movie" className={selectClass} value={movieId} onChange={(e) => setMovieId(e.target.value)}>
-          <option value="">— Chọn phim —</option>
+          <option value="">- Chọn phim -</option>
           {movies.map((m) => (
             <option key={m.id} value={m.id}>
               {m.titleVi} ({m.durationMinutes} phút)
@@ -196,7 +196,7 @@ export function ShowtimeBulkForm({ cinemaId, onCreated }: Readonly<ShowtimeBulkF
           {rooms
             .filter((r) => r.supportedFormats.includes(format))
             .map((room) => (
-              <label key={room.id} className="flex min-h-11 items-center gap-2 rounded-md border border-border px-3">
+              <label key={room.id} className="flex min-h-11 items-center gap-2 border border-border px-3">
                 <input
                   type={bulk ? "checkbox" : "radio"}
                   name="room"
@@ -239,7 +239,7 @@ export function ShowtimeBulkForm({ cinemaId, onCreated }: Readonly<ShowtimeBulkF
               </Button>
             ))}
             <Input id="st-time-add" type="time" className="w-32" value={timeDraft} onChange={(e) => setTimeDraft(e.target.value)} />
-            <Button type="button" variant="outline" size="sm" onClick={addTime}>
+            <Button type="button" variant="secondary" size="sm" onClick={addTime}>
               Thêm giờ
             </Button>
           </div>
@@ -265,7 +265,7 @@ export function ShowtimeBulkForm({ cinemaId, onCreated }: Readonly<ShowtimeBulkF
 
       {conflicts.length > 0 ? <ConflictList conflicts={conflicts} rooms={rooms} movies={movies} /> : null}
       {error ? (
-        <p role="alert" className="text-body-sm text-danger">
+        <p role="alert" className="text-body-sm text-danger-text">
           {error}
         </p>
       ) : null}

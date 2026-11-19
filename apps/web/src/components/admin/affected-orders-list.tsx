@@ -32,12 +32,12 @@ import { PageHeader, useAdminMe } from "./form-utils";
 import { formatVnDate, formatVnTime } from "./showtime-utils";
 
 const SELECT_CLASS =
-  "h-11 w-full rounded-md border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
+  "h-11 w-full border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 const PAGE_SIZE = 20;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function EmailBadge({ status }: Readonly<{ status: EmailDeliveryStatus | null }>) {
-  if (!status) return <span className="text-fg-muted">—</span>;
+  if (!status) return <span className="text-fg-muted">-</span>;
   const variant = status === "SENT" ? "success" : status === "FAILED" ? "danger" : "neutral";
   return <Badge tone={variant}>{EMAIL_STATUS_LABEL[status]}</Badge>;
 }
@@ -182,7 +182,7 @@ export function AffectedOrdersList({ initialShowtimeId = "" }: Readonly<{ initia
             aria-invalid={showtimeValid ? undefined : true}
           />
           {showtimeValid ? null : (
-            <span role="alert" className="text-small text-danger">
+            <span role="alert" className="text-small text-danger-text">
               Mã suất chiếu không hợp lệ
             </span>
           )}
@@ -205,7 +205,7 @@ export function AffectedOrdersList({ initialShowtimeId = "" }: Readonly<{ initia
       ) : (
         <>
           <p className="mb-2 text-body-sm text-fg-muted">
-            Đơn {offset + 1}–{pageEnd} / {total}
+            Đơn {offset + 1}-{pageEnd} / {total}
             {visible.length < (items?.length ?? 0) ? ` • ${visible.length} đơn khớp bộ lọc email trong trang này` : ""}
           </p>
           {visible.length === 0 ? (
@@ -237,7 +237,7 @@ export function AffectedOrdersList({ initialShowtimeId = "" }: Readonly<{ initia
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <div>{order.contactName ?? "—"}</div>
+                      <div>{order.contactName ?? "-"}</div>
                       <div className="text-small text-fg-muted">{order.contactEmail ?? order.contactPhone ?? ""}</div>
                     </TableCell>
                     <TableCell>

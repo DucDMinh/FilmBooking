@@ -265,10 +265,10 @@ describe("AffectedOrdersList", () => {
     );
     routeApi((path) => (path.includes("offset=20") ? { items: [order({ bookingCode: "FBLAST" })], total: 21 } : { items: many, total: 21 }));
     render(<AffectedOrdersList />);
-    expect(await screen.findByText(/Đơn 1–20 \/ 21/)).toBeInTheDocument();
+    expect(await screen.findByText(/Đơn 1-20 \/ 21/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Trang sau" }));
     expect(await screen.findByText("FBLAST")).toBeInTheDocument();
-    expect(screen.getByText(/Đơn 21–21 \/ 21/)).toBeInTheDocument();
+    expect(screen.getByText(/Đơn 21-21 \/ 21/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Trang sau" })).toBeDisabled();
   });
 

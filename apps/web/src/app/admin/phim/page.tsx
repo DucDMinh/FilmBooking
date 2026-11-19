@@ -85,9 +85,9 @@ export default function AdminMoviesPage() {
                 <TableCell>
                   <div className="flex items-center gap-3">
                     {movie.posterUrl ? (
-                      <img src={movie.posterUrl} alt="" className="h-14 w-10 rounded-sm object-cover" />
+                      <img src={movie.posterUrl} alt="" className="h-14 w-10 object-cover" />
                     ) : (
-                      <span className="h-14 w-10 rounded-sm bg-surface-elevated" aria-hidden="true" />
+                      <span className="h-14 w-10 bg-surface-elevated" aria-hidden="true" />
                     )}
                     <div>
                       <div className="font-semibold">{movie.titleVi}</div>
@@ -95,7 +95,7 @@ export default function AdminMoviesPage() {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{movie.genres.join(", ") || "—"}</TableCell>
+                <TableCell>{movie.genres.join(", ") || "-"}</TableCell>
                 <TableCell>{movie.durationMinutes} phút</TableCell>
                 <TableCell>
                   <AgeBadge rating={movie.ageRating} />
@@ -112,7 +112,7 @@ export default function AdminMoviesPage() {
                       </Link>
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="ghost" className="shadow-none bg-transparent"
                       size="sm"
                       onClick={() => toggleVisibility(movie)}
                       aria-label={`${movie.status === "PUBLISHED" ? "Ẩn" : "Hiện"} phim ${movie.titleVi}`}
