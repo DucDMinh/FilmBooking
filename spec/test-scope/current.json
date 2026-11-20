@@ -1,9 +1,9 @@
 {
   "specVersion": "3.5.0",
-  "scopeVersion": 27,
-  "generatedAt": "2026-11-19T15:24:09+07:00",
-  "trigger": "feature-update",
-  "workItem": "feature/cyberplex-reskin",
+  "scopeVersion": 28,
+  "generatedAt": "2026-11-20T09:50:33+07:00",
+  "trigger": "bug-fix",
+  "workItem": "bug/select-dropdown-theme",
   "specRefs": [
     "R-138",
     "NFR-19",
@@ -278,9 +278,12 @@
       "e2e/scrub/scrub.spec.ts",
       "playwright.config.ts",
       "playwright.scrub.config.ts",
-      "skills/react-nodejs/design-tokens.md"
+      "skills/react-nodejs/design-tokens.md",
+      "apps/web/src/components/catalog/__tests__/select-theme.test.ts",
+      ".context/design-spec.md"
     ],
     "modules": [
+      "web-form-controls (select)",
       "web-catalog",
       "web-lich-chieu",
       "showtime-schedule",
@@ -639,6 +642,10 @@
   },
   "impact": {
     "direct": [
+      "[scope v28 / bug-select-dropdown-theme] web.select.popup-theme (NFR-19, AC-31; CR-012 — BUG FIX, requirement KHÔNG đổi, không bump spec_version) — danh sách xổ xuống của `<select>` gốc nay theo token CYBERPLEX thay vì popup mặc định Windows: CSS toàn cục `apps/web/src/app/globals.css` (`@layer base`, bọc `@supports (appearance: base-select)`) `select, ::picker(select) { appearance: base-select }`; popup vuông, nền tối, viền, bóng, max-height; mục rê/bàn phím có vạch trái vàng, mục đã chọn nền nhấn vàng + dấu tick vàng; mũi tên `picker-icon` xoay khi mở; `option` cao tối thiểu 44px dưới md. Kiểm trên Chromium/Edge mới (hỗ trợ `base-select`) ở /lich-chieu (lọc rạp/phim/tỉnh), /phim (bộ lọc) và thanh Đặt vé nhanh trang chủ; chụp ảnh khi popup đang mở.",
+      "[scope v28 / bug-select-dropdown-theme] web.select.closed-field (NFR-19, NFR-12) — ô đóng đồng nhất: hằng `SELECT_FIELD_CLASS` (`components/catalog/filter-field.ts`) áp cho 22 `<select>` ở 12 file (/lich-chieu, /phim, và admin: lịch chiếu + chi tiết suất, đơn hàng, đơn bị ảnh hưởng, nhật ký, khoá ghế, nhân sự rạp, gán vai trò, tạo suất hàng loạt, voucher) + QuickBookBar qua `home/home-hero.css`: vuông, viền/nền ô nhập, `px-3`, cao 44px (mobile) / 40px (md+), focus viền brand + ring, disabled mờ, `aria-invalid` viền danger; không còn ô lệch (`bg-transparent`, `px-2`). Chiều cao KHÔNG đổi. Test tự động: `select-theme.test.ts`.",
+      "[scope v28 / bug-select-dropdown-theme] web.quick-book-bar.select-blocked (R-138, R-35, AC-31) — QuickBookBar khi CHƯA chọn tỉnh: click / Enter / ArrowDown ở ô Rạp KHÔNG xổ danh sách (popup không mở) mà mở hộp chọn tỉnh (ProvincePickerDialog); đã chọn tỉnh thì ô mở popup theo token CYBERPLEX; thanh vẫn cao 44px, rộng như trước, opacity 1; 4 ô Rạp → Phim → Ngày → Giờ và lỗi thiếu ô giữ nguyên.",
+      "[scope v28 / bug-select-dropdown-theme] web.select.browser-fallback (NFR-19) — Firefox/Safari CHƯA hỗ trợ `appearance: base-select`: popup vẫn của hệ điều hành, chỉ đổi được nền/chữ `option` (dự phòng `color-scheme: dark`); ô đóng vẫn đồng nhất, chức năng chọn không đổi. Test popup theo token chỉ làm trên Chromium hỗ trợ `base-select`; KHÔNG viết test kỳ vọng popup tuỳ biến trên Firefox/Safari.",
       "[scope v26 / feature-cinema-status-notice] db.cinemas.scheduled-status (R-136, R-32) — MODIFY/THÊM: migration `20261118100000_cinema_status_schedule.sql` thêm cột nullable `cinemas.scheduled_status`, `cinemas.scheduled_effective_at` (check cùng null / cùng có) + partial index; rạp cũ không backfill (lịch null). Test: pgTAP 066.",
       "[scope v26 / feature-cinema-status-notice] db.schedule_cinema_status (R-136, AC-27, AC-26) — RPC mới `schedule_cinema_status(cinema_id, status)` CHỈ Admin (Manager/Staff/anon -> 42501, kiểm quyền TRƯỚC khi đọc/khoá rạp nên không dò được rạp tồn tại): hẹn đóng/tạm đóng/mở lại/sắp khai trương -> rạp GIỮ NGUYÊN status, ghi `scheduled_status` + `scheduled_effective_at` = now() + đúng 168 giờ; xếp hàng email `CINEMA_STATUS_NOTICE` cho MỌI tài khoản có email đã xác nhận (mỗi email 1 dòng outbox, dedupe, loại tài khoản xoá/khoá/chưa xác nhận); hẹn lại khi đang có lịch = THAY lịch (tính lại 7 ngày, gửi lại email); hẹn đúng trạng thái hiện tại: có lịch = HUỶ lịch (xoá lịch + email đính chính tới toàn bộ khách), không có lịch = bị từ chối. Trả số email xếp hàng. Test: pgTAP 066 (tạo lịch, thay lịch, huỷ lịch, từ chối, quyền, đếm email).",
       "[scope v26 / feature-cinema-status-notice] db.set_cinema_status.removed (R-136, AC-27) — `set_cinema_status` (đổi trạng thái tức thì, chặn khi còn suất đã bán) bị GỠ (`drop function`): gọi RPC cũ -> lỗi function không tồn tại. Không còn nhánh 409 `CINEMA_HAS_ACTIVE_SOLD_SHOWTIMES`. Test: pgTAP 066, 048 (đặc quyền hàm).",
@@ -897,7 +904,10 @@
       "[scope v27 / feature-cyberplex-reskin] REGRESSION a11y (NFR-12): tương phản chữ/nền và viền điều khiển ở trạng thái nghỉ đạt WCAG 2.1 AA (nền tối + vàng điện), focus ring nhìn thấy, nhãn ghế/ô chọn/nút có tên truy cập, điều hướng bàn phím dialog/AlertDialog/Select/Tabs/Sheet.",
       "[scope v27 / feature-cyberplex-reskin] REGRESSION responsive 360px (NFR-11): không thanh cuộn ngang, thanh Đặt vé nhanh, header/footer, sơ đồ ghế, bảng admin, trang soát vé điện thoại; Chrome/Safari.",
       "[scope v27 / feature-cyberplex-reskin] REGRESSION SEO trang phim/rạp (R-40, R-44): SSR/meta/JSON-LD không đổi; kiểm metadata trang `/phim/[slug]`, `/rap/[code]` sau khi đổi `next.config.ts` (font/ảnh).",
-      "[scope v27 / feature-cyberplex-reskin] REGRESSION trang pháp lý và trang lỗi: `lib/legal.ts`, Điều khoản, Chính sách bảo mật, Hướng dẫn xoá dữ liệu hiển thị đúng sau reskin; `error.tsx`, `global-error.tsx`, `not-found.tsx`, `khong-co-quyen`."
+      "[scope v27 / feature-cyberplex-reskin] REGRESSION trang pháp lý và trang lỗi: `lib/legal.ts`, Điều khoản, Chính sách bảo mật, Hướng dẫn xoá dữ liệu hiển thị đúng sau reskin; `error.tsx`, `global-error.tsx`, `not-found.tsx`, `khong-co-quyen`.",
+      "[scope v28 / bug-select-dropdown-theme] REGRESSION mọi `<select>` gốc: giá trị mặc định/`value=\"\"`, `onChange`, `disabled`, `name`, `aria-*` và gửi form không đổi ở bộ lọc phim, lịch chiếu, QuickBookBar và các form admin (lịch chiếu, đơn hàng, đơn bị ảnh hưởng, nhật ký, khoá ghế, nhân sự rạp, gán vai trò, tạo suất hàng loạt, voucher).",
+      "[scope v28 / bug-select-dropdown-theme] REGRESSION bố cục `w-auto` của ô chọn ở 3 màn admin (`/admin/lich-chieu`, khoá ghế, nhân sự rạp) và 2 `<select>` trong Radix Dialog gán vai trò (`role-assign-dialog`): popup mở được, không bị cắt/che, chọn xong đóng dialog đúng (builder chưa thử trên trình duyệt thật).",
+      "[scope v28 / bug-select-dropdown-theme] REGRESSION bộ cuộn Playwright (`pnpm exec playwright test -c playwright.scrub.config.ts`, 21 test) và NFR-12/NFR-11: chiều cao ô 44/40px không đổi nên vị trí/cỡ QuickBookBar và hero không lệch; focus ring ô chọn nhìn thấy; 360px không thanh cuộn ngang."
     ]
   },
   "acceptance": [
@@ -977,12 +987,17 @@
     "CR custom-mail-templates A5: Given quên mật khẩu When xem Mailpit Then mail `[CINEMO] Đặt lại mật khẩu` nêu link hết hạn 1 giờ, dùng một lần; đặt lại thành công như trước. [R-13]",
     "CR custom-mail-templates A6: Given 6 template Auth (`confirmation`, `recovery`, `magic_link`, `email_change`, `invite`, `reauthentication`) Then đủ file, có \"CINEMO\", `lang=\"vi\"`, chỉ dùng biến `.ConfirmationURL/.Token/.Email/.NewEmail`, không `<script`; `[auth.email.notification.*]` không bật. [R-04, R-13, R-14]",
     "CR cyberplex-reskin A1 (AC-31, R-138): Given khách ở trang chủ, tỉnh đã chọn When chọn đủ Rạp, Phim, Ngày, Giờ rồi bấm Đặt vé Then vào đúng màn chọn ghế của suất đó (Guest được yêu cầu đăng nhập như R-16); bỏ trống ô nào thì báo lỗi dưới thanh và không điều hướng. Given có rạp Tạm đóng / suất Ngừng bán online / suất đã huỷ When mở thanh Then các mục đó không xuất hiện; ô không còn lựa chọn hiện \"Chưa có suất\". Given chưa chọn tỉnh When mở thanh Then mở chọn tỉnh. Given đổi ô Rạp sau khi đã chọn Phim Then các ô sau được đặt lại. [R-138, R-35, R-67, R-137, R-16]",
-    "CR cyberplex-reskin A2 (AC-32, NFR-19, NFR-12): Given bật \"giảm chuyển động\" của hệ điều hành When mở trang chủ, danh sách phim, lịch chiếu Then mọi phần tử hiện đủ ngay, không trượt/phóng. Given tắt tuỳ chọn đó When cuộn xuống rồi lên Then phần tử hiện dần rồi thu về theo vị trí cuộn. Given bất kỳ trang khách nào ở 390x844, 1280x800, 1440x900, 1920x1080 When cuộn tới cuối Then không còn phần tử nào ẩn một phần (mọi opacity = 1), không thanh cuộn ngang. Given dùng Tab Then phần tử nhận focus luôn hiện. Given trình duyệt không hỗ trợ scroll-driven animations Then nội dung hiển thị tĩnh đủ. Given vào /admin hoặc /staff/soat-ve Then không có chuyển động theo cuộn. Given mở trang chủ Then CLS < 0.1. Given bất kỳ trang khách nào Then không animation tự lặp, không nhấp nháy quá 3 lần/giây; mọi chức năng đặt vé dùng được ở các trường hợp trên. Bộ kiểm cuộn tự động có sẵn: `pnpm exec playwright test -c playwright.scrub.config.ts` (20 test, API giả, không cần Supabase). [NFR-19, NFR-12, NFR-11]"
+    "CR cyberplex-reskin A2 (AC-32, NFR-19, NFR-12): Given bật \"giảm chuyển động\" của hệ điều hành When mở trang chủ, danh sách phim, lịch chiếu Then mọi phần tử hiện đủ ngay, không trượt/phóng. Given tắt tuỳ chọn đó When cuộn xuống rồi lên Then phần tử hiện dần rồi thu về theo vị trí cuộn. Given bất kỳ trang khách nào ở 390x844, 1280x800, 1440x900, 1920x1080 When cuộn tới cuối Then không còn phần tử nào ẩn một phần (mọi opacity = 1), không thanh cuộn ngang. Given dùng Tab Then phần tử nhận focus luôn hiện. Given trình duyệt không hỗ trợ scroll-driven animations Then nội dung hiển thị tĩnh đủ. Given vào /admin hoặc /staff/soat-ve Then không có chuyển động theo cuộn. Given mở trang chủ Then CLS < 0.1. Given bất kỳ trang khách nào Then không animation tự lặp, không nhấp nháy quá 3 lần/giây; mọi chức năng đặt vé dùng được ở các trường hợp trên. Bộ kiểm cuộn tự động có sẵn: `pnpm exec playwright test -c playwright.scrub.config.ts` (20 test, API giả, không cần Supabase). [NFR-19, NFR-12, NFR-11]",
+    "CR select-dropdown-theme A1 (CR-012, NFR-19, AC-31): Given mở /lich-chieu, /phim hoặc thanh Đặt vé nhanh ở trang chủ trên Chromium/Edge mới (hỗ trợ `base-select`) When bấm một ô chọn để xổ danh sách Then popup vuông, nền tối, viền, chữ theo token CYBERPLEX (KHÔNG phải popup mặc định Windows), mục rê chuột/bàn phím có vạch trái vàng, mục đã chọn nền nhấn vàng + tick, mũi tên xoay khi mở; chọn một mục thì ô đóng hiện đúng giá trị và hành vi lọc/điều hướng như trước. [NFR-19, R-138, R-43]",
+    "CR select-dropdown-theme A2 (CR-012, NFR-19): Given các ô chọn ở /lich-chieu, /phim, QuickBookBar và các màn admin When nhìn ô đóng Then cùng một kiểu (vuông, viền/nền ô nhập, cao 44px mobile / 40px md+, focus viền brand + ring), không còn ô lệch (nền trong suốt, padding khác). [NFR-19, NFR-12]",
+    "CR select-dropdown-theme A3 (CR-012, R-138, R-35, AC-31): Given trang chủ CHƯA chọn tỉnh When click / Enter / ArrowDown ở ô Rạp của QuickBookBar Then KHÔNG xổ danh sách, mở hộp chọn tỉnh; Given đã chọn tỉnh Then ô Rạp xổ popup theo token. Thanh vẫn cao 44px, opacity 1. [R-138, R-35]",
+    "CR select-dropdown-theme A4 (CR-012, NFR-19): Given Firefox/Safari (chưa hỗ trợ `base-select`) Then popup vẫn của hệ điều hành (chỉ đổi màu option), ô đóng vẫn đồng nhất và chọn được bình thường; không coi popup mặc định ở các trình duyệt này là lỗi. [NFR-19]"
   ],
   "risk": "medium",
   "notes": [
     "Chưa kiểm (residual risk): chọn ghế khi đã đăng nhập (SeatMap runtime), /admin và /staff runtime thật, Lighthouse chính thức (CLS, a11y, SEO), axe-core tự động. Đề nghị bên test bổ sung.",
     "Bộ kiểm cuộn tự động: `pnpm exec playwright test -c playwright.scrub.config.ts` (20 test, mock API `e2e/scrub/mock-api.mjs`, không cần Supabase).",
-    "CR-010 chỉ đổi giao diện + thêm R-138; KHÔNG đổi nghiệp vụ, API, DB, migration. Vùng cần retest kỹ: SeatMap và thanh toán."
+    "CR-010 chỉ đổi giao diện + thêm R-138; KHÔNG đổi nghiệp vụ, API, DB, migration. Vùng cần retest kỹ: SeatMap và thanh toán.",
+    "[scope v28 / bug-select-dropdown-theme, CR-012] Bug-fix thuần giao diện: KHÔNG đổi requirement (spec_version giữ 3.5.0), API, DB, migration. Test popup `<select>` bằng Chromium/Edge mới hỗ trợ `appearance: base-select`; Firefox/Safari dùng popup hệ điều hành (fallback chấp nhận). Chưa kiểm bằng mắt: bố cục `w-auto` ở 3 màn admin và 2 select trong Radix Dialog (`role-assign-dialog`); màn admin cần phiên Supabase nên chưa chụp ảnh, dùng /phim làm bằng chứng tương đương. Chỉ có chuyển động mở popup, không có chuyển động đóng. Delta: `spec/updates/2026-11-20-select-dropdown-theme.md`."
   ]
 }

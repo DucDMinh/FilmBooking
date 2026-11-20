@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { DateTime, Money } from "@/components/common/money";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/states";
 import { Badge } from "@/components/ui/badge";
@@ -220,7 +221,7 @@ export function OrderSearch() {
             id="order-status"
             value={draft.status}
             onChange={(e) => set("status")(e.target.value)}
-            className="h-11 w-full border border-border-input bg-transparent px-3 text-body-sm"
+            className={SELECT_FIELD_CLASS}
           >
             <option value="">Tất cả</option>
             {ORDER_STATUSES.map((status) => (

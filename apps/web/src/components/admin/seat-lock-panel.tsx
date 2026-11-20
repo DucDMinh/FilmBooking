@@ -5,8 +5,10 @@ import { useMemo, useState } from "react";
 
 import { SeatMap } from "@/components/booking/seat-map";
 import { isBookableType } from "@/components/booking/seat-rules";
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { Button } from "@/components/ui/button";
 import { apiFetch, ApiError } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 
 export interface SeatLockPanelProps {
   cinemaId: string;
@@ -86,7 +88,7 @@ export function SeatLockPanel({ cinemaId, showtimeId, seats, disabled, onChanged
             value={reason}
             disabled={disabled || busy}
             onChange={(e) => setReason(e.target.value as typeof reason)}
-            className="h-11 border border-input bg-surface-input px-2 text-base md:h-10 md:text-body"
+            className={cn(SELECT_FIELD_CLASS, "w-auto min-w-auto")}
           >
             {REASONS.map((r) => (
               <option key={r.value} value={r.value}>

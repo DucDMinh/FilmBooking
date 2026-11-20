@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { FIELD_CLASS, SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,8 +32,6 @@ import {
 import { PageHeader, useAdminMe } from "./form-utils";
 import { formatVnDate, formatVnTime } from "./showtime-utils";
 
-const SELECT_CLASS =
-  "h-11 w-full border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 const PAGE_SIZE = 20;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -145,7 +144,7 @@ export function AffectedOrdersList({ initialShowtimeId = "" }: Readonly<{ initia
         <label className="space-y-1.5 text-body-sm">
           <span>Trạng thái xử lý</span>
           <select
-            className={SELECT_CLASS}
+            className={SELECT_FIELD_CLASS}
             value={status}
             onChange={(e) => setStatus(e.target.value as AffectedOrderStatus | "")}
           >
@@ -160,7 +159,7 @@ export function AffectedOrdersList({ initialShowtimeId = "" }: Readonly<{ initia
         <label className="space-y-1.5 text-body-sm">
           <span>Trạng thái email</span>
           <select
-            className={SELECT_CLASS}
+            className={SELECT_FIELD_CLASS}
             value={emailStatus}
             onChange={(e) => setEmailStatus(e.target.value as EmailDeliveryStatus | "")}
           >
@@ -175,7 +174,7 @@ export function AffectedOrdersList({ initialShowtimeId = "" }: Readonly<{ initia
         <label className="space-y-1.5 text-body-sm">
           <span>Mã suất chiếu</span>
           <input
-            className={SELECT_CLASS}
+            className={FIELD_CLASS}
             value={showtimeInput}
             onChange={(e) => setShowtimeInput(e.target.value)}
             placeholder="Để trống = mọi suất"

@@ -8,6 +8,7 @@ import {
 import type { AdminCinemaDto } from "@filmbooking/shared/schemas/catalog";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,8 +31,6 @@ const ACTION_TONE: Record<AuditLogDto["action"], "success" | "info" | "danger"> 
   DELETE: "danger",
 };
 
-const SELECT_CLASS =
-  "h-11 w-full border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 
 export interface AuditDiffRow {
   field: string;
@@ -196,7 +195,7 @@ function AuditLogList({ cinemas }: Readonly<{ cinemas: readonly AdminCinemaDto[]
     <div className="space-y-4">
       <form onSubmit={submit} className="grid gap-3 md:grid-cols-3" noValidate>
         <Field id="audit-cinema" label="Rạp">
-          <select id="audit-cinema" className={SELECT_CLASS} value={draft.cinemaId} onChange={(e) => set("cinemaId")(e.target.value)}>
+          <select id="audit-cinema" className={SELECT_FIELD_CLASS} value={draft.cinemaId} onChange={(e) => set("cinemaId")(e.target.value)}>
             <option value="">Tất cả</option>
             {cinemas.map((c) => (
               <option key={c.id} value={c.id}>
@@ -208,7 +207,7 @@ function AuditLogList({ cinemas }: Readonly<{ cinemas: readonly AdminCinemaDto[]
         <TextField id="audit-actor" label="Người thực hiện (ID)" value={draft.actorId} onChange={set("actorId")} error={errors.actorId} />
         <TextField id="audit-table" label="Đối tượng (tên bảng)" value={draft.tableName} onChange={set("tableName")} error={errors.tableName} hint="Ví dụ: showtimes" />
         <Field id="audit-action" label="Thao tác">
-          <select id="audit-action" className={SELECT_CLASS} value={draft.action} onChange={(e) => set("action")(e.target.value)}>
+          <select id="audit-action" className={SELECT_FIELD_CLASS} value={draft.action} onChange={(e) => set("action")(e.target.value)}>
             <option value="">Tất cả</option>
             {(Object.keys(ACTION_LABELS) as AuditLogDto["action"][]).map((a) => (
               <option key={a} value={a}>

@@ -4,6 +4,7 @@ import { assignStaffSchema, type AdminUserDto, type StaffAssignmentRole } from "
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,8 +25,6 @@ export const ASSIGNMENT_ROLE_LABELS: Record<StaffAssignmentRole, string> = {
   MANAGER: "Quản lý rạp (Manager)",
 };
 
-const SELECT_CLASS =
-  "h-11 w-full border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-45";
 
 /** AC-16 / R-105: Manager chỉ gán Staff; Admin gán được Staff hoặc Manager. Chỉ để ẩn UI — API vẫn trả 403. */
 export function assignableRoles(viewer: AdminRole): StaffAssignmentRole[] {
@@ -127,7 +126,7 @@ export function RoleAssignDialog({
           <Field id="assign-cinema" label="Rạp" required>
             <select
               id="assign-cinema"
-              className={SELECT_CLASS}
+              className={SELECT_FIELD_CLASS}
               value={cinemaId}
               disabled={fixedCinemaId !== undefined}
               onChange={(e) => setCinemaId(e.target.value)}
@@ -142,7 +141,7 @@ export function RoleAssignDialog({
           <Field id="assign-role" label="Vai trò" required>
             <select
               id="assign-role"
-              className={SELECT_CLASS}
+              className={SELECT_FIELD_CLASS}
               value={role}
               onChange={(e) => setRole(e.target.value as StaffAssignmentRole)}
             >

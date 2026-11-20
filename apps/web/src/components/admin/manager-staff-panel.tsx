@@ -4,10 +4,12 @@ import type { StaffAssignmentDto } from "@filmbooking/shared/schemas/admin";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { apiFetch } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 
 import { ConfirmActionDialog, type PendingAction } from "./confirm-action-dialog";
 import { ASSIGNMENT_ROLE_LABELS, RoleAssignDialog } from "./role-assign-dialog";
@@ -51,7 +53,7 @@ export function ManagerStaffPanel({ cinemas }: Readonly<{ cinemas: readonly Scop
           <label className="space-y-1.5 text-body-sm font-semibold">
             Rạp
             <select
-              className="block h-11 border border-border-input bg-transparent px-3 text-body-sm font-normal"
+              className={cn(SELECT_FIELD_CLASS, "w-auto min-w-auto font-normal")}
               value={cinemaId}
               onChange={(e) => setCinemaId(e.target.value)}
             >

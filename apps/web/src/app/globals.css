@@ -215,6 +215,71 @@
   @media (max-width: 767.98px) {
     input, select, textarea { font-size: 16px; }
   }
+
+  /* <select> gốc (design-spec "Input/Select/Textarea"): giữ phần tử gốc để bàn phím/đọc màn hình/form hoạt động như cũ,
+     chỉ đổi giao diện. Trình duyệt chưa có `appearance: base-select` (Firefox, Safari) vẫn vẽ popup hệ điều hành,
+     nên chỉ chỉnh được nền/chữ của option; `:root` đã khai color-scheme: dark. */
+  option { background-color: var(--color-surface-elevated); color: var(--color-fg); }
+  @supports (appearance: base-select) {
+    select, select::picker(select) { appearance: base-select; }
+
+    select::picker-icon {
+      content: "";
+      flex: none;
+      width: 16px;
+      height: 16px;
+      background-color: var(--color-fg-secondary);
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='square'%3E%3Cpath d='M3 6l5 5 5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+      transition: rotate 150ms ease;
+    }
+    select:open::picker-icon { rotate: 180deg; }
+
+    /* Popup vuông, nền nổi, viền input, bóng overlay. Chỉ có chuyển động MỞ (≤ 200ms, @starting-style lồng trong rule):
+       không dùng `::picker(select):popover-open` vì lightningcss của Tailwind v4 âm thầm xoá selector đó (pseudo-class
+       sau pseudo-element), để lại popup opacity 0. Tắt chuyển động ở khối reduced-motion bên dưới. */
+    select::picker(select) {
+      box-sizing: border-box;
+      max-block-size: min(20rem, 50dvh);
+      padding: 4px;
+      border: 1px solid var(--color-border-input);
+      border-radius: 0;
+      background: var(--color-surface-elevated);
+      color: var(--color-fg);
+      box-shadow: var(--shadow-overlay);
+      opacity: 1;
+      translate: 0 0;
+      transition: opacity 150ms ease, translate 150ms ease;
+      @starting-style {
+        opacity: 0;
+        translate: 0 -4px;
+      }
+    }
+
+    select option {
+      min-block-size: 44px;
+      padding: 6px 8px;
+      border-radius: 0;
+      font-size: var(--text-body);
+      color: var(--color-fg);
+      cursor: pointer;
+    }
+    @media (min-width: 768px) {
+      select option { min-block-size: 36px; }
+    }
+    select option:hover,
+    select option:focus {
+      background-color: var(--color-surface-control);
+      /* Nền này gần trùng nền popup nên thêm vạch trái vàng để thấy rõ mục đang rê/đang focus bàn phím. */
+      box-shadow: inset 3px 0 0 var(--color-brand);
+    }
+    select option:checked { background-color: var(--color-brand-soft); color: var(--color-brand); }
+    select option::checkmark { color: var(--color-brand); }
+    select option:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    @media (prefers-reduced-motion: reduce) {
+      select::picker(select), select::picker-icon { transition-duration: 0.01ms !important; }
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   }

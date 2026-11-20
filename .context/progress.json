@@ -271,6 +271,27 @@
       "followUp": [
         "CR-011 (BUG, pending): mốc đóng bán online riêng của rạp chưa có trong dữ liệu công khai (R-44, R-138 dùng mặc định 15 phút)"
       ]
+    },
+    {
+      "id": "select-dropdown-theme",
+      "title": "Ô chọn <select> gốc + danh sách xổ xuống theo token CYBERPLEX (CR-012, BUG; spec 3.5.0 không bump, scope v28)",
+      "class": "BUG",
+      "status": "done",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 CSS appearance: base-select + SELECT_FIELD_CLASS cho 22 ô/12 file + QuickBookBar",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/bug-select-dropdown-theme-phase-1-task-01-round-2-review.md"
+          }
+        }
+      ],
+      "note": "Chưa kiểm bằng mắt màn admin (cần phiên Supabase), Firefox/Safari giữ popup hệ điều hành.",
+      "updatedAt": "2026-11-20T02:51:45.617Z"
     }
   ],
   "bugs": [
@@ -748,7 +769,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-19T08:33:15.738Z",
+  "lastUpdated": "2026-11-20T02:51:45.618Z",
   "inProgressTask": null,
   "completedTasks": [
     {

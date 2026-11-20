@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CancelShowtimesDialog, type CancelTarget } from "@/components/admin/cancel-showtimes-dialog";
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import type { RoomOption } from "@/components/admin/showtime-bulk-form";
 import { ShowtimeCinemaGate } from "@/components/admin/showtime-page-gate";
 import {
@@ -27,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 
 interface Loaded {
   rooms: RoomOption[];
@@ -105,7 +107,7 @@ function ShowtimeSchedule({ cinema }: Readonly<{ cinema: ScopedCinema }>) {
             id="sch-room"
             value={roomFilter}
             onChange={(e) => setRoomFilter(e.target.value)}
-            className="h-11 border border-input bg-surface-input px-2 text-base md:h-10 md:text-body"
+            className={cn(SELECT_FIELD_CLASS, "w-auto min-w-auto")}
           >
             <option value="">Tất cả phòng</option>
             {data?.rooms.map((r) => (

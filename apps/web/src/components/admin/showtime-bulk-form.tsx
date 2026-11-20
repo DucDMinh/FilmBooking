@@ -4,6 +4,7 @@ import { vnLocalToUtc } from "@filmbooking/shared";
 import type { MovieDto } from "@filmbooking/shared/schemas/catalog";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,8 +33,6 @@ export interface ShowtimeBulkFormProps {
   onCreated: (count: number, skipped: number) => void;
 }
 
-const selectClass =
-  "h-11 w-full border border-input bg-surface-input px-2 text-base md:h-10 md:text-body";
 
 /** Danh sách suất xung đột (AC-14, R-50): suất dự kiến + suất đã có gây trùng. */
 export function ConflictList({
@@ -160,7 +159,7 @@ export function ShowtimeBulkForm({ cinemaId, onCreated }: Readonly<ShowtimeBulkF
 
       <div className="space-y-1">
         <Label htmlFor="st-movie">Phim *</Label>
-        <select id="st-movie" className={selectClass} value={movieId} onChange={(e) => setMovieId(e.target.value)}>
+        <select id="st-movie" className={SELECT_FIELD_CLASS} value={movieId} onChange={(e) => setMovieId(e.target.value)}>
           <option value="">- Chọn phim -</option>
           {movies.map((m) => (
             <option key={m.id} value={m.id}>
@@ -173,14 +172,14 @@ export function ShowtimeBulkForm({ cinemaId, onCreated }: Readonly<ShowtimeBulkF
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor="st-format">Định dạng *</Label>
-          <select id="st-format" className={selectClass} value={format} onChange={(e) => setFormat(e.target.value)}>
+          <select id="st-format" className={SELECT_FIELD_CLASS} value={format} onChange={(e) => setFormat(e.target.value)}>
             <option value="2D">2D</option>
             <option value="3D">3D</option>
           </select>
         </div>
         <div className="space-y-1">
           <Label htmlFor="st-lang">Ngôn ngữ *</Label>
-          <select id="st-lang" className={selectClass} value={languageMode} onChange={(e) => setLanguageMode(e.target.value)}>
+          <select id="st-lang" className={SELECT_FIELD_CLASS} value={languageMode} onChange={(e) => setLanguageMode(e.target.value)}>
             {Object.entries(LANGUAGE_MODE_LABEL).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}

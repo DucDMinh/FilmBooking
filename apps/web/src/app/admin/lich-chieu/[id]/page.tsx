@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { CancelShowtimesDialog } from "@/components/admin/cancel-showtimes-dialog";
 import { SeatLockPanel } from "@/components/admin/seat-lock-panel";
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import type { RoomOption } from "@/components/admin/showtime-bulk-form";
 import {
   formatVnDate,
@@ -188,7 +189,7 @@ function ShowtimeDetail({ data, reload }: Readonly<{ data: Loaded; reload: () =>
               id="ed-room"
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}
-              className="h-11 w-full border border-input bg-surface-input px-2 text-base disabled:opacity-45 md:h-10 md:text-body"
+              className={SELECT_FIELD_CLASS}
             >
               {rooms
                 .filter((r) => r.id === st.roomId || (r.status === "ACTIVE" && r.supportedFormats.includes(st.format)))

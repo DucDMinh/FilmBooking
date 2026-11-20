@@ -10,6 +10,7 @@ import { formatVnd } from "@filmbooking/shared";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,8 +36,6 @@ const APPLIES_LABEL: Record<VoucherDto["appliesTo"], string> = {
   ORDER: "Cả đơn",
 };
 
-const SELECT_CLASS =
-  "h-11 w-full border border-border-input bg-transparent px-3 text-body-sm outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 
 interface FormState {
   code: string;
@@ -240,7 +239,7 @@ export function VoucherForm({ open, voucher, onOpenChange, onSaved }: Readonly<V
             <Label htmlFor="voucher-type">Loại giảm</Label>
             <select
               id="voucher-type"
-              className={SELECT_CLASS}
+              className={SELECT_FIELD_CLASS}
               value={form.discountType}
               onChange={(e) => set("discountType", e.target.value as FormState["discountType"])}
             >
@@ -276,7 +275,7 @@ export function VoucherForm({ open, voucher, onOpenChange, onSaved }: Readonly<V
             <Label htmlFor="voucher-applies">Áp dụng cho</Label>
             <select
               id="voucher-applies"
-              className={SELECT_CLASS}
+              className={SELECT_FIELD_CLASS}
               value={form.appliesTo}
               onChange={(e) => set("appliesTo", e.target.value as FormState["appliesTo"])}
             >

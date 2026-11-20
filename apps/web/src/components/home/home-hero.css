@@ -182,8 +182,15 @@
   cursor: pointer;
   text-overflow: ellipsis;
 }
-.qfield select option {
-  background: var(--color-surface);
+/* Popup xổ xuống theo token CYBERPLEX (globals.css); mũi tên vẫn là .qfield__caret nên ẩn mũi tên của base-select. */
+@supports (appearance: base-select) {
+  .qfield select,
+  .qfield select::picker(select) {
+    appearance: base-select;
+  }
+  .qfield select::picker-icon {
+    display: none;
+  }
 }
 .qfield select:focus-visible {
   outline: 2px solid var(--color-brand);

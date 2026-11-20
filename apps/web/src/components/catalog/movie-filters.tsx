@@ -5,7 +5,7 @@ import { FilterX, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 
-import { FIELD_CLASS, FIELD_LABEL_CLASS } from "@/components/catalog/filter-field";
+import { FIELD_LABEL_CLASS, SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -155,7 +155,7 @@ export function MovieFilters() {
               setGenre(e.target.value);
               applyFilters({ genre: e.target.value });
             }}
-            className={FIELD_CLASS}
+            className={SELECT_FIELD_CLASS}
           >
             <option value="">Tất cả thể loại</option>
             {COMMON_GENRES.map((g) => (
@@ -179,7 +179,7 @@ export function MovieFilters() {
               setAgeRating(e.target.value);
               applyFilters({ ageRating: e.target.value });
             }}
-            className={FIELD_CLASS}
+            className={SELECT_FIELD_CLASS}
           >
             <option value="">Tất cả độ tuổi</option>
             {AGE_RATINGS.map((rating: AgeRating) => (
@@ -203,7 +203,7 @@ export function MovieFilters() {
               setStatus(e.target.value);
               applyFilters({ status: e.target.value });
             }}
-            className={FIELD_CLASS}
+            className={SELECT_FIELD_CLASS}
           >
             <option value="">Tất cả trạng thái</option>
             <option value="now_showing">Đang chiếu</option>

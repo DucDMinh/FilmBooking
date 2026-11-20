@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { FIELD_CLASS, FIELD_LABEL_CLASS } from "@/components/catalog/filter-field";
+import { FIELD_LABEL_CLASS, SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { ScheduleDateStrip } from "@/components/catalog/showtime-schedule";
 
 /** Giá trị bộ lọc hiện tại, lấy từ URL ở server page rồi truyền xuống (không cần useSearchParams/Suspense). */
@@ -19,7 +19,6 @@ interface ScheduleFiltersProps {
   values: ScheduleFilterValues;
 }
 
-const SELECT_CLASS = FIELD_CLASS;
 const LABEL_CLASS = FIELD_LABEL_CLASS;
 
 /** Dựng URL mới: ghi đè các tham số trong `patch`, tham số rỗng bị xoá khỏi query. */
@@ -49,7 +48,7 @@ export function ScheduleFilters({ provinces, movies, cinemas, values }: Readonly
           value={values.province}
           // Rạp phụ thuộc tỉnh nên đổi tỉnh thì bỏ rạp đang chọn
           onChange={(e) => router.push(buildHref(pathname, values, { province: e.target.value, cinema: "" }))}
-          className={SELECT_CLASS}
+          className={SELECT_FIELD_CLASS}
         >
           <option value="">Tất cả tỉnh/thành</option>
           {provinces.map((p) => (
@@ -68,7 +67,7 @@ export function ScheduleFilters({ provinces, movies, cinemas, values }: Readonly
           id="filter-movie"
           value={values.movie}
           onChange={(e) => router.push(buildHref(pathname, values, { movie: e.target.value }))}
-          className={SELECT_CLASS}
+          className={SELECT_FIELD_CLASS}
         >
           <option value="">-- Tất cả phim đang chiếu --</option>
           {movies.map((m) => (
@@ -87,7 +86,7 @@ export function ScheduleFilters({ provinces, movies, cinemas, values }: Readonly
           id="filter-cinema"
           value={values.cinema}
           onChange={(e) => router.push(buildHref(pathname, values, { cinema: e.target.value }))}
-          className={SELECT_CLASS}
+          className={SELECT_FIELD_CLASS}
         >
           <option value="">-- Tất cả rạp --</option>
           {cinemas.map((c) => (

@@ -811,7 +811,7 @@ Ngoài ra phần MVP của R-119 (báo cáo suất bị huỷ, quyết định #
 | `QrTicket` | Chamfer `--cut-lg`, viền nét đứt `border-input`, mã đặt vé mono vàng viền đứt (như `.code` của tham chiếu), QR nền trắng. |
 | `Dialog/Sheet/AlertDialog` | Panel chamfer `--cut-lg` + viền gradient 1px; nền `#101015`; header có `hud` kicker + tiêu đề Chakra Petch; nút đóng 44×44 viền `border`, hover crimson. Vào: fade + `scale .96 → 1` 200ms. |
 | `Toast` | Nền `#111116`, viền trái 3px (vàng/success/danger), `shadow-overlay`, vào `translateY(12px) → 0` 300ms. |
-| `Input/Select/Textarea` | **Vuông**, nền `surface-input`, viền `border-input`, focus viền vàng. Nhãn trên ô là `hud`. Lỗi: viền `danger`, chữ `danger-text` dưới ô. |
+| `Input/Select/Textarea` | **Vuông**, nền `surface-input`, viền `border-input`, focus viền vàng. Nhãn trên ô là `hud`. Lỗi: viền `danger`, chữ `danger-text` dưới ô. **Select = `<select>` gốc**: ô đóng dùng chung `SELECT_FIELD_CLASS`; danh sách xổ ra (Chrome/Edge, `appearance: base-select`) vuông, nền `surface-elevated`, viền `border-input`, `shadow-overlay`, mục rê/focus có vạch trái vàng 3px, mục đã chọn nền `brand-soft` + chữ và dấu tick vàng; Firefox/Safari giữ popup hệ điều hành với nền/chữ option theo token. |
 | `Tabs` (Đang chiếu / Sắp chiếu) | Dải chamfer `--cut-md`, mỗi tab nền `#0D0D12`, active vàng + chữ tối. |
 | `DataTable` | Vuông, hàng 56px, header `hud`, hover `surface-elevated`; chỉ kẻ ngang dưới hàng (taste §9.F). |
 | `AdminShell` | Sidebar `chrome`, mục active: nền `sidebar-accent` + vạch trái 3px vàng; badge vai trò chamfer-sm `brand-soft`. |
