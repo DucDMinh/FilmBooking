@@ -1,0 +1,1 @@
+builder: bug tickets-seat-fk p1t01. Migrations 20261121100000 (sell_order_seats khoá seats key share trước seat_states) + 20261121100100 (FK tickets.seat_id RESTRICT, precheck, NOT VALID+VALIDATE, index). pgTAP 071 (race dblink), 072 (FK). docs/ERD.md cập nhật. Đã áp lên DB local bằng pnpm db:migrate. Chưa commit.

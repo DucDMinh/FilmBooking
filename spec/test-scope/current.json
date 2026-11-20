@@ -1,9 +1,9 @@
 {
   "specVersion": "3.5.2",
-  "scopeVersion": 31,
-  "generatedAt": "2026-11-20T14:03:15+07:00",
+  "scopeVersion": 32,
+  "generatedAt": "2026-11-20T14:30:24+07:00",
   "trigger": "bug-fix",
-  "workItem": "bug/refund-method-required",
+  "workItem": "bug/tickets-seat-fk",
   "specRefs": [
     "R-138",
     "NFR-19",
@@ -48,7 +48,10 @@
     "AC-34",
     "R-110",
     "BR-ADM-14",
-    "AC-25"
+    "AC-25",
+    "R-78",
+    "R-82",
+    "NFR-04"
   ],
   "changed": {
     "files": [
@@ -311,7 +314,11 @@
       "apps/api/src/modules/cancellation/affected-csv.ts",
       "apps/web/src/components/admin/affected-orders-api.ts",
       "supabase/tests/070_refund_method_required.test.sql",
-      "supabase/tests/031_booking_rls.test.sql"
+      "supabase/tests/031_booking_rls.test.sql",
+      "supabase/migrations/20261121100000_sell_order_seats_lock_seats_first.sql",
+      "supabase/migrations/20261121100100_tickets_seat_fk.sql",
+      "supabase/tests/071_tickets_seat_fk_lock_order.test.sql",
+      "supabase/tests/072_tickets_seat_fk.test.sql"
     ],
     "modules": [
       "web-form-controls (select)",
@@ -363,7 +370,10 @@
       "api-cancellation (POST /admin/affected-orders/:orderId/refund, affected-csv)",
       "api-orders (AffectedOrderDto: refundMethod, refundedAt, processedAt)",
       "shared-schemas (cancellation refund schema)",
-      "web-admin-affected-orders (form ghi hoàn tiền, chi tiết đơn bị ảnh hưởng, danh sách, order-detail)"
+      "web-admin-affected-orders (form ghi hoàn tiền, chi tiết đơn bị ảnh hưởng, danh sách, order-detail)",
+      "supabase-migration sell_order_seats_lock_seats_first (khoá seats FOR KEY SHARE order by id ở đầu sell_order_seats; thứ tự khoá showtimes → orders → payments → seats → showtime_seat_states → tickets)",
+      "supabase-migration tickets_seat_fk (FK tickets.seat_id → seats(id) ON DELETE RESTRICT + index tickets_seat_id_idx; HIGH_RISK_MIGRATION)",
+      "supabase-rpc confirm_paid_order / confirm_zero_amount (qua sell_order_seats)"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -747,6 +757,13 @@
         "apps/api/test/integration/rls-scope.int-spec.ts",
         "docs/API_SPEC.md",
         "docs/ERD.md"
+      ],
+      "bug-tickets-seat-fk/phase-1-task-01": [
+        "supabase/migrations/20261121100000_sell_order_seats_lock_seats_first.sql",
+        "supabase/migrations/20261121100100_tickets_seat_fk.sql",
+        "supabase/tests/071_tickets_seat_fk_lock_order.test.sql",
+        "supabase/tests/072_tickets_seat_fk.test.sql",
+        "docs/ERD.md"
       ]
     }
   },
@@ -838,7 +855,9 @@
       "[scope v31 / bug-refund-method-required, CR-005] api.affected-orders.csv (R-110): CSV đơn bị ảnh hưởng có thêm 2 cột \"Phương thức hoàn\", \"Ngày hoàn\"; cột \"Thời gian xử lý\" nay là `processedAt` (= created_at). Test: `apps/api/test/cancellation.e2e-spec.ts`.",
       "[scope v31 / bug-refund-method-required, CR-005] api.affected-orders.dto (R-110): `AffectedOrderDto` thêm `refundMethod`, `refundedAt`, `processedAt`; `refundedAt` ĐỔI NGHĨA: nay là ngày người nhập (trước đây là created_at) — client / test cũ đọc `refundedAt` làm thời điểm xử lý phải đọc `processedAt`.",
       "[scope v31 / bug-refund-method-required, CR-005] db.refund-method (R-110): migration `20261120100000_refund_method_required.sql` thêm cột `refund_method`, `refunded_at` và CHECK `NOT VALID` cho trạng thái REFUNDED_MANUAL; không backfill dòng cũ; không HIGH_RISK_MIGRATION. Test: pgTAP 070 (mới); 031 và 044 cập nhật theo cột mới.",
-      "[scope v31 / bug-refund-method-required, CR-005] api.affected-orders.permissions (BR-ADM-14, R-110): phân quyền ghi hoàn tiền không đổi — Staff và Manager chỉ rạp mình, Admin mọi rạp; ngoài phạm vi → bị từ chối như cũ."
+      "[scope v31 / bug-refund-method-required, CR-005] api.affected-orders.permissions (BR-ADM-14, R-110): phân quyền ghi hoàn tiền không đổi — Staff và Manager chỉ rạp mình, Admin mọi rạp; ngoài phạm vi → bị từ chối như cũ.",
+      "[scope v32 / bug-tickets-seat-fk, CR-002] db.sell_order_seats.lock-order (R-76, R-78, R-82, R-62, NFR-04): `sell_order_seats` khoá `seats ... order by id for key share` ở đầu hàm; thứ tự khoá chuẩn showtimes → orders → payments → seats → showtime_seat_states → tickets, cùng chiều `hold_seats`. Thanh toán xác nhận (`confirm_paid`, gồm tiền về muộn expired → paid) và `confirm_zero_amount` vẫn bán đúng vé (đủ vé theo ghế, ghế → sold, đơn paid), không deadlock khi chạy đồng thời với giữ ghế cùng suất. Test: pgTAP 071 (dblink `confirm_paid` × `hold_seats`: không 40P01, tối đa 1 vé).",
+      "[scope v32 / bug-tickets-seat-fk, CR-002] db.tickets.seat-fk (R-76, R-54): migration `20261121100100_tickets_seat_fk.sql` thêm FK `tickets.seat_id → seats(id) ON DELETE RESTRICT` (HIGH_RISK_MIGRATION: precheck vé mồ côi, lock_timeout, NOT VALID + VALIDATE, index `tickets_seat_id_idx`; không destructive, không đổi dữ liệu). Không xoá được ghế còn vé (FK RESTRICT). Test: pgTAP 072 (FK tồn tại, chặn xoá ghế còn vé)."
     ],
     "dependents": [
       "[scope v26 / feature-cinema-status-notice] DEPENDENT huỷ suất/đơn affected (R-108, R-109, R-110, AC-24, AC-25) — job áp dụng lịch dùng chung `cancel_showtimes_core`: đơn `paid` -> `affected` hiện ở màn \"Đơn bị ảnh hưởng\"/hoàn tiền thủ công (R-110), xuất CSV, ghi nhận hoàn tiền đủ số tiền + mã giao dịch; huỷ suất TAY (một/nhiều suất, \"tất cả suất tương lai của rạp\") vẫn gửi email SHOWTIME_CANCELLED từng đơn và theo dõi/gửi lại như cũ. Retest luồng huỷ tay sau refactor core.",
@@ -917,7 +936,9 @@
       "[scope v27 / feature-cyberplex-reskin] DEPENDENT admin (R-133 và toàn bộ màn quản trị): bảng (`ui/table`), form (phim, rạp, voucher, giá, cài đặt, user), dialog huỷ suất, dialog trạng thái rạp, đơn bị ảnh hưởng/hoàn tiền thủ công, sơ đồ ghế/phòng, báo cáo/dashboard; cảnh báo nhiều lớp R-133 (Điều khoản, chính sách bảo mật, màn xác nhận) sau reskin.",
       "[scope v29 / bug-public-cinema-online-cutoff, CR-011] DEPENDENT trang rạp /rap/[code] (R-37) và lịch chiếu /lich-chieu, /phim/[slug] (R-44, R-43): suất không quá mốc vẫn là link tới /dat-ve/<id>, suất đã huỷ vẫn không bấm được; rạp Tạm đóng / Ngừng hoạt động / Sắp khai trương (R-137) và lịch đổi trạng thái (R-136) hiển thị không đổi. Admin: màn lịch chiếu / cấu hình rạp (R-56) lưu mốc riêng và hiển thị đúng sau khi đổi (test `catalog-admin`, `shell`).",
       "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] DEPENDENT web admin users (R-105, `users-admin.tsx`, `role-assign-dialog.tsx`): dialog xác nhận khoá / gỡ quyền hiển thị message 409 từ API (chưa kiểm hiển thị 409 trên web thật); luồng gán vai trò Staff / Cinema Manager / gán rạp (đổi role Admin sang role khác cũng đi qua ràng buộc).",
-      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] DEPENDENT trang tài khoản (`delete-account-dialog.tsx`, `linked-accounts.tsx`): xoá tài khoản và gỡ liên kết Facebook của khách thường vẫn thành công; chỉ Admin hoạt động cuối bị 409."
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] DEPENDENT trang tài khoản (`delete-account-dialog.tsx`, `linked-accounts.tsx`): xoá tài khoản và gỡ liên kết Facebook của khách thường vẫn thành công; chỉ Admin hoạt động cuối bị 409.",
+      "[scope v32 / bug-tickets-seat-fk, CR-002] DEPENDENT sửa sơ đồ ghế / xoá ghế (admin, R-54): xoá ghế còn vé nay bị chặn bởi FK RESTRICT (trước đó chỉ `order_seats.seat_id` chặn); xoá ghế chưa từng bán vẫn được. Retest luồng sửa sơ đồ phòng và copy layout không vỡ.",
+      "[scope v32 / bug-tickets-seat-fk, CR-002] DEPENDENT huỷ suất / huỷ đơn / soát vé (R-108, R-99): không đổi hành vi; vé vẫn gắn đúng ghế, soát vé theo đơn không đổi."
     ],
     "regression": [
       "[scope v26 / feature-cinema-status-notice] REGRESSION cancel_showtimes sau refactor core (R-108, R-109, AC-24, AC-25) — huỷ suất tay: suất `cancelled`, ghế nhả, đơn paid -> affected, email SHOWTIME_CANCELLED từng đơn, preview số đơn/vé, lý do bắt buộc, Manager chỉ rạp mình, race huỷ ‖ check-in/thanh toán không deadlock (pgTAP 043/064/065 không đổi kết quả).",
@@ -1045,7 +1066,11 @@
       "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] REGRESSION pgTAP cũ (010, 020, 030, 031, 033, 040–044, 050, 063, 090) và `048_function_privileges`: kiểm không file nào ngoài 066 vỡ vì trigger / hàm mới; hàm mới không mở quyền thừa cho `anon`/`authenticated`.",
       "[scope v31 / bug-refund-method-required, CR-005] REGRESSION huỷ suất → đơn `affected` → email SHOWTIME_CANCELLED từng đơn (R-108, R-109, AC-24): luồng huỷ suất, email và trạng thái gửi không đổi.",
       "[scope v31 / bug-refund-method-required, CR-005] REGRESSION danh sách đơn bị ảnh hưởng: lọc theo suất / rạp / trạng thái xử lý / trạng thái email, phân trang, xuất CSV (R-110) vẫn chạy; cột CSV cũ giữ nguyên thứ tự trừ 2 cột mới và cột \"Thời gian xử lý\" đổi nguồn.",
-      "[scope v31 / bug-refund-method-required, CR-005] REGRESSION resolve manual review của đơn `affected` (R-110) và báo cáo suất bị huỷ: đơn `refunded_manual` vẫn xuất hiện trong báo cáo (AC-25); chi tiết đơn (`order-detail`) của đơn khác không bị ảnh hưởng."
+      "[scope v31 / bug-refund-method-required, CR-005] REGRESSION resolve manual review của đơn `affected` (R-110) và báo cáo suất bị huỷ: đơn `refunded_manual` vẫn xuất hiện trong báo cáo (AC-25); chi tiết đơn (`order-detail`) của đơn khác không bị ảnh hưởng.",
+      "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION giữ ghế / hết hạn giữ (R-61, R-62, R-63, R-64): giữ ghế atomic, hai yêu cầu cùng ghế chỉ một thành công, hết 10 phút nhả ghế, một đơn giữ / khách — pgTAP giữ ghế không đổi kết quả.",
+      "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION huỷ đơn và huỷ suất (R-77, R-108): nhả ghế, đơn cancelled / affected, race huỷ ‖ thanh toán không deadlock (pgTAP 043/064/065).",
+      "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION soát vé (R-97, R-99) và đặt vé end-to-end (R-59…R-66, R-73, R-76, R-79): từ chọn ghế → giữ ghế → thanh toán → vé QR → email → check-in vẫn chạy.",
+      "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION thanh toán đồng thời: nhiều đơn khác ghế cùng suất thanh toán song song và thanh toán ‖ giữ ghế của khách khác cùng suất — không 40P01, không vé trùng, không đơn kẹt."
     ]
   },
   "acceptance": [
@@ -1138,7 +1163,10 @@
     "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] AC-34 — A5: Given hai Admin hoạt động When hai bên cùng lúc gỡ quyền / khoá nhau Then ít nhất một yêu cầu bị từ chối, vẫn còn ≥ 1 Admin hoạt động.",
     "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] AC-34 — A6: Given job `delete_unconfirmed_users` (R-10) When chạy Then vẫn chạy được, không bị kẹt bởi ràng buộc Admin cuối.",
     "[scope v31 / bug-refund-method-required, CR-005] R-110 / AC-25 — A1: Given một đơn `affected` When ghi nhận \"Đã hoàn tiền thủ công\" thiếu phương thức hoàn tiền (`refundMethod`) hoặc ngày hoàn (`refundedAt`), hoặc ngày ở tương lai, hoặc `refundMethod` ngoài {BANK_TRANSFER, E_WALLET, CASH, OTHER} Then API trả 422 `VALIDATION_ERROR`, form chặn lưu, đơn vẫn `affected`.",
-    "[scope v31 / bug-refund-method-required, CR-005] R-110 / AC-25 — A2: Given một đơn `affected` When nhập đủ số tiền, ngày hoàn, phương thức, mã giao dịch ngân hàng (người thực hiện lấy từ phiên) Then đơn `refunded_manual`, chi tiết đơn + danh sách + chi tiết đơn bị ảnh hưởng hiện đúng phương thức và ngày hoàn, CSV có \"Phương thức hoàn\" và \"Ngày hoàn\"."
+    "[scope v31 / bug-refund-method-required, CR-005] R-110 / AC-25 — A2: Given một đơn `affected` When nhập đủ số tiền, ngày hoàn, phương thức, mã giao dịch ngân hàng (người thực hiện lấy từ phiên) Then đơn `refunded_manual`, chi tiết đơn + danh sách + chi tiết đơn bị ảnh hưởng hiện đúng phương thức và ngày hoàn, CSV có \"Phương thức hoàn\" và \"Ngày hoàn\".",
+    "[scope v32 / bug-tickets-seat-fk, CR-002] A1 (R-62, R-76, NFR-04): Given một đơn đang `pending_payment` và một khách khác đang `hold_seats` cùng suất, ghế trùng nhau When `confirm_paid` và `hold_seats` chạy đồng thời Then KHÔNG có lỗi 40P01 (deadlock), tối đa 1 vé cho mỗi ghế, kết quả giữ ghế hoặc thanh toán nhất quán (một bên thành công, bên kia từ chối theo nghiệp vụ).",
+    "[scope v32 / bug-tickets-seat-fk, CR-002] A2 (R-76, R-82): Given đơn đủ điều kiện thanh toán (kể cả đơn 0đ qua `confirm_zero_amount`) When xác nhận Then đơn `paid`, ghế `sold`, sinh đúng số vé theo ghế — hành vi như trước bản sửa.",
+    "[scope v32 / bug-tickets-seat-fk, CR-002] A3 (R-54): Given một ghế đã có vé When xoá ghế đó (DELETE trực tiếp trên `seats`) Then bị chặn bởi FK `tickets.seat_id → seats(id)` ON DELETE RESTRICT (lỗi 23503), dữ liệu không đổi; ghế chưa có vé xoá bình thường."
   ],
   "risk": "high",
   "notes": [
@@ -1148,6 +1176,7 @@
     "[scope v28 / bug-select-dropdown-theme, CR-012] Bug-fix thuần giao diện: KHÔNG đổi requirement (spec_version giữ 3.5.0), API, DB, migration. Test popup `<select>` bằng Chromium/Edge mới hỗ trợ `appearance: base-select`; Firefox/Safari dùng popup hệ điều hành (fallback chấp nhận). Chưa kiểm bằng mắt: bố cục `w-auto` ở 3 màn admin và 2 select trong Radix Dialog (`role-assign-dialog`); màn admin cần phiên Supabase nên chưa chụp ảnh, dùng /phim làm bằng chứng tương đương. Chỉ có chuyển động mở popup, không có chuyển động đóng. Delta: `spec/updates/2026-11-20-select-dropdown-theme.md`.",
     "[scope v29 / bug-public-cinema-online-cutoff, CR-011] Bug-fix, spec PATCH 3.5.1 (làm rõ R-138/R-44/R-67 + AC-33; bỏ hạn chế \"mốc mặc định 15 phút\" ghi ở 3.5.0). KHÔNG đổi DB/migration; server giữ ghế vốn đã áp mốc rạp (`supabase/migrations/20261112140000_hold_seats_hardening.sql`). Reviewer STRICT PASS round 2 (round 1 FAIL vì /rap/[code] còn bấm được). Residual: `pnpm db:test` chưa chạy trên DB thật; mốc đổi có thể trễ ~60 giây ở trang khách do ISR/cache; `app_settings.value` là JSON null thì TS ra 0 còn SQL ra 15 (có từ trước). Bên test cần tài khoản Cinema Manager để đặt mốc riêng 30 phút (R-56) và suất mở trong 20 phút tới. Delta: `spec/updates/2026-11-20-public-cinema-online-cutoff.md`.",
     "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] Bug-fix bảo mật / phân quyền, spec PATCH 3.5.2 (làm rõ R-105 + NFR-06, thêm AC-34). risk nâng `high`: auth/RBAC + migration có trigger trên `auth.users` / `auth.identities` / `user_roles` (không phá huỷ dữ liệu). Định nghĩa Admin hoạt động là quyết định user chốt 2026-11-20 (khớp ngoại lệ cron R-10/R-19). Reviewer STRICT PASS round 6 (round 1–5 FAIL, mỗi vòng một lỗi khác). Bên test cần DB có ≥ 2 Admin hoạt động (Admin seed là Admin hoạt động duy nhất trên DB local; cleanup của pgTAP 069 cần Admin seed). 13 file pgTAP cũ (010, 020, 030, 031, 033, 040–044, 050, 063, 090) đỏ trên DB local bẩn vì seed demo (`provinces_name_key`/`price_rules_chain_key`) — có từ trước, chưa xác nhận trên DB sạch. Residual: deadlock 40P01 hiếm (API 500 cho bên bị huỷ); web chưa kiểm hiển thị 409; 2 test web flaky `account.test.tsx` có sẵn (CR-013). Delta: `spec/updates/2026-11-20-admin-self-lock-last-admin-guard.md`.",
-    "[scope v31 / bug-refund-method-required, CR-005] Bug-fix, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, đưa code về đúng R-110 / BR-ADM-14, đóng GAP-009). risk giữ `high` (không hạ). Reviewer PASS round 2. Bên test cần đơn `affected` (huỷ suất có đơn đã thanh toán) để ghi hoàn tiền; thử cả ngày tương lai theo giờ VN và đơn cũ đã `refunded_manual` trước bản sửa (hiển thị \"Chưa ghi\"). `refundedAt` đổi nghĩa (ngày người nhập), `processedAt` là thời điểm hệ thống. pgTAP 031 và 044 chưa xác nhận trên DB sạch (DB local bẩn vì seed demo, có từ trước). Delta: `spec/updates/2026-11-20-refund-method-required.md`."
+    "[scope v31 / bug-refund-method-required, CR-005] Bug-fix, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, đưa code về đúng R-110 / BR-ADM-14, đóng GAP-009). risk giữ `high` (không hạ). Reviewer PASS round 2. Bên test cần đơn `affected` (huỷ suất có đơn đã thanh toán) để ghi hoàn tiền; thử cả ngày tương lai theo giờ VN và đơn cũ đã `refunded_manual` trước bản sửa (hiển thị \"Chưa ghi\"). `refundedAt` đổi nghĩa (ngày người nhập), `processedAt` là thời điểm hệ thống. pgTAP 031 và 044 chưa xác nhận trên DB sạch (DB local bẩn vì seed demo, có từ trước). Delta: `spec/updates/2026-11-20-refund-method-required.md`.",
+    "[scope v32 / bug-tickets-seat-fk, CR-002] Bug-fix toàn vẹn dữ liệu, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, không đổi API/web — chỉ SQL + tài liệu). risk giữ `high`. HIGH_RISK_MIGRATION `20261121100100_tickets_seat_fk.sql` (FK trên `tickets`: precheck vé mồ côi, lock_timeout, NOT VALID + VALIDATE, index; không destructive) đã áp trên DB local; rollback: bỏ FK + index `tickets_seat_id_idx`, khôi phục `sell_order_seats` bản trước. Reviewer STRICT PASS. Residual: test race pgTAP 071 đồng bộ bằng sleep nên khi hoàn nguyên bản sửa đỏ không ổn định 100%; pgTAP 040/041/043 chưa chạy lại được trên DB local bẩn (seed demo, có từ trước); chưa xác nhận trên DB sạch / DB staging thật. Đóng CR-002 hoãn từ bug-layer34-review phase-2-task-03. Delta: `spec/updates/2026-11-20-tickets-seat-fk.md`."
   ]
 }

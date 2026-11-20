@@ -1,7 +1,7 @@
 ---
 id: tickets-seat-fk
 type: bug
-status: pending
+status: done
 created: 2026-11-12
 ---
 
@@ -15,9 +15,9 @@ Thêm FK `tickets.seat_id -> seats(id) ON DELETE RESTRICT` (scan Defect #2). Đ�
 - Report: `.context/review-reports/bug-layer34-review-phase-2-task-03-round-3-review.md`
 
 ## Acceptance (bắt buộc)
-- [ ] `sell_order_seats` khoá `seats ... order by id for key share` ở đầu hàm (trước seat_states, ngoài subtransaction) — phủ mọi caller.
-- [ ] Test race dblink `confirm_paid` × `hold_seats`: không 40P01, tối đa 1 vé.
-- [ ] Sau đó mới thêm FK (precheck vé mồ côi, lock_timeout), HIGH_RISK_MIGRATION.
+- [x] `sell_order_seats` khoá `seats ... order by id for key share` ở đầu hàm (trước seat_states, ngoài subtransaction) — phủ mọi caller.
+- [x] Test race dblink `confirm_paid` × `hold_seats`: không 40P01, tối đa 1 vé.
+- [x] Sau đó mới thêm FK (precheck vé mồ côi, lock_timeout), HIGH_RISK_MIGRATION.
 
 ## Ghi chú
 Không chặn MVP: `order_seats.seat_id` đã có FK RESTRICT nên ghế có vé không xoá được.

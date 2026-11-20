@@ -357,6 +357,28 @@
       ],
       "note": "Round 1 FAIL chỉ vì thiếu Repro Verification (close-out). pgTAP 031/044 chưa xác nhận trên DB sạch. refundedAt đổi nghĩa (ngày người nhập), processedAt = created_at.",
       "updatedAt": "2026-11-20T07:03:41.533Z"
+    },
+    {
+      "id": "tickets-seat-fk",
+      "title": "FK tickets.seat_id -> seats(id) sau khi sell_order_seats khoá seats trước (CR-002; HIGH_RISK_MIGRATION; spec 3.5.2 không bump, scope v32)",
+      "class": "BUG",
+      "status": "done",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 sell_order_seats lock seats FOR KEY SHARE đầu hàm + FK tickets.seat_id (precheck, lock_timeout, NOT VALID/VALIDATE, index)",
+          "status": "done",
+          "highRiskMigration": true,
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 1,
+            "reportPath": ".context/review-reports/bug-tickets-seat-fk-phase-1-task-01-round-1-review.md"
+          }
+        }
+      ],
+      "note": "Test race 071 đồng bộ bằng pg_sleep nên đỏ không ổn định 100% khi hoàn nguyên thứ tự khoá; pgTAP 040/041/043 chưa chạy lại được trên DB local bẩn; VALIDATE cùng transaction với ADD (chặn INSERT tickets khi quét, bảng demo nên vô hại).",
+      "updatedAt": "2026-11-20T07:30:50.933Z"
     }
   ],
   "bugs": [
@@ -834,7 +856,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-20T07:03:41.534Z",
+  "lastUpdated": "2026-11-20T07:30:50.934Z",
   "inProgressTask": null,
   "completedTasks": [
     {
