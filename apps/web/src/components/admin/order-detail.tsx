@@ -15,6 +15,7 @@ import {
 } from "@filmbooking/shared/schemas/orders";
 
 import { TextField, useAdminMe } from "./form-utils";
+import { formatRefundDate, refundMethodText } from "./affected-orders-api";
 import { OrderTimeline } from "./order-timeline";
 import { affectedActionLabel, canResolveOrder, isManualReviewResolved, isUuid, orderStatusView, paymentStatusLabel } from "./order-utils";
 import { useApiResource } from "./use-api-resource";
@@ -199,6 +200,8 @@ function OrderBody({
         {order.affectedAction ? (
           <p className="text-body-sm text-fg-secondary">
             Đã xử lý: {affectedActionLabel(order.affectedAction.action)}
+            {order.affectedAction.refundMethod ? ` • ${refundMethodText(order.affectedAction.refundMethod)}` : ""}
+            {order.affectedAction.refundedAt ? ` • ngày hoàn ${formatRefundDate(order.affectedAction.refundedAt)}` : ""}
             {order.affectedAction.refundReference ? ` • mã GD ${order.affectedAction.refundReference}` : ""}
             {order.affectedAction.note ? ` • ${order.affectedAction.note}` : ""}
           </p>

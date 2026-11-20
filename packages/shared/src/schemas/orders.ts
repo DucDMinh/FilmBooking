@@ -123,6 +123,8 @@ export interface OrderDetailDto extends OrderSummaryDto {
     note: string | null;
     refundReference: string | null;
     refundedAmount: number | null;
+    refundMethod?: string | null;
+    refundedAt?: string | null;
     createdAt: string;
   } | null;
 }

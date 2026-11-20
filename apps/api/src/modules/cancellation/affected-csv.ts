@@ -3,6 +3,8 @@
  * Quy cách: UTF-8 BOM (\uFEFF) cho Excel hiển thị tiếng Việt, tiêu đề tiếng Việt chuẩn.
  */
 
+import { refundMethodLabel } from "@filmbooking/shared/schemas/cancellation";
+
 export const UTF8_BOM = "\uFEFF";
 
 export interface AffectedOrderCsvRow {
@@ -21,8 +23,12 @@ export interface AffectedOrderCsvRow {
   emailStatus?: string | null;
   refundedAmount?: number | null;
   refundReference?: string | null;
+  refundMethod?: string | null;
   note?: string | null;
+  /** Ngày hoàn do người ghi nhập (YYYY-MM-DD). */
   refundedAt?: string | null;
+  /** Thời điểm hệ thống ghi nhận (ISO). */
+  processedAt?: string | null;
   performedBy?: string | null;
 }
 
@@ -68,6 +74,8 @@ export const CSV_HEADERS = [
   "Trạng thái xử lý",
   "Trạng thái gửi email",
   "Số tiền hoàn (VNĐ)",
+  "Phương thức hoàn",
+  "Ngày hoàn",
   "Mã GD ngân hàng",
   "Ghi chú",
   "Thời gian xử lý",
@@ -93,9 +101,11 @@ export function buildAffectedOrdersCsv(rows: AffectedOrderCsvRow[]): string {
       formatStatusVi(r.status),
       formatEmailStatusVi(r.emailStatus),
       r.refundedAmount ?? "",
+      refundMethodLabel(r.refundMethod) ?? "",
+      r.refundedAt ?? "",
       r.refundReference ?? "",
       r.note ?? "",
-      r.refundedAt ?? "",
+      r.processedAt ?? "",
       r.performedBy ?? "",
     ]
       .map(escapeCsvField)

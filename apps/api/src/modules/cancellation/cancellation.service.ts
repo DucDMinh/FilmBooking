@@ -15,6 +15,7 @@ import {
   type PreviewCancelResultDto,
   type PreviewCancelShowtimesInput,
   type RecordRefundInput,
+  type RefundMethod,
   type RecordRefundResultDto,
   type ResendEmailResultDto,
   type SetCinemaStatusInput,
@@ -329,7 +330,7 @@ export class CancellationService {
 
   /**
    * Ghi kết quả xử lý hoàn tiền thủ công (R-110, AC-25, quyết định #6).
-   * BẮT BUỘC số tiền + mã giao dịch ngân hàng -> thiếu trả 422;
+   * BẮT BUỘC số tiền + ngày hoàn + phương thức + mã giao dịch ngân hàng -> thiếu trả 422 (zod pipe ở controller);
    * Staff rạp mình được ghi, Staff rạp khác -> 403.
    */
   async recordRefund(
@@ -448,6 +449,8 @@ export class CancellationService {
         action: "REFUNDED_MANUAL",
         refund_reference: ref,
         refunded_amount: input.refundedAmount,
+        refund_method: input.refundMethod,
+        refunded_at: input.refundedAt,
         note: input.note?.trim() ?? null,
         performed_by: user.id,
       });
@@ -476,6 +479,8 @@ export class CancellationService {
       status: "refunded_manual",
       refundedAmount: input.refundedAmount,
       refundReference: ref,
+      refundMethod: input.refundMethod,
+      refundedAt: input.refundedAt,
     };
   }
 
@@ -622,8 +627,10 @@ export class CancellationService {
       emailStatus: item.emailStatus,
       refundedAmount: item.refundedAmount,
       refundReference: item.refundReference,
+      refundMethod: item.refundMethod,
       note: item.note,
       refundedAt: item.refundedAt,
+      processedAt: item.processedAt,
       performedBy: item.refundedBy,
     }));
 
@@ -711,7 +718,7 @@ export class CancellationService {
     const { data: actionsData } = await this.supabase
       .admin()
       .from("affected_order_actions")
-      .select("order_id, action, refund_reference, refunded_amount, note, created_at, performed_by")
+      .select("order_id, action, refund_reference, refunded_amount, refund_method, refunded_at, note, created_at, performed_by")
       .in("order_id", orderIds);
 
     // Email outbox
@@ -754,7 +761,9 @@ export class CancellationService {
         emailSentAt: (email?.sent_at as string) || null,
         refundedAmount: action ? Number(action.refunded_amount ?? 0) : null,
         refundReference: (action?.refund_reference as string) || null,
-        refundedAt: (action?.created_at as string) || null,
+        refundMethod: (action?.refund_method as RefundMethod | null | undefined) ?? null,
+        refundedAt: (action?.refunded_at as string) || null,
+        processedAt: (action?.created_at as string) || null,
         refundedBy: (action?.performed_by as string) || null,
         note: (action?.note as string) || null,
         createdAt: (o.created_at as string) || new Date().toISOString(),

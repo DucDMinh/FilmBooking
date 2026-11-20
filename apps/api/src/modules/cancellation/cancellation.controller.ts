@@ -210,7 +210,7 @@ export class CancellationController {
 
   /**
    * Ghi kết quả xử lý hoàn tiền thủ công (R-110, AC-25, quyết định #6).
-   * BẮT BUỘC số tiền + mã giao dịch ngân hàng (thiếu -> 422).
+   * BẮT BUỘC số tiền + ngày hoàn + phương thức + mã giao dịch ngân hàng (thiếu/sai -> 422).
    * Staff rạp mình được ghi, Staff rạp khác -> 403.
    */
   @Roles("STAFF")

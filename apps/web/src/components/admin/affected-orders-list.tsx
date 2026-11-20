@@ -25,7 +25,9 @@ import {
   downloadAffectedCsv,
   EMAIL_STATUS_LABEL,
   filtersToQuery,
+  formatRefundDate,
   ORDER_STATUS_LABEL,
+  refundMethodText,
   resendErrorMessage,
   type AffectedFilters,
 } from "./affected-orders-api";
@@ -251,6 +253,11 @@ export function AffectedOrdersList({ initialShowtimeId = "" }: Readonly<{ initia
                       <Badge tone={order.status === "affected" ? "danger" : "success"}>
                         {ORDER_STATUS_LABEL[order.status]}
                       </Badge>
+                      {order.status === "refunded_manual" ? (
+                        <div className="mt-1 text-small text-fg-muted">
+                          {refundMethodText(order.refundMethod)} • {formatRefundDate(order.refundedAt)}
+                        </div>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <EmailBadge status={order.emailStatus} />

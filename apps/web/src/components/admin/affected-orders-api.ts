@@ -1,3 +1,4 @@
+import { refundMethodLabel } from "@filmbooking/shared/schemas/cancellation";
 import type { AffectedOrderDto, AffectedOrderStatus, EmailDeliveryStatus } from "@filmbooking/shared/schemas/cancellation";
 
 import { ApiError } from "@/lib/api/client";
@@ -6,6 +7,17 @@ export const ORDER_STATUS_LABEL: Record<AffectedOrderStatus, string> = {
   affected: "Chờ xử lý",
   refunded_manual: "Đã hoàn tiền",
 };
+
+/** "2026-11-18" -> "18/11/2026" (ngày thuần, không qua múi giờ). */
+export function formatRefundDate(isoDate: string | null): string {
+  const match = isoDate ? /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate) : null;
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : "Chưa ghi";
+}
+
+/** Phương thức hoàn bằng nhãn tiếng Việt; bản ghi cũ chưa có -> "Chưa ghi". */
+export function refundMethodText(method: string | null): string {
+  return refundMethodLabel(method) ?? "Chưa ghi";
+}
 
 export const EMAIL_STATUS_LABEL: Record<EmailDeliveryStatus, string> = {
   SENT: "Đã gửi",

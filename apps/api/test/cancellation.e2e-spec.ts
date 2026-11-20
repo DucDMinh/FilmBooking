@@ -4,6 +4,7 @@ import { Test } from "@nestjs/testing";
 import { SignJWT } from "jose";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { vnTodayIsoDate } from "@filmbooking/shared/schemas/cancellation";
 import { AccessService } from "../src/common/auth/access.service";
 import { AuthGuard } from "../src/common/auth/auth.guard";
 import { CinemaScopeGuard } from "../src/common/auth/cinema-scope.guard";
@@ -20,6 +21,9 @@ const SUPABASE_URL = "https://test.supabase.co";
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const FORBIDDEN_RPC_CINEMA = uuid(9997);
 const BROKEN_RPC_CINEMA = uuid(9998);
+
+/** R-110: phương thức + ngày hoàn bắt buộc cùng số tiền + mã GD. */
+const REFUND_EXTRA = { refundMethod: "BANK_TRANSFER", refundedAt: vnTodayIsoDate() } as const;
 
 const HN01 = uuid(1);
 const HN02 = uuid(2);
@@ -667,6 +671,7 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
         staffHn01Token,
         {
           refundReference: "MBVCB123456",
+          ...REFUND_EXTRA,
         },
       );
       expect(res.status).toBe(422);
@@ -708,6 +713,7 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
         {
           refundedAmount: -1000,
           refundReference: "REF123",
+          ...REFUND_EXTRA,
         },
       );
       expect(res.status).toBe(422);
@@ -722,6 +728,7 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
         {
           refundedAmount: 0,
           refundReference: "REF123",
+          ...REFUND_EXTRA,
         },
       );
       expect(res.status).toBe(422);
@@ -736,10 +743,96 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
         {
           refundedAmount: 200000, // total_amount là 150000
           refundReference: "REF123",
+          ...REFUND_EXTRA,
         },
       );
       expect(res.status).toBe(422);
       expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("R-110: thiếu phương thức hoàn tiền -> 422, không ghi action, đơn giữ affected", async () => {
+      const res = await call("post", `/admin/affected-orders/${affectedOrderId}/refund`, staffHn01Token, {
+        refundedAmount: 150000,
+        refundReference: "REF-NOMETHOD",
+        refundedAt: vnTodayIsoDate(),
+      });
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+      expect(fakeDb.tables.affected_order_actions).toHaveLength(0);
+      expect(fakeDb.tables.orders.find((o) => o.id === affectedOrderId)?.status).toBe("affected");
+    });
+
+    it("R-110: thiếu ngày hoàn -> 422", async () => {
+      const res = await call("post", `/admin/affected-orders/${affectedOrderId}/refund`, staffHn01Token, {
+        refundedAmount: 150000,
+        refundReference: "REF-NODATE",
+        refundMethod: "CASH",
+      });
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+      expect(fakeDb.tables.affected_order_actions).toHaveLength(0);
+    });
+
+    it("R-110: phương thức ngoài danh sách -> 422", async () => {
+      const res = await call("post", `/admin/affected-orders/${affectedOrderId}/refund`, staffHn01Token, {
+        ...REFUND_EXTRA,
+        refundedAmount: 150000,
+        refundReference: "REF-BADMETHOD",
+        refundMethod: "PAYPAL",
+      });
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("R-110: ngày hoàn ở tương lai hoặc sai định dạng -> 422", async () => {
+      const tomorrow = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+      for (const refundedAt of [tomorrow, "14/11/2026", "2026-02-30"]) {
+        const res = await call("post", `/admin/affected-orders/${affectedOrderId}/refund`, staffHn01Token, {
+          ...REFUND_EXTRA,
+          refundedAmount: 150000,
+          refundReference: "REF-BADDATE",
+          refundedAt,
+        });
+        expect(res.status, refundedAt).toBe(422);
+        expect(res.body.error.code).toBe("VALIDATION_ERROR");
+      }
+      expect(fakeDb.tables.affected_order_actions).toHaveLength(0);
+    });
+
+    it("R-110: hợp lệ -> lưu refund_method + refunded_at, trả DTO; chi tiết đơn + CSV hiển thị 2 trường", async () => {
+      const res = await call("post", `/admin/affected-orders/${affectedOrderId}/refund`, staffHn01Token, {
+        refundedAmount: 150000,
+        refundReference: "VCB-TX-555",
+        refundMethod: "E_WALLET",
+        refundedAt: "2026-11-18",
+      });
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ refundMethod: "E_WALLET", refundedAt: "2026-11-18" });
+      expect(fakeDb.tables.affected_order_actions[0]).toMatchObject({
+        refund_method: "E_WALLET",
+        refunded_at: "2026-11-18",
+      });
+
+      const detail = await call("get", `/admin/affected-orders/${affectedOrderId}`, staffHn01Token);
+      expect(detail.status).toBe(200);
+      expect(detail.body).toMatchObject({ refundMethod: "E_WALLET", refundedAt: "2026-11-18" });
+      expect(typeof detail.body.processedAt).toBe("string");
+
+      const csv = await call("get", "/admin/affected-orders/export", staffHn01Token);
+      expect(csv.text).toContain("Phương thức hoàn");
+      expect(csv.text).toContain("Ngày hoàn");
+      expect(csv.text).toContain("Ví điện tử");
+      expect(csv.text).toContain("2026-11-18");
+    });
+
+    it("R-110: Staff rạp khác vẫn 403 dù gửi đủ trường mới", async () => {
+      const res = await call("post", `/admin/affected-orders/${affectedOrderId}/refund`, staffHn02Token, {
+        ...REFUND_EXTRA,
+        refundedAmount: 150000,
+        refundReference: "REF-OTHER",
+      });
+      expect(res.status).toBe(403);
+      expect(fakeDb.tables.affected_order_actions).toHaveLength(0);
     });
 
     it("Đơn không ở trạng thái affected (vd: paid) -> 409 CONFLICT", async () => {
@@ -758,6 +851,7 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
         {
           refundedAmount: 150000,
           refundReference: "REF123",
+          ...REFUND_EXTRA,
         },
       );
       expect(res.status).toBe(409);
@@ -772,6 +866,7 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
         {
           refundedAmount: 150000,
           refundReference: "REF123456",
+          ...REFUND_EXTRA,
         },
       );
       expect(res.status).toBe(403);
@@ -786,6 +881,7 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
         {
           refundedAmount: 150000,
           refundReference: "VCB-TX-998877",
+          ...REFUND_EXTRA,
           note: "Đã chuyển khoản hoàn tiền theo yêu cầu khách",
         },
       );
@@ -810,12 +906,14 @@ describe("Cancellation API (Task 08: Huỷ suất, đóng rạp, đơn bị ản
       await call("post", `/admin/affected-orders/${affectedOrderId}/refund`, staffHn01Token, {
         refundedAmount: 150000,
         refundReference: "REF-001",
+        ...REFUND_EXTRA,
       });
 
       // Lần 2: bị từ chối
       const res2 = await call("post", `/admin/affected-orders/${affectedOrderId}/refund`, staffHn01Token, {
         refundedAmount: 150000,
         refundReference: "REF-002",
+        ...REFUND_EXTRA,
       });
       expect(res2.status).toBe(409);
       expect(res2.body.error.code).toBe("CONFLICT");

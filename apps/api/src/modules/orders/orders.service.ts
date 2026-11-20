@@ -191,6 +191,8 @@ export class OrdersService {
             note: affectedAction.note,
             refundReference: affectedAction.refund_reference,
             refundedAmount: affectedAction.refunded_amount,
+            refundMethod: affectedAction.refund_method ?? null,
+            refundedAt: affectedAction.refunded_at ?? null,
             createdAt: affectedAction.created_at,
           }
         : null,

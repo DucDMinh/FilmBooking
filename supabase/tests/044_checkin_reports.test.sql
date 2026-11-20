@@ -161,8 +161,8 @@ insert into public.payments (id, order_id, cinema_id, order_code, amount, status
 -- affected_order_actions (ghi nhận đổi suất cho O8 và hoàn tiền thủ công cho O9):
 insert into public.affected_order_actions (order_id, action, note, performed_by) values
   ('00000000-0000-0000-0000-5a0000000008', 'EXCHANGED', 'Đổi suất tại quầy', '00000000-0000-0000-0000-000000000b01');
-insert into public.affected_order_actions (order_id, action, note, refund_reference, refunded_amount, performed_by) values
-  ('00000000-0000-0000-0000-5a0000000009', 'REFUNDED_MANUAL', 'Hoàn tiền suất huỷ', 'VIB999888', 100000, '00000000-0000-0000-0000-000000000b01');
+insert into public.affected_order_actions (order_id, action, note, refund_reference, refunded_amount, refund_method, refunded_at, performed_by) values
+  ('00000000-0000-0000-0000-5a0000000009', 'REFUNDED_MANUAL', 'Hoàn tiền suất huỷ', 'VIB999888', 100000, 'BANK_TRANSFER', current_date, '00000000-0000-0000-0000-000000000b01');
 
 -- ---------------------------------------------------------------------------
 -- TEST 1: Quyền truy cập - Khách hàng thường bị chặn gọi checkin_ticket

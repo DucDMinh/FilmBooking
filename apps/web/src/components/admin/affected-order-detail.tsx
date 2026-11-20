@@ -11,7 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api/client";
 
-import { canResendEmail, EMAIL_STATUS_LABEL, ORDER_STATUS_LABEL, resendErrorMessage } from "./affected-orders-api";
+import {
+  canResendEmail,
+  EMAIL_STATUS_LABEL,
+  formatRefundDate,
+  ORDER_STATUS_LABEL,
+  refundMethodText,
+  resendErrorMessage,
+} from "./affected-orders-api";
 import { EmailBadge } from "./affected-orders-list";
 import { AffectedResolutionForm } from "./affected-resolution-form";
 import { PageHeader } from "./form-utils";
@@ -94,6 +101,8 @@ export function AffectedOrderDetail({ orderId }: Readonly<{ orderId: string }>) 
         {order.status === "refunded_manual" ? (
           <>
             <Row label="Số tiền đã hoàn">{order.refundedAmount === null ? "-" : formatVnd(order.refundedAmount)}</Row>
+            <Row label="Phương thức hoàn">{refundMethodText(order.refundMethod)}</Row>
+            <Row label="Ngày hoàn">{formatRefundDate(order.refundedAt)}</Row>
             <Row label="Mã giao dịch">{order.refundReference ?? "-"}</Row>
             <Row label="Ghi chú">{order.note ?? "-"}</Row>
           </>

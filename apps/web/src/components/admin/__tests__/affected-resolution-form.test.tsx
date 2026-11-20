@@ -4,6 +4,8 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { vnTodayIsoDate } from "@filmbooking/shared/schemas/cancellation";
+
 import { AffectedOrderDetail } from "../affected-order-detail";
 import { AffectedOrdersList } from "../affected-orders-list";
 import { AffectedResolutionForm } from "../affected-resolution-form";
@@ -51,13 +53,20 @@ function order(over: Record<string, unknown> = {}) {
     emailSentAt: null,
     refundedAmount: null,
     refundReference: null,
+    refundMethod: null,
     refundedAt: null,
+    processedAt: null,
     refundedBy: null,
     note: null,
     createdAt: "",
     updatedAt: "",
     ...over,
   };
+}
+
+/** Chọn phương thức hoàn (select gốc) — bắt buộc theo R-110. */
+async function chooseMethod(value: string) {
+  await userEvent.selectOptions(screen.getByLabelText(/Phương thức hoàn tiền/), value);
 }
 
 const postCalls = () => mockApiFetch.mock.calls.filter(([, init]) => init?.method === "POST");
@@ -87,11 +96,17 @@ describe("AffectedResolutionForm", () => {
     render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={onResolved} />);
     await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), "200000");
     await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB123");
+    await chooseMethod("BANK_TRANSFER");
     await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
     await waitFor(() => expect(onResolved).toHaveBeenCalledTimes(1));
     expect(mockApiFetch).toHaveBeenCalledWith(`/admin/affected-orders/${ORDER_ID}/refund`, {
       method: "POST",
-      json: { refundedAmount: 200000, refundReference: "VCB123" },
+      json: {
+        refundedAmount: 200000,
+        refundReference: "VCB123",
+        refundMethod: "BANK_TRANSFER",
+        refundedAt: vnTodayIsoDate(),
+      },
     });
   });
 
@@ -105,6 +120,7 @@ describe("AffectedResolutionForm", () => {
     render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={onResolved} />);
     await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), "1000");
     await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "X");
+    await chooseMethod("BANK_TRANSFER");
     await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
     expect(await screen.findByText(/Nhập mã giao dịch ngân hàng/)).toBeInTheDocument();
     expect(onResolved).not.toHaveBeenCalled();
@@ -117,6 +133,7 @@ describe("AffectedResolutionForm", () => {
     render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={onResolved} />);
     await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), "1000");
     await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB1");
+    await chooseMethod("BANK_TRANSFER");
     await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Bạn không có quyền với rạp này");
     expect(onResolved).not.toHaveBeenCalled();
@@ -128,6 +145,7 @@ describe("AffectedResolutionForm", () => {
     render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={vi.fn()} />);
     await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), "1000");
     await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB1");
+    await chooseMethod("BANK_TRANSFER");
     const button = screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ });
     await userEvent.dblClick(button);
     expect(postCalls()).toHaveLength(1);
@@ -141,6 +159,7 @@ describe("AffectedResolutionForm", () => {
     await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), typed);
     expect(screen.getByText(/Sẽ ghi nhận:/)).toHaveTextContent(/200\.000/);
     await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB1");
+    await chooseMethod("BANK_TRANSFER");
     await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
     await waitFor(() => expect(mockApiFetch).toHaveBeenCalled());
     expect(mockApiFetch.mock.calls[0]?.[1].json.refundedAmount).toBe(200000);
@@ -150,6 +169,7 @@ describe("AffectedResolutionForm", () => {
     render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={300000} onResolved={vi.fn()} />);
     await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), typed);
     await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB1");
+    await chooseMethod("BANK_TRANSFER");
     await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
     expect(await screen.findByText(/Chỉ nhập chữ số/)).toBeInTheDocument();
     expect(mockApiFetch).not.toHaveBeenCalled();
@@ -159,8 +179,39 @@ describe("AffectedResolutionForm", () => {
     render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={vi.fn()} />);
     await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), "200001");
     await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB1");
+    await chooseMethod("BANK_TRANSFER");
     await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
     expect(await screen.findByText(/không được vượt giá trị đơn/)).toBeInTheDocument();
+    expect(mockApiFetch).not.toHaveBeenCalled();
+  });
+
+  it("R-110: chưa chọn phương thức -> không gọi API, lỗi dưới ô phương thức", async () => {
+    render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={vi.fn()} />);
+    await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), "1000");
+    await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB1");
+    await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
+    expect(await screen.findByText(/Chọn phương thức hoàn tiền/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Phương thức hoàn tiền/)).toHaveAttribute("aria-invalid", "true");
+    expect(mockApiFetch).not.toHaveBeenCalled();
+  });
+
+  it("R-110: select liệt kê đủ 4 phương thức bằng nhãn tiếng Việt", () => {
+    render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={vi.fn()} />);
+    const select = screen.getByLabelText(/Phương thức hoàn tiền/);
+    for (const label of ["Chuyển khoản ngân hàng", "Ví điện tử", "Tiền mặt", "Khác"]) {
+      expect(within(select).getByRole("option", { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it("R-110: ngày hoàn mặc định là hôm nay; xoá ngày -> không gọi API, lỗi dưới ô ngày", async () => {
+    render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={vi.fn()} />);
+    const dateInput = screen.getByLabelText(/Ngày hoàn/);
+    expect(dateInput).toHaveValue(vnTodayIsoDate());
+    await userEvent.clear(dateInput);
+    await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), "1000");
+    await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB1");
+    await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
+    expect(await screen.findByText(/Chọn ngày hoàn/)).toBeInTheDocument();
     expect(mockApiFetch).not.toHaveBeenCalled();
   });
 
@@ -169,6 +220,7 @@ describe("AffectedResolutionForm", () => {
     render(<AffectedResolutionForm orderId={ORDER_ID} totalAmount={200000} onResolved={vi.fn()} />);
     await userEvent.type(screen.getByLabelText(/Số tiền đã hoàn/), "1000");
     await userEvent.type(screen.getByLabelText(/Mã giao dịch ngân hàng/), "VCB1");
+    await chooseMethod("BANK_TRANSFER");
     await userEvent.click(screen.getByRole("button", { name: /Xác nhận đã hoàn tiền/ }));
     expect(await screen.findByText(/vượt giá trị đơn/)).toBeInTheDocument();
     expect(toastSuccess).not.toHaveBeenCalled();
@@ -213,6 +265,16 @@ describe("AffectedOrdersList", () => {
     expect(table.getByText("Đã gửi")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Gửi lại email đơn/ })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Gửi lại email đơn FB123456" })).toBeInTheDocument();
+  });
+
+  it("R-110: đơn đã hoàn hiện phương thức + ngày hoàn trong danh sách", async () => {
+    routeApi({
+      items: [order({ status: "refunded_manual", refundMethod: "CASH", refundedAt: "2026-11-18" })],
+      total: 1,
+    });
+    render(<AffectedOrdersList />);
+    expect(await screen.findByText("FB123456")).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getByText("Tiền mặt • 18/11/2026")).toBeInTheDocument();
   });
 
   it("chưa có email: chỉ hiện nút gửi lại khi đơn có contactEmail", async () => {
@@ -337,6 +399,30 @@ describe("AffectedOrderDetail", () => {
     render(<AffectedOrderDetail orderId={ORDER_ID} />);
     expect(await screen.findByText("VCB123")).toBeInTheDocument();
     expect(screen.queryByRole("form", { name: "Ghi kết quả xử lý" })).not.toBeInTheDocument();
+  });
+
+  it("R-110: đơn đã hoàn hiện phương thức + ngày hoàn bằng nhãn tiếng Việt; bản ghi cũ hiện Chưa ghi", async () => {
+    mockApiFetch.mockResolvedValue(
+      order({
+        status: "refunded_manual",
+        refundedAmount: 200000,
+        refundReference: "VCB123",
+        refundMethod: "E_WALLET",
+        refundedAt: "2026-11-18",
+        emailOutbox: null,
+      }),
+    );
+    const { unmount } = render(<AffectedOrderDetail orderId={ORDER_ID} />);
+    expect(await screen.findByText("Ví điện tử")).toBeInTheDocument();
+    expect(screen.getByText("18/11/2026")).toBeInTheDocument();
+    unmount();
+
+    mockApiFetch.mockResolvedValue(
+      order({ status: "refunded_manual", refundedAmount: 200000, refundReference: "OLD1", emailOutbox: null }),
+    );
+    render(<AffectedOrderDetail orderId={ORDER_ID} />);
+    expect(await screen.findByText("OLD1")).toBeInTheDocument();
+    expect(screen.getAllByText("Chưa ghi")).toHaveLength(2);
   });
 
   it("lỗi tải chi tiết -> ErrorState", async () => {

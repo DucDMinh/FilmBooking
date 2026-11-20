@@ -261,8 +261,8 @@ select throws_ok($$insert into public.affected_order_actions (order_id, action, 
 select throws_ok($$insert into public.affected_order_actions (order_id, action)
   values ('00000000-0000-0000-0000-5a0000000007', 'REFUNDED_MANUAL')$$,
   '23514', null, 'hoàn thủ công thiếu mã tham chiếu/số tiền bị từ chối');
-select lives_ok($$insert into public.affected_order_actions (order_id, action, refund_reference, refunded_amount)
-  values ('00000000-0000-0000-0000-5a0000000007', 'REFUNDED_MANUAL', 'CK-0001', 100000)$$,
+select lives_ok($$insert into public.affected_order_actions (order_id, action, refund_reference, refunded_amount, refund_method, refunded_at)
+  values ('00000000-0000-0000-0000-5a0000000007', 'REFUNDED_MANUAL', 'CK-0001', 100000, 'BANK_TRANSFER', current_date)$$,
   'hoàn thủ công đủ trường');
 select throws_ok($$insert into public.affected_order_actions (order_id, action)
   values ('00000000-0000-0000-0000-5a0000000001', 'EXCHANGED')$$,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { toVnParts } from "../time";
 import { cinemaStatusSchema, type CinemaDbStatus } from "./catalog";
 
 /**
@@ -71,10 +72,37 @@ export const exportAffectedOrdersQuerySchema = listAffectedOrdersQuerySchema.pic
 });
 export type ExportAffectedOrdersQuery = z.infer<typeof exportAffectedOrdersQuerySchema>;
 
-/** AC-25: số tiền + mã giao dịch ngân hàng bắt buộc; thiếu -> 422. Người thực hiện lấy từ JWT, ngày từ server. */
+/** Phương thức hoàn tiền thủ công (R-110). Khớp CHECK `affected_order_actions.refund_method`. */
+export const REFUND_METHODS = ["BANK_TRANSFER", "E_WALLET", "CASH", "OTHER"] as const;
+export type RefundMethod = (typeof REFUND_METHODS)[number];
+
+export const REFUND_METHOD_LABEL: Record<RefundMethod, string> = {
+  BANK_TRANSFER: "Chuyển khoản ngân hàng",
+  E_WALLET: "Ví điện tử",
+  CASH: "Tiền mặt",
+  OTHER: "Khác",
+};
+
+/** Nhãn tiếng Việt cho giá trị phương thức; giá trị lạ/thiếu (dữ liệu cũ) -> null để UI tự chọn cách hiển thị. */
+export function refundMethodLabel(method: string | null | undefined): string | null {
+  return method && method in REFUND_METHOD_LABEL ? REFUND_METHOD_LABEL[method as RefundMethod] : null;
+}
+
+/** Ngày hôm nay theo giờ Việt Nam, dạng YYYY-MM-DD (mốc "không ở tương lai" của ngày hoàn). */
+export function vnTodayIsoDate(now: Date = new Date()): string {
+  const { year, month, day } = toVnParts(now);
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * R-110/AC-25: số tiền + ngày hoàn + phương thức + mã giao dịch ngân hàng bắt buộc; thiếu -> 422.
+ * Người thực hiện lấy từ JWT. Ngày hoàn do người ghi nhập (ngày thực tế chuyển tiền), không ở tương lai (giờ VN).
+ */
 export const recordRefundSchema = z.object({
   refundedAmount: z.number().int().min(1).max(MAX_AMOUNT_VND),
   refundReference: z.string().trim().min(1).max(MAX_REFUND_REFERENCE_LENGTH),
+  refundMethod: z.enum(REFUND_METHODS),
+  refundedAt: z.iso.date().refine((date) => date <= vnTodayIsoDate(), "refundedAt must not be in the future"),
   note: z.string().trim().max(MAX_NOTE_LENGTH).optional(),
 });
 export type RecordRefundInput = z.infer<typeof recordRefundSchema>;
@@ -124,7 +152,12 @@ export interface AffectedOrderDto {
   emailSentAt: string | null;
   refundedAmount: number | null;
   refundReference: string | null;
+  /** Phương thức hoàn (null: đơn chưa hoàn, hoặc bản ghi cũ trước khi có trường này). */
+  refundMethod: RefundMethod | null;
+  /** Ngày hoàn thực tế do người ghi nhập (YYYY-MM-DD). */
   refundedAt: string | null;
+  /** Thời điểm hệ thống ghi nhận hoàn tiền (ISO). */
+  processedAt: string | null;
   refundedBy: string | null;
   note: string | null;
   createdAt: string;
@@ -156,6 +189,8 @@ export interface RecordRefundResultDto {
   status: "refunded_manual";
   refundedAmount: number;
   refundReference: string;
+  refundMethod: RefundMethod;
+  refundedAt: string;
 }
 
 /** DTO kết quả gửi lại email */

@@ -12,7 +12,7 @@
 | CR-002 | (backlog) FK tickets.seat_id -> seats — chỉ thêm sau khi sell_order_seats khoá seats FOR KEY SHARE (tránh deadlock confirm_paid × hold_seats, F11 task-03) | BUG | pending | [2026-11-12-tickets-seat-fk.md](2026-11-12-tickets-seat-fk.md) | 2026-11-12 | |
 | CR-003 | Bỏ đổi suất khi rạp huỷ suất — khách liên hệ CSKH, chỉ hoàn tiền thủ công | MODIFY | done | [2026-11-12-remove-showtime-exchange.md](archive/2026-11-12-remove-showtime-exchange.md) | 2026-11-12 | 2026-11-12 |
 | CR-004 | API chặn Admin tự khoá/tự gỡ + giữ Admin cuối cùng (GAP-010) | BUG | done | [2026-11-14-admin-self-lock-last-admin-guard.md](archive/2026-11-14-admin-self-lock-last-admin-guard.md) | 2026-11-14 | 2026-11-20 |
-| CR-005 | Hoàn tiền thủ công thiếu phương thức + ngày hoàn bắt buộc R-110 (GAP-009) | BUG | pending | [2026-11-14-refund-method-required.md](2026-11-14-refund-method-required.md) | 2026-11-14 | |
+| CR-005 | Hoàn tiền thủ công thiếu phương thức + ngày hoàn bắt buộc R-110 (GAP-009) | BUG | done | [2026-11-14-refund-method-required.md](archive/2026-11-14-refund-method-required.md) | 2026-11-14 | 2026-11-20 |
 | CR-006 | Tùy biến mail đi: giao diện CINEMO + tiếng Việt (mail Auth + mail giao dịch Nest) | MODIFY | done | [2026-11-17-custom-mail-templates.md](archive/2026-11-17-custom-mail-templates.md) | 2026-11-17 | 2026-11-17 |
 | CR-007 | Bấm link xác nhận email → đăng nhập luôn (token_hash + verifyOtp), sửa R-04 | MODIFY | done | [2026-11-17-confirm-email-auto-login.md](archive/2026-11-17-confirm-email-auto-login.md) | 2026-11-17 | 2026-11-17 |
 | CR-008 | Một QR cho cả đơn hàng, staff quét 1 mã soát cả đơn (bỏ QR từng ghế) | MODIFY | done | [2026-11-17-order-level-qr.md](archive/2026-11-17-order-level-qr.md) | 2026-11-17 | 2026-11-18 |

@@ -2,6 +2,7 @@ import type { INestApplication } from "@nestjs/common";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { vnTodayIsoDate } from "@filmbooking/shared/schemas/cancellation";
 import { renderTemplate } from "../../src/modules/mail/templates";
 import { bootTestApp, drainOutbox } from "./helpers/app-harness";
 import { createFactories, mintToken, type TestShowtime, type TestUser } from "./helpers/factories";
@@ -292,12 +293,16 @@ describe.skipIf(!supabaseEnv)("integration: huỷ suất + email hàng loạt + 
       const target = orders[1]!;
       const url = `/affected-orders/${target.orderId}/refund`;
       const auth = { Authorization: `Bearer ${manager.accessToken}` };
+      const extra = { refundMethod: "BANK_TRANSFER", refundedAt: vnTodayIsoDate() };
       for (const body of [
-        { refundReference: "VCB-0001" },
-        { refundedAmount: TICKET_PRICE },
-        { refundedAmount: TICKET_PRICE, refundReference: "   " },
-        { refundedAmount: 0, refundReference: "VCB-0001" },
-        { refundedAmount: TICKET_PRICE * 5, refundReference: "VCB-0001" },
+        { ...extra, refundReference: "VCB-0001" },
+        { ...extra, refundedAmount: TICKET_PRICE },
+        { ...extra, refundedAmount: TICKET_PRICE, refundReference: "   " },
+        { ...extra, refundedAmount: 0, refundReference: "VCB-0001" },
+        { ...extra, refundedAmount: TICKET_PRICE * 5, refundReference: "VCB-0001" },
+        // R-110: thiếu phương thức / ngày hoàn
+        { refundedAmount: TICKET_PRICE, refundReference: "VCB-0001", refundedAt: extra.refundedAt },
+        { refundedAmount: TICKET_PRICE, refundReference: "VCB-0001", refundMethod: extra.refundMethod },
       ]) {
         const res = await request(server).post(url).set(auth).send(body);
         expect(res.status, JSON.stringify(body)).toBe(422);
@@ -312,7 +317,7 @@ describe.skipIf(!supabaseEnv)("integration: huỷ suất + email hàng loạt + 
       const res = await request(server)
         .post(`/affected-orders/${orders[1]!.orderId}/refund`)
         .set("Authorization", `Bearer ${otherManager.accessToken}`)
-        .send({ refundedAmount: TICKET_PRICE, refundReference: "VCB-0002" });
+        .send({ refundedAmount: TICKET_PRICE, refundReference: "VCB-0002", refundMethod: "CASH", refundedAt: vnTodayIsoDate() });
       expect(res.status).toBe(403);
     });
 
@@ -322,16 +327,16 @@ describe.skipIf(!supabaseEnv)("integration: huỷ suất + email hàng loạt + 
       const ok = await request(server)
         .post(url)
         .set("Authorization", `Bearer ${staff.accessToken}`)
-        .send({ refundedAmount: TICKET_PRICE, refundReference: "VCB-0003", note: "Hoàn qua chuyển khoản" });
+        .send({ refundedAmount: TICKET_PRICE, refundReference: "VCB-0003", refundMethod: "BANK_TRANSFER", refundedAt: vnTodayIsoDate(), note: "Hoàn qua chuyển khoản" });
       expect(ok.status, JSON.stringify(ok.body)).toBe(201);
-      expect(ok.body).toMatchObject({ success: true, status: "refunded_manual", refundedAmount: TICKET_PRICE, refundReference: "VCB-0003" });
+      expect(ok.body).toMatchObject({ success: true, status: "refunded_manual", refundedAmount: TICKET_PRICE, refundReference: "VCB-0003", refundMethod: "BANK_TRANSFER", refundedAt: vnTodayIsoDate() });
 
       const row = await admin.from("orders").select("status").eq("id", target.orderId).single();
       expect(row.data?.status).toBe("refunded_manual");
-      const action = await admin.from("affected_order_actions").select("refund_reference, refunded_amount, performed_by").eq("order_id", target.orderId).single();
-      expect(action.data).toMatchObject({ refund_reference: "VCB-0003", refunded_amount: TICKET_PRICE });
+      const action = await admin.from("affected_order_actions").select("refund_reference, refunded_amount, refund_method, refunded_at, performed_by").eq("order_id", target.orderId).single();
+      expect(action.data).toMatchObject({ refund_reference: "VCB-0003", refunded_amount: TICKET_PRICE, refund_method: "BANK_TRANSFER", refunded_at: vnTodayIsoDate() });
 
-      const dup = await request(server).post(url).set("Authorization", `Bearer ${manager.accessToken}`).send({ refundedAmount: TICKET_PRICE, refundReference: "VCB-0004" });
+      const dup = await request(server).post(url).set("Authorization", `Bearer ${manager.accessToken}`).send({ refundedAmount: TICKET_PRICE, refundReference: "VCB-0004", refundMethod: "BANK_TRANSFER", refundedAt: vnTodayIsoDate() });
       expect(dup.status).toBe(409);
 
       const detail = await request(server)

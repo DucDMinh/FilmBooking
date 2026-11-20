@@ -1,18 +1,27 @@
 "use client";
 
 import { formatVnd } from "@filmbooking/shared";
-import { recordRefundSchema, type RecordRefundResultDto } from "@filmbooking/shared/schemas/cancellation";
+import {
+  recordRefundSchema,
+  REFUND_METHODS,
+  REFUND_METHOD_LABEL,
+  vnTodayIsoDate,
+  type RecordRefundResultDto,
+} from "@filmbooking/shared/schemas/cancellation";
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
+import { SELECT_FIELD_CLASS } from "@/components/catalog/filter-field";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api/client";
 
-import { TextField, writeErrorToFields, zodFieldErrors, type FieldErrors } from "./form-utils";
+import { Field, TextField, writeErrorToFields, zodFieldErrors, type FieldErrors } from "./form-utils";
 
 const FIELD_MESSAGES: Record<string, string> = {
   refundedAmount: "Nhập số tiền đã hoàn (số nguyên VND, từ 1)",
   refundReference: "Nhập mã giao dịch ngân hàng (tối đa 100 ký tự)",
+  refundMethod: "Chọn phương thức hoàn tiền",
+  refundedAt: "Chọn ngày hoàn (không được ở tương lai)",
   note: "Ghi chú tối đa 500 ký tự",
 };
 
@@ -37,7 +46,7 @@ function localize(errors: FieldErrors): FieldErrors {
   return out;
 }
 
-/** Form ghi kết quả xử lý duy nhất: "Đã hoàn tiền thủ công" (AC-25) — thiếu số tiền/mã GD thì không gửi. */
+/** Form ghi kết quả xử lý duy nhất: "Đã hoàn tiền thủ công" (AC-25) — thiếu số tiền/ngày/phương thức/mã GD thì không gửi (R-110). */
 export function AffectedResolutionForm({
   orderId,
   totalAmount,
@@ -45,6 +54,8 @@ export function AffectedResolutionForm({
 }: Readonly<{ orderId: string; totalAmount: number; onResolved: () => void }>) {
   const [amount, setAmount] = useState("");
   const [reference, setReference] = useState("");
+  const [method, setMethod] = useState("");
+  const [refundedAt, setRefundedAt] = useState(() => vnTodayIsoDate());
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -69,6 +80,8 @@ export function AffectedResolutionForm({
     const parsed = recordRefundSchema.safeParse({
       refundedAmount: amountValue,
       refundReference: reference,
+      refundMethod: method === "" ? undefined : method,
+      refundedAt: refundedAt === "" ? undefined : refundedAt,
       note: note.trim() === "" ? undefined : note,
     });
     if (!parsed.success) {
@@ -125,6 +138,35 @@ export function AffectedResolutionForm({
           value={reference}
           onChange={setReference}
           error={errors.refundReference}
+          required
+          disabled={submitting}
+        />
+        <Field id="refundMethod" label="Phương thức hoàn tiền" error={errors.refundMethod} required>
+          <select
+            id="refundMethod"
+            name="refundMethod"
+            className={SELECT_FIELD_CLASS}
+            value={method}
+            onChange={(event) => setMethod(event.target.value)}
+            disabled={submitting}
+            aria-invalid={errors.refundMethod ? true : undefined}
+            aria-describedby={errors.refundMethod ? "refundMethod-error" : undefined}
+          >
+            <option value="">Chọn phương thức</option>
+            {REFUND_METHODS.map((value) => (
+              <option key={value} value={value}>
+                {REFUND_METHOD_LABEL[value]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <TextField
+          id="refundedAt"
+          label="Ngày hoàn"
+          type="date"
+          value={refundedAt}
+          onChange={setRefundedAt}
+          error={errors.refundedAt}
           required
           disabled={submitting}
         />

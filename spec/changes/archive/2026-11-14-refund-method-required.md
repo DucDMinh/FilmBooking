@@ -1,7 +1,7 @@
 ---
 id: refund-method-required
 type: bug
-status: pending
+status: done
 created: 2026-11-14
 ---
 
@@ -16,9 +16,9 @@ created: 2026-11-14
 - Actual: không có trường phương thức/ngày.
 
 ## Acceptance (bắt buộc)
-- [ ] Schema shared + API + DB (migration versioned nếu cần cột mới) có `refundMethod` bắt buộc và ngày hoàn.
-- [ ] Form web bắt buộc chọn phương thức; chi tiết đơn + CSV hiển thị.
-- [ ] Test API + web.
+- [x] Schema shared + API + DB (migration versioned nếu cần cột mới) có `refundMethod` bắt buộc và ngày hoàn.
+- [x] Form web bắt buộc chọn phương thức; chi tiết đơn + CSV hiển thị.
+- [x] Test API + web.
 
 ## Ghi chú
 GAP-009 (R-110). Nguồn: layer-7 phase review. P1. Kiểm R-110 trong `SPECIFICATIONS.md` trước khi làm.

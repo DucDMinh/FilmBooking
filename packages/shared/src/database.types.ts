@@ -25,14 +25,14 @@ export type Database = {
           Tables: {
             "affected_order_actions": {
                   Row: {
-                    "action": Database["public"]['Enums']["affected_action"],"cinema_id": string,"created_at": string,"id": string,"note": string | null,"order_id": string,"performed_by": string | null,"refund_reference": string | null,"refunded_amount": number | null
+                    "action": Database["public"]['Enums']["affected_action"],"cinema_id": string,"created_at": string,"id": string,"note": string | null,"order_id": string,"performed_by": string | null,"refund_method": string | null,"refund_reference": string | null,"refunded_amount": number | null,"refunded_at": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": Database["public"]['Enums']["affected_action"],"cinema_id": string,"created_at"?: string,"id"?: string,"note"?: string | null,"order_id": string,"performed_by"?: string | null,"refund_reference"?: string | null,"refunded_amount"?: number | null
+                    "action": Database["public"]['Enums']["affected_action"],"cinema_id": string,"created_at"?: string,"id"?: string,"note"?: string | null,"order_id": string,"performed_by"?: string | null,"refund_method"?: string | null,"refund_reference"?: string | null,"refunded_amount"?: number | null,"refunded_at"?: string | null
                   }
                   Update: {
-                    "action"?: Database["public"]['Enums']["affected_action"],"cinema_id"?: string,"created_at"?: string,"id"?: string,"note"?: string | null,"order_id"?: string,"performed_by"?: string | null,"refund_reference"?: string | null,"refunded_amount"?: number | null
+                    "action"?: Database["public"]['Enums']["affected_action"],"cinema_id"?: string,"created_at"?: string,"id"?: string,"note"?: string | null,"order_id"?: string,"performed_by"?: string | null,"refund_method"?: string | null,"refund_reference"?: string | null,"refunded_amount"?: number | null,"refunded_at"?: string | null
                   }
                   Relationships: [
                     {

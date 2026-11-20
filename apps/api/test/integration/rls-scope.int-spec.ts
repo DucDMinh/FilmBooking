@@ -1,6 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Test } from "@nestjs/testing";
+import { vnTodayIsoDate } from "@filmbooking/shared/schemas/cancellation";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AppModule } from "../../src/app.module";
@@ -270,7 +271,7 @@ describe.skipIf(!supabaseEnv)("RLS + Nest guard: cách ly theo rạp & dữ li�
         await http()
           .post(`/orders/${b.orderId}/refund`)
           .set("Authorization", asUser(a.manager))
-          .send({ refundedAmount: 100000, refundReference: "VIB123" }),
+          .send({ refundedAmount: 100000, refundReference: "VIB123", refundMethod: "BANK_TRANSFER", refundedAt: vnTodayIsoDate() }),
       );
       const actions = await admin.from("affected_order_actions").select("id").eq("order_id", b.orderId);
       expect(actions.data).toEqual([]);

@@ -107,6 +107,8 @@ export interface AffectedActionDbRow {
   note: string | null;
   refund_reference: string | null;
   refunded_amount: number | null;
+  refund_method?: string | null;
+  refunded_at?: string | null;
   created_at: string;
 }
 

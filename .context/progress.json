@@ -335,6 +335,28 @@
       ],
       "note": "User chốt định nghĩa Admin hoạt động (email xác nhận HOẶC facebook) sau 3 vòng FAIL. 13 pgTAP cũ đỏ trên DB local bẩn (có sẵn). CR-013: 2 test web flaky.",
       "updatedAt": "2026-11-20T05:19:57.043Z"
+    },
+    {
+      "id": "refund-method-required",
+      "title": "Hoàn tiền thủ công bắt buộc phương thức + ngày hoàn (R-110, GAP-009, CR-005; spec 3.5.2 không bump, scope v31)",
+      "class": "BUG",
+      "status": "done",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 refund_method + refunded_at: shared + migration NOT VALID + API 422 + CSV + web",
+          "status": "done",
+          "highRiskMigration": false,
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/bug-refund-method-required-phase-1-task-01-round-2-review.md"
+          }
+        }
+      ],
+      "note": "Round 1 FAIL chỉ vì thiếu Repro Verification (close-out). pgTAP 031/044 chưa xác nhận trên DB sạch. refundedAt đổi nghĩa (ngày người nhập), processedAt = created_at.",
+      "updatedAt": "2026-11-20T07:03:41.533Z"
     }
   ],
   "bugs": [
@@ -812,7 +834,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-20T05:19:57.044Z",
+  "lastUpdated": "2026-11-20T07:03:41.534Z",
   "inProgressTask": null,
   "completedTasks": [
     {

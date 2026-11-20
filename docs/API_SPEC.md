@@ -202,7 +202,7 @@ Bộ route có 3 dạng alias (`/admin/cinemas/:cinemaId/...`, `/cinemas/:cinema
 | `GET /admin/affected-orders/:orderId` | Roles(STAFF) | Chi tiết |
 | `GET /affected-orders/:orderId` | Roles(STAFF) | Alias |
 | `GET /orders/:orderId/affected` | Roles(STAFF) | Alias |
-| `POST /admin/affected-orders/:orderId/refund` | Roles(STAFF) | Ghi hoàn tiền thủ công; 422 khi thiếu số tiền hoặc mã giao dịch |
+| `POST /admin/affected-orders/:orderId/refund` | Roles(STAFF) | Ghi hoàn tiền thủ công (R-110). Body: `refundedAmount` (int ≥1), `refundReference` (mã GD ngân hàng), `refundMethod` (`BANK_TRANSFER`|`E_WALLET`|`CASH`|`OTHER`, bắt buộc), `refundedAt` (ngày hoàn `YYYY-MM-DD`, bắt buộc, không ở tương lai theo giờ VN), `note?`. 201 trả thêm `refundMethod`, `refundedAt`. Thiếu/sai bất kỳ trường bắt buộc, hoặc số tiền vượt giá trị đơn → 422 `VALIDATION_ERROR`; rạp khác 403; đơn đã hoàn 409. DTO chi tiết/danh sách đơn bị ảnh hưởng và CSV (cột "Phương thức hoàn", "Ngày hoàn") trả `refundMethod`, `refundedAt` (ngày người ghi nhập) và `processedAt` (lúc hệ thống ghi nhận); bản ghi cũ trước 2026-11-20 có `refundMethod`/`refundedAt` = null |
 | `POST /affected-orders/:orderId/refund` | Roles(STAFF) | Alias |
 | `POST /orders/:orderId/refund` | Roles(STAFF) | Alias |
 | `POST /admin/affected-orders/:orderId/resend-email` | Roles(STAFF) | Gửi lại email thông báo |
