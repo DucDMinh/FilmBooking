@@ -1,9 +1,9 @@
 {
   "specVersion": "3.5.2",
-  "scopeVersion": 32,
-  "generatedAt": "2026-11-20T14:30:24+07:00",
+  "scopeVersion": 33,
+  "generatedAt": "2026-11-20T17:26:22+07:00",
   "trigger": "bug-fix",
-  "workItem": "bug/tickets-seat-fk",
+  "workItem": "bug/oauth-collision-message",
   "specRefs": [
     "R-138",
     "NFR-19",
@@ -51,7 +51,12 @@
     "AC-25",
     "R-78",
     "R-82",
-    "NFR-04"
+    "NFR-04",
+    "AC-04",
+    "R-20",
+    "R-12",
+    "R-21",
+    "R-23"
   ],
   "changed": {
     "files": [
@@ -318,7 +323,9 @@
       "supabase/migrations/20261121100000_sell_order_seats_lock_seats_first.sql",
       "supabase/migrations/20261121100100_tickets_seat_fk.sql",
       "supabase/tests/071_tickets_seat_fk_lock_order.test.sql",
-      "supabase/tests/072_tickets_seat_fk.test.sql"
+      "supabase/tests/072_tickets_seat_fk.test.sql",
+      "apps/web/src/app/auth/callback/route.ts",
+      "apps/web/src/app/auth/callback/__tests__/route.test.ts"
     ],
     "modules": [
       "web-form-controls (select)",
@@ -373,7 +380,8 @@
       "web-admin-affected-orders (form ghi hoàn tiền, chi tiết đơn bị ảnh hưởng, danh sách, order-detail)",
       "supabase-migration sell_order_seats_lock_seats_first (khoá seats FOR KEY SHARE order by id ở đầu sell_order_seats; thứ tự khoá showtimes → orders → payments → seats → showtime_seat_states → tickets)",
       "supabase-migration tickets_seat_fk (FK tickets.seat_id → seats(id) ON DELETE RESTRICT + index tickets_seat_id_idx; HIGH_RISK_MIGRATION)",
-      "supabase-rpc confirm_paid_order / confirm_zero_amount (qua sell_order_seats)"
+      "supabase-rpc confirm_paid_order / confirm_zero_amount (qua sell_order_seats)",
+      "web-auth-callback (classifyOAuthError / buildRedirectForError: lỗi che \"Error creating identity\" → email_exists ở luồng đăng nhập)"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -764,6 +772,10 @@
         "supabase/tests/071_tickets_seat_fk_lock_order.test.sql",
         "supabase/tests/072_tickets_seat_fk.test.sql",
         "docs/ERD.md"
+      ],
+      "bug-oauth-collision-message/phase-1-task-01": [
+        "apps/web/src/app/auth/callback/route.ts",
+        "apps/web/src/app/auth/callback/__tests__/route.test.ts"
       ]
     }
   },
@@ -857,7 +869,10 @@
       "[scope v31 / bug-refund-method-required, CR-005] db.refund-method (R-110): migration `20261120100000_refund_method_required.sql` thêm cột `refund_method`, `refunded_at` và CHECK `NOT VALID` cho trạng thái REFUNDED_MANUAL; không backfill dòng cũ; không HIGH_RISK_MIGRATION. Test: pgTAP 070 (mới); 031 và 044 cập nhật theo cột mới.",
       "[scope v31 / bug-refund-method-required, CR-005] api.affected-orders.permissions (BR-ADM-14, R-110): phân quyền ghi hoàn tiền không đổi — Staff và Manager chỉ rạp mình, Admin mọi rạp; ngoài phạm vi → bị từ chối như cũ.",
       "[scope v32 / bug-tickets-seat-fk, CR-002] db.sell_order_seats.lock-order (R-76, R-78, R-82, R-62, NFR-04): `sell_order_seats` khoá `seats ... order by id for key share` ở đầu hàm; thứ tự khoá chuẩn showtimes → orders → payments → seats → showtime_seat_states → tickets, cùng chiều `hold_seats`. Thanh toán xác nhận (`confirm_paid`, gồm tiền về muộn expired → paid) và `confirm_zero_amount` vẫn bán đúng vé (đủ vé theo ghế, ghế → sold, đơn paid), không deadlock khi chạy đồng thời với giữ ghế cùng suất. Test: pgTAP 071 (dblink `confirm_paid` × `hold_seats`: không 40P01, tối đa 1 vé).",
-      "[scope v32 / bug-tickets-seat-fk, CR-002] db.tickets.seat-fk (R-76, R-54): migration `20261121100100_tickets_seat_fk.sql` thêm FK `tickets.seat_id → seats(id) ON DELETE RESTRICT` (HIGH_RISK_MIGRATION: precheck vé mồ côi, lock_timeout, NOT VALID + VALIDATE, index `tickets_seat_id_idx`; không destructive, không đổi dữ liệu). Không xoá được ghế còn vé (FK RESTRICT). Test: pgTAP 072 (FK tồn tại, chặn xoá ghế còn vé)."
+      "[scope v32 / bug-tickets-seat-fk, CR-002] db.tickets.seat-fk (R-76, R-54): migration `20261121100100_tickets_seat_fk.sql` thêm FK `tickets.seat_id → seats(id) ON DELETE RESTRICT` (HIGH_RISK_MIGRATION: precheck vé mồ côi, lock_timeout, NOT VALID + VALIDATE, index `tickets_seat_id_idx`; không destructive, không đổi dữ liệu). Không xoá được ghế còn vé (FK RESTRICT). Test: pgTAP 072 (FK tồn tại, chặn xoá ghế còn vé).",
+      "[scope v33 / bug-oauth-collision-message, CR-015] web.auth-callback.email-exists (AC-04, R-20, R-12) — đăng nhập Google/Facebook với email trùng tài khoản có sẵn (đăng ký bằng mật khẩu hoặc MXH khác): GoTrue che lỗi trigger DB `guard_identity_insert` (OAUTH_AUTO_MERGE_BLOCKED, 23514) thành \"Error creating identity\"; `/auth/callback` nhận diện (mô tả chứa chuỗi này, không phân biệt hoa/thường) ở luồng đăng nhập → redirect `/dang-nhap?error=email_exists`, hiển thị \"Email này đã có tài khoản - hãy đăng nhập bằng phương thức cũ để liên kết.\"; giữ nguyên tham số `next`; không tạo tài khoản mới, không tự gộp.",
+      "[scope v33 / bug-oauth-collision-message, CR-015] web.auth-callback.link-flow-and-other-500 (R-21, R-23) — luồng liên kết (`next` bắt đầu `/tai-khoan`, vd `/tai-khoan/bao-mat`) và các lỗi 500 khác (vd `error_code=unexpected_failure` + \"Unable to exchange external code\", sai secret của CR-014) KHÔNG bị gán `email_exists`, vẫn `/dang-nhap?error=oauth` (hoặc đích cũ của luồng liên kết).",
+      "[scope v33 / bug-oauth-collision-message, CR-015] web.auth-callback.no-reflect (R-12) — `error_description` của GoTrue KHÔNG được phản chiếu ra URL/giao diện; server chỉ `console.warn` gọn (error, errorCode, category, flow, maskedIdentity cắt 64 ký tự), không ghi mô tả thô, code, state, token."
     ],
     "dependents": [
       "[scope v26 / feature-cinema-status-notice] DEPENDENT huỷ suất/đơn affected (R-108, R-109, R-110, AC-24, AC-25) — job áp dụng lịch dùng chung `cancel_showtimes_core`: đơn `paid` -> `affected` hiện ở màn \"Đơn bị ảnh hưởng\"/hoàn tiền thủ công (R-110), xuất CSV, ghi nhận hoàn tiền đủ số tiền + mã giao dịch; huỷ suất TAY (một/nhiều suất, \"tất cả suất tương lai của rạp\") vẫn gửi email SHOWTIME_CANCELLED từng đơn và theo dõi/gửi lại như cũ. Retest luồng huỷ tay sau refactor core.",
@@ -1070,7 +1085,11 @@
       "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION giữ ghế / hết hạn giữ (R-61, R-62, R-63, R-64): giữ ghế atomic, hai yêu cầu cùng ghế chỉ một thành công, hết 10 phút nhả ghế, một đơn giữ / khách — pgTAP giữ ghế không đổi kết quả.",
       "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION huỷ đơn và huỷ suất (R-77, R-108): nhả ghế, đơn cancelled / affected, race huỷ ‖ thanh toán không deadlock (pgTAP 043/064/065).",
       "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION soát vé (R-97, R-99) và đặt vé end-to-end (R-59…R-66, R-73, R-76, R-79): từ chọn ghế → giữ ghế → thanh toán → vé QR → email → check-in vẫn chạy.",
-      "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION thanh toán đồng thời: nhiều đơn khác ghế cùng suất thanh toán song song và thanh toán ‖ giữ ghế của khách khác cùng suất — không 40P01, không vé trùng, không đơn kẹt."
+      "[scope v32 / bug-tickets-seat-fk, CR-002] REGRESSION thanh toán đồng thời: nhiều đơn khác ghế cùng suất thanh toán song song và thanh toán ‖ giữ ghế của khách khác cùng suất — không 40P01, không vé trùng, không đơn kẹt.",
+      "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION đăng nhập MXH lần đầu (user mới, email chưa có): vẫn tạo tài khoản và đăng nhập bình thường, không bị gán email_exists.",
+      "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION đăng nhập MXH bằng tài khoản đã liên kết (Google/Facebook), kể cả nhân sự (chuyển về khu vực vai trò) và tôn trọng `next` (sanitizeNext).",
+      "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION liên kết / huỷ liên kết MXH ở `/tai-khoan/bao-mat` (R-21, AC-05) và `identity_taken` (R-23): thông báo cũ giữ nguyên.",
+      "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION Facebook thiếu email → `/bo-sung-email` (missing_email) và các nhánh lỗi cũ (access_denied, dạng chữ `oauth_auto_merge_blocked` / `email_collision`) vẫn đi trước, không đổi."
     ]
   },
   "acceptance": [
@@ -1166,7 +1185,9 @@
     "[scope v31 / bug-refund-method-required, CR-005] R-110 / AC-25 — A2: Given một đơn `affected` When nhập đủ số tiền, ngày hoàn, phương thức, mã giao dịch ngân hàng (người thực hiện lấy từ phiên) Then đơn `refunded_manual`, chi tiết đơn + danh sách + chi tiết đơn bị ảnh hưởng hiện đúng phương thức và ngày hoàn, CSV có \"Phương thức hoàn\" và \"Ngày hoàn\".",
     "[scope v32 / bug-tickets-seat-fk, CR-002] A1 (R-62, R-76, NFR-04): Given một đơn đang `pending_payment` và một khách khác đang `hold_seats` cùng suất, ghế trùng nhau When `confirm_paid` và `hold_seats` chạy đồng thời Then KHÔNG có lỗi 40P01 (deadlock), tối đa 1 vé cho mỗi ghế, kết quả giữ ghế hoặc thanh toán nhất quán (một bên thành công, bên kia từ chối theo nghiệp vụ).",
     "[scope v32 / bug-tickets-seat-fk, CR-002] A2 (R-76, R-82): Given đơn đủ điều kiện thanh toán (kể cả đơn 0đ qua `confirm_zero_amount`) When xác nhận Then đơn `paid`, ghế `sold`, sinh đúng số vé theo ghế — hành vi như trước bản sửa.",
-    "[scope v32 / bug-tickets-seat-fk, CR-002] A3 (R-54): Given một ghế đã có vé When xoá ghế đó (DELETE trực tiếp trên `seats`) Then bị chặn bởi FK `tickets.seat_id → seats(id)` ON DELETE RESTRICT (lỗi 23503), dữ liệu không đổi; ghế chưa có vé xoá bình thường."
+    "[scope v32 / bug-tickets-seat-fk, CR-002] A3 (R-54): Given một ghế đã có vé When xoá ghế đó (DELETE trực tiếp trên `seats`) Then bị chặn bởi FK `tickets.seat_id → seats(id)` ON DELETE RESTRICT (lỗi 23503), dữ liệu không đổi; ghế chưa có vé xoá bình thường.",
+    "[scope v33 / bug-oauth-collision-message, CR-015] AC-04 (R-20, R-12) — A1: Given đã có tài khoản email/mật khẩu `a@x.com` When đăng nhập Google (hoặc Facebook có email) cùng `a@x.com` lần đầu Then không tạo tài khoản mới và về `/dang-nhap?error=email_exists` (giữ `next`) với thông báo \"Email này đã có tài khoản - hãy đăng nhập bằng phương thức cũ để liên kết.\"; KHÔNG phải thông báo chung \"Đăng nhập với Google/Facebook không thành công\".",
+    "[scope v33 / bug-oauth-collision-message, CR-015] AC-04 — A2: Given luồng liên kết (`next` bắt đầu `/tai-khoan`) hoặc lỗi 500 khác của GoTrue (không phải \"Error creating identity\") When về `/auth/callback` Then KHÔNG gán `email_exists`, vẫn `error=oauth` như trước; `error_description` không xuất hiện trong URL đích."
   ],
   "risk": "high",
   "notes": [
@@ -1177,6 +1198,7 @@
     "[scope v29 / bug-public-cinema-online-cutoff, CR-011] Bug-fix, spec PATCH 3.5.1 (làm rõ R-138/R-44/R-67 + AC-33; bỏ hạn chế \"mốc mặc định 15 phút\" ghi ở 3.5.0). KHÔNG đổi DB/migration; server giữ ghế vốn đã áp mốc rạp (`supabase/migrations/20261112140000_hold_seats_hardening.sql`). Reviewer STRICT PASS round 2 (round 1 FAIL vì /rap/[code] còn bấm được). Residual: `pnpm db:test` chưa chạy trên DB thật; mốc đổi có thể trễ ~60 giây ở trang khách do ISR/cache; `app_settings.value` là JSON null thì TS ra 0 còn SQL ra 15 (có từ trước). Bên test cần tài khoản Cinema Manager để đặt mốc riêng 30 phút (R-56) và suất mở trong 20 phút tới. Delta: `spec/updates/2026-11-20-public-cinema-online-cutoff.md`.",
     "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] Bug-fix bảo mật / phân quyền, spec PATCH 3.5.2 (làm rõ R-105 + NFR-06, thêm AC-34). risk nâng `high`: auth/RBAC + migration có trigger trên `auth.users` / `auth.identities` / `user_roles` (không phá huỷ dữ liệu). Định nghĩa Admin hoạt động là quyết định user chốt 2026-11-20 (khớp ngoại lệ cron R-10/R-19). Reviewer STRICT PASS round 6 (round 1–5 FAIL, mỗi vòng một lỗi khác). Bên test cần DB có ≥ 2 Admin hoạt động (Admin seed là Admin hoạt động duy nhất trên DB local; cleanup của pgTAP 069 cần Admin seed). 13 file pgTAP cũ (010, 020, 030, 031, 033, 040–044, 050, 063, 090) đỏ trên DB local bẩn vì seed demo (`provinces_name_key`/`price_rules_chain_key`) — có từ trước, chưa xác nhận trên DB sạch. Residual: deadlock 40P01 hiếm (API 500 cho bên bị huỷ); web chưa kiểm hiển thị 409; 2 test web flaky `account.test.tsx` có sẵn (CR-013). Delta: `spec/updates/2026-11-20-admin-self-lock-last-admin-guard.md`.",
     "[scope v31 / bug-refund-method-required, CR-005] Bug-fix, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, đưa code về đúng R-110 / BR-ADM-14, đóng GAP-009). risk giữ `high` (không hạ). Reviewer PASS round 2. Bên test cần đơn `affected` (huỷ suất có đơn đã thanh toán) để ghi hoàn tiền; thử cả ngày tương lai theo giờ VN và đơn cũ đã `refunded_manual` trước bản sửa (hiển thị \"Chưa ghi\"). `refundedAt` đổi nghĩa (ngày người nhập), `processedAt` là thời điểm hệ thống. pgTAP 031 và 044 chưa xác nhận trên DB sạch (DB local bẩn vì seed demo, có từ trước). Delta: `spec/updates/2026-11-20-refund-method-required.md`.",
-    "[scope v32 / bug-tickets-seat-fk, CR-002] Bug-fix toàn vẹn dữ liệu, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, không đổi API/web — chỉ SQL + tài liệu). risk giữ `high`. HIGH_RISK_MIGRATION `20261121100100_tickets_seat_fk.sql` (FK trên `tickets`: precheck vé mồ côi, lock_timeout, NOT VALID + VALIDATE, index; không destructive) đã áp trên DB local; rollback: bỏ FK + index `tickets_seat_id_idx`, khôi phục `sell_order_seats` bản trước. Reviewer STRICT PASS. Residual: test race pgTAP 071 đồng bộ bằng sleep nên khi hoàn nguyên bản sửa đỏ không ổn định 100%; pgTAP 040/041/043 chưa chạy lại được trên DB local bẩn (seed demo, có từ trước); chưa xác nhận trên DB sạch / DB staging thật. Đóng CR-002 hoãn từ bug-layer34-review phase-2-task-03. Delta: `spec/updates/2026-11-20-tickets-seat-fk.md`."
+    "[scope v32 / bug-tickets-seat-fk, CR-002] Bug-fix toàn vẹn dữ liệu, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, không đổi API/web — chỉ SQL + tài liệu). risk giữ `high`. HIGH_RISK_MIGRATION `20261121100100_tickets_seat_fk.sql` (FK trên `tickets`: precheck vé mồ côi, lock_timeout, NOT VALID + VALIDATE, index; không destructive) đã áp trên DB local; rollback: bỏ FK + index `tickets_seat_id_idx`, khôi phục `sell_order_seats` bản trước. Reviewer STRICT PASS. Residual: test race pgTAP 071 đồng bộ bằng sleep nên khi hoàn nguyên bản sửa đỏ không ổn định 100%; pgTAP 040/041/043 chưa chạy lại được trên DB local bẩn (seed demo, có từ trước); chưa xác nhận trên DB sạch / DB staging thật. Đóng CR-002 hoãn từ bug-layer34-review phase-2-task-03. Delta: `spec/updates/2026-11-20-tickets-seat-fk.md`.",
+    "[scope v33 / bug-oauth-collision-message, CR-015] Bug-fix, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, đưa UI về đúng AC-04 / R-20). risk giữ `high` (không hạ). Chỉ đổi web `/auth/callback` + test; không đổi API/DB/migration. Reviewer NORMAL PASS round 2 (round 1 FAIL vì điều kiện theo `error_code=unexpected_failure` gán sai mọi lỗi 500 thành email_exists). Bên test cần: tài khoản đã đăng ký bằng mật khẩu và một tài khoản Google/Facebook cùng email (OAuth thật), hoặc mô phỏng redirect lỗi `/auth/callback?error=server_error&error_code=unexpected_failure&error_description=Error+creating+identity` (không cần Google thật). Residual: CHƯA kiểm end-to-end với Google thật (cần user đăng nhập); redirect thật của GoTrue suy ra từ log `500: Error creating identity`, chưa quan sát trên URL; không phân biệt được lỗi che 23514 do trùng email với lỗi tạo identity khác cùng mô tả (hiếm); Facebook chưa có log thực; 2 test web flaky `account.test.tsx` = CR-013. Delta: `spec/updates/2026-11-20-oauth-collision-message.md`."
   ]
 }

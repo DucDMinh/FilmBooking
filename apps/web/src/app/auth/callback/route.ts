@@ -60,6 +60,33 @@ export function classifyOAuthError(
   return "oauth";
 }
 
+/**
+ * GoTrue che lỗi trigger DB (vd guard_identity_insert → OAUTH_AUTO_MERGE_BLOCKED 23514) thành 500 chung:
+ * redirect mang mô tả "Error creating identity", không có tên trigger (CR-015).
+ * Chỉ dựa vào mô tả: error_code=unexpected_failure là mã chung của mọi lỗi 500 GoTrue (sai secret, lỗi profile…).
+ */
+export function isMaskedIdentityCreationError(errorDescription: string | null | undefined): boolean {
+  return errorDescription?.toLowerCase().includes("error creating identity") ?? false;
+}
+
+/**
+ * Phân loại lỗi trong query redirect, có xét ngữ cảnh luồng.
+ * Đăng nhập: trigger chỉ chặn khi email đã thuộc tài khoản có sẵn → email_exists (AC-04, R-20).
+ * Liên kết (/tai-khoan): lỗi che mơ hồ (identity_taken / intent hết hạn) → giữ nguyên phân loại cũ.
+ */
+function classifyQueryError(
+  error: string | null,
+  errorCode: string | null,
+  errorDescription: string | null,
+  isLinkFlow: boolean,
+): OAuthErrorCategory {
+  const category = classifyOAuthError(error, errorCode, errorDescription);
+  if (category === "oauth" && !isLinkFlow && isMaskedIdentityCreationError(errorDescription)) {
+    return "email_exists";
+  }
+  return category;
+}
+
 export function buildRedirectForError(
   category: OAuthErrorCategory,
   next: string,
@@ -125,7 +152,16 @@ export async function GET(request: NextRequest) {
 
   // Nếu GoTrue trả query error ngay lúc redirect:
   if (error || errorCode || errorDescription) {
-    const category = classifyOAuthError(error, errorCode, errorDescription);
+    const isLinkFlow = next.startsWith("/tai-khoan");
+    const category = classifyQueryError(error, errorCode, errorDescription, isLinkFlow);
+    // Log chẩn đoán gọn: chỉ trường allowlist, không ghi mô tả thô/code/state/token.
+    console.warn("[auth/callback] oauth error", {
+      error: error?.slice(0, 64) ?? null,
+      errorCode: errorCode?.slice(0, 64) ?? null,
+      maskedIdentity: isMaskedIdentityCreationError(errorDescription),
+      category,
+      flow: isLinkFlow ? "link" : "login",
+    });
     return buildRedirectForError(category, next, request.url);
   }
 

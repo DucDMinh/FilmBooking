@@ -9,7 +9,7 @@ vi.mock("@/lib/supabase/server", () => ({
 const fetchMeOrNull = vi.fn();
 vi.mock("@/lib/auth/load-me", () => ({ fetchMeOrNull: (token: string) => fetchMeOrNull(token) }));
 
-import { GET } from "../route";
+import { GET, isMaskedIdentityCreationError } from "../route";
 
 const customer = { isAdmin: false, cinemas: [] };
 const staff = { isAdmin: false, cinemas: [{ cinemaId: "c1", role: "STAFF" }] };
@@ -72,5 +72,91 @@ describe("OAuth callback → điều hướng theo vai trò", () => {
 
     expect(res.headers.get("location")).toBe("http://localhost:3000/dang-nhap?error=oauth");
     expect(fetchMeOrNull).not.toHaveBeenCalled();
+  });
+});
+
+// GoTrue che lỗi trigger guard_identity_insert (OAUTH_AUTO_MERGE_BLOCKED) thành 500 chung (CR-015, AC-04, R-20).
+const MASKED_QUERY = "error=server_error&error_code=unexpected_failure&error_description=Error+creating+identity";
+
+async function callbackWithQuery(query: string): Promise<string | null> {
+  const res = await GET(new NextRequest(`http://localhost:3000/auth/callback?${query}`));
+  return res.headers.get("location");
+}
+
+describe("OAuth callback → lỗi che 'Error creating identity' của GoTrue", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  });
+
+  it("luồng đăng nhập → /dang-nhap?error=email_exists", async () => {
+    expect(await callbackWithQuery(MASKED_QUERY)).toBe("http://localhost:3000/dang-nhap?error=email_exists");
+  });
+
+  it("luồng đăng nhập giữ next khác '/'", async () => {
+    expect(await callbackWithQuery(`${MASKED_QUERY}&next=/dat-ve/abc`)).toBe(
+      "http://localhost:3000/dang-nhap?error=email_exists&next=%2Fdat-ve%2Fabc",
+    );
+  });
+
+  it("chỉ cần mô tả (không phân biệt hoa thường), không cần error_code", async () => {
+    expect(await callbackWithQuery("error=server_error&error_description=ERROR+CREATING+IDENTITY")).toBe(
+      "http://localhost:3000/dang-nhap?error=email_exists",
+    );
+  });
+
+  it("chỉ có error_code=unexpected_failure (mã chung lỗi 500) → KHÔNG email_exists", async () => {
+    expect(await callbackWithQuery("error_code=unexpected_failure")).toBe(
+      "http://localhost:3000/dang-nhap?error=oauth",
+    );
+  });
+
+  it("500 khác (đổi code lỗi) ở luồng đăng nhập → error=oauth", async () => {
+    expect(
+      await callbackWithQuery(
+        "error=server_error&error_code=unexpected_failure&error_description=Unable+to+exchange+external+code",
+      ),
+    ).toBe("http://localhost:3000/dang-nhap?error=oauth");
+  });
+
+  it("luồng liên kết (next=/tai-khoan/bao-mat) → KHÔNG email_exists, giữ error=oauth về next", async () => {
+    expect(await callbackWithQuery(`${MASKED_QUERY}&next=/tai-khoan/bao-mat`)).toBe(
+      "http://localhost:3000/tai-khoan/bao-mat?error=oauth",
+    );
+  });
+
+  it("lỗi khác (không phải lỗi che) ở luồng đăng nhập vẫn là error=oauth", async () => {
+    expect(await callbackWithQuery("error=access_denied&error_description=User+denied")).toBe(
+      "http://localhost:3000/dang-nhap?error=oauth",
+    );
+  });
+
+  it("không phản chiếu error_description ra location", async () => {
+    const location = await callbackWithQuery(MASKED_QUERY);
+    expect(location).not.toContain("Error");
+    expect(location).not.toContain("creating");
+  });
+
+  it("log chẩn đoán không chứa mô tả thô, code, state hay token", async () => {
+    await callbackWithQuery(`${MASKED_QUERY}&code=SECRETCODE&state=SECRETSTATE`);
+    const logged = JSON.stringify(vi.mocked(console.warn).mock.calls);
+    expect(logged).toContain("email_exists");
+    expect(logged).toContain("login");
+    expect(logged).toContain('"maskedIdentity":true');
+    expect(logged).not.toContain("SECRETCODE");
+    expect(logged).not.toContain("SECRETSTATE");
+    expect(logged.toLowerCase()).not.toContain("error creating identity");
+  });
+});
+
+describe("isMaskedIdentityCreationError", () => {
+  it.each([
+    ["Error creating identity", true],
+    ["error CREATING identity: x", true],
+    ["Unable to exchange external code", false],
+    ["User denied access", false],
+    [null, false],
+    [undefined, false],
+  ])("desc=%s → %s", (desc, expected) => {
+    expect(isMaskedIdentityCreationError(desc)).toBe(expected);
   });
 });

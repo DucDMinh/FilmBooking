@@ -22,6 +22,7 @@
 | CR-012 | Ô chọn (`<select>`) và danh sách xổ xuống đang như mặc định Windows, không đồng bộ giao diện CYBERPLEX | BUG | done | [2026-11-20-select-dropdown-theme.md](archive/2026-11-20-select-dropdown-theme.md) | 2026-11-20 | 2026-11-20 |
 | CR-013 | Hai test `ChangePasswordForm` trong `account.test.tsx` flaky (timeout `userEvent.type`, phím tràn giữa các test) | BUG | pending | [2026-11-20-account-test-flaky.md](2026-11-20-account-test-flaky.md) | 2026-11-20 | |
 | CR-014 | Chạy thật đăng nhập + liên kết Google/Facebook (key thật): đồng bộ tên biến env, cấu hình redirect, kiểm end-to-end | MODIFY | pending | [2026-11-20-real-oauth-google-facebook.md](2026-11-20-real-oauth-google-facebook.md) | 2026-11-20 | |
+| CR-015 | Đăng nhập Google/Facebook trùng email tài khoản có sẵn hiện thông báo chung thay vì "Email này đã có tài khoản…" (GoTrue che lỗi trigger AUTO_MERGE_BLOCKED) | BUG | done | [2026-11-20-oauth-collision-message.md](archive/2026-11-20-oauth-collision-message.md) | 2026-11-20 | 2026-11-20 |
 
 ## Quy tắc tracking
 

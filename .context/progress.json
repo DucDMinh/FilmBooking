@@ -379,6 +379,27 @@
       ],
       "note": "Test race 071 đồng bộ bằng pg_sleep nên đỏ không ổn định 100% khi hoàn nguyên thứ tự khoá; pgTAP 040/041/043 chưa chạy lại được trên DB local bẩn; VALIDATE cùng transaction với ADD (chặn INSERT tickets khi quét, bảng demo nên vô hại).",
       "updatedAt": "2026-11-20T07:30:50.933Z"
+    },
+    {
+      "id": "oauth-collision-message",
+      "title": "Đăng nhập MXH trùng email có sẵn hiện đúng thông báo email_exists thay vì thông báo chung (CR-015, AC-04/R-20; spec 3.5.2 không bump, scope v33)",
+      "class": "BUG",
+      "status": "done",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 /auth/callback nhận diện lỗi che \"Error creating identity\" ở luồng đăng nhập",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "NORMAL",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/bug-oauth-collision-message-phase-1-task-01-round-2-review.md"
+          }
+        }
+      ],
+      "note": "Round 1 FAIL: điều kiện OR theo error_code=unexpected_failure gán sai mọi lỗi 500. Chưa kiểm end-to-end với Google thật; Facebook chưa có log thực. 2 test web flaky account.test.tsx = CR-013.",
+      "updatedAt": "2026-11-20T10:26:59.711Z"
     }
   ],
   "bugs": [
@@ -856,7 +877,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-20T07:30:50.934Z",
+  "lastUpdated": "2026-11-20T10:26:59.712Z",
   "inProgressTask": null,
   "completedTasks": [
     {
