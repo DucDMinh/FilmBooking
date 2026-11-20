@@ -26,3 +26,11 @@ User (2026-11-20): "làm luồng đăng nhập, liên kết google, facebook th�
 
 ## Ghi chú
 Cần user cung cấp/xác nhận: (1) key Google và Facebook trong `.env.local` còn hợp lệ hay cần tạo mới; (2) redirect URI đã đăng ký trên console; (3) tài khoản Google/Facebook dùng để thử; (4) Facebook app đang Development hay Live. Không bịa key; không đưa secret vào repo hay vào bất kỳ dịch vụ ngoài nào.
+
+## Chẩn đoán lỗi `401: invalid_client` (2026-11-20, /bug, CR-014 chưa đóng)
+- Repro: bấm đăng nhập Google → Google báo `Lỗi 401: invalid_client`, `flowName=GeneralOAuthFlow`.
+- Root cause (bằng chứng đo trong container `supabase_auth_filmbooking`): `config.toml` đọc `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)` / `..._SECRET` nhưng key thật nằm ở `.env.local` dưới tên `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (tương tự Facebook: `FACEBOOK_APP_ID/SECRET`). CLI không thay được biến nên GoTrue nhận đúng chuỗi chữ `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)` (44 ký tự) làm `client_id` và gửi sang Google.
+- Đã sửa cấu hình cục bộ (không commit, `supabase/.env` được git bỏ qua): thêm 4 biến `SUPABASE_AUTH_EXTERNAL_{GOOGLE_CLIENT_ID,GOOGLE_SECRET,FACEBOOK_CLIENT_ID,FACEBOOK_SECRET}` sao chép từ `.env.local`; khởi động lại Supabase (`supabase stop` → `start`, dữ liệu giữ nguyên).
+- Sau sửa (đo lại): container nạp đủ 4 biến (Google 73/35, Facebook 16/32 ký tự); `authorize?provider=google` gửi `client_id` đúng mẫu `<số>-<32 ký tự>.apps.googleusercontent.com` và `redirect_uri=http://127.0.0.1:54321/auth/v1/callback`; `authorize?provider=facebook` chuyển sang `facebook.com/dialog/oauth` với `client_id` thật.
+- Chưa kiểm được end-to-end (cần user thao tác đăng nhập Google/Facebook thật). Phía provider user phải có: Google OAuth client loại Web có Authorized redirect URI `http://127.0.0.1:54321/auth/v1/callback` (thiếu → `redirect_uri_mismatch`); Facebook có URI này trong Valid OAuth Redirect URIs; Facebook Development chỉ cho tài khoản test/admin của app.
+- Còn lại của CR-014: đổi tên biến thống nhất trong `.env.example`/README (kèm hướng dẫn redirect URI), kiểm end-to-end đăng nhập, liên kết, huỷ liên kết bằng trình duyệt thật.
