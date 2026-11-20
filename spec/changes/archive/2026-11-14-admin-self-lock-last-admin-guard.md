@@ -1,7 +1,7 @@
 ---
 id: admin-self-lock-last-admin-guard
 type: bug
-status: pending
+status: done
 created: 2026-11-14
 ---
 
@@ -17,9 +17,9 @@ API cho phép Admin tự khoá tài khoản mình, tự gỡ quyền Admin của
 - Actual: thành công, chuỗi có thể còn 0 Admin.
 
 ## Acceptance (bắt buộc)
-- [ ] Tự khoá / tự gỡ Admin của chính mình → 409/422, không đổi dữ liệu.
-- [ ] Gỡ/khoá Admin cuối cùng bị chặn ở tầng DB (trigger hoặc lock trong transaction) — an toàn khi 2 request đồng thời.
-- [ ] Test e2e API + pgTAP cho các ca trên.
+- [x] Tự khoá / tự gỡ Admin của chính mình → 409/422, không đổi dữ liệu.
+- [x] Gỡ/khoá Admin cuối cùng bị chặn ở tầng DB (trigger hoặc lock trong transaction) — an toàn khi 2 request đồng thời.
+- [x] Test e2e API + pgTAP cho các ca trên.
 
 ## Ghi chú
 GAP-010 (R-105, NFR-06). Nguồn: layer-7 task-07 review r1/r2 + phase review. P1.

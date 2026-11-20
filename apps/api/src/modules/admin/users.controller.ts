@@ -37,6 +37,12 @@ import { AppException } from "../../common/errors/app-exception";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 
+// SQLSTATE do trigger DB 20261119100000_last_active_admin_guard ném khi sắp mất Admin hoạt động cuối cùng.
+const LAST_ADMIN_SQLSTATE = "FB409";
+const LAST_ADMIN_MESSAGE = "Không thể gỡ quyền hoặc khoá Admin hoạt động cuối cùng của chuỗi.";
+const SELF_LOCK_MESSAGE = "Không thể tự khoá tài khoản của chính mình.";
+const SELF_REVOKE_MESSAGE = "Không thể tự gỡ quyền Admin của chính mình.";
+
 interface ProfileRow {
   id: string;
   email: string | null;
@@ -122,9 +128,15 @@ export class UsersController {
     @Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string,
     @Body(new ZodValidationPipe(updateUserLockSchema)) body: UpdateUserLockInput,
   ): Promise<{ success: boolean; locked: boolean }> {
+    if (body.locked && userId === user.id) {
+      throw new AppException(ERROR_CODES.CONFLICT, SELF_LOCK_MESSAGE);
+    }
+
     const adminClient = this.supabase.admin();
     const { data: profile } = await adminClient.from("profiles").select("id").eq("id", userId).maybeSingle();
     if (!profile) throw new AppException(ERROR_CODES.NOT_FOUND, "User not found");
+
+    if (body.locked) await this.assertNotLastActiveAdmin(adminClient, userId);
 
     const banDuration = body.locked ? "876000h" : "none";
     const { error } = await adminClient.auth.admin.updateUserById(userId, {
@@ -132,7 +144,11 @@ export class UsersController {
       app_metadata: { locked: body.locked },
     });
 
-    if (error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
+    if (error) {
+      // Trigger DB (FB409) bị GoTrue gói thành lỗi chung: tra lại để trả 409 thay vì 500 khi race thắng tra cứu sớm.
+      if (body.locked) await this.assertNotLastActiveAdmin(adminClient, userId);
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
+    }
 
     const { error: auditErr } = await adminClient.from("audit_logs").insert({
       action: "UPDATE",
@@ -153,7 +169,7 @@ export class UsersController {
     @Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string,
     @Body(new ZodValidationPipe(updateUserAdminRoleSchema)) body: UpdateUserAdminRoleInput,
   ): Promise<{ success: boolean; isAdmin: boolean }> {
-    return this.applyAdminRole(userId, body.isAdmin, user.jwt);
+    return this.applyAdminRole(userId, body.isAdmin, user);
   }
 
   @Roles("ADMIN")
@@ -162,7 +178,7 @@ export class UsersController {
     @CurrentUser() user: AuthUser,
     @Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string,
   ): Promise<{ success: boolean; isAdmin: boolean }> {
-    return this.applyAdminRole(userId, true, user.jwt);
+    return this.applyAdminRole(userId, true, user);
   }
 
   @Roles("ADMIN")
@@ -171,7 +187,7 @@ export class UsersController {
     @CurrentUser() user: AuthUser,
     @Param("userId", new ZodValidationPipe(userIdParamSchema)) userId: string,
   ): Promise<{ success: boolean; isAdmin: boolean }> {
-    return this.applyAdminRole(userId, false, user.jwt);
+    return this.applyAdminRole(userId, false, user);
   }
 
   // ── Gán nhân sự rạp (R-17, R-105, AC-16) ───────────────────────────────────
@@ -312,12 +328,28 @@ export class UsersController {
 
   // ── Helper methods ────────────────────────────────────────────────────────
 
-  private async applyAdminRole(userId: string, isAdmin: boolean, jwt: string): Promise<{ success: boolean; isAdmin: boolean }> {
+  /**
+   * Tra cứu sớm để báo lỗi rõ ràng. Hàng rào thật là trigger FB409 ở DB (an toàn khi 2 request đồng thời),
+   * nên tra cứu này không cần khoá.
+   */
+  private async assertNotLastActiveAdmin(adminClient: ReturnType<SupabaseService["admin"]>, userId: string): Promise<void> {
+    const { data, error } = await adminClient.rpc("is_last_active_admin", { p_user_id: userId });
+    if (error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
+    if (data) throw new AppException(ERROR_CODES.CONFLICT, LAST_ADMIN_MESSAGE);
+  }
+
+  private async applyAdminRole(userId: string, isAdmin: boolean, actor: AuthUser): Promise<{ success: boolean; isAdmin: boolean }> {
+    if (!isAdmin && userId === actor.id) {
+      throw new AppException(ERROR_CODES.CONFLICT, SELF_REVOKE_MESSAGE);
+    }
+
     const adminClient = this.supabase.admin();
     const { data: profile } = await adminClient.from("profiles").select("id").eq("id", userId).maybeSingle();
     if (!profile) throw new AppException(ERROR_CODES.NOT_FOUND, "User not found");
 
-    const userDb = this.supabase.forUser(jwt);
+    if (!isAdmin) await this.assertNotLastActiveAdmin(adminClient, userId);
+
+    const userDb = this.supabase.forUser(actor.jwt);
 
     if (isAdmin) {
       const { error } = await userDb
@@ -330,6 +362,7 @@ export class UsersController {
         .delete()
         .eq("user_id", userId)
         .eq("role", "ADMIN");
+      if (error?.code === LAST_ADMIN_SQLSTATE) throw new AppException(ERROR_CODES.CONFLICT, LAST_ADMIN_MESSAGE);
       if (error) throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
     }
 

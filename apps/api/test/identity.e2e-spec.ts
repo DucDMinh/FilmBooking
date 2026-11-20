@@ -38,6 +38,7 @@ interface FakeUser {
 function createFakeSupabase() {
   const users = new Map<string, FakeUser>();
   const identities = new Map<string, FakeIdentity>();
+  const lastAdminGuardUsers = new Set<string>();
   const emailOutbox: Record<string, unknown>[] = [];
   const missingEmailRequests: Record<string, unknown>[] = [];
   const auditLogs: Record<string, unknown>[] = [];
@@ -47,6 +48,7 @@ function createFakeSupabase() {
   function reset() {
     users.clear();
     identities.clear();
+    lastAdminGuardUsers.clear();
     emailOutbox.length = 0;
     missingEmailRequests.length = 0;
     auditLogs.length = 0;
@@ -197,6 +199,14 @@ function createFakeSupabase() {
         });
       }
 
+      // Mô phỏng trigger DB auth_identities_last_admin_guard_delete: Admin hoạt động cuối cùng không được gỡ Facebook.
+      if (lastAdminGuardUsers.has(userId) && provider === "facebook") {
+        return Promise.resolve({
+          data: null,
+          error: { code: "FB409", message: "LAST_ADMIN: Không thể gỡ Admin hoạt động cuối cùng" },
+        });
+      }
+
       identities.delete(`${userId}:${provider}`);
 
       // Trigger R-24: enqueue email_outbox
@@ -318,6 +328,7 @@ function createFakeSupabase() {
   return {
     users,
     identities,
+    lastAdminGuardUsers,
     emailOutbox,
     missingEmailRequests,
     auditLogs,
@@ -474,6 +485,29 @@ describe("IdentityModule (e2e)", () => {
         .set("Authorization", `Bearer ${token}`);
 
       expect(res.status).toBe(404);
+    });
+
+    it("Admin hoạt động cuối cùng gỡ Facebook bị trigger DB chặn (FB409) -> 409 LAST_ADMIN, không 500, identity còn nguyên", async () => {
+      fake.identities.set(`${USER_OAUTH_ONLY}:google`, {
+        id: randomUUID(),
+        user_id: USER_OAUTH_ONLY,
+        provider: "google",
+        provider_id: "google_12345",
+        email: "facebook_user@example.com",
+        created_at: new Date().toISOString(),
+        last_sign_in_at: null,
+      });
+      fake.lastAdminGuardUsers.add(USER_OAUTH_ONLY);
+
+      const token = await signJwt(USER_OAUTH_ONLY, "facebook_user@example.com");
+      const res = await request(app.getHttpServer())
+        .delete("/me/identities/facebook")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.details.code).toBe("LAST_ADMIN");
+      expect(fake.identities.has(`${USER_OAUTH_ONLY}:facebook`)).toBe(true);
+      expect(fake.emailOutbox.find((m) => m.kind === "identity_unlinked")).toBeUndefined();
     });
 
     it("Cho phép huỷ liên kết khi còn >= 2 phương thức và tự enqueue email notification (R-24)", async () => {

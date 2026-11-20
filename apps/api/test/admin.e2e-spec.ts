@@ -20,6 +20,7 @@ const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0
 const HN01 = uuid(1);
 const HN02 = uuid(2);
 const ADMIN = uuid(10);
+const ADMIN_2 = uuid(14);
 const MANAGER_HN01 = uuid(11);
 const MANAGER_HN02 = uuid(12);
 const STAFF_HN01 = uuid(13);
@@ -42,10 +43,36 @@ class FakeDb {
   tables: Record<string, Row[]> = {};
   usersAuth: Record<string, { banned_until: string | null; app_metadata: Record<string, unknown> }> = {};
   currentJwt: string | null = null;
+  /** true: lần tra cứu is_last_active_admin đầu tiên trả false (mô phỏng race: tra cứu sớm không thấy, trigger DB mới chặn). */
+  blindFirstLastAdminLookup = false;
   private nextId = 1000;
+
+  /** Mô phỏng RÚT GỌN public.auth_account_is_active: chỉ xét banned_until và app_metadata.locked (không có bản ghi auth = hoạt động). email_confirmed_at / deleted_at / identity facebook KHÔNG được mô hình hoá ở đây; định nghĩa đầy đủ do pgTAP 068 kiểm trên DB thật. */
+  private isActiveAccount(userId: string): boolean {
+    const u = this.usersAuth[userId];
+    if (!u) return true;
+    return !(u.banned_until && new Date(u.banned_until) > new Date()) && u.app_metadata.locked !== true;
+  }
+
+  /** Mô phỏng public.is_last_active_admin và điều kiện của trigger FB409 ở DB. */
+  isLastActiveAdmin(userId: string): boolean {
+    const adminIds = (this.tables.user_roles ?? []).filter((r) => r.role === "ADMIN").map((r) => r.user_id as string);
+    const activeIds = adminIds.filter((id) => this.isActiveAccount(id));
+    return activeIds.includes(userId) && activeIds.every((id) => id === userId);
+  }
+
+  rpc(name: string, args: { p_user_id: string }) {
+    if (name !== "is_last_active_admin") return Promise.resolve({ data: null, error: { code: "42883", message: "no function" } });
+    if (this.blindFirstLastAdminLookup) {
+      this.blindFirstLastAdminLookup = false;
+      return Promise.resolve({ data: false, error: null });
+    }
+    return Promise.resolve({ data: this.isLastActiveAdmin(args.p_user_id), error: null });
+  }
 
   reset() {
     this.nextId = 1000;
+    this.blindFirstLastAdminLookup = false;
     this.usersAuth = {
       [USER_BOB]: { banned_until: null, app_metadata: {} },
       [USER_ALICE]: { banned_until: null, app_metadata: {} },
@@ -59,6 +86,7 @@ class FakeDb {
       ],
       profiles: [
         { id: ADMIN, email: "admin@filmbooking.vn", full_name: "Admin System", phone: "0900000001", created_at: "2026-01-01T00:00:00Z" },
+        { id: ADMIN_2, email: "admin2@filmbooking.vn", full_name: "Admin Hai", phone: "0900000005", created_at: "2026-01-01T00:00:00Z" },
         { id: MANAGER_HN01, email: "manager.hn01@filmbooking.vn", full_name: "Manager HN01", phone: "0900000002", created_at: "2026-01-01T00:00:00Z" },
         { id: MANAGER_HN02, email: "manager.hn02@filmbooking.vn", full_name: "Manager HN02", phone: "0900000003", created_at: "2026-01-01T00:00:00Z" },
         { id: STAFF_HN01, email: "staff.hn01@filmbooking.vn", full_name: "Staff HN01", phone: "0900000004", created_at: "2026-01-01T00:00:00Z" },
@@ -147,6 +175,10 @@ class FakeDb {
       },
       updateUserById: (id: string, attrs: { ban_duration?: string; app_metadata?: Record<string, unknown> }) => {
         const current = this.usersAuth[id] ?? { banned_until: null, app_metadata: {} };
+        if (attrs.ban_duration && attrs.ban_duration !== "none" && this.isLastActiveAdmin(id)) {
+          // GoTrue chỉ trả lỗi chung khi trigger DB (FB409) từ chối
+          return Promise.resolve({ data: { user: null }, error: { message: "Database error updating user" } });
+        }
         if (attrs.ban_duration === "none") {
           current.banned_until = null;
         } else if (attrs.ban_duration) {
@@ -406,6 +438,13 @@ class Query implements PromiseLike<Result> {
       if (toDelete.length === 0) return { data: null, error: null };
 
       if (this.table === "user_roles") {
+        // Mô phỏng trigger FB409: không xoá role ADMIN của Admin hoạt động cuối cùng
+        if (toDelete.some((r) => r.role === "ADMIN" && this.db.isLastActiveAdmin(r.user_id as string))) {
+          return {
+            data: null,
+            error: { code: "FB409", message: "LAST_ADMIN: Không thể gỡ quyền, khoá hoặc xoá Admin hoạt động cuối cùng của chuỗi" },
+          };
+        }
         const auditStore = (this.db.tables.audit_logs ??= []);
         let actorId: string | null = null;
         if (this.db.currentJwt) {
@@ -453,6 +492,7 @@ const fakeSupabase = {
     fakeDb.currentJwt = null;
     return {
       from: (table: string) => fakeDb.from(table),
+      rpc: (name: string, args: { p_user_id: string }) => fakeDb.rpc(name, args),
       auth: { admin: fakeDb.authAdmin() },
     };
   },
@@ -618,6 +658,114 @@ describe("Admin Module E2E", () => {
       );
       expect(revokeAudit).toBeDefined();
       expect(revokeAudit?.actor_id).toBe(ADMIN);
+    });
+
+    // ── CR-004 / GAP-010 / R-105: không tự khoá, không tự gỡ Admin, luôn còn Admin hoạt động ──
+
+    describe("Chặn Admin tự khoá / tự gỡ và giữ Admin cuối (R-105, GAP-010)", () => {
+      const adminRoles = () => (fakeDb.tables.user_roles ?? []).filter((r) => r.role === "ADMIN").map((r) => r.user_id);
+      const LOCKED = { banned_until: "2099-01-01T00:00:00Z", app_metadata: { locked: true } };
+
+      it("Admin tự khoá chính mình -> 409, không đổi dữ liệu", async () => {
+        const res = await request(app.getHttpServer())
+          .patch(`/admin/users/${ADMIN}/lock`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ locked: true });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe("CONFLICT");
+        expect(res.body.error.message).toMatch(/chính mình/);
+        expect(fakeDb.usersAuth[ADMIN]).toBeUndefined();
+        expect(fakeDb.tables.audit_logs?.some((a) => a.table_name === "users" && a.record_id === ADMIN)).toBe(false);
+      });
+
+      it("Admin tự gỡ quyền Admin của chính mình (PATCH/DELETE) -> 409, role còn nguyên kể cả khi có Admin khác", async () => {
+        fakeDb.tables.user_roles?.push({ user_id: ADMIN_2, role: "ADMIN" });
+
+        const patchRes = await request(app.getHttpServer())
+          .patch(`/admin/users/${ADMIN}/admin-role`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ isAdmin: false });
+        expect(patchRes.status).toBe(409);
+        expect(patchRes.body.error.message).toMatch(/chính mình/);
+
+        const deleteRes = await request(app.getHttpServer())
+          .delete(`/admin/users/${ADMIN}/roles/admin`)
+          .set("Authorization", `Bearer ${adminToken}`);
+        expect(deleteRes.status).toBe(409);
+
+        expect(adminRoles()).toEqual([ADMIN, ADMIN_2]);
+      });
+
+      it("Gỡ quyền / khoá Admin hoạt động cuối cùng -> 409 và không đổi dữ liệu", async () => {
+        // ADMIN (người gọi, token vẫn hợp lệ) đã bị khoá -> ADMIN_2 là Admin hoạt động duy nhất
+        fakeDb.tables.user_roles?.push({ user_id: ADMIN_2, role: "ADMIN" });
+        fakeDb.usersAuth[ADMIN] = { ...LOCKED };
+
+        const revokeRes = await request(app.getHttpServer())
+          .patch(`/admin/users/${ADMIN_2}/admin-role`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ isAdmin: false });
+        expect(revokeRes.status).toBe(409);
+        expect(revokeRes.body.error.message).toMatch(/cuối cùng/);
+
+        const lockRes = await request(app.getHttpServer())
+          .patch(`/admin/users/${ADMIN_2}/lock`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ locked: true });
+        expect(lockRes.status).toBe(409);
+        expect(lockRes.body.error.message).toMatch(/cuối cùng/);
+
+        expect(adminRoles()).toContain(ADMIN_2);
+        expect(fakeDb.usersAuth[ADMIN_2]).toBeUndefined();
+      });
+
+      it("Còn Admin hoạt động khác -> được khoá rồi gỡ quyền Admin đó", async () => {
+        fakeDb.tables.user_roles?.push({ user_id: ADMIN_2, role: "ADMIN" });
+
+        const lockRes = await request(app.getHttpServer())
+          .patch(`/admin/users/${ADMIN_2}/lock`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ locked: true });
+        expect(lockRes.status).toBe(200);
+
+        const revokeRes = await request(app.getHttpServer())
+          .patch(`/admin/users/${ADMIN_2}/admin-role`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ isAdmin: false });
+        expect(revokeRes.status).toBe(200);
+        expect(adminRoles()).toEqual([ADMIN]);
+      });
+
+      it("Tra cứu sớm không thấy nhưng DB chặn (race) -> gỡ quyền vẫn 409, không 500", async () => {
+        fakeDb.tables.user_roles?.push({ user_id: ADMIN_2, role: "ADMIN" });
+        fakeDb.usersAuth[ADMIN] = { ...LOCKED };
+        fakeDb.blindFirstLastAdminLookup = true;
+
+        const res = await request(app.getHttpServer())
+          .patch(`/admin/users/${ADMIN_2}/admin-role`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ isAdmin: false });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe("CONFLICT");
+        expect(adminRoles()).toContain(ADMIN_2);
+      });
+
+      it("Tra cứu sớm không thấy nhưng DB chặn (race) -> khoá vẫn 409, không 500", async () => {
+        fakeDb.tables.user_roles?.push({ user_id: ADMIN_2, role: "ADMIN" });
+        fakeDb.usersAuth[ADMIN] = { ...LOCKED };
+        fakeDb.blindFirstLastAdminLookup = true;
+
+        const res = await request(app.getHttpServer())
+          .patch(`/admin/users/${ADMIN_2}/lock`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ locked: true });
+
+        expect(res.status).toBe(409);
+        expect(res.body.error.code).toBe("CONFLICT");
+        expect(fakeDb.usersAuth[ADMIN_2]).toBeUndefined();
+      });
     });
 
     // ── AC-16 & R-105: Phân quyền gán nhân sự ──

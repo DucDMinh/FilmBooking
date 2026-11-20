@@ -313,6 +313,28 @@
       ],
       "note": "pnpm db:test chưa chạy trên DB thật; mốc đổi có thể trễ ~60s do ISR.",
       "updatedAt": "2026-11-20T03:52:20.929Z"
+    },
+    {
+      "id": "admin-self-lock-last-admin-guard",
+      "title": "Chặn Admin tự khoá / tự gỡ và giữ Admin hoạt động cuối (CR-004, GAP-010; spec 3.5.2, AC-34, scope v30)",
+      "class": "BUG",
+      "status": "done",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 API 409 + DB advisory lock + trigger FB409 (user_roles, auth.users, auth.identities); DELETE /me, unlink identity",
+          "status": "done",
+          "highRiskMigration": false,
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 6,
+            "reportPath": ".context/review-reports/bug-admin-self-lock-last-admin-guard-phase-1-task-01-round-6-review.md"
+          }
+        }
+      ],
+      "note": "User chốt định nghĩa Admin hoạt động (email xác nhận HOẶC facebook) sau 3 vòng FAIL. 13 pgTAP cũ đỏ trên DB local bẩn (có sẵn). CR-013: 2 test web flaky.",
+      "updatedAt": "2026-11-20T05:19:57.043Z"
     }
   ],
   "bugs": [
@@ -790,7 +812,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-20T03:52:20.931Z",
+  "lastUpdated": "2026-11-20T05:19:57.044Z",
   "inProgressTask": null,
   "completedTasks": [
     {

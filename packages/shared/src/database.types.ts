@@ -965,6 +965,9 @@ isOneToOne: false
 "assert_identity_rpc_caller":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
+"auth_account_is_active":
+{ Args: { "p_app_metadata": Json,"p_banned_until": string,"p_deleted_at": string,"p_email_confirmed_at": string,"p_user_id": string }; Returns: boolean
+                           },
 "call_nest_job":
 { Args: { "p_path": string }; Returns: number
                            },
@@ -1007,6 +1010,9 @@ isOneToOne: false
 "get_user_identities":
 { Args: { "p_user_id": string }; Returns: Json
                            },
+"guard_last_active_admin":
+{ Args: { "p_user_id": string }; Returns: undefined
+                           },
 "has_cinema_manager_scope":
 { Args: { "p_cinema_id": string }; Returns: boolean
                            },
@@ -1035,6 +1041,9 @@ isOneToOne: false
                            },
 "is_disposable_email":
 { Args: { "p_email": string }; Returns: boolean
+                           },
+"is_last_active_admin":
+{ Args: { "p_user_id": string }; Returns: boolean
                            },
 "is_login_locked":
 { Args: { "p_email": string }; Returns: boolean

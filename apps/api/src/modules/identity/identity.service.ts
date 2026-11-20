@@ -97,6 +97,14 @@ export class IdentityService {
       if (error.code === "P0002" || msg.includes("NOT_FOUND")) {
         throw new AppException(ERROR_CODES.NOT_FOUND, "Phương thức đăng nhập không tồn tại trên tài khoản của bạn.");
       }
+      // Trigger DB chặn Admin hoạt động cuối cùng (Admin đăng nhập Facebook, chưa xác nhận email, gỡ liên kết Facebook).
+      if (error.code === "FB409" || msg.includes("LAST_ADMIN")) {
+        throw new AppException(
+          ERROR_CODES.CONFLICT,
+          "Không thể huỷ liên kết vì đây là Admin hoạt động cuối cùng của chuỗi. Hãy cấp quyền Admin cho người khác trước.",
+          { code: "LAST_ADMIN" },
+        );
+      }
       throw error;
     }
 

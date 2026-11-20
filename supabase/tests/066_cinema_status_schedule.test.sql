@@ -59,9 +59,11 @@ insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at) value
 update auth.users set deleted_at = now() where id = '00000000-0000-0000-0000-066000000d04';
 update auth.users set banned_until = now() + interval '1 day' where id = '00000000-0000-0000-0000-066000000d05';
 update auth.users set banned_until = now() - interval '1 day' where id = '00000000-0000-0000-0000-066000000d06';
+-- admin66 phải là Admin hoạt động TRƯỚC khi vô hiệu hoá tài khoản demo: nếu không, Admin seed trở thành Admin hoạt động duy nhất
+-- và trigger auth_users_last_admin_guard_update (CR-004, 20261119100000) chặn đúng như thiết kế (FB409).
+insert into public.user_roles (user_id, role) values ('00000000-0000-0000-0000-066000000a01', 'ADMIN');
 -- Vô hiệu hoá tài khoản demo có sẵn trong DB (chỉ trong transaction này) để số người nhận kỳ vọng là hằng số.
 update auth.users set email_confirmed_at = null where id::text not like '00000000-0000-0000-0000-066%';
-insert into public.user_roles (user_id, role) values ('00000000-0000-0000-0000-066000000a01', 'ADMIN');
 insert into public.staff_assignments (user_id, cinema_id, role) values
   ('00000000-0000-0000-0000-066000000b01', '00000000-0000-0000-0000-0660000000c1', 'MANAGER');
 

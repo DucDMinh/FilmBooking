@@ -8,6 +8,10 @@ import type { AuthUser } from "../../common/auth/decorators";
 import { isRecentLogin } from "../../common/auth/recent-login";
 import { ENV, type Env } from "../../config/env";
 
+// SQLSTATE do trigger DB 20261119100000_last_active_admin_guard ném khi sắp mất Admin hoạt động cuối cùng.
+const LAST_ADMIN_SQLSTATE = "FB409";
+const LAST_ADMIN_DELETE_MESSAGE = "Không thể xoá tài khoản Admin hoạt động cuối cùng của chuỗi.";
+
 const PROFILE_COLUMNS =
   "id, email, full_name, phone, date_of_birth, gender, avatar_url, marketing_opt_in, province_id, created_at, updated_at";
 const AVATAR_EXTENSIONS: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
@@ -136,6 +140,18 @@ export class ProfileService {
     await this.assertReauthenticated(user, input.password);
     const admin = this.supabase.admin();
 
+    // GAP-010 / R-105: Admin hoạt động cuối cùng không tự xoá được tài khoản. Kiểm TRƯỚC mọi thay đổi dữ liệu;
+    // xoá user_roles đặt đầu tiên để nếu race thắng tra cứu này thì trigger DB (FB409) chặn khi chưa ẩn danh gì.
+    const lastAdmin = await admin.rpc("is_last_active_admin", { p_user_id: user.id });
+    if (lastAdmin.error) throw lastAdmin.error;
+    if (lastAdmin.data) throw new AppException(ERROR_CODES.CONFLICT, LAST_ADMIN_DELETE_MESSAGE);
+
+    const roleRemoval = await admin.from("user_roles").delete().eq("user_id", user.id);
+    if (roleRemoval.error?.code === LAST_ADMIN_SQLSTATE) {
+      throw new AppException(ERROR_CODES.CONFLICT, LAST_ADMIN_DELETE_MESSAGE);
+    }
+    if (roleRemoval.error) throw roleRemoval.error;
+
     const anonymized = await admin
       .from("profiles")
       .update({
@@ -151,7 +167,7 @@ export class ProfileService {
       .eq("id", user.id);
     if (anonymized.error) throw anonymized.error;
 
-    for (const table of ["favorite_cinemas", "staff_assignments", "user_roles"] as const) {
+    for (const table of ["favorite_cinemas", "staff_assignments"] as const) {
       const { error } = await admin.from(table).delete().eq("user_id", user.id);
       if (error) throw error;
     }

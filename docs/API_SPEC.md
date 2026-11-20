@@ -67,9 +67,9 @@ Cột Guard: `Public` = không cần JWT; `JWT` = chỉ cần đăng nhập; `Ro
 | `PUT /me/favorites/:cinemaId` | JWT | Thêm rạp yêu thích |
 | `DELETE /me/favorites/:cinemaId` | JWT | Bỏ rạp yêu thích |
 | `PUT /me/province` | JWT | Tỉnh/thành ưa thích |
-| `DELETE /me` | JWT | Xoá tài khoản (xác thực lại, ẩn danh hoá PII, giữ đơn/vé cho kế toán) |
+| `DELETE /me` | JWT | Xoá tài khoản (xác thực lại, ẩn danh hoá PII, giữ đơn/vé cho kế toán). 409 `CONFLICT` nếu người gọi là Admin hoạt động cuối cùng của chuỗi (kiểm trước mọi thay đổi dữ liệu; DB `FB409` là hàng rào cuối, race cũng ra 409) |
 | `GET /me/identities` | JWT | Danh sách phương thức đăng nhập |
-| `DELETE /me/identities/:provider` | JWT | Gỡ MXH; chặn gỡ phương thức đăng nhập cuối / `email` |
+| `DELETE /me/identities/:provider` | JWT | Gỡ MXH; chặn gỡ phương thức đăng nhập cuối / `email`; 409 `LAST_ADMIN` khi Admin hoạt động cuối cùng chưa xác nhận email gỡ Facebook (trigger DB `FB409`) |
 | `POST /me/password` | JWT | Đặt mật khẩu lần đầu cho tài khoản OAuth (200) |
 | `POST /auth/oauth/missing-email` | Public | Facebook không trả email (200, trung tính) |
 | `POST /auth/oauth/callback-check` | JWT | Đối chiếu trùng email theo user đang đăng nhập (200) |
@@ -230,10 +230,10 @@ Không có endpoint đổi suất (spec 3.0.0). Phạm vi rạp của nhóm Staf
 |---|---|---|
 | `GET /admin/users` | Roles(ADMIN) | |
 | `GET /admin/users/:userId` | Roles(ADMIN) | |
-| `PATCH /admin/users/:userId/lock` | Roles(ADMIN) | Khoá/mở khoá |
-| `PATCH /admin/users/:userId/admin-role` | Roles(ADMIN) | |
+| `PATCH /admin/users/:userId/lock` | Roles(ADMIN) | Khoá/mở khoá. 409 `CONFLICT` khi tự khoá chính mình hoặc khoá Admin hoạt động cuối cùng (GAP-010, R-105) |
+| `PATCH /admin/users/:userId/admin-role` | Roles(ADMIN) | 409 `CONFLICT` khi `isAdmin=false` với chính mình hoặc với Admin hoạt động cuối cùng |
 | `PUT /admin/users/:userId/roles/admin` | Roles(ADMIN) | Cấp vai trò Admin |
-| `DELETE /admin/users/:userId/roles/admin` | Roles(ADMIN) | Gỡ vai trò Admin |
+| `DELETE /admin/users/:userId/roles/admin` | Roles(ADMIN) | Gỡ vai trò Admin. 409 `CONFLICT` khi gỡ chính mình hoặc Admin hoạt động cuối cùng |
 | `GET /admin/cinemas/:cinemaId/staff` | Roles(MANAGER)+Scope | (decorator ghi `ADMIN, MANAGER`) |
 | `POST /admin/cinemas/:cinemaId/staff` | Roles(MANAGER)+Scope | 201; tạo/gán nhân sự (Manager chỉ thêm STAFF rạp mình) |
 | `PATCH /admin/cinemas/:cinemaId/staff/:userId` | Roles(ADMIN) | Đổi vai trò |

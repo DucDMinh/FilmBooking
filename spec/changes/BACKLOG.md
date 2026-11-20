@@ -11,7 +11,7 @@
 | CR-001 | Bỏ toàn bộ POS khỏi dự án, chỉ làm web | REMOVE | done | [2026-11-12-remove-pos.md](archive/2026-11-12-remove-pos.md) | 2026-11-12 | 2026-11-12 |
 | CR-002 | (backlog) FK tickets.seat_id -> seats — chỉ thêm sau khi sell_order_seats khoá seats FOR KEY SHARE (tránh deadlock confirm_paid × hold_seats, F11 task-03) | BUG | pending | [2026-11-12-tickets-seat-fk.md](2026-11-12-tickets-seat-fk.md) | 2026-11-12 | |
 | CR-003 | Bỏ đổi suất khi rạp huỷ suất — khách liên hệ CSKH, chỉ hoàn tiền thủ công | MODIFY | done | [2026-11-12-remove-showtime-exchange.md](archive/2026-11-12-remove-showtime-exchange.md) | 2026-11-12 | 2026-11-12 |
-| CR-004 | API chặn Admin tự khoá/tự gỡ + giữ Admin cuối cùng (GAP-010) | BUG | pending | [2026-11-14-admin-self-lock-last-admin-guard.md](2026-11-14-admin-self-lock-last-admin-guard.md) | 2026-11-14 | |
+| CR-004 | API chặn Admin tự khoá/tự gỡ + giữ Admin cuối cùng (GAP-010) | BUG | done | [2026-11-14-admin-self-lock-last-admin-guard.md](archive/2026-11-14-admin-self-lock-last-admin-guard.md) | 2026-11-14 | 2026-11-20 |
 | CR-005 | Hoàn tiền thủ công thiếu phương thức + ngày hoàn bắt buộc R-110 (GAP-009) | BUG | pending | [2026-11-14-refund-method-required.md](2026-11-14-refund-method-required.md) | 2026-11-14 | |
 | CR-006 | Tùy biến mail đi: giao diện CINEMO + tiếng Việt (mail Auth + mail giao dịch Nest) | MODIFY | done | [2026-11-17-custom-mail-templates.md](archive/2026-11-17-custom-mail-templates.md) | 2026-11-17 | 2026-11-17 |
 | CR-007 | Bấm link xác nhận email → đăng nhập luôn (token_hash + verifyOtp), sửa R-04 | MODIFY | done | [2026-11-17-confirm-email-auto-login.md](archive/2026-11-17-confirm-email-auto-login.md) | 2026-11-17 | 2026-11-17 |
@@ -20,6 +20,7 @@
 | CR-010 | Re-skin UI theo CYBERPLEX (vàng/crimson, chamfer, HUD) + chuyển động đặt vé trái→phải / nội dung trên→dưới & hai bên; thêm QuickBookBar | MODIFY | done | [2026-11-19-cyberplex-reskin.md](archive/2026-11-19-cyberplex-reskin.md) | 2026-11-19 | 2026-11-19 |
 | CR-011 | Mốc đóng bán online riêng của rạp (R-56) chưa có trong dữ liệu rạp công khai: lịch chiếu R-44 và thanh Đặt vé nhanh R-138 dùng mặc định 15 phút | BUG | done | [2026-11-19-public-cinema-online-cutoff.md](archive/2026-11-19-public-cinema-online-cutoff.md) | 2026-11-19 | 2026-11-20 |
 | CR-012 | Ô chọn (`<select>`) và danh sách xổ xuống đang như mặc định Windows, không đồng bộ giao diện CYBERPLEX | BUG | done | [2026-11-20-select-dropdown-theme.md](archive/2026-11-20-select-dropdown-theme.md) | 2026-11-20 | 2026-11-20 |
+| CR-013 | Hai test `ChangePasswordForm` trong `account.test.tsx` flaky (timeout `userEvent.type`, phím tràn giữa các test) | BUG | pending | [2026-11-20-account-test-flaky.md](2026-11-20-account-test-flaky.md) | 2026-11-20 | |
 
 ## Quy tắc tracking
 

@@ -1,9 +1,9 @@
 {
-  "specVersion": "3.5.1",
-  "scopeVersion": 29,
-  "generatedAt": "2026-11-20T10:55:00+07:00",
+  "specVersion": "3.5.2",
+  "scopeVersion": 30,
+  "generatedAt": "2026-11-20T12:19:32+07:00",
   "trigger": "bug-fix",
-  "workItem": "bug/public-cinema-online-cutoff",
+  "workItem": "bug/admin-self-lock-last-admin-guard",
   "specRefs": [
     "R-138",
     "NFR-19",
@@ -40,7 +40,12 @@
     "R-133",
     "R-56",
     "R-106",
-    "AC-33"
+    "AC-33",
+    "R-105",
+    "NFR-06",
+    "R-19",
+    "R-10",
+    "AC-34"
   ],
   "changed": {
     "files": [
@@ -288,7 +293,16 @@
       "apps/api/src/modules/cinema-ops/showtimes.service.ts",
       "apps/api/src/modules/cinema-ops/chain-defaults.ts",
       "apps/web/src/lib/showtime-closing.ts",
-      "SPECIFICATIONS.md"
+      "SPECIFICATIONS.md",
+      "supabase/migrations/20261119100000_last_active_admin_guard.sql",
+      "apps/api/src/modules/admin/users.controller.ts",
+      "apps/api/src/modules/profile/profile.service.ts",
+      "apps/api/src/modules/identity/identity.service.ts",
+      "supabase/tests/068_last_active_admin_guard.test.sql",
+      "supabase/tests/069_last_active_admin_concurrency.test.sql",
+      "apps/api/test/admin.e2e-spec.ts",
+      "apps/api/test/profile.e2e-spec.ts",
+      "apps/api/test/identity.e2e-spec.ts"
     ],
     "modules": [
       "web-form-controls (select)",
@@ -331,7 +345,11 @@
       "api-catalog-movies",
       "api-cinema-ops-chain-defaults",
       "web-quick-book (QuickBookBar, lib/quick-book, lib/showtime-closing)",
-      "e2e/scrub (mock API)"
+      "e2e/scrub (mock API)",
+      "supabase-migration last_active_admin_guard (trigger FB409 + advisory lock trên user_roles, auth.users, auth.identities)",
+      "api-admin-users (lock / admin-role / roles/admin)",
+      "api-profile (DELETE /me)",
+      "api-identity (DELETE /me/identities/:provider)"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -673,6 +691,22 @@
         "e2e/scrub/mock-api.mjs",
         "docs/API_SPEC.md",
         "SPECIFICATIONS.md"
+      ],
+      "bug-admin-self-lock-last-admin-guard/phase-1-task-01": [
+        "supabase/migrations/20261119100000_last_active_admin_guard.sql",
+        "apps/api/src/modules/admin/users.controller.ts",
+        "apps/api/src/modules/profile/profile.service.ts",
+        "apps/api/src/modules/identity/identity.service.ts",
+        "supabase/tests/066_cinema_status_schedule.test.sql",
+        "supabase/tests/068_last_active_admin_guard.test.sql",
+        "supabase/tests/069_last_active_admin_concurrency.test.sql",
+        "apps/api/test/admin.e2e-spec.ts",
+        "apps/api/test/profile.e2e-spec.ts",
+        "apps/api/test/identity.e2e-spec.ts",
+        "docs/API_SPEC.md",
+        "docs/ERD.md",
+        "packages/shared/src/database.types.ts",
+        "SPECIFICATIONS.md"
       ]
     }
   },
@@ -753,7 +787,12 @@
       "[scope v29 / bug-public-cinema-online-cutoff, CR-011] web.cutoff.per-cinema (R-56, R-67, R-44, R-138, AC-33 — BUG FIX, PATCH 3.5.1): Given rạp có mốc đóng bán online riêng 30 phút When khách mở /lich-chieu, /phim/[slug] hoặc /rap/[code] khi suất còn 20 phút Then suất hiện \"Ngừng bán online — vui lòng mua tại quầy\" và KHÔNG bấm được (không có link /dat-ve/); ở thanh Đặt vé nhanh (R-138) suất đó KHÔNG được liệt kê. Mỗi suất dùng mốc của ĐÚNG rạp của nó (lịch nhiều rạp: rạp mốc 30 và rạp mốc 15 trong cùng một danh sách xử lý riêng).",
       "[scope v29 / bug-public-cinema-online-cutoff, CR-011] web.cutoff.chain-default (R-67, R-106, AC-33): Given rạp KHÔNG cấu hình mốc riêng When suất còn 20 phút Then vẫn bấm được / được liệt kê (mặc định chuỗi 15 phút); suất còn 10 phút thì đóng bán; Given đổi `default_online_cutoff_minutes` ở cấu hình chuỗi (R-106) Then rạp không mốc riêng theo giá trị mới (có thể trễ ~60 giây do ISR/cache); thiếu cấu hình thì rơi về 15.",
       "[scope v29 / bug-public-cinema-online-cutoff, CR-011] api.catalog.cinema-dto (R-56, R-67): CinemaDto công khai (GET /cinemas, GET /cinemas/:code, nhóm rạp trong lịch chiếu theo phim, lịch theo rạp) có trường `effectiveOnlineCutoffMinutes` = mốc riêng của rạp ?? app_settings.default_online_cutoff_minutes ?? 15; rạp đóng cửa / tạm đóng vẫn trả mốc; schema shared khớp API (docs/API_SPEC.md). Test: `apps/api/test/catalog.e2e-spec.ts` (6 test), `quick-book.test.ts`, `schedule.test.tsx`, `rap/[code]/__tests__/page.test.tsx`.",
-      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] server.hold-seats.cutoff (R-62, R-67, AC-33): Given suất đã quá mốc đóng bán của rạp (mốc riêng hoặc mặc định chuỗi) When khách cố giữ ghế (kể cả vào thẳng URL chọn ghế) Then server từ chối, không giữ ghế được — server là nơi quyết định cuối, không đổi so với trước."
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] server.hold-seats.cutoff (R-62, R-67, AC-33): Given suất đã quá mốc đóng bán của rạp (mốc riêng hoặc mặc định chuỗi) When khách cố giữ ghế (kể cả vào thẳng URL chọn ghế) Then server từ chối, không giữ ghế được — server là nơi quyết định cuối, không đổi so với trước.",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] api.admin.users (R-105, NFR-06, AC-34): `PATCH /admin/users/:id/lock`, `PATCH /admin/users/:id/admin-role` (isAdmin=false) và `DELETE /admin/users/:id/roles/admin` trả 409 `CONFLICT` (message tiếng Việt, không đổi dữ liệu) khi Admin tự khoá / tự gỡ quyền Admin của chính mình, hoặc khi khoá / gỡ quyền Admin hoạt động cuối cùng của chuỗi; còn Admin hoạt động khác thì cho phép. Test: `apps/api/test/admin.e2e-spec.ts`.",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] api.profile.delete-me (R-105, AC-34): `DELETE /me` của Admin hoạt động cuối cùng → 409 `CONFLICT`, kiểm TRƯỚC mọi thay đổi dữ liệu (không còn ẩn danh hoá rồi 500); Admin khác / khách thường xoá được như cũ. Test: `apps/api/test/profile.e2e-spec.ts` (3 ca).",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] api.identity.unlink (R-105, R-19, AC-34): `DELETE /me/identities/:provider` — Admin hoạt động cuối cùng CHƯA xác nhận email gỡ liên kết Facebook → 409 `LAST_ADMIN` (trigger DB FB409). Test: `apps/api/test/identity.e2e-spec.ts`.",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] db.last-active-admin-guard (R-105, R-10, R-19, AC-34): định nghĩa Admin hoạt động (user chốt 2026-11-20) = role ADMIN + không xoá mềm + không khoá + (email đã xác nhận HOẶC có identity Facebook); Admin chưa xác nhận email và không có Facebook KHÔNG được tính; Admin Facebook không email ĐƯỢC tính. Trigger FB409 + advisory lock chặn khoá / gỡ role / xoá Admin cuối ở tầng DB, kể cả 2 request đồng thời (hai Admin gỡ nhau → vẫn còn ≥ 1). Test: pgTAP 066 (60/60), 068 (38 test), 069 (10 test đồng thời qua dblink).",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] db.cron.delete_unconfirmed_users (R-10, R-19, quyết định #14/#18): cron xoá tài khoản chưa xác nhận sau 7 ngày vẫn chạy được, không bị kẹt FB409 (Admin chưa xác nhận không được tính là Admin hoạt động; Admin Facebook không bị xoá). Có test cron thật trong pgTAP 068."
     ],
     "dependents": [
       "[scope v26 / feature-cinema-status-notice] DEPENDENT huỷ suất/đơn affected (R-108, R-109, R-110, AC-24, AC-25) — job áp dụng lịch dùng chung `cancel_showtimes_core`: đơn `paid` -> `affected` hiện ở màn \"Đơn bị ảnh hưởng\"/hoàn tiền thủ công (R-110), xuất CSV, ghi nhận hoàn tiền đủ số tiền + mã giao dịch; huỷ suất TAY (một/nhiều suất, \"tất cả suất tương lai của rạp\") vẫn gửi email SHOWTIME_CANCELLED từng đơn và theo dõi/gửi lại như cũ. Retest luồng huỷ tay sau refactor core.",
@@ -830,7 +869,9 @@
       "[scope v27 / feature-cyberplex-reskin] DEPENDENT tài khoản: hồ sơ, đổi mật khẩu/thêm mật khẩu, đổi email, xoá tài khoản, tài khoản liên kết, phiên đăng nhập, upload avatar, rạp yêu thích, thông báo.",
       "[scope v27 / feature-cyberplex-reskin] DEPENDENT soát vé QR (R-97, R-98, R-99): chọn rạp, quét QR, kết quả hợp lệ (phim, ghế, suất) và thất bại (đã dùng, sai rạp, sai suất, huỷ) màu rõ ràng + tương phản, check-in một lần/đơn; không có chuyển động cuộn.",
       "[scope v27 / feature-cyberplex-reskin] DEPENDENT admin (R-133 và toàn bộ màn quản trị): bảng (`ui/table`), form (phim, rạp, voucher, giá, cài đặt, user), dialog huỷ suất, dialog trạng thái rạp, đơn bị ảnh hưởng/hoàn tiền thủ công, sơ đồ ghế/phòng, báo cáo/dashboard; cảnh báo nhiều lớp R-133 (Điều khoản, chính sách bảo mật, màn xác nhận) sau reskin.",
-      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] DEPENDENT trang rạp /rap/[code] (R-37) và lịch chiếu /lich-chieu, /phim/[slug] (R-44, R-43): suất không quá mốc vẫn là link tới /dat-ve/<id>, suất đã huỷ vẫn không bấm được; rạp Tạm đóng / Ngừng hoạt động / Sắp khai trương (R-137) và lịch đổi trạng thái (R-136) hiển thị không đổi. Admin: màn lịch chiếu / cấu hình rạp (R-56) lưu mốc riêng và hiển thị đúng sau khi đổi (test `catalog-admin`, `shell`)."
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] DEPENDENT trang rạp /rap/[code] (R-37) và lịch chiếu /lich-chieu, /phim/[slug] (R-44, R-43): suất không quá mốc vẫn là link tới /dat-ve/<id>, suất đã huỷ vẫn không bấm được; rạp Tạm đóng / Ngừng hoạt động / Sắp khai trương (R-137) và lịch đổi trạng thái (R-136) hiển thị không đổi. Admin: màn lịch chiếu / cấu hình rạp (R-56) lưu mốc riêng và hiển thị đúng sau khi đổi (test `catalog-admin`, `shell`).",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] DEPENDENT web admin users (R-105, `users-admin.tsx`, `role-assign-dialog.tsx`): dialog xác nhận khoá / gỡ quyền hiển thị message 409 từ API (chưa kiểm hiển thị 409 trên web thật); luồng gán vai trò Staff / Cinema Manager / gán rạp (đổi role Admin sang role khác cũng đi qua ràng buộc).",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] DEPENDENT trang tài khoản (`delete-account-dialog.tsx`, `linked-accounts.tsx`): xoá tài khoản và gỡ liên kết Facebook của khách thường vẫn thành công; chỉ Admin hoạt động cuối bị 409."
     ],
     "regression": [
       "[scope v26 / feature-cinema-status-notice] REGRESSION cancel_showtimes sau refactor core (R-108, R-109, AC-24, AC-25) — huỷ suất tay: suất `cancelled`, ghế nhả, đơn paid -> affected, email SHOWTIME_CANCELLED từng đơn, preview số đơn/vé, lý do bắt buộc, Manager chỉ rạp mình, race huỷ ‖ check-in/thanh toán không deadlock (pgTAP 043/064/065 không đổi kết quả).",
@@ -951,7 +992,11 @@
       "[scope v28 / bug-select-dropdown-theme] REGRESSION bộ cuộn Playwright (`pnpm exec playwright test -c playwright.scrub.config.ts`, 21 test) và NFR-12/NFR-11: chiều cao ô 44/40px không đổi nên vị trí/cỡ QuickBookBar và hero không lệch; focus ring ô chọn nhìn thấy; 360px không thanh cuộn ngang.",
       "[scope v29 / bug-public-cinema-online-cutoff, CR-011] REGRESSION luồng đặt vé chính (R-59…R-66): từ lịch chiếu / trang rạp / Đặt vé nhanh vào chọn ghế, giữ ghế, thanh toán, vé; suất còn bán (vượt mốc hiệu lực) vẫn vào được màn chọn ghế như cũ.",
       "[scope v29 / bug-public-cinema-online-cutoff, CR-011] REGRESSION QuickBookBar trang chủ (R-138, AC-31): chọn Rạp → Phim → Ngày → Giờ chỉ liệt kê suất đang bán theo mốc của từng rạp; reset ô sau khi đổi ô trước; \"Chưa có suất\" khi không còn lựa chọn; thanh vẫn cao 44px, opacity 1.",
-      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] REGRESSION bộ Playwright cuộn (`pnpm exec playwright test -c playwright.scrub.config.ts`, 21 test; mock API `e2e/scrub/mock-api.mjs` đã thêm `effectiveOnlineCutoffMinutes`) và NFR-19/AC-32: không đổi giao diện/chuyển động, không có phần tử ẩn khi cuộn tới cuối trang."
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] REGRESSION bộ Playwright cuộn (`pnpm exec playwright test -c playwright.scrub.config.ts`, 21 test; mock API `e2e/scrub/mock-api.mjs` đã thêm `effectiveOnlineCutoffMinutes`) và NFR-19/AC-32: không đổi giao diện/chuyển động, không có phần tử ẩn khi cuộn tới cuối trang.",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] REGRESSION đăng nhập / đăng ký / xác nhận email / đổi email / đặt lại mật khẩu qua GoTrue (trigger mới nằm trên `auth.users`, `auth.identities`): mọi thao tác ghi vào `auth.users` của khách thường không bị chặn hay chậm bất thường; đăng nhập Facebook (tạo identity) bình thường.",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] REGRESSION seed Admin demo và gán vai trò: Admin seed trở thành Admin hoạt động duy nhất trong DB local; luồng gán / gỡ vai trò Staff, Cinema Manager, gán rạp (R-105, R-17) và Cinema Manager thêm/bớt Staff rạp mình không đổi.",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] REGRESSION xoá tài khoản khách thường (`DELETE /me`: xác thực lại, ẩn danh hoá PII, giữ đơn/vé cho kế toán) và khoá / mở khoá khách thường (R-105): hành vi cũ giữ nguyên.",
+      "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] REGRESSION pgTAP cũ (010, 020, 030, 031, 033, 040–044, 050, 063, 090) và `048_function_privileges`: kiểm không file nào ngoài 066 vỡ vì trigger / hàm mới; hàm mới không mở quyền thừa cho `anon`/`authenticated`."
     ]
   },
   "acceptance": [
@@ -1036,14 +1081,21 @@
     "CR select-dropdown-theme A2 (CR-012, NFR-19): Given các ô chọn ở /lich-chieu, /phim, QuickBookBar và các màn admin When nhìn ô đóng Then cùng một kiểu (vuông, viền/nền ô nhập, cao 44px mobile / 40px md+, focus viền brand + ring), không còn ô lệch (nền trong suốt, padding khác). [NFR-19, NFR-12]",
     "CR select-dropdown-theme A3 (CR-012, R-138, R-35, AC-31): Given trang chủ CHƯA chọn tỉnh When click / Enter / ArrowDown ở ô Rạp của QuickBookBar Then KHÔNG xổ danh sách, mở hộp chọn tỉnh; Given đã chọn tỉnh Then ô Rạp xổ popup theo token. Thanh vẫn cao 44px, opacity 1. [R-138, R-35]",
     "CR select-dropdown-theme A4 (CR-012, NFR-19): Given Firefox/Safari (chưa hỗ trợ `base-select`) Then popup vẫn của hệ điều hành (chỉ đổi màu option), ô đóng vẫn đồng nhất và chọn được bình thường; không coi popup mặc định ở các trình duyệt này là lỗi. [NFR-19]",
-    "[scope v29 / bug-public-cinema-online-cutoff, CR-011] AC-33 (R-56, R-67, R-44, R-138, R-62): Given rạp có mốc đóng bán online riêng 30 phút When khách mở lịch chiếu chi tiết phim, /lich-chieu hoặc trang rạp khi suất còn 20 phút Then suất hiện \"Ngừng bán online — vui lòng mua tại quầy\" và không bấm được; ở Đặt vé nhanh suất không được liệt kê. Given rạp không cấu hình mốc riêng Then vẫn theo mặc định chuỗi (15 phút): suất còn 20 phút bấm được, còn 10 phút đóng bán. Given suất đã quá mốc When khách cố giữ ghế Then server vẫn từ chối."
+    "[scope v29 / bug-public-cinema-online-cutoff, CR-011] AC-33 (R-56, R-67, R-44, R-138, R-62): Given rạp có mốc đóng bán online riêng 30 phút When khách mở lịch chiếu chi tiết phim, /lich-chieu hoặc trang rạp khi suất còn 20 phút Then suất hiện \"Ngừng bán online — vui lòng mua tại quầy\" và không bấm được; ở Đặt vé nhanh suất không được liệt kê. Given rạp không cấu hình mốc riêng Then vẫn theo mặc định chuỗi (15 phút): suất còn 20 phút bấm được, còn 10 phút đóng bán. Given suất đã quá mốc When khách cố giữ ghế Then server vẫn từ chối.",
+    "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] AC-34 (R-105, NFR-06, R-10, R-19) — A1: Given Admin đang đăng nhập When tự khoá tài khoản mình, hoặc tự gỡ quyền Admin của mình (`PATCH .../lock`, `PATCH .../admin-role` isAdmin=false, `DELETE .../roles/admin`) Then 409, dữ liệu không đổi.",
+    "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] AC-34 — A2: Given chỉ còn một Admin hoạt động When khoá / gỡ quyền / xoá Admin đó (kể cả `DELETE /me` của chính Admin đó, hoặc gỡ liên kết Facebook khi Admin đó chưa xác nhận email) Then 409 (`CONFLICT` / `LAST_ADMIN`), dữ liệu không đổi.",
+    "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] AC-34 — A3: Given còn ≥ 1 Admin hoạt động khác When Admin này khoá / gỡ quyền / xoá một Admin khác Then thực hiện được.",
+    "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] AC-34 — A4: Given một Admin chưa xác nhận email và không có identity Facebook When đếm Admin hoạt động Then Admin đó KHÔNG được tính (Admin xác nhận duy nhất vẫn bị bảo vệ); Given Admin đăng nhập Facebook không có email Then VẪN được tính.",
+    "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] AC-34 — A5: Given hai Admin hoạt động When hai bên cùng lúc gỡ quyền / khoá nhau Then ít nhất một yêu cầu bị từ chối, vẫn còn ≥ 1 Admin hoạt động.",
+    "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] AC-34 — A6: Given job `delete_unconfirmed_users` (R-10) When chạy Then vẫn chạy được, không bị kẹt bởi ràng buộc Admin cuối."
   ],
-  "risk": "medium",
+  "risk": "high",
   "notes": [
     "Chưa kiểm (residual risk): chọn ghế khi đã đăng nhập (SeatMap runtime), /admin và /staff runtime thật, Lighthouse chính thức (CLS, a11y, SEO), axe-core tự động. Đề nghị bên test bổ sung.",
     "Bộ kiểm cuộn tự động: `pnpm exec playwright test -c playwright.scrub.config.ts` (20 test, mock API `e2e/scrub/mock-api.mjs`, không cần Supabase).",
     "CR-010 chỉ đổi giao diện + thêm R-138; KHÔNG đổi nghiệp vụ, API, DB, migration. Vùng cần retest kỹ: SeatMap và thanh toán.",
     "[scope v28 / bug-select-dropdown-theme, CR-012] Bug-fix thuần giao diện: KHÔNG đổi requirement (spec_version giữ 3.5.0), API, DB, migration. Test popup `<select>` bằng Chromium/Edge mới hỗ trợ `appearance: base-select`; Firefox/Safari dùng popup hệ điều hành (fallback chấp nhận). Chưa kiểm bằng mắt: bố cục `w-auto` ở 3 màn admin và 2 select trong Radix Dialog (`role-assign-dialog`); màn admin cần phiên Supabase nên chưa chụp ảnh, dùng /phim làm bằng chứng tương đương. Chỉ có chuyển động mở popup, không có chuyển động đóng. Delta: `spec/updates/2026-11-20-select-dropdown-theme.md`.",
-    "[scope v29 / bug-public-cinema-online-cutoff, CR-011] Bug-fix, spec PATCH 3.5.1 (làm rõ R-138/R-44/R-67 + AC-33; bỏ hạn chế \"mốc mặc định 15 phút\" ghi ở 3.5.0). KHÔNG đổi DB/migration; server giữ ghế vốn đã áp mốc rạp (`supabase/migrations/20261112140000_hold_seats_hardening.sql`). Reviewer STRICT PASS round 2 (round 1 FAIL vì /rap/[code] còn bấm được). Residual: `pnpm db:test` chưa chạy trên DB thật; mốc đổi có thể trễ ~60 giây ở trang khách do ISR/cache; `app_settings.value` là JSON null thì TS ra 0 còn SQL ra 15 (có từ trước). Bên test cần tài khoản Cinema Manager để đặt mốc riêng 30 phút (R-56) và suất mở trong 20 phút tới. Delta: `spec/updates/2026-11-20-public-cinema-online-cutoff.md`."
+    "[scope v29 / bug-public-cinema-online-cutoff, CR-011] Bug-fix, spec PATCH 3.5.1 (làm rõ R-138/R-44/R-67 + AC-33; bỏ hạn chế \"mốc mặc định 15 phút\" ghi ở 3.5.0). KHÔNG đổi DB/migration; server giữ ghế vốn đã áp mốc rạp (`supabase/migrations/20261112140000_hold_seats_hardening.sql`). Reviewer STRICT PASS round 2 (round 1 FAIL vì /rap/[code] còn bấm được). Residual: `pnpm db:test` chưa chạy trên DB thật; mốc đổi có thể trễ ~60 giây ở trang khách do ISR/cache; `app_settings.value` là JSON null thì TS ra 0 còn SQL ra 15 (có từ trước). Bên test cần tài khoản Cinema Manager để đặt mốc riêng 30 phút (R-56) và suất mở trong 20 phút tới. Delta: `spec/updates/2026-11-20-public-cinema-online-cutoff.md`.",
+    "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] Bug-fix bảo mật / phân quyền, spec PATCH 3.5.2 (làm rõ R-105 + NFR-06, thêm AC-34). risk nâng `high`: auth/RBAC + migration có trigger trên `auth.users` / `auth.identities` / `user_roles` (không phá huỷ dữ liệu). Định nghĩa Admin hoạt động là quyết định user chốt 2026-11-20 (khớp ngoại lệ cron R-10/R-19). Reviewer STRICT PASS round 6 (round 1–5 FAIL, mỗi vòng một lỗi khác). Bên test cần DB có ≥ 2 Admin hoạt động (Admin seed là Admin hoạt động duy nhất trên DB local; cleanup của pgTAP 069 cần Admin seed). 13 file pgTAP cũ (010, 020, 030, 031, 033, 040–044, 050, 063, 090) đỏ trên DB local bẩn vì seed demo (`provinces_name_key`/`price_rules_chain_key`) — có từ trước, chưa xác nhận trên DB sạch. Residual: deadlock 40P01 hiếm (API 500 cho bên bị huỷ); web chưa kiểm hiển thị 409; 2 test web flaky `account.test.tsx` có sẵn (CR-013). Delta: `spec/updates/2026-11-20-admin-self-lock-last-admin-guard.md`."
   ]
 }

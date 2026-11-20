@@ -33,6 +33,10 @@ let identities: Array<{ provider: string }> = [{ provider: "email" }];
 let passwordOk = true;
 let disposable = false;
 let softDeleted: Array<[string, boolean]> = [];
+/** true: người gọi là Admin hoạt động cuối cùng (DB thật sẽ ném FB409 khi xoá user_roles). */
+let lastActiveAdmin = false;
+/** true: lần tra cứu is_last_active_admin đầu tiên trả false (race: tra cứu sớm không thấy, trigger DB mới chặn). */
+let blindFirstLastAdminLookup = false;
 
 /** Query builder giả: ghi lại mọi lời gọi chuỗi và trả kết quả đã cấu hình khi await. */
 function builder(client: Op["client"], table: string) {
@@ -42,6 +46,11 @@ function builder(client: Op["client"], table: string) {
     {
       get(_target, prop: string) {
         if (prop === "then") {
+          // Mô phỏng trigger FB409: không xoá role ADMIN của Admin hoạt động cuối cùng
+          if (table === "user_roles" && first === "delete" && lastActiveAdmin) {
+            return (resolve: (value: unknown) => void) =>
+              resolve({ data: null, error: { code: "FB409", message: "LAST_ADMIN: Không thể gỡ quyền" } });
+          }
           const result = results[`${table}.${first}`] ?? { data: null, error: null };
           return (resolve: (value: unknown) => void) => resolve({ error: null, ...result });
         }
@@ -86,6 +95,11 @@ const fakeSupabase = {
     from: (table: string) => builder("admin", table),
     rpc: (name: string) => {
       rpcCalls.push(name);
+      if (name === "is_last_active_admin") {
+        const seen = blindFirstLastAdminLookup ? false : lastActiveAdmin;
+        blindFirstLastAdminLookup = false;
+        return Promise.resolve({ data: seen, error: null });
+      }
       return Promise.resolve({ data: disposable, error: null });
     },
     auth: {
@@ -169,6 +183,8 @@ describe("profile API (mock Supabase)", () => {
     rpcCalls.length = 0;
     signedPaths.length = 0;
     softDeleted = [];
+    lastActiveAdmin = false;
+    blindFirstLastAdminLookup = false;
     results = {};
     identities = [{ provider: "email" }];
     passwordOk = true;
@@ -368,6 +384,46 @@ describe("profile API (mock Supabase)", () => {
       expect(own("admin", "storage.avatars")[0]?.args[0]).toEqual([`${ALICE}/a.png`]);
       expect(softDeleted).toEqual([[ALICE, true]]);
       expect(ops.some((op) => /order|ticket/.test(op.table) && op.method === "delete")).toBe(false);
+    });
+
+    describe("Admin hoạt động cuối cùng không tự xoá được tài khoản (GAP-010, R-105)", () => {
+      const deleteAsAdmin = () =>
+        request(app.getHttpServer()).delete("/me").set(as(aliceToken)).send({ password: "ok", acknowledgeTicketLoss: true });
+      const mutations = () =>
+        ops.filter((op) => op.client === "admin" && ["update", "delete"].includes(op.method) && op.table !== "user_roles");
+
+      it("Admin cuối gọi DELETE /me -> 409, không ẩn danh hoá / xoá dữ liệu nào, không soft-delete", async () => {
+        lastActiveAdmin = true;
+        const response = await deleteAsAdmin();
+
+        expect(response.status).toBe(409);
+        expect(response.body.error.code).toBe("CONFLICT");
+        expect(response.body.error.message).toMatch(/cuối cùng/);
+        expect(mutations()).toEqual([]);
+        expect(own("admin", "user_roles")).toEqual([]);
+        expect(softDeleted).toEqual([]);
+      });
+
+      it("còn Admin hoạt động khác -> vẫn xoá được tài khoản", async () => {
+        lastActiveAdmin = false;
+        const response = await deleteAsAdmin();
+
+        expect(response.status).toBe(200);
+        expect(rpcCalls).toContain("is_last_active_admin");
+        expect(own("admin", "user_roles").some((op) => op.method === "delete")).toBe(true);
+        expect(softDeleted).toEqual([[ALICE, true]]);
+      });
+
+      it("race: tra cứu sớm không thấy nhưng trigger DB chặn -> 409 (không 500), chưa ẩn danh hoá gì", async () => {
+        lastActiveAdmin = true;
+        blindFirstLastAdminLookup = true;
+        const response = await deleteAsAdmin();
+
+        expect(response.status).toBe(409);
+        expect(response.body.error.code).toBe("CONFLICT");
+        expect(mutations()).toEqual([]);
+        expect(softDeleted).toEqual([]);
+      });
     });
 
     describe("OAuth-only account: re-auth is judged by amr login time, not iat", () => {
