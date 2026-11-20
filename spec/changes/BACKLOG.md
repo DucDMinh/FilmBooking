@@ -18,7 +18,7 @@
 | CR-008 | Một QR cho cả đơn hàng, staff quét 1 mã soát cả đơn (bỏ QR từng ghế) | MODIFY | done | [2026-11-17-order-level-qr.md](archive/2026-11-17-order-level-qr.md) | 2026-11-17 | 2026-11-18 |
 | CR-009 | Rạp đóng cửa: trang rạp báo "đã đóng cửa" thay 404; mọi đổi trạng thái rạp hiệu lực sau 7 ngày + email toàn bộ khách | MODIFY | done | [2026-11-18-cinema-status-notice.md](archive/2026-11-18-cinema-status-notice.md) | 2026-11-18 | 2026-11-18 |
 | CR-010 | Re-skin UI theo CYBERPLEX (vàng/crimson, chamfer, HUD) + chuyển động đặt vé trái→phải / nội dung trên→dưới & hai bên; thêm QuickBookBar | MODIFY | done | [2026-11-19-cyberplex-reskin.md](archive/2026-11-19-cyberplex-reskin.md) | 2026-11-19 | 2026-11-19 |
-| CR-011 | Mốc đóng bán online riêng của rạp (R-56) chưa có trong dữ liệu rạp công khai: lịch chiếu R-44 và thanh Đặt vé nhanh R-138 dùng mặc định 15 phút | BUG | pending | [2026-11-19-public-cinema-online-cutoff.md](2026-11-19-public-cinema-online-cutoff.md) | 2026-11-19 | |
+| CR-011 | Mốc đóng bán online riêng của rạp (R-56) chưa có trong dữ liệu rạp công khai: lịch chiếu R-44 và thanh Đặt vé nhanh R-138 dùng mặc định 15 phút | BUG | done | [2026-11-19-public-cinema-online-cutoff.md](archive/2026-11-19-public-cinema-online-cutoff.md) | 2026-11-19 | 2026-11-20 |
 | CR-012 | Ô chọn (`<select>`) và danh sách xổ xuống đang như mặc định Windows, không đồng bộ giao diện CYBERPLEX | BUG | done | [2026-11-20-select-dropdown-theme.md](archive/2026-11-20-select-dropdown-theme.md) | 2026-11-20 | 2026-11-20 |
 
 ## Quy tắc tracking

@@ -1,7 +1,7 @@
 ---
 id: public-cinema-online-cutoff
 type: bug
-status: pending
+status: done
 created: 2026-11-19
 ---
 
@@ -20,10 +20,10 @@ R-56 cho Cinema Manager cấu hình mốc đóng bán online riêng của rạp 
 - Chưa xác minh: server có áp mốc riêng của rạp khi giữ ghế hay không (cần kiểm `booking.service.ts`/hàm giữ ghế).
 
 ## Acceptance (bắt buộc)
-- [ ] `CinemaDto` công khai có mốc hiệu lực (`effectiveOnlineCutoffMinutes` = mốc riêng của rạp, hoặc mặc định cấu hình chuỗi), schema shared + API + test.
-- [ ] `showtime-schedule.tsx` (R-44) và `quick-book.ts` (R-138) dùng mốc đó; test: rạp mốc 30 phút thì suất còn 20 phút không được liệt kê.
-- [ ] Xác nhận server (giữ ghế) cũng áp đúng mốc rạp; nếu không, thêm kiểm tra + test.
-- [ ] Không đổi hành vi với rạp không cấu hình mốc riêng (vẫn mặc định của chuỗi).
+- [x] `CinemaDto` công khai có mốc hiệu lực (`effectiveOnlineCutoffMinutes` = mốc riêng của rạp, hoặc mặc định cấu hình chuỗi), schema shared + API + test.
+- [x] `showtime-schedule.tsx` (R-44) và `quick-book.ts` (R-138) dùng mốc đó; test: rạp mốc 30 phút thì suất còn 20 phút không được liệt kê.
+- [x] Xác nhận server (giữ ghế) cũng áp đúng mốc rạp; nếu không, thêm kiểm tra + test.
+- [x] Không đổi hành vi với rạp không cấu hình mốc riêng (vẫn mặc định của chuỗi).
 
 ## Ghi chú
 Phát hiện khi spec-validator kiểm CR-010 (R-138). Hạn chế có từ trước CR-010 (R-44 cũng bị). R-138 hiện ghi "mốc mặc định 15 phút (R-67), mốc riêng của rạp do server áp khi giữ ghế, xem CR-011". Kiểm R-56, R-67, R-44 trong `SPECIFICATIONS.md` trước khi làm. P2.

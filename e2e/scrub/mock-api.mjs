@@ -32,6 +32,7 @@ const CINEMAS = [
   status: "OPEN",
   scheduledStatus: null,
   scheduledEffectiveAt: null,
+  effectiveOnlineCutoffMinutes: 15,
 }));
 
 const TITLES = [
@@ -210,7 +211,7 @@ function route(url) {
       body: {
         movie: found,
         schedule: CINEMAS.map((c, index) => ({
-          cinema: { code: c.code, name: c.name },
+          cinema: { code: c.code, name: c.name, effectiveOnlineCutoffMinutes: c.effectiveOnlineCutoffMinutes },
           showtimes: showtimesFor(index, date, slug).rows.map((row) => ({ ...row, movie: undefined })),
         })),
       },

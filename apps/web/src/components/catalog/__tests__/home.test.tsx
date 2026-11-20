@@ -112,6 +112,7 @@ const sampleCinemas: CinemaDto[] = [
     status: "OPEN",
     scheduledStatus: null,
     scheduledEffectiveAt: null,
+    effectiveOnlineCutoffMinutes: 15,
   },
 ];
 

@@ -14,10 +14,11 @@ import {
 import { AppException } from "../../common/errors/app-exception";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 import { ENV, type Env } from "../../config/env";
+import { effectiveOnlineCutoff, readChainDefaults } from "../cinema-ops/chain-defaults";
 import { asRows, showtimeToDto, unwrap, vnDayRange, type ShowtimeRow } from "./movies.service";
 
 const CINEMA_COLUMNS =
-  "id, code, name, district, address, latitude, longitude, hotline, email, opening_hours, image_url, amenities, status, scheduled_status, scheduled_effective_at, provinces!inner(code)";
+  "id, code, name, district, address, latitude, longitude, hotline, email, opening_hours, image_url, amenities, status, scheduled_status, scheduled_effective_at, online_cutoff_minutes, provinces!inner(code)";
 const ROOM_COLUMNS = "id, name, supported_formats, status";
 const SHOWTIME_COLUMNS = "id, room_id, starts_at, ends_at, format, language_mode, status";
 
@@ -37,6 +38,7 @@ interface CinemaRow {
   status: CinemaDbStatus;
   scheduled_status: CinemaDbStatus | null;
   scheduled_effective_at: string | null;
+  online_cutoff_minutes: number | null;
   provinces: { code: string } | null;
 }
 
@@ -59,7 +61,7 @@ export interface CinemaDetailDto {
   })[];
 }
 
-function cinemaToDto(row: CinemaRow): CinemaDto {
+function cinemaToDto(row: CinemaRow, chainOnlineCutoff: number): CinemaDto {
   return {
     id: row.id,
     code: row.code,
@@ -78,6 +80,7 @@ function cinemaToDto(row: CinemaRow): CinemaDto {
     scheduledStatus: row.scheduled_status,
     // PostgREST trả "+00:00"; chuẩn hoá UTC ISO ("Z") như mọi thời gian khác của API.
     scheduledEffectiveAt: row.scheduled_effective_at ? new Date(row.scheduled_effective_at).toISOString() : null,
+    effectiveOnlineCutoffMinutes: effectiveOnlineCutoff(row.online_cutoff_minutes, chainOnlineCutoff),
   };
 }
 
@@ -87,8 +90,8 @@ interface AdminCinemaRow extends CinemaRow {
   rooms: { count: number }[] | null;
 }
 
-function adminCinemaToDto(row: AdminCinemaRow): AdminCinemaDto {
-  return { ...cinemaToDto(row), id: row.id, roomCount: row.rooms?.[0]?.count ?? 0 };
+function adminCinemaToDto(row: AdminCinemaRow, chainOnlineCutoff: number): AdminCinemaDto {
+  return { ...cinemaToDto(row, chainOnlineCutoff), id: row.id, roomCount: row.rooms?.[0]?.count ?? 0 };
 }
 
 function cinemaToColumns(input: CreateCinemaInput | UpdateCinemaInput): Record<string, unknown> {
@@ -123,6 +126,11 @@ export class CinemasService {
     return this.supabase.forUser(this.env.SUPABASE_ANON_KEY);
   }
 
+  /** Mặc định chuỗi của mốc đóng bán online (R-67); dùng cho rạp không cấu hình mốc riêng (R-56). */
+  private async chainOnlineCutoff(db: SupabaseClient): Promise<number> {
+    return (await readChainDefaults(db)).onlineCutoff;
+  }
+
   async listProvinces(): Promise<ProvinceDto[]> {
     const rows = (unwrap(
       await this.publicClient().from("provinces").select("code, name").order("sort_order").order("name"),
@@ -135,7 +143,8 @@ export class CinemasService {
     let query = this.publicClient().from("cinemas").select(CINEMA_COLUMNS).eq("status", "OPEN");
     if (province) query = query.eq("provinces.code", province);
     const rows = asRows<CinemaRow>(unwrap(await query.order("name")));
-    return rows.map(cinemaToDto);
+    const chainCutoff = await this.chainOnlineCutoff(this.publicClient());
+    return rows.map((row) => cinemaToDto(row, chainCutoff));
   }
 
   /**
@@ -149,10 +158,13 @@ export class CinemasService {
       await db.from("cinemas").select(CINEMA_COLUMNS).eq("code", code).maybeSingle(),
     ) as CinemaRow | null;
     if (!cinema) throw new AppException(ERROR_CODES.NOT_FOUND, "Cinema not found");
-    if (cinema.status !== "OPEN") return { cinema: cinemaToDto(cinema), rooms: [], showtimes: [] };
+    if (cinema.status !== "OPEN") {
+      return { cinema: cinemaToDto(cinema, await this.chainOnlineCutoff(db)), rooms: [], showtimes: [] };
+    }
 
     const { from, to } = vnDayRange(date, now);
-    const [rooms, showtimes] = await Promise.all([
+    const [chainCutoff, rooms, showtimes] = await Promise.all([
+      this.chainOnlineCutoff(db),
       db.from("rooms").select(ROOM_COLUMNS).eq("cinema_id", cinema.id).order("name"),
       db
         .from("showtimes")
@@ -164,7 +176,7 @@ export class CinemasService {
         .order("starts_at", { ascending: true }),
     ]);
     return {
-      cinema: cinemaToDto(cinema),
+      cinema: cinemaToDto(cinema, chainCutoff),
       rooms: ((unwrap(rooms) ?? []) as RoomRow[]).map((room) => ({
         id: room.id,
         name: room.name,
@@ -194,7 +206,8 @@ export class CinemasService {
     let query = this.supabase.admin().from("cinemas").select(ADMIN_CINEMA_COLUMNS);
     if (managedCinemaIds !== "all") query = query.in("id", [...managedCinemaIds]);
     const rows = asRows<AdminCinemaRow>(unwrap(await query.order("name")));
-    return rows.map(adminCinemaToDto);
+    const chainCutoff = await this.chainOnlineCutoff(this.supabase.admin());
+    return rows.map((row) => adminCinemaToDto(row, chainCutoff));
   }
 
   async getAdmin(id: string): Promise<AdminCinemaDto> {
@@ -202,7 +215,7 @@ export class CinemasService {
       await this.supabase.admin().from("cinemas").select(ADMIN_CINEMA_COLUMNS).eq("id", id).maybeSingle(),
     ) as AdminCinemaRow | null;
     if (!row) throw new AppException(ERROR_CODES.NOT_FOUND, "Cinema not found");
-    return adminCinemaToDto(row);
+    return adminCinemaToDto(row, await this.chainOnlineCutoff(this.supabase.admin()));
   }
 
   // ── Ghi — dùng JWT của user, RLS vẫn áp dụng ───────────────
@@ -217,7 +230,7 @@ export class CinemasService {
         .select(CINEMA_COLUMNS)
         .single(),
     ) as CinemaRow;
-    return cinemaToDto(row);
+    return cinemaToDto(row, await this.chainOnlineCutoff(db));
   }
 
   /**
@@ -242,14 +255,14 @@ export class CinemasService {
       }
       delete changes.status;
       const onlyStatusGiven = Object.keys(changes).length === 0 && input.provinceCode === undefined;
-      if (onlyStatusGiven) return cinemaToDto(current);
+      if (onlyStatusGiven) return cinemaToDto(current, await this.chainOnlineCutoff(db));
     }
     if (input.provinceCode) changes.province_id = await this.resolveProvinceId(db, input.provinceCode);
     const row = unwrap(
       await db.from("cinemas").update(changes).eq("id", id).select(CINEMA_COLUMNS).maybeSingle(),
     ) as CinemaRow | null;
     if (!row) throw new AppException(ERROR_CODES.NOT_FOUND, "Cinema not found");
-    return cinemaToDto(row);
+    return cinemaToDto(row, await this.chainOnlineCutoff(db));
   }
 
   private async findForStatusCheck(db: SupabaseClient, id: string): Promise<CinemaRow> {

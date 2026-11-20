@@ -1,5 +1,6 @@
 import type { ShowtimeDto } from "@filmbooking/shared/schemas/catalog";
-import { formatVnTime, generateNext7Days, isShowtimeOnlineClosed } from "@/components/catalog/showtime-schedule";
+import { formatVnTime, generateNext7Days } from "@/components/catalog/showtime-schedule";
+import { isShowtimeOnlineClosed } from "@/lib/showtime-closing";
 import { getVnDateString } from "@/lib/vn-date";
 
 /**
@@ -10,6 +11,8 @@ import { getVnDateString } from "@/lib/vn-date";
 
 export interface QuickBookShowtime extends ShowtimeDto {
   movie: { slug: string; titleVi: string };
+  /** R-56: mốc đóng bán online hiệu lực của rạp chiếu suất này; thiếu thì dùng mặc định 15 phút. */
+  onlineCutoffMinutes?: number;
 }
 
 export interface QuickBookOption {
@@ -45,7 +48,7 @@ const LANGUAGE_MODE_LABELS: Record<string, string> = {
   ORIGINAL: "Bản gốc",
 };
 
-/** Cùng mốc đóng bán mặc định với lịch chiếu R-44 (chưa có cấu hình rạp công khai). */
+/** Chỉ là dự phòng khi dữ liệu rạp thiếu mốc hiệu lực (cùng mặc định 15 phút với lịch chiếu R-44). */
 const DEFAULT_ONLINE_CUTOFF_MINUTES = 15;
 
 /** Đổi một ô, các ô đứng sau về rỗng. */
@@ -63,10 +66,16 @@ export function applyFieldChange(
   return next;
 }
 
-/** Suất còn bán online: chưa huỷ/ngừng bán và chưa quá mốc đóng bán (cùng hàm kiểm với lịch chiếu R-44). */
+/** Suất còn bán online: chưa huỷ/ngừng bán và chưa quá mốc đóng bán của RẠP đó (cùng hàm kiểm với lịch chiếu R-44). */
 export function sellableShowtimes(showtimes: readonly QuickBookShowtime[], now: Date): QuickBookShowtime[] {
   return showtimes.filter(
-    (showtime) => !isShowtimeOnlineClosed(showtime.startsAt, showtime.status, DEFAULT_ONLINE_CUTOFF_MINUTES, now),
+    (showtime) =>
+      !isShowtimeOnlineClosed(
+        showtime.startsAt,
+        showtime.status,
+        showtime.onlineCutoffMinutes ?? DEFAULT_ONLINE_CUTOFF_MINUTES,
+        now,
+      ),
   );
 }
 
@@ -131,7 +140,7 @@ export function missingFieldsMessage(missing: readonly string[]): string {
 }
 
 interface CinemaDetailResponse {
-  cinema?: { status?: string };
+  cinema?: { status?: string; effectiveOnlineCutoffMinutes?: number };
   showtimes?: Array<ShowtimeDto & { movie: { slug: string; titleVi: string } }>;
 }
 
@@ -154,8 +163,10 @@ export async function loadCinemaShowtimes(
     if (result.status !== "fulfilled") continue;
     const detail = result.value;
     if (!detail || detail.cinema?.status !== "OPEN" || !Array.isArray(detail.showtimes)) continue;
+    const onlineCutoffMinutes = detail.cinema.effectiveOnlineCutoffMinutes;
     for (const showtime of detail.showtimes) {
       byId.set(showtime.id, {
+        onlineCutoffMinutes,
         id: showtime.id,
         roomId: showtime.roomId,
         startsAt: showtime.startsAt,

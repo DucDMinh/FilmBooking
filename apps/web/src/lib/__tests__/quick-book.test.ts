@@ -123,3 +123,29 @@ describe("loadCinemaShowtimes", () => {
     expect(await loadCinemaShowtimes("HN1", NOW, fetchJson)).toEqual([]);
   });
 });
+
+describe("mốc đóng bán online riêng của rạp (R-56, CR-011)", () => {
+  // 10:00 VN; suất 10:20 VN còn 20 phút
+  const startsIn20Minutes = "2026-11-19T03:20:00Z";
+
+  it("rạp mốc 30 phút: suất còn 20 phút không còn bán, rạp không cấu hình vẫn dùng 15 phút", () => {
+    const strictCinema = { ...showtime("st-30", startsIn20Minutes, "a"), onlineCutoffMinutes: 30 };
+    const defaultCinema = showtime("st-default", startsIn20Minutes, "a");
+    expect(sellableShowtimes([strictCinema, defaultCinema], NOW).map((s) => s.id)).toEqual(["st-default"]);
+  });
+
+  it("mốc ngắn hơn mặc định (5 phút) vẫn bán suất còn 10 phút", () => {
+    const relaxed = { ...showtime("st-5", "2026-11-19T03:10:00Z", "a"), onlineCutoffMinutes: 5 };
+    expect(sellableShowtimes([relaxed], NOW).map((s) => s.id)).toEqual(["st-5"]);
+  });
+
+  it("loadCinemaShowtimes gắn effectiveOnlineCutoffMinutes của rạp vào từng suất", async () => {
+    const fetchJson = vi.fn(async (path: string) => ({
+      cinema: { status: "OPEN", effectiveOnlineCutoffMinutes: 30 },
+      showtimes: path.endsWith("date=2026-11-19") ? [{ ...ALL[0], startsAt: startsIn20Minutes }] : [],
+    }));
+    const loaded = await loadCinemaShowtimes("HN1", NOW, fetchJson);
+    expect(loaded[0]?.onlineCutoffMinutes).toBe(30);
+    expect(sellableShowtimes(loaded, NOW)).toEqual([]);
+  });
+});

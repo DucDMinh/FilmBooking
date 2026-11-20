@@ -185,6 +185,8 @@ export interface CinemaDto {
   scheduledStatus: CinemaDbStatus | null;
   /** UTC ISO; cùng null / cùng có giá trị với `scheduledStatus`. */
   scheduledEffectiveAt: string | null;
+  /** R-56/R-67: mốc đóng bán online hiệu lực (phút trước giờ chiếu) = mốc riêng của rạp, hoặc mặc định chuỗi. */
+  effectiveOnlineCutoffMinutes: number;
 }
 
 /** Rạp trong màn quản trị: mọi trạng thái + số phòng. */

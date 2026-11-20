@@ -13,14 +13,13 @@ import { AccessService, satisfies, type AuthenticatedRequest } from "../../commo
 import type { AuthUser } from "../../common/auth/decorators";
 import { AppException } from "../../common/errors/app-exception";
 import { SupabaseService } from "../../common/supabase/supabase.service";
+import { effectiveOnlineCutoff, readChainDefaults } from "./chain-defaults";
 import { ROOM_COLUMNS, throwDbError, unwrap, type RoomRow } from "./seat-layout.service";
 
 const SHOWTIME_COLUMNS =
   "id, cinema_id, room_id, movie_id, starts_at, ends_at, format, language_mode, status, created_at, updated_at";
 /** Liệt kê cột tường minh: `locked_by` không được grant cho client nên `select *` sẽ lỗi. */
 const LOCK_COLUMNS = "id, showtime_id, seat_id, room_id, cinema_id, reason, created_at";
-const FALLBACK_CLEANING_MINUTES = 15;
-const FALLBACK_ONLINE_CUTOFF_MINUTES = 15;
 const MS_PER_MINUTE = 60_000;
 /** PostgREST/Postgres: bảng chưa tồn tại (migration đơn hàng chưa áp dụng). */
 const MISSING_RELATION_CODES = new Set(["42P01", "PGRST205"]);
@@ -298,7 +297,7 @@ export class ShowtimesService {
       cleaningMinutes: row.cleaning_minutes,
       onlineCutoffMinutes: row.online_cutoff_minutes,
       effectiveCleaningMinutes: row.cleaning_minutes ?? defaults.cleaning,
-      effectiveOnlineCutoffMinutes: row.online_cutoff_minutes ?? defaults.onlineCutoff,
+      effectiveOnlineCutoffMinutes: effectiveOnlineCutoff(row.online_cutoff_minutes, defaults.onlineCutoff),
     };
   }
 
@@ -523,24 +522,6 @@ function conflictException(conflicts: readonly ConflictReport[]): AppException {
     reason: "SHOWTIME_OVERLAP",
     conflicts,
   });
-}
-
-/** Mặc định chuỗi (app_settings) cho dọn phòng / mốc đóng bán online; thiếu thì dùng 15 phút. */
-async function readChainDefaults(db: SupabaseClient): Promise<{ cleaning: number; onlineCutoff: number }> {
-  const { data, error } = await db
-    .from("app_settings")
-    .select("key, value")
-    .in("key", ["default_cleaning_minutes", "default_online_cutoff_minutes"]);
-  if (error) throwDbError(error);
-  const byKey = new Map<string, unknown>((data ?? []).map((row: { key: string; value: unknown }) => [row.key, row.value]));
-  const asMinutes = (key: string, fallback: number) => {
-    const value = Number(byKey.get(key));
-    return Number.isFinite(value) ? value : fallback;
-  };
-  return {
-    cleaning: asMinutes("default_cleaning_minutes", FALLBACK_CLEANING_MINUTES),
-    onlineCutoff: asMinutes("default_online_cutoff_minutes", FALLBACK_ONLINE_CUTOFF_MINUTES),
-  };
 }
 
 /** Tra phim/phòng/dọn phòng (có cache theo yêu cầu) để tính giờ kết thúc giống trigger `showtimes_derive_end`. */

@@ -259,14 +259,54 @@ describe("catalog API (e2e, mock Supabase)", () => {
       },
     );
 
-    it("only selects public cinema columns with the anon client (no cleaning/cutoff config leaks)", async () => {
-      fake.on("cinemas:select", () => ({ data: cinemaRow({ status: "CLOSED" }) }));
-      await request(server()).get("/cinemas/HN01");
+    it("only selects public cinema columns with the anon client (no cleaning config / raw cutoff leaks)", async () => {
+      fake.on("cinemas:select", () => ({ data: cinemaRow({ status: "CLOSED", online_cutoff_minutes: 30 }) }));
+      const response = await request(server()).get("/cinemas/HN01");
       expect(lastQuery(fake.queries, "cinemas")?.jwt).toBe(ANON_KEY);
       const selected = String(opArgs(lastQuery(fake.queries, "cinemas"), "select")[0]?.[0]);
       expect(selected).toContain("scheduled_status");
       expect(selected).toContain("scheduled_effective_at");
-      expect(selected).not.toMatch(/cleaning_minutes|online_cutoff_minutes|\*/);
+      expect(selected).not.toMatch(/cleaning_minutes|\*/);
+      // Chỉ đưa ra mốc HIỆU LỰC; cột cấu hình thô không lộ ra DTO.
+      expect(response.body.cinema).not.toHaveProperty("onlineCutoffMinutes");
+      expect(response.body.cinema).not.toHaveProperty("online_cutoff_minutes");
+    });
+
+    describe("mốc đóng bán online hiệu lực của rạp (R-56, R-67, CR-011)", () => {
+      const chainDefault = (minutes: number) =>
+        fake.on("app_settings:select", () => ({
+          data: [{ key: "default_online_cutoff_minutes", value: minutes }],
+        }));
+
+      it("rạp có mốc riêng 30 -> DTO trả 30 ở danh sách và chi tiết rạp", async () => {
+        chainDefault(20);
+        fake.on("cinemas:select", () => ({ data: [cinemaRow({ online_cutoff_minutes: 30 })] }));
+        const list = await request(server()).get("/cinemas");
+        expect(list.body[0].effectiveOnlineCutoffMinutes).toBe(30);
+
+        fake.on("cinemas:select", () => ({ data: cinemaRow({ online_cutoff_minutes: 30 }) }));
+        const detail = await request(server()).get("/cinemas/HN01?date=2026-11-14");
+        expect(detail.body.cinema.effectiveOnlineCutoffMinutes).toBe(30);
+      });
+
+      it("rạp không cấu hình mốc riêng -> theo mặc định chuỗi (app_settings)", async () => {
+        chainDefault(20);
+        fake.on("cinemas:select", () => ({ data: [cinemaRow({ online_cutoff_minutes: null })] }));
+        const response = await request(server()).get("/cinemas");
+        expect(response.body[0].effectiveOnlineCutoffMinutes).toBe(20);
+      });
+
+      it("thiếu cả mặc định chuỗi -> dự phòng 15 phút", async () => {
+        fake.on("cinemas:select", () => ({ data: [cinemaRow({ online_cutoff_minutes: null })] }));
+        const response = await request(server()).get("/cinemas");
+        expect(response.body[0].effectiveOnlineCutoffMinutes).toBe(15);
+      });
+
+      it("rạp đóng cửa (R-137) cũng trả mốc hiệu lực", async () => {
+        fake.on("cinemas:select", () => ({ data: cinemaRow({ status: "CLOSED", online_cutoff_minutes: 45 }) }));
+        const response = await request(server()).get("/cinemas/HN01");
+        expect(response.body.cinema.effectiveOnlineCutoffMinutes).toBe(45);
+      });
     });
 
     it("exposes the pending status schedule on an OPEN cinema (banner, R-136)", async () => {
@@ -389,9 +429,44 @@ describe("catalog API (e2e, mock Supabase)", () => {
       expect(response.body.movie.availability).toBe("now_showing");
       expect(response.body.schedule).toHaveLength(2);
       expect(response.body.schedule[0].showtimes.map((s: { id: string }) => s.id)).toEqual(["s1", "s2"]);
+      // CR-011: mỗi nhóm rạp mang mốc đóng bán hiệu lực (thiếu cấu hình -> dự phòng 15 phút).
+      expect(response.body.schedule[0].cinema.effectiveOnlineCutoffMinutes).toBe(15);
 
       fake.on("movies:select", () => ({ data: null }));
       expect((await request(server()).get("/movies/khong-co")).status).toBe(404);
+    });
+  });
+
+  describe("movie schedule per-cinema online cutoff (R-56, CR-011)", () => {
+    it("each cinema group carries its own cutoff, else the chain default", async () => {
+      fake.on("movies:select", () => ({ data: movieRow(MOVIE_ID, { slug: "phim-a" }) }));
+      fake.on("app_settings:select", () => ({ data: [{ key: "default_online_cutoff_minutes", value: 25 }] }));
+      const showtime = (id: string, code: string, cutoff: number | null) => ({
+        id,
+        room_id: "r1",
+        starts_at: "2026-11-14T10:00:00Z",
+        ends_at: "2026-11-14T12:00:00Z",
+        format: "2D",
+        language_mode: "DUBBED",
+        status: "ON_SALE",
+        cinemas: { code, name: code, online_cutoff_minutes: cutoff },
+      });
+      fake.on("showtimes:select", (q) =>
+        opArgs(q, "eq").some(([col]) => col === "movie_id")
+          ? { data: [showtime("s1", "HN01", 30), showtime("s2", "HN02", null)] }
+          : { data: [{ movie_id: MOVIE_ID }] },
+      );
+      const response = await request(server()).get("/movies/phim-a?date=2026-11-14");
+      expect(response.status).toBe(200);
+      expect(
+        response.body.schedule.map((g: { cinema: { code: string; effectiveOnlineCutoffMinutes: number } }) => [
+          g.cinema.code,
+          g.cinema.effectiveOnlineCutoffMinutes,
+        ]),
+      ).toEqual([
+        ["HN01", 30],
+        ["HN02", 25],
+      ]);
     });
   });
 

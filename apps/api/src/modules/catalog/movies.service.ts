@@ -11,6 +11,7 @@ import type {
 import { AppException } from "../../common/errors/app-exception";
 import { SupabaseService } from "../../common/supabase/supabase.service";
 import { ENV, type Env } from "../../config/env";
+import { effectiveOnlineCutoff, readChainDefaults } from "../cinema-ops/chain-defaults";
 
 const MOVIE_COLUMNS =
   "id, slug, title_vi, title_original, poster_url, banner_url, trailer_url, description, genres, duration_minutes, director, cast_members, country, original_language, subtitle_languages, dubbed_languages, release_date, age_rating, status";
@@ -187,13 +188,13 @@ export interface HomeDto {
 export interface MovieScheduleDto {
   movie: MovieDto;
   schedule: {
-    cinema: { code: string; name: string };
+    cinema: { code: string; name: string; effectiveOnlineCutoffMinutes: number };
     showtimes: ShowtimeDto[];
   }[];
 }
 
 interface ScheduleRow extends ShowtimeRow {
-  cinemas: { code: string; name: string };
+  cinemas: { code: string; name: string; online_cutoff_minutes: number | null };
 }
 
 @Injectable()
@@ -257,7 +258,7 @@ export class MoviesService {
     const { from, to } = vnDayRange(options.date, now);
     let schedule = db
       .from("showtimes")
-      .select(`${SHOWTIME_COLUMNS}, cinemas!showtimes_cinema_id_fkey!inner(code, name, status, provinces!inner(code))`)
+      .select(`${SHOWTIME_COLUMNS}, cinemas!showtimes_cinema_id_fkey!inner(code, name, status, online_cutoff_minutes, provinces!inner(code))`)
       .eq("movie_id", row.id)
       .neq("status", "CANCELLED")
       .eq("cinemas.status", "OPEN")
@@ -269,7 +270,7 @@ export class MoviesService {
 
     const showingIds = await this.showingMovieIds(db, options.province, now);
     const availability = classifyMovie(row.release_date, showingIds.has(row.id), vnToday(now));
-    return { movie: movieToDto(row, availability), schedule: groupByCinema(showtimes) };
+    return { movie: movieToDto(row, availability), schedule: groupByCinema(showtimes, (await readChainDefaults(db)).onlineCutoff) };
   }
 
   // ── Quản lý (Admin) — dùng JWT của user, RLS vẫn áp dụng ─────────
@@ -335,11 +336,15 @@ export class MoviesService {
   }
 }
 
-function groupByCinema(rows: ScheduleRow[]): MovieScheduleDto["schedule"] {
+function groupByCinema(rows: ScheduleRow[], chainOnlineCutoff: number): MovieScheduleDto["schedule"] {
   const byCinema = new Map<string, MovieScheduleDto["schedule"][number]>();
   for (const row of rows) {
     const entry = byCinema.get(row.cinemas.code) ?? {
-      cinema: { code: row.cinemas.code, name: row.cinemas.name },
+      cinema: {
+        code: row.cinemas.code,
+        name: row.cinemas.name,
+        effectiveOnlineCutoffMinutes: effectiveOnlineCutoff(row.cinemas.online_cutoff_minutes, chainOnlineCutoff),
+      },
       showtimes: [],
     };
     entry.showtimes.push(showtimeToDto(row));

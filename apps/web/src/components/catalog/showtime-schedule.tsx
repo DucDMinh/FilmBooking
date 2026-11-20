@@ -7,6 +7,7 @@ import type { MovieDto, ShowtimeDto } from "@filmbooking/shared/schemas/catalog"
 import { DateChipText, dateChipClass, ShowtimeClosedChip, ShowtimeLinkChip } from "@/components/catalog/chips";
 import { EmptyState } from "@/components/common/states";
 import { Scrub, ScrubGroup } from "@/components/motion/scrub";
+import { isShowtimeOnlineClosed } from "@/lib/showtime-closing";
 import { getVnDateString, ONE_DAY_MS } from "@/lib/vn-date";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,8 @@ export interface CinemaScheduleGroup {
     code: string;
     name: string;
     address?: string;
-    onlineCutoffMinutes?: number | null;
+    /** R-56: mốc đóng bán online hiệu lực của rạp (API trả); thiếu thì dùng `onlineCutoffMinutes` của lịch (15). */
+    effectiveOnlineCutoffMinutes?: number | null;
   };
   showtimes: ShowtimeDto[];
 }
@@ -57,24 +59,7 @@ export function formatVnTime(isoStringOrDate: string | Date): string {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-/**
- * Kiểm tra xem suất chiếu đã bị đóng bán online chưa:
- * 1. Suất có status là CLOSED hoặc CANCELLED
- * 2. Hoặc thời điểm hiện tại đã vượt qua mốc (startsAt - cutoffMinutes).
- */
-export function isShowtimeOnlineClosed(
-  startsAt: string | Date,
-  status: string,
-  cutoffMinutes = 15,
-  now: Date = new Date(),
-): boolean {
-  if (status === "CLOSED" || status === "CANCELLED") {
-    return true;
-  }
-  const startTime = typeof startsAt === "string" ? new Date(startsAt).getTime() : startsAt.getTime();
-  const cutoffTime = startTime - cutoffMinutes * 60 * 1000;
-  return now.getTime() >= cutoffTime;
-}
+export { isShowtimeOnlineClosed };
 
 /** Sinh danh sách 7 ngày liên tiếp từ ngày hiện tại theo giờ Việt Nam. */
 export function generateNext7Days(fromDate: Date = new Date()) {
@@ -226,7 +211,7 @@ export function ShowtimeSchedule({
               groupedByFormat.set(formatKey, list);
             }
 
-            const cinemaCutoff = group.cinema.onlineCutoffMinutes ?? onlineCutoffMinutes;
+            const cinemaCutoff = group.cinema.effectiveOnlineCutoffMinutes ?? onlineCutoffMinutes;
 
             return (
               <Scrub

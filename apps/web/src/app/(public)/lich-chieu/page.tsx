@@ -36,7 +36,7 @@ interface PageProps {
 interface MovieScheduleDto {
   movie: MovieDto;
   schedule: Array<{
-    cinema: { code: string; name: string };
+    cinema: { code: string; name: string; effectiveOnlineCutoffMinutes?: number };
     showtimes: ShowtimeDto[];
   }>;
 }

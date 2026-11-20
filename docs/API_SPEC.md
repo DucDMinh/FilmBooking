@@ -81,11 +81,11 @@ Liên kết MXH: API không tự tạo identity; web gọi link-intent rồi `su
 | Route | Guard | Ghi chú |
 |---|---|---|
 | `GET /provinces` | Public | |
-| `GET /cinemas` | Public | Chỉ rạp `OPEN` cho khách (`CinemaDto` có thêm `scheduledStatus`, `scheduledEffectiveAt`, nullable) |
-| `GET /cinemas/:code` | Public | Theo mã rạp. **200 cho mọi rạp tồn tại** kèm `cinema.status` (R-137); rạp không `OPEN` -> `rooms: []`, `showtimes: []`; mã không tồn tại -> 404. `cinema` có `scheduledStatus`/`scheduledEffectiveAt` (lịch đổi trạng thái đang chờ, R-136; `null` khi không có) cho banner trang rạp. Tra rạp bằng client anon (policy `cinemas_select` cho đọc mọi rạp), chỉ chọn cột công khai |
+| `GET /cinemas` | Public | Chỉ rạp `OPEN` cho khách (`CinemaDto` có thêm `scheduledStatus`, `scheduledEffectiveAt`, nullable, và `effectiveOnlineCutoffMinutes` (mốc đóng bán online hiệu lực, phút trước giờ chiếu: mốc riêng của rạp, hoặc mặc định chuỗi `app_settings.default_online_cutoff_minutes`, hoặc 15 nếu thiếu; R-56, R-67)) |
+| `GET /cinemas/:code` | Public | Theo mã rạp. **200 cho mọi rạp tồn tại** kèm `cinema.status` (R-137); rạp không `OPEN` -> `rooms: []`, `showtimes: []`; mã không tồn tại -> 404. `cinema` có `scheduledStatus`/`scheduledEffectiveAt` (lịch đổi trạng thái đang chờ, R-136; `null` khi không có) cho banner trang rạp; `cinema.effectiveOnlineCutoffMinutes` như `GET /cinemas`. Tra rạp bằng client anon (policy `cinemas_select` cho đọc mọi rạp), chỉ chọn cột công khai |
 | `GET /home` | Public | Banner + phim đang/sắp chiếu |
 | `GET /movies` | Public | Lọc/tìm phim `PUBLISHED` |
-| `GET /movies/:slug` | Public | |
+| `GET /movies/:slug` | Public | Lịch theo rạp `schedule[].cinema` gồm `code`, `name`, `effectiveOnlineCutoffMinutes` (cùng ý nghĩa như `CinemaDto`) |
 | `GET /admin/movies` | Roles(ADMIN) | |
 | `POST /admin/movies` | Roles(ADMIN) | |
 | `PATCH /admin/movies/:id` | Roles(ADMIN) | |

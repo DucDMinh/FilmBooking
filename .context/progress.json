@@ -292,6 +292,27 @@
       ],
       "note": "Chưa kiểm bằng mắt màn admin (cần phiên Supabase), Firefox/Safari giữ popup hệ điều hành.",
       "updatedAt": "2026-11-20T02:51:45.617Z"
+    },
+    {
+      "id": "public-cinema-online-cutoff",
+      "title": "Mốc đóng bán online hiệu lực của rạp trong CinemaDto công khai; lịch chiếu R-44, trang rạp, Đặt vé nhanh R-138 dùng mốc từng rạp (CR-011, BUG; spec 3.5.1, AC-33, scope v29)",
+      "class": "BUG",
+      "status": "done",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 effectiveOnlineCutoffMinutes: shared + API + web + /rap/[code]",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/bug-public-cinema-online-cutoff-phase-1-task-01-round-2-review.md"
+          }
+        }
+      ],
+      "note": "pnpm db:test chưa chạy trên DB thật; mốc đổi có thể trễ ~60s do ISR.",
+      "updatedAt": "2026-11-20T03:52:20.929Z"
     }
   ],
   "bugs": [
@@ -769,7 +790,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-20T02:51:45.618Z",
+  "lastUpdated": "2026-11-20T03:52:20.931Z",
   "inProgressTask": null,
   "completedTasks": [
     {

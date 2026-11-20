@@ -511,6 +511,7 @@ describe("AdminLayout (Chặn CUSTOMER và phân quyền)", () => {
         status: "OPEN",
         scheduledStatus: null,
         scheduledEffectiveAt: null,
+        effectiveOnlineCutoffMinutes: 15,
       },
     ];
 

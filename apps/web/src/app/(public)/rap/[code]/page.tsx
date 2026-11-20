@@ -10,7 +10,7 @@ import {
   closedCinemaTitle,
 } from "@/components/catalog/cinema-closed-notice";
 import { CinemaTag } from "@/lib/monitoring/cinema-tag";
-import { DateChipText, dateChipClass, ShowtimeLinkChip } from "@/components/catalog/chips";
+import { DateChipText, dateChipClass, ShowtimeClosedChip, ShowtimeLinkChip } from "@/components/catalog/chips";
 import { FavoriteButton } from "@/components/catalog/favorite-button";
 import { SectionHeading } from "@/components/catalog/section-heading";
 import { Scrub, ScrubGroup } from "@/components/motion/scrub";
@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { PUBLIC_CACHE } from "@/lib/api/cache";
 import { buildDirectionsUrl } from "@/lib/map-links";
+import { isShowtimeOnlineClosed } from "@/lib/showtime-closing";
 import { buildCinemaJsonLd, serializeCinemaJsonLd } from "@/lib/seo/cinema-jsonld";
 import { getServerAccessToken } from "@/lib/supabase/server";
 import type { AgeRating } from "@filmbooking/shared";
@@ -146,6 +147,8 @@ export default async function CinemaDetailPage({
       </>
     );
   }
+  const now = new Date();
+  const cutoffMinutes = cinema.effectiveOnlineCutoffMinutes ?? 15;
   const siteUrl = getSiteUrl();
   const jsonLd = buildCinemaJsonLd(cinema, siteUrl);
 
@@ -399,9 +402,18 @@ export default async function CinemaDetailPage({
                         <div className="flex flex-wrap gap-2.5">
                           {slots.map((st) => {
                             const startTime = formatVnTime(st.startsAt);
-                            const isCancelled = st.status === "CANCELLED";
+                            if (st.status === "CANCELLED") return null;
 
-                            if (isCancelled) return null;
+                            // R-67/R-56: quá mốc đóng bán online của RẠP này thì không dẫn sang chọn ghế.
+                            if (isShowtimeOnlineClosed(st.startsAt, st.status, cutoffMinutes, now)) {
+                              return (
+                                <ShowtimeClosedChip
+                                  key={st.id}
+                                  time={startTime}
+                                  ariaLabel={`Suất chiếu ${startTime} đến ${formatVnTime(st.endsAt)}: Đã đóng bán online, vui lòng mua tại quầy`}
+                                />
+                              );
+                            }
 
                             return (
                               <ShowtimeLinkChip

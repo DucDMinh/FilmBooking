@@ -1,9 +1,9 @@
 {
-  "specVersion": "3.5.0",
-  "scopeVersion": 28,
-  "generatedAt": "2026-11-20T09:50:33+07:00",
+  "specVersion": "3.5.1",
+  "scopeVersion": 29,
+  "generatedAt": "2026-11-20T10:55:00+07:00",
   "trigger": "bug-fix",
-  "workItem": "bug/select-dropdown-theme",
+  "workItem": "bug/public-cinema-online-cutoff",
   "specRefs": [
     "R-138",
     "NFR-19",
@@ -37,7 +37,10 @@
     "R-97",
     "R-98",
     "R-99",
-    "R-133"
+    "R-133",
+    "R-56",
+    "R-106",
+    "AC-33"
   ],
   "changed": {
     "files": [
@@ -280,7 +283,12 @@
       "playwright.scrub.config.ts",
       "skills/react-nodejs/design-tokens.md",
       "apps/web/src/components/catalog/__tests__/select-theme.test.ts",
-      ".context/design-spec.md"
+      ".context/design-spec.md",
+      "apps/api/src/modules/catalog/movies.service.ts",
+      "apps/api/src/modules/cinema-ops/showtimes.service.ts",
+      "apps/api/src/modules/cinema-ops/chain-defaults.ts",
+      "apps/web/src/lib/showtime-closing.ts",
+      "SPECIFICATIONS.md"
     ],
     "modules": [
       "web-form-controls (select)",
@@ -319,7 +327,11 @@
       "apps/web:admin+staff",
       "apps/web:home (QuickBookBar, hero)",
       "apps/web:motion (Scrub)",
-      "e2e/scrub"
+      "e2e/scrub",
+      "api-catalog-movies",
+      "api-cinema-ops-chain-defaults",
+      "web-quick-book (QuickBookBar, lib/quick-book, lib/showtime-closing)",
+      "e2e/scrub (mock API)"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -637,6 +649,30 @@
         "playwright.config.ts",
         "playwright.scrub.config.ts",
         "skills/react-nodejs/design-tokens.md"
+      ],
+      "bug-public-cinema-online-cutoff/phase-1-task-01": [
+        "packages/shared/src/schemas/catalog.ts",
+        "apps/api/src/modules/catalog/cinemas.service.ts",
+        "apps/api/src/modules/catalog/movies.service.ts",
+        "apps/api/src/modules/cinema-ops/showtimes.service.ts",
+        "apps/api/src/modules/cinema-ops/chain-defaults.ts",
+        "apps/api/test/catalog.e2e-spec.ts",
+        "apps/web/src/lib/showtime-closing.ts",
+        "apps/web/src/lib/quick-book.ts",
+        "apps/web/src/lib/__tests__/quick-book.test.ts",
+        "apps/web/src/components/catalog/showtime-schedule.tsx",
+        "apps/web/src/components/catalog/__tests__/schedule.test.tsx",
+        "apps/web/src/components/catalog/__tests__/cinemas.test.tsx",
+        "apps/web/src/components/catalog/__tests__/home.test.tsx",
+        "apps/web/src/app/(public)/rap/[code]/page.tsx",
+        "apps/web/src/app/(public)/rap/[code]/__tests__/page.test.tsx",
+        "apps/web/src/app/(public)/phim/[slug]/page.tsx",
+        "apps/web/src/app/(public)/lich-chieu/page.tsx",
+        "apps/web/src/components/admin/__tests__/catalog-admin.test.tsx",
+        "apps/web/src/components/admin/__tests__/shell.test.tsx",
+        "e2e/scrub/mock-api.mjs",
+        "docs/API_SPEC.md",
+        "SPECIFICATIONS.md"
       ]
     }
   },
@@ -713,7 +749,11 @@
       "[scope v27 / feature-cyberplex-reskin] NFR-19 hero trang chủ không bị cắt ở màn thấp (viewport thấp vẫn thấy đủ nội dung banner + thanh đặt vé nhanh); thanh R-138 và điều khiển trong khung nhìn lúc vào trang không bao giờ giảm opacity, NGOẠI LỆ DUY NHẤT: khối lời dẫn hero (nhãn, meta, CTA hero) mờ dần khi cuộn qua hero trên desktop, hiện lại khi cuộn về, ép hiện khi đang focus (test (b2)).",
       "[scope v27 / feature-cyberplex-reskin] NFR-19 focus bàn phím: phần tử đang nhận focus luôn hiện (`[data-scrub]:focus-within`), kể cả phần tử animation lồng bên trong (poster, vách, wipe).",
       "[scope v27 / feature-cyberplex-reskin] NFR-19 admin và soát vé KHÔNG có chuyển động cuộn; soát vé hiển thị kết quả tức thì; không animation tự lặp, không nhấp nháy quá 3 lần/giây (WCAG 2.3.1); CLS trang chủ < 0.1.",
-      "[scope v27 / feature-cyberplex-reskin] Skin CYBERPLEX (tokens + font + `components/ui/*` button/badge/dialog/alert-dialog/select/tabs/table/sheet/sonner/input/checkbox/form): nền tối, vàng điện nhấn hành động, góc cắt chamfer; unit `reskin.test.tsx`, `common.test.tsx`, `scrub.test.tsx`; đã dọn gạch dài/hex/class cũ còn sót."
+      "[scope v27 / feature-cyberplex-reskin] Skin CYBERPLEX (tokens + font + `components/ui/*` button/badge/dialog/alert-dialog/select/tabs/table/sheet/sonner/input/checkbox/form): nền tối, vàng điện nhấn hành động, góc cắt chamfer; unit `reskin.test.tsx`, `common.test.tsx`, `scrub.test.tsx`; đã dọn gạch dài/hex/class cũ còn sót.",
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] web.cutoff.per-cinema (R-56, R-67, R-44, R-138, AC-33 — BUG FIX, PATCH 3.5.1): Given rạp có mốc đóng bán online riêng 30 phút When khách mở /lich-chieu, /phim/[slug] hoặc /rap/[code] khi suất còn 20 phút Then suất hiện \"Ngừng bán online — vui lòng mua tại quầy\" và KHÔNG bấm được (không có link /dat-ve/); ở thanh Đặt vé nhanh (R-138) suất đó KHÔNG được liệt kê. Mỗi suất dùng mốc của ĐÚNG rạp của nó (lịch nhiều rạp: rạp mốc 30 và rạp mốc 15 trong cùng một danh sách xử lý riêng).",
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] web.cutoff.chain-default (R-67, R-106, AC-33): Given rạp KHÔNG cấu hình mốc riêng When suất còn 20 phút Then vẫn bấm được / được liệt kê (mặc định chuỗi 15 phút); suất còn 10 phút thì đóng bán; Given đổi `default_online_cutoff_minutes` ở cấu hình chuỗi (R-106) Then rạp không mốc riêng theo giá trị mới (có thể trễ ~60 giây do ISR/cache); thiếu cấu hình thì rơi về 15.",
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] api.catalog.cinema-dto (R-56, R-67): CinemaDto công khai (GET /cinemas, GET /cinemas/:code, nhóm rạp trong lịch chiếu theo phim, lịch theo rạp) có trường `effectiveOnlineCutoffMinutes` = mốc riêng của rạp ?? app_settings.default_online_cutoff_minutes ?? 15; rạp đóng cửa / tạm đóng vẫn trả mốc; schema shared khớp API (docs/API_SPEC.md). Test: `apps/api/test/catalog.e2e-spec.ts` (6 test), `quick-book.test.ts`, `schedule.test.tsx`, `rap/[code]/__tests__/page.test.tsx`.",
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] server.hold-seats.cutoff (R-62, R-67, AC-33): Given suất đã quá mốc đóng bán của rạp (mốc riêng hoặc mặc định chuỗi) When khách cố giữ ghế (kể cả vào thẳng URL chọn ghế) Then server từ chối, không giữ ghế được — server là nơi quyết định cuối, không đổi so với trước."
     ],
     "dependents": [
       "[scope v26 / feature-cinema-status-notice] DEPENDENT huỷ suất/đơn affected (R-108, R-109, R-110, AC-24, AC-25) — job áp dụng lịch dùng chung `cancel_showtimes_core`: đơn `paid` -> `affected` hiện ở màn \"Đơn bị ảnh hưởng\"/hoàn tiền thủ công (R-110), xuất CSV, ghi nhận hoàn tiền đủ số tiền + mã giao dịch; huỷ suất TAY (một/nhiều suất, \"tất cả suất tương lai của rạp\") vẫn gửi email SHOWTIME_CANCELLED từng đơn và theo dõi/gửi lại như cũ. Retest luồng huỷ tay sau refactor core.",
@@ -789,7 +829,8 @@
       "[scope v27 / feature-cyberplex-reskin] DEPENDENT đăng nhập/đăng ký/xác nhận email: `(auth)/layout`, login, register, quên/đặt lại mật khẩu, `xac-nhan-email`, `bo-sung-email`, OAuth buttons, nút gửi lại mail xác nhận, banner email chưa xác nhận; callback `auth/confirm` không đổi hành vi.",
       "[scope v27 / feature-cyberplex-reskin] DEPENDENT tài khoản: hồ sơ, đổi mật khẩu/thêm mật khẩu, đổi email, xoá tài khoản, tài khoản liên kết, phiên đăng nhập, upload avatar, rạp yêu thích, thông báo.",
       "[scope v27 / feature-cyberplex-reskin] DEPENDENT soát vé QR (R-97, R-98, R-99): chọn rạp, quét QR, kết quả hợp lệ (phim, ghế, suất) và thất bại (đã dùng, sai rạp, sai suất, huỷ) màu rõ ràng + tương phản, check-in một lần/đơn; không có chuyển động cuộn.",
-      "[scope v27 / feature-cyberplex-reskin] DEPENDENT admin (R-133 và toàn bộ màn quản trị): bảng (`ui/table`), form (phim, rạp, voucher, giá, cài đặt, user), dialog huỷ suất, dialog trạng thái rạp, đơn bị ảnh hưởng/hoàn tiền thủ công, sơ đồ ghế/phòng, báo cáo/dashboard; cảnh báo nhiều lớp R-133 (Điều khoản, chính sách bảo mật, màn xác nhận) sau reskin."
+      "[scope v27 / feature-cyberplex-reskin] DEPENDENT admin (R-133 và toàn bộ màn quản trị): bảng (`ui/table`), form (phim, rạp, voucher, giá, cài đặt, user), dialog huỷ suất, dialog trạng thái rạp, đơn bị ảnh hưởng/hoàn tiền thủ công, sơ đồ ghế/phòng, báo cáo/dashboard; cảnh báo nhiều lớp R-133 (Điều khoản, chính sách bảo mật, màn xác nhận) sau reskin.",
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] DEPENDENT trang rạp /rap/[code] (R-37) và lịch chiếu /lich-chieu, /phim/[slug] (R-44, R-43): suất không quá mốc vẫn là link tới /dat-ve/<id>, suất đã huỷ vẫn không bấm được; rạp Tạm đóng / Ngừng hoạt động / Sắp khai trương (R-137) và lịch đổi trạng thái (R-136) hiển thị không đổi. Admin: màn lịch chiếu / cấu hình rạp (R-56) lưu mốc riêng và hiển thị đúng sau khi đổi (test `catalog-admin`, `shell`)."
     ],
     "regression": [
       "[scope v26 / feature-cinema-status-notice] REGRESSION cancel_showtimes sau refactor core (R-108, R-109, AC-24, AC-25) — huỷ suất tay: suất `cancelled`, ghế nhả, đơn paid -> affected, email SHOWTIME_CANCELLED từng đơn, preview số đơn/vé, lý do bắt buộc, Manager chỉ rạp mình, race huỷ ‖ check-in/thanh toán không deadlock (pgTAP 043/064/065 không đổi kết quả).",
@@ -907,7 +948,10 @@
       "[scope v27 / feature-cyberplex-reskin] REGRESSION trang pháp lý và trang lỗi: `lib/legal.ts`, Điều khoản, Chính sách bảo mật, Hướng dẫn xoá dữ liệu hiển thị đúng sau reskin; `error.tsx`, `global-error.tsx`, `not-found.tsx`, `khong-co-quyen`.",
       "[scope v28 / bug-select-dropdown-theme] REGRESSION mọi `<select>` gốc: giá trị mặc định/`value=\"\"`, `onChange`, `disabled`, `name`, `aria-*` và gửi form không đổi ở bộ lọc phim, lịch chiếu, QuickBookBar và các form admin (lịch chiếu, đơn hàng, đơn bị ảnh hưởng, nhật ký, khoá ghế, nhân sự rạp, gán vai trò, tạo suất hàng loạt, voucher).",
       "[scope v28 / bug-select-dropdown-theme] REGRESSION bố cục `w-auto` của ô chọn ở 3 màn admin (`/admin/lich-chieu`, khoá ghế, nhân sự rạp) và 2 `<select>` trong Radix Dialog gán vai trò (`role-assign-dialog`): popup mở được, không bị cắt/che, chọn xong đóng dialog đúng (builder chưa thử trên trình duyệt thật).",
-      "[scope v28 / bug-select-dropdown-theme] REGRESSION bộ cuộn Playwright (`pnpm exec playwright test -c playwright.scrub.config.ts`, 21 test) và NFR-12/NFR-11: chiều cao ô 44/40px không đổi nên vị trí/cỡ QuickBookBar và hero không lệch; focus ring ô chọn nhìn thấy; 360px không thanh cuộn ngang."
+      "[scope v28 / bug-select-dropdown-theme] REGRESSION bộ cuộn Playwright (`pnpm exec playwright test -c playwright.scrub.config.ts`, 21 test) và NFR-12/NFR-11: chiều cao ô 44/40px không đổi nên vị trí/cỡ QuickBookBar và hero không lệch; focus ring ô chọn nhìn thấy; 360px không thanh cuộn ngang.",
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] REGRESSION luồng đặt vé chính (R-59…R-66): từ lịch chiếu / trang rạp / Đặt vé nhanh vào chọn ghế, giữ ghế, thanh toán, vé; suất còn bán (vượt mốc hiệu lực) vẫn vào được màn chọn ghế như cũ.",
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] REGRESSION QuickBookBar trang chủ (R-138, AC-31): chọn Rạp → Phim → Ngày → Giờ chỉ liệt kê suất đang bán theo mốc của từng rạp; reset ô sau khi đổi ô trước; \"Chưa có suất\" khi không còn lựa chọn; thanh vẫn cao 44px, opacity 1.",
+      "[scope v29 / bug-public-cinema-online-cutoff, CR-011] REGRESSION bộ Playwright cuộn (`pnpm exec playwright test -c playwright.scrub.config.ts`, 21 test; mock API `e2e/scrub/mock-api.mjs` đã thêm `effectiveOnlineCutoffMinutes`) và NFR-19/AC-32: không đổi giao diện/chuyển động, không có phần tử ẩn khi cuộn tới cuối trang."
     ]
   },
   "acceptance": [
@@ -991,13 +1035,15 @@
     "CR select-dropdown-theme A1 (CR-012, NFR-19, AC-31): Given mở /lich-chieu, /phim hoặc thanh Đặt vé nhanh ở trang chủ trên Chromium/Edge mới (hỗ trợ `base-select`) When bấm một ô chọn để xổ danh sách Then popup vuông, nền tối, viền, chữ theo token CYBERPLEX (KHÔNG phải popup mặc định Windows), mục rê chuột/bàn phím có vạch trái vàng, mục đã chọn nền nhấn vàng + tick, mũi tên xoay khi mở; chọn một mục thì ô đóng hiện đúng giá trị và hành vi lọc/điều hướng như trước. [NFR-19, R-138, R-43]",
     "CR select-dropdown-theme A2 (CR-012, NFR-19): Given các ô chọn ở /lich-chieu, /phim, QuickBookBar và các màn admin When nhìn ô đóng Then cùng một kiểu (vuông, viền/nền ô nhập, cao 44px mobile / 40px md+, focus viền brand + ring), không còn ô lệch (nền trong suốt, padding khác). [NFR-19, NFR-12]",
     "CR select-dropdown-theme A3 (CR-012, R-138, R-35, AC-31): Given trang chủ CHƯA chọn tỉnh When click / Enter / ArrowDown ở ô Rạp của QuickBookBar Then KHÔNG xổ danh sách, mở hộp chọn tỉnh; Given đã chọn tỉnh Then ô Rạp xổ popup theo token. Thanh vẫn cao 44px, opacity 1. [R-138, R-35]",
-    "CR select-dropdown-theme A4 (CR-012, NFR-19): Given Firefox/Safari (chưa hỗ trợ `base-select`) Then popup vẫn của hệ điều hành (chỉ đổi màu option), ô đóng vẫn đồng nhất và chọn được bình thường; không coi popup mặc định ở các trình duyệt này là lỗi. [NFR-19]"
+    "CR select-dropdown-theme A4 (CR-012, NFR-19): Given Firefox/Safari (chưa hỗ trợ `base-select`) Then popup vẫn của hệ điều hành (chỉ đổi màu option), ô đóng vẫn đồng nhất và chọn được bình thường; không coi popup mặc định ở các trình duyệt này là lỗi. [NFR-19]",
+    "[scope v29 / bug-public-cinema-online-cutoff, CR-011] AC-33 (R-56, R-67, R-44, R-138, R-62): Given rạp có mốc đóng bán online riêng 30 phút When khách mở lịch chiếu chi tiết phim, /lich-chieu hoặc trang rạp khi suất còn 20 phút Then suất hiện \"Ngừng bán online — vui lòng mua tại quầy\" và không bấm được; ở Đặt vé nhanh suất không được liệt kê. Given rạp không cấu hình mốc riêng Then vẫn theo mặc định chuỗi (15 phút): suất còn 20 phút bấm được, còn 10 phút đóng bán. Given suất đã quá mốc When khách cố giữ ghế Then server vẫn từ chối."
   ],
   "risk": "medium",
   "notes": [
     "Chưa kiểm (residual risk): chọn ghế khi đã đăng nhập (SeatMap runtime), /admin và /staff runtime thật, Lighthouse chính thức (CLS, a11y, SEO), axe-core tự động. Đề nghị bên test bổ sung.",
     "Bộ kiểm cuộn tự động: `pnpm exec playwright test -c playwright.scrub.config.ts` (20 test, mock API `e2e/scrub/mock-api.mjs`, không cần Supabase).",
     "CR-010 chỉ đổi giao diện + thêm R-138; KHÔNG đổi nghiệp vụ, API, DB, migration. Vùng cần retest kỹ: SeatMap và thanh toán.",
-    "[scope v28 / bug-select-dropdown-theme, CR-012] Bug-fix thuần giao diện: KHÔNG đổi requirement (spec_version giữ 3.5.0), API, DB, migration. Test popup `<select>` bằng Chromium/Edge mới hỗ trợ `appearance: base-select`; Firefox/Safari dùng popup hệ điều hành (fallback chấp nhận). Chưa kiểm bằng mắt: bố cục `w-auto` ở 3 màn admin và 2 select trong Radix Dialog (`role-assign-dialog`); màn admin cần phiên Supabase nên chưa chụp ảnh, dùng /phim làm bằng chứng tương đương. Chỉ có chuyển động mở popup, không có chuyển động đóng. Delta: `spec/updates/2026-11-20-select-dropdown-theme.md`."
+    "[scope v28 / bug-select-dropdown-theme, CR-012] Bug-fix thuần giao diện: KHÔNG đổi requirement (spec_version giữ 3.5.0), API, DB, migration. Test popup `<select>` bằng Chromium/Edge mới hỗ trợ `appearance: base-select`; Firefox/Safari dùng popup hệ điều hành (fallback chấp nhận). Chưa kiểm bằng mắt: bố cục `w-auto` ở 3 màn admin và 2 select trong Radix Dialog (`role-assign-dialog`); màn admin cần phiên Supabase nên chưa chụp ảnh, dùng /phim làm bằng chứng tương đương. Chỉ có chuyển động mở popup, không có chuyển động đóng. Delta: `spec/updates/2026-11-20-select-dropdown-theme.md`.",
+    "[scope v29 / bug-public-cinema-online-cutoff, CR-011] Bug-fix, spec PATCH 3.5.1 (làm rõ R-138/R-44/R-67 + AC-33; bỏ hạn chế \"mốc mặc định 15 phút\" ghi ở 3.5.0). KHÔNG đổi DB/migration; server giữ ghế vốn đã áp mốc rạp (`supabase/migrations/20261112140000_hold_seats_hardening.sql`). Reviewer STRICT PASS round 2 (round 1 FAIL vì /rap/[code] còn bấm được). Residual: `pnpm db:test` chưa chạy trên DB thật; mốc đổi có thể trễ ~60 giây ở trang khách do ISR/cache; `app_settings.value` là JSON null thì TS ra 0 còn SQL ra 15 (có từ trước). Bên test cần tài khoản Cinema Manager để đặt mốc riêng 30 phút (R-56) và suất mở trong 20 phút tới. Delta: `spec/updates/2026-11-20-public-cinema-online-cutoff.md`."
   ]
 }

@@ -50,6 +50,7 @@ const CINEMA: CinemaDto = {
   status: "OPEN",
   scheduledStatus: null,
   scheduledEffectiveAt: null,
+  effectiveOnlineCutoffMinutes: 15,
 };
 
 function mockDetail(overrides: Partial<CinemaDto>) {
@@ -173,5 +174,50 @@ describe("/rap/[code] — rạp OPEN có lịch đổi trạng thái (R-136, AC-
     await renderPage();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByText("Lịch chiếu phim")).toBeInTheDocument();
+  });
+});
+
+describe("/rap/[code] — suất đã quá mốc đóng bán online của rạp (R-67, R-56, CR-011)", () => {
+  const NOW = new Date("2026-11-18T03:00:00.000Z"); // 10:00 VN
+
+  function mockShowtimeIn20Minutes(overrides: Partial<CinemaDto>) {
+    apiFetch.mockResolvedValue({
+      cinema: { ...CINEMA, ...overrides },
+      rooms: [],
+      showtimes: [
+        {
+          id: "st-20",
+          roomId: "r1",
+          startsAt: "2026-11-18T03:20:00.000Z", // còn 20 phút
+          endsAt: "2026-11-18T05:20:00.000Z",
+          format: "2D",
+          languageMode: "SUBTITLED",
+          status: "ON_SALE",
+          movie: { slug: "dune", titleVi: "Dune", ageRating: "T13", posterUrl: null, durationMinutes: 150 },
+        },
+      ],
+    });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("rạp mốc 30 phút: suất còn 20 phút không là link /dat-ve, hiện 'Mua tại quầy'", async () => {
+    mockShowtimeIn20Minutes({ effectiveOnlineCutoffMinutes: 30 });
+    await renderPage();
+    expect(document.querySelector('a[href^="/dat-ve/"]')).toBeNull();
+    expect(screen.getByText("Mua tại quầy")).toBeInTheDocument();
+  });
+
+  it("rạp mốc 15 phút: suất còn 20 phút vẫn là link /dat-ve", async () => {
+    mockShowtimeIn20Minutes({ effectiveOnlineCutoffMinutes: 15 });
+    await renderPage();
+    expect(document.querySelector('a[href="/dat-ve/st-20"]')).not.toBeNull();
+    expect(screen.queryByText("Mua tại quầy")).not.toBeInTheDocument();
   });
 });

@@ -260,3 +260,46 @@ describe("ShowtimeSchedule (showtime-schedule.tsx)", () => {
     expect(screen.queryByRole("link", { name: /Đặt vé/i })).not.toBeInTheDocument();
   });
 });
+
+describe("ShowtimeSchedule theo mốc đóng bán riêng của rạp (R-44, R-56, CR-011)", () => {
+  const now = new Date("2026-11-15T02:00:00.000Z"); // 09:00 VN
+  const date = getVnDateString(now);
+  const in20Minutes: ShowtimeDto = {
+    id: "st-20",
+    roomId: "room-1",
+    startsAt: "2026-11-15T02:20:00.000Z", // 09:20 VN, còn 20 phút
+    endsAt: "2026-11-15T04:30:00.000Z",
+    format: "2D",
+    languageMode: "SUBTITLED",
+    status: "ON_SALE",
+  };
+
+  it("rạp mốc 30 phút: suất còn 20 phút không bấm được, hiện 'Mua tại quầy'", () => {
+    render(
+      <ShowtimeSchedule
+        schedule={[
+          { cinema: { code: "HN01", name: "Rạp mốc 30", effectiveOnlineCutoffMinutes: 30 }, showtimes: [in20Minutes] },
+        ]}
+        selectedDate={date}
+        now={now}
+      />,
+    );
+    expect(screen.queryByRole("link", { name: /Đặt vé suất 09:20/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Mua tại quầy")).toBeInTheDocument();
+  });
+
+  it("rạp mốc 15 phút hoặc không có mốc: suất còn 20 phút vẫn bấm được", () => {
+    render(
+      <ShowtimeSchedule
+        schedule={[
+          { cinema: { code: "HN01", name: "Rạp mốc 15", effectiveOnlineCutoffMinutes: 15 }, showtimes: [in20Minutes] },
+          { cinema: { code: "HN02", name: "Rạp thiếu mốc" }, showtimes: [{ ...in20Minutes, id: "st-20b" }] },
+        ]}
+        selectedDate={date}
+        now={now}
+      />,
+    );
+    expect(screen.getAllByRole("link", { name: /Đặt vé suất 09:20/i })).toHaveLength(2);
+    expect(screen.queryByText("Mua tại quầy")).not.toBeInTheDocument();
+  });
+});
