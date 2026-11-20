@@ -21,6 +21,7 @@
 | CR-011 | Mốc đóng bán online riêng của rạp (R-56) chưa có trong dữ liệu rạp công khai: lịch chiếu R-44 và thanh Đặt vé nhanh R-138 dùng mặc định 15 phút | BUG | done | [2026-11-19-public-cinema-online-cutoff.md](archive/2026-11-19-public-cinema-online-cutoff.md) | 2026-11-19 | 2026-11-20 |
 | CR-012 | Ô chọn (`<select>`) và danh sách xổ xuống đang như mặc định Windows, không đồng bộ giao diện CYBERPLEX | BUG | done | [2026-11-20-select-dropdown-theme.md](archive/2026-11-20-select-dropdown-theme.md) | 2026-11-20 | 2026-11-20 |
 | CR-013 | Hai test `ChangePasswordForm` trong `account.test.tsx` flaky (timeout `userEvent.type`, phím tràn giữa các test) | BUG | pending | [2026-11-20-account-test-flaky.md](2026-11-20-account-test-flaky.md) | 2026-11-20 | |
+| CR-014 | Chạy thật đăng nhập + liên kết Google/Facebook (key thật): đồng bộ tên biến env, cấu hình redirect, kiểm end-to-end | MODIFY | pending | [2026-11-20-real-oauth-google-facebook.md](2026-11-20-real-oauth-google-facebook.md) | 2026-11-20 | |
 
 ## Quy tắc tracking
 
