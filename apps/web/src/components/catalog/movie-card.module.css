@@ -8,10 +8,10 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 22px;
 }
-@media (max-width: 1023px) {
+@media (width < 1024px) {
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 }
-@media (max-width: 559px) {
+@media (width < 560px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 }
 
@@ -20,13 +20,13 @@
 .card:nth-child(4n + 2) { --i: 1; }
 .card:nth-child(4n + 3) { --i: 2; }
 .card:nth-child(4n + 4) { --i: 3; }
-@media (max-width: 1023px) {
+@media (width < 1024px) {
   .card { --n: 3; }
   .card:nth-child(3n + 1) { --i: 0; }
   .card:nth-child(3n + 2) { --i: 1; }
   .card:nth-child(3n + 3) { --i: 2; }
 }
-@media (max-width: 559px) {
+@media (width < 560px) {
   .card { --n: 1; }
   .card:nth-child(n) { --i: 0; }
 }

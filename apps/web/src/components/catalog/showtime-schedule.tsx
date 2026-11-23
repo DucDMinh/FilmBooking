@@ -32,6 +32,11 @@ export interface ShowtimeScheduleProps {
   onlineCutoffMinutes?: number;
   now?: Date;
   className?: string;
+  /**
+   * Khối rạp/suất đầu tiên của lịch này là HÀNG ĐẦU của mục dữ liệu trên trang: hiện đủ ngay, không scrub (NFR-19, AC-35).
+   * Mặc định false: trang có nhiều lịch xếp chồng (vd /lich-chieu) chỉ truyền true cho lịch đầu tiên để các khối sau vẫn hiện dần theo cuộn.
+   */
+  first?: boolean;
 }
 
 const WEEKDAY_NAMES: Record<number, string> = {
@@ -136,6 +141,7 @@ export function ShowtimeSchedule({
   onlineCutoffMinutes = 15,
   now = new Date(),
   className,
+  first = false,
 }: Readonly<ShowtimeScheduleProps>) {
   const next7Days = generateNext7Days(now);
   const defaultDate = next7Days[0]?.dateString ?? getVnDateString(now);
@@ -219,8 +225,8 @@ export function ShowtimeSchedule({
               <Scrub
                 key={group.cinema.code}
                 kind="ltr"
-                // Khối rạp/suất đầu tiên của mục: hiện đủ ngay (NFR-19, AC-35); các khối sau vẫn hiện dần theo cuộn.
-                first={groupIndex === 0}
+                // Chỉ khối đầu của lịch đầu tiên trên trang (prop `first`) hiện đủ ngay (NFR-19, AC-35); các khối sau vẫn hiện dần theo cuộn.
+                first={first && groupIndex === 0}
                 className="frame"
               >
                 <div className="frame-in p-4 sm:p-6">

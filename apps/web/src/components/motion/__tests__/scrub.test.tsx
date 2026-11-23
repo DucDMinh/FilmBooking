@@ -92,18 +92,19 @@ describe("globals.css: quy tắc hàng đầu không scrub", () => {
 
   it("lưới phim: 2 thẻ đầu (< 560px), 3 thẻ (>= 560px), 4 thẻ (>= 1024px) khớp 2/3/4 cột của movie-card.module.css", () => {
     expect(gated).toContain('[data-scrub-grid="movie"] > [data-scrub]:nth-child(-n + 2)');
-    expect(gated).toMatch(/@media \(min-width: 560px\) \{\s*\[data-scrub-grid="movie"\] > \[data-scrub\]:nth-child\(-n \+ 3\) \{ animation: none/);
-    expect(gated).toMatch(/@media \(min-width: 1024px\) \{\s*\[data-scrub-grid="movie"\] > \[data-scrub\]:nth-child\(-n \+ 4\) \{ animation: none/);
+    expect(gated).toMatch(/@media \(width >= 560px\) \{\s*\[data-scrub-grid="movie"\] > \[data-scrub\]:nth-child\(-n \+ 3\) \{ animation: none/);
+    expect(gated).toMatch(/@media \(width >= 1024px\) \{\s*\[data-scrub-grid="movie"\] > \[data-scrub\]:nth-child\(-n \+ 4\) \{ animation: none/);
     const moduleCss = readFileSync(resolve(process.cwd(), "src/components/catalog/movie-card.module.css"), "utf8");
     expect(moduleCss).toMatch(/\.grid \{[^}]*repeat\(4,/);
-    expect(moduleCss).toMatch(/max-width: 1023px\) \{\s*\.grid \{ grid-template-columns: repeat\(3,/);
-    expect(moduleCss).toMatch(/max-width: 559px\) \{\s*\.grid \{ grid-template-columns: repeat\(2,/);
+    // Đối ngẫu chính xác với `width >= 1024px` / `width >= 560px` ở globals.css (không hở ở bề rộng lẻ).
+    expect(moduleCss).toMatch(/\(width < 1024px\) \{\s*\.grid \{ grid-template-columns: repeat\(3,/);
+    expect(moduleCss).toMatch(/\(width < 560px\) \{\s*\.grid \{ grid-template-columns: repeat\(2,/);
   });
 
-  it("lưới rạp: 1 thẻ đầu (< 768px), 2 thẻ (>= 768px), 3 thẻ (>= 1024px) khớp grid-cols-1 md:2 lg:3", () => {
+  it("lưới rạp: 1 thẻ đầu, 2 thẻ từ md (48rem), 3 thẻ từ lg (64rem) khớp grid-cols-1 md:2 lg:3 của Tailwind v4 (rem, không px)", () => {
     expect(gated).toContain('[data-scrub-grid="cinema"] > [data-scrub]:nth-child(-n + 1)');
-    expect(gated).toMatch(/@media \(min-width: 768px\) \{\s*\[data-scrub-grid="cinema"\] > \[data-scrub\]:nth-child\(-n \+ 2\) \{ animation: none/);
-    expect(gated).toMatch(/@media \(min-width: 1024px\) \{[\s\S]*\[data-scrub-grid="cinema"\] > \[data-scrub\]:nth-child\(-n \+ 3\) \{ animation: none/);
+    expect(gated).toMatch(/@media \(width >= 48rem\) \{\s*\[data-scrub-grid="cinema"\] > \[data-scrub\]:nth-child\(-n \+ 2\) \{ animation: none/);
+    expect(gated).toMatch(/@media \(width >= 64rem\) \{\s*\[data-scrub-grid="cinema"\] > \[data-scrub\]:nth-child\(-n \+ 3\) \{ animation: none/);
   });
 
   it("vẫn bọc trong reduced-motion + @supports (không scrub khi ngoài điều kiện)", () => {

@@ -296,8 +296,32 @@ const MARK_FIRST_ROW_SCRIPT = () => {
   return out.size;
 };
 
-for (const size of SIZES) {
-  test(`(i) hàng đầu không scrub ${size.name}: hiện đủ ở mọi vị trí cuộn (kể cả vừa vào khung nhìn và khi cuộn lên lại), hàng sau vẫn có phần tử scrub`, async ({ page }) => {
+/** Cỡ màn của test (i): thêm 768x1024 để phủ khoảng 560-1023px (lưới phim 3 cột, lưới rạp 2 cột). */
+const SIZES_I = [...SIZES, { name: "768x1024", width: 768, height: 1024 }] as const;
+
+/** Route có hàng dữ liệu từ thứ hai trở đi ở mọi cỡ màn thử (fixture mock: 14 phim, 3 rạp, mỗi rạp nhiều suất). */
+const ROUTES_WITH_LATER_ROWS = ["/", "/phim", "/rap/SGN1", "/phim/phim-1", "/lich-chieu", "/lich-chieu?cinema=SGN1"];
+
+/**
+ * Đánh dấu `data-e2e-deepest` lên phần tử scrub SÂU NHẤT không phải hàng đầu, nằm trong nội dung (không tính footer) và đang gắn
+ * animation cuộn; trả đỉnh của nó, hoặc null nếu không có (hàng sau bị mất chuyển động). Tìm lại bằng thuộc tính vì ảnh tải xong
+ * làm bố cục dịch chuyển nên không so khớp theo toạ độ.
+ */
+async function markDeepestLaterScrub(page: Page): Promise<number | null> {
+  return page.evaluate(() => {
+    for (const el of document.querySelectorAll("[data-e2e-deepest]")) el.removeAttribute("data-e2e-deepest");
+    const later = Array.from(document.querySelectorAll("[data-scrub]:not([data-e2e-first])")).filter(
+      (el) => !el.closest("footer") && getComputedStyle(el).animationName.includes("scrubPop"),
+    );
+    if (later.length === 0) return null;
+    const deepest = later.reduce((a, b) => (b.getBoundingClientRect().top > a.getBoundingClientRect().top ? b : a));
+    deepest.setAttribute("data-e2e-deepest", "");
+    return Math.round(deepest.getBoundingClientRect().top + window.scrollY);
+  });
+}
+
+for (const size of SIZES_I) {
+  test(`(i) hàng đầu không scrub ${size.name}: hiện đủ ở mọi vị trí cuộn (kể cả vừa vào khung nhìn và khi cuộn lên lại)`, async ({ page }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
     const problems: string[] = [];
     for (const route of ["/", "/phim", "/rap", "/rap/SGN1", "/phim/phim-1", "/lich-chieu"]) {
@@ -323,9 +347,10 @@ for (const size of SIZES) {
             if (parseFloat(cs.opacity) < 0.999 || !/^(0(px)?\s?)+$/.test(tx) || Math.abs(parseFloat(sc) - 1) > 0.002) {
               out.push(`${el.tagName.toLowerCase()}[${el.getAttribute("data-scrub")}] opacity ${cs.opacity} translate ${cs.translate} scale ${cs.scale}`);
             }
+            // Hàng đầu không còn animation nên clip-path của wipe/media phải là "none" (bắt cả trạng thái giữa chừng, không chỉ "100%").
             for (const inner of el.querySelectorAll("[data-scrub-wipe], [data-scrub-media]")) {
               const clip = getComputedStyle(inner).clipPath;
-              if (clip !== "none" && clip.includes("100%")) out.push(`clip ${clip}`);
+              if (clip !== "none") out.push(`clip ${clip}`);
             }
             for (const rule of el.querySelectorAll("[data-scrub-rule]")) {
               const t = getComputedStyle(rule).transform;
@@ -342,7 +367,96 @@ for (const size of SIZES) {
     }
     expect(problems.slice(0, 20), problems.slice(0, 20).join("\n")).toEqual([]);
   });
+
+  test(`(i2) hàng sau VẪN scrub ${size.name}: có phần tử scrub không phải hàng đầu, ẩn khi vừa ló mép dưới và phần clip/tia quét chạy giữa chừng`, async ({ page }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    const problems: string[] = [];
+    let hiddenChecked = 0;
+    for (const route of ROUTES_WITH_LATER_ROWS) {
+      await page.goto(route, { waitUntil: "load" });
+      await page.evaluate(MARK_FIRST_ROW_SCRIPT);
+      const deepest = await markDeepestLaterScrub(page);
+      if (deepest === null) {
+        problems.push(`${route}: không có phần tử scrub nào ngoài hàng đầu (hàng sau bị mất chuyển động)`);
+        continue;
+      }
+      // Phần tử sâu nhất: cuộn để đỉnh của nó nằm cách mép dưới 40px (trong vùng inset) thì phải đang ẩn một phần.
+      const y = deepest - (size.height - 40);
+      if (y < 0) continue; // phần tử đã nằm trọn trong màn hình lúc vào trang, không thể ép về vùng inset
+      await scrollToY(page, y);
+      const opacity = await page.evaluate(() => {
+        const el = document.querySelector("[data-e2e-deepest]");
+        return el ? parseFloat(getComputedStyle(el).opacity) : null;
+      });
+      hiddenChecked++;
+      if (opacity === null || opacity >= 0.999) problems.push(`${route}: phần tử hàng sau sâu nhất (top ${deepest}) không bị ẩn khi ló mép dưới (opacity ${opacity})`);
+    }
+    expect(hiddenChecked, "phải có ít nhất 1 route kiểm được trạng thái ẩn của hàng sau").toBeGreaterThan(0);
+
+    // Giữa chừng: thẻ phim hàng sau ở /phim có clip-path đang mở dở và tia quét đang chạy ở một vài vị trí cuộn.
+    await page.goto("/phim", { waitUntil: "load" });
+    await page.evaluate(MARK_FIRST_ROW_SCRIPT);
+    const beamTop = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('[data-scrub="beam"]:not([data-e2e-first])'));
+      const last = cards.at(-1);
+      last?.setAttribute("data-e2e-beam", "");
+      return last ? Math.round(last.getBoundingClientRect().top + window.scrollY) : -1;
+    });
+    if (beamTop < 0) problems.push("/phim: không có thẻ phim hàng sau");
+    else {
+      const from = Math.max(0, beamTop - size.height - 200);
+      let sawPartialClip = false;
+      let beamAnimation = "";
+      let sawHalfOpacity = false;
+      for (let y = from; y <= beamTop + 100; y += 12) {
+        await scrollToY(page, y);
+        const s = await page.evaluate(() => {
+          const card = document.querySelector("[data-e2e-beam]");
+          if (!card) return null;
+          const media = card.querySelector("[data-scrub-media]");
+          const beam = card.querySelector("[data-scrub-beam]");
+          return {
+            opacity: parseFloat(getComputedStyle(card).opacity),
+            clip: media ? getComputedStyle(media).clipPath : "none",
+            beamAnimation: beam ? getComputedStyle(beam).animationName : "",
+          };
+        });
+        if (!s) continue;
+        if (s.clip !== "none" && !s.clip.includes("100%") && s.opacity < 0.999) sawPartialClip = true;
+        beamAnimation = s.beamAnimation;
+        if (s.opacity > 0.01 && s.opacity < 0.99) sawHalfOpacity = true;
+      }
+      if (!sawPartialClip) problems.push("/phim: không thấy clip-path poster mở dở ở thẻ hàng sau");
+      // Tia quét có timeline riêng rất ngắn (phần tử cao 3px) nên không lấy mẫu được giữa chừng; kiểm animation còn gắn vào thẻ hàng sau.
+      if (!beamAnimation.includes("beamLine")) problems.push(`/phim: tia quét thẻ hàng sau mất animation (animation-name: ${beamAnimation})`);
+      if (!sawHalfOpacity) problems.push("/phim: không thấy opacity trung gian ở thẻ hàng sau");
+    }
+    expect(problems.slice(0, 20), problems.slice(0, 20).join("\n")).toEqual([]);
+  });
 }
+
+// M-1 hồi quy (reviewer round 1): trang có nhiều lịch xếp chồng chỉ khối ĐẦU của lịch đầu tiên được `first`.
+test.describe("(i3) /lich-chieu: chỉ khối suất đầu tiên không scrub, các khối sau vẫn hiện dần (AC-35)", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+  for (const route of ["/lich-chieu", "/lich-chieu?cinema=SGN1", "/phim/phim-1"]) {
+    test(route, async ({ page }) => {
+      await page.goto(route, { waitUntil: "load" });
+      const frames = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('[data-scrub="ltr"].frame')).map((el) => ({
+          first: el.hasAttribute("data-scrub-first"),
+          animation: getComputedStyle(el).animationName,
+        })),
+      );
+      expect(frames.length, `${route}: cần >= 2 khối suất để phân biệt hàng đầu và hàng sau`).toBeGreaterThanOrEqual(2);
+      expect(frames[0]?.first).toBe(true);
+      expect(frames[0]?.animation).toBe("none");
+      for (const [index, frame] of frames.slice(1).entries()) {
+        expect(frame.first, `${route}: khối thứ ${index + 2} không được đánh dấu first`).toBe(false);
+        expect(frame.animation, `${route}: khối thứ ${index + 2} phải còn scrub`).toContain("scrubPop");
+      }
+    });
+  }
+});
 
 // ---------------------------------------------------------------------------------------------
 // (d) reduced motion: tất cả tĩnh, hero không ghim

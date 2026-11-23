@@ -142,6 +142,36 @@ describe("/rap/[code] — rạp không hoạt động (R-137, AC-27)", () => {
   });
 });
 
+describe("/rap/[code] — mã sai: bot nhận 404 qua generateMetadata (R-137, AC-28, spec 3.6.1)", () => {
+  const meta = () => generateMetadata({ params: Promise.resolve({ code: "SAI" }), searchParams: Promise.resolve({}) });
+
+  it("API trả 404: generateMetadata gọi notFound()", async () => {
+    apiFetch.mockRejectedValue(new ApiError("NOT_FOUND", "Không tìm thấy", 404));
+    await expect(meta()).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(notFound).toHaveBeenCalledTimes(1);
+  });
+
+  it("lỗi 5xx hoặc lỗi mạng: KHÔNG notFound, trả metadata mặc định", async () => {
+    apiFetch.mockRejectedValue(new ApiError("UNKNOWN", "Lỗi máy chủ", 500));
+    await expect(meta()).resolves.toMatchObject({ title: "Không tìm thấy rạp | CINEMO" });
+    apiFetch.mockRejectedValue(new TypeError("fetch failed"));
+    await expect(meta()).resolves.toMatchObject({ title: "Không tìm thấy rạp | CINEMO" });
+    expect(notFound).not.toHaveBeenCalled();
+  });
+
+  it.each(["CLOSED", "TEMP_CLOSED", "COMING_SOON"] as const)("rạp %s vẫn có metadata (200 + noindex), không notFound", async (status) => {
+    mockDetail({ status });
+    await expect(meta()).resolves.toMatchObject({ robots: { index: false, follow: true } });
+    expect(notFound).not.toHaveBeenCalled();
+  });
+
+  it("chỉ 1 request API cho metadata (dùng chung fetch đã cache, không thêm request)", async () => {
+    mockDetail({});
+    await meta();
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("/rap/[code] — rạp OPEN có lịch đổi trạng thái (R-136, AC-30)", () => {
   it("lịch đóng cửa: banner nêu ngày hiệu lực theo giờ VN + hướng dẫn hoàn tiền trước hạn", async () => {
     mockDetail({ scheduledStatus: "CLOSED", scheduledEffectiveAt: "2026-11-24T17:30:00.000Z" });

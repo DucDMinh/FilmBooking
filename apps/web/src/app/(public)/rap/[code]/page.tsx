@@ -83,21 +83,32 @@ function formatVnTime(utcIso: string): string {
   return `${pad(p.hour)}:${pad(p.minute)}`;
 }
 
-async function fetchCinemaDetail(code: string, date: string): Promise<CinemaDetailDto | null> {
+/** `missing` = API trả 404 cho mã này (khác lỗi mạng/5xx: `detail` null nhưng `missing` false). */
+async function loadCinemaDetail(
+  code: string,
+  date: string,
+): Promise<{ detail: CinemaDetailDto | null; missing: boolean }> {
   try {
-    return await apiFetch<CinemaDetailDto>(`/cinemas/${encodeURIComponent(code)}?date=${date}`, PUBLIC_CACHE);
+    const detail = await apiFetch<CinemaDetailDto>(`/cinemas/${encodeURIComponent(code)}?date=${date}`, PUBLIC_CACHE);
+    return { detail, missing: false };
   } catch (error) {
-    if (error instanceof ApiError && error.status === 404) {
-      return null;
-    }
-    return null;
+    return { detail: null, missing: error instanceof ApiError && error.status === 404 };
   }
+}
+
+async function fetchCinemaDetail(code: string, date: string): Promise<CinemaDetailDto | null> {
+  return (await loadCinemaDetail(code, date)).detail;
 }
 
 export async function generateMetadata({ params }: CinemaDetailPageProps): Promise<Metadata> {
   const { code } = await params;
   const today = getTodayVn();
-  const detail = await fetchCinemaDetail(code, today);
+  const { detail, missing } = await loadCinemaDetail(code, today);
+
+  // R-137, AC-28 (spec 3.6.1): mã rạp sai thì công cụ tìm kiếm phải nhận HTTP 404. Khi có skeleton (loading.tsx) trình duyệt
+  // thường đã nhận 200 trước khi biết mã sai (đã được user chấp nhận), nhưng bot không stream nên đổi được status ở đây.
+  // Chỉ 404 thật từ API; lỗi 5xx/mạng giữ metadata mặc định. Dùng chung fetch đã cache với trang nên không thêm request.
+  if (missing) notFound();
 
   if (!detail) {
     return {
