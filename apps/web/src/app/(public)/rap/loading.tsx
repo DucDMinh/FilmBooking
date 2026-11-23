@@ -13,7 +13,7 @@ export default function CinemasLoading() {
       <ChipRowSkeleton count={5} chipClassName="h-11 w-32" />
       <section className="space-y-6">
         <SectionHeadSkeleton />
-        <CinemaGridSkeleton count={6} />
+        <CinemaGridSkeleton count={6} gapClassName="gap-6" />
       </section>
     </PageSkeleton>
   );

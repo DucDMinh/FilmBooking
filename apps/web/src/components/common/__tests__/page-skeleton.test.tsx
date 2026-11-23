@@ -56,6 +56,18 @@ describe("PageSkeleton", () => {
   });
 });
 
+describe("stepper tĩnh trong skeleton", () => {
+  it.each([
+    ["/lich-chieu", ScheduleLoading],
+    ["/dat-ve", SeatSelectionLoading],
+  ])("%s: stepper nằm trong vùng aria-hidden, không bị đọc cùng nhãn tải", (_route, Loading) => {
+    const { container } = render(<Loading />);
+    const nav = container.querySelector("nav");
+    expect(nav).not.toBeNull();
+    expect(nav?.closest("[aria-hidden='true']")).not.toBeNull();
+  });
+});
+
 describe.each(ROUTE_LOADINGS)("loading.tsx của %s", (_route, Loading, label) => {
   it("render được, có đúng một vùng role=status và nhãn sr-only", () => {
     const { container } = render(<Loading />);

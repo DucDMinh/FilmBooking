@@ -19,7 +19,10 @@ export default function CinemaDetailLoading() {
           <ChipRowSkeleton count={3} chipClassName="h-5 w-36" />
         </div>
       </div>
-      <Skeleton className="h-56 w-full" />
+      <section className="space-y-3">
+        <SectionHeadSkeleton />
+        <Skeleton className="h-56 w-full" />
+      </section>
       <section className="space-y-6">
         <SectionHeadSkeleton />
         <ChipRowSkeleton count={7} chipClassName="h-14 w-20" />

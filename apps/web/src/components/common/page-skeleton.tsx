@@ -71,10 +71,13 @@ export function MovieGridSkeleton({ count = 8 }: Readonly<{ count?: number }>) {
   );
 }
 
-/** Lưới thẻ rạp 1 / 2 / 3 cột (khớp lưới ở trang chủ và /rap). */
-export function CinemaGridSkeleton({ count = 3 }: Readonly<{ count?: number }>) {
+/** Lưới thẻ rạp 1 / 2 / 3 cột. Mặc định gap như trang chủ; /rap thật dùng gap-6 ở mọi cỡ nên truyền `gapClassName`. */
+export function CinemaGridSkeleton({
+  count = 3,
+  gapClassName = "gap-4 md:gap-6",
+}: Readonly<{ count?: number; gapClassName?: string }>) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+    <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3", gapClassName)}>
       {Array.from({ length: count }, (_, index) => (
         <div key={index} className="frame h-full">
           <div className="frame-in flex h-full flex-col justify-between gap-4 p-5">
