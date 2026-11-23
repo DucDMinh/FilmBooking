@@ -85,6 +85,13 @@ export function VoucherInput({ orderId, appliedCode, onChanged }: Readonly<Vouch
           id="voucher-code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
+          onKeyDown={(e) => {
+            // Nút "Áp dụng" bị vô hiệu khi ô trống nên Enter không kích hoạt submit: tự báo lý do.
+            if (e.key === "Enter" && !code.trim()) {
+              e.preventDefault();
+              setError("Vui lòng nhập mã giảm giá.");
+            }
+          }}
           placeholder="Nhập mã giảm giá"
           autoComplete="off"
           aria-invalid={error ? true : undefined}

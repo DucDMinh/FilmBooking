@@ -1156,14 +1156,14 @@ describe("Booking API (Layer 5 Task 01: Sơ đồ ghế, giữ/nhả ghế, tóm
       expect((latestConsent?.metadata as { ip: string | null })?.ip).toBeNull();
     });
 
-    it("A/MAJOR-2: từ chối 400 VALIDATION_ERROR khi client gửi phiên bản không hợp lệ", async () => {
+    it("A/MAJOR-2: từ chối 409 CONSENT_VERSION_INVALID khi client gửi phiên bản không hợp lệ (CR-017)", async () => {
       const res = await request(app.getHttpServer())
         .post(`/bookings/${orderId}/consent`)
         .set("Authorization", `Bearer ${aliceToken}`)
         .send({ version: "99.9.9" })
-        .expect(400);
+        .expect(409);
 
-      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+      expect(res.body.error.code).toBe("CONSENT_VERSION_INVALID");
     });
 
     it("người khác gọi consent -> 403 FORBIDDEN", async () => {
