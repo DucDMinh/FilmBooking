@@ -1,7 +1,7 @@
 ---
 id: booking-error-messages
 type: bug
-status: in_progress
+status: done
 created: 2026-11-23
 ---
 

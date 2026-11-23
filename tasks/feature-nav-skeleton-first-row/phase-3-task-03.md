@@ -29,7 +29,7 @@
 ## Repro Verification
 - Original: không có kiểm chứng tự động cho skeleton/điều hướng và cho hàng đầu hiện ngay.
 - Expected: bộ Playwright phủ NFR-20/AC-35/AC-32, PASS.
-- Actual after: bộ `nav-skeleton.spec.ts` (20 test) + `scrub.spec.ts` (35 test): `pnpm exec playwright test -c playwright.scrub.config.ts` = 55 passed, 0 failed (gồm 1 test `test.fail` ghi nhận lệch spec 3.6.1 ở bot, xem dưới). `pnpm typecheck`, `pnpm lint` PASS. `scrub.spec.ts` KHÔNG cần sửa thêm: các test xung đột với "hàng đầu không còn hiện muộn" đã được phase 2 sửa (dùng hàng thứ hai, test (i)(i2)(i3)); phase 3 chỉ bổ sung khoảng trống.
+- Actual after: bộ `nav-skeleton.spec.ts` (20 test) + `scrub.spec.ts` (35 test): `pnpm exec playwright test -c playwright.scrub.config.ts` = 55 passed, 0 failed (không có `test.fail`; (5b) kiểm bot cũng nhận 200 + noindex + giao diện không tìm thấy, khớp spec 3.6.1). `pnpm typecheck`, `pnpm lint` PASS. `scrub.spec.ts` KHÔNG cần sửa thêm: các test xung đột với "hàng đầu không còn hiện muộn" đã được phase 2 sửa (dùng hàng thứ hai, test (i)(i2)(i3)); phase 3 chỉ bổ sung khoảng trống.
 - Evidence (API chậm 1500ms, Chromium 1280x800, `next start` bản build scrub; mốc tính từ sự kiện click):
   | Route | URL đổi | Skeleton hiện | Skeleton biến mất | CLS (chuẩn) | CLS lúc thay skeleton -> nội dung |
   |---|---|---|---|---|---|
@@ -44,9 +44,9 @@
   - reduced-motion: skeleton 43 phần tử, 0 animation đang chạy, 0 phần tử có animation-name; đối chứng không reduced-motion: 17 animation đang chạy.
   - perf (có sẵn): LCP /phim 1416-1500ms (do mock ảnh), CLS <= 0.0001.
   - HTTP theo user-agent (next start, mock): 
-    - /rap/MA-RAP-SAI và /phim/slug-phim-sai: trình duyệt thường 200 + `<meta name="robots" content="noindex">` + giao diện "Không tìm thấy trang" (đúng spec 3.6.1); **Googlebot 200 + noindex + giao diện không tìm thấy; Bingbot 200 + noindex** (LỆCH spec 3.6.1: kỳ vọng 404 cho bot).
+    - /rap/MA-RAP-SAI và /phim/slug-phim-sai: trình duyệt thường 200 + `<meta name="robots" content="noindex">` + giao diện "Không tìm thấy trang" (đúng spec 3.6.1); **Googlebot 200 + noindex + giao diện không tìm thấy; Bingbot 200 + noindex** (khớp spec 3.6.1 đã sửa theo số đo này: bot cũng 200 + noindex, KHÔNG 404).
     - /rap/SGN1, /phim/phim-1 (còn mở): 200, không noindex, mọi UA. /rap/CLOSED1 (mock CLOSED): 200 + noindex, mọi UA.
-- Phát hiện lệch spec: bot nhận 200 chứ không phải 404 cho mã rạp / slug phim sai (test 5b giữ kỳ vọng 404 và đánh `test.fail` để ghi nhận; gỡ `test.fail` khi sửa). Nguyên nhân dự đoán: khi có loading.tsx, phản hồi đã bắt đầu stream nên `notFound()` trong generateMetadata không đổi được status; chưa điều tra sâu (ngoài phạm vi task test).
+- Phát hiện (đã xử lý bằng cách sửa spec 3.6.1, không phải sửa app): bot nhận 200 + noindex chứ không phải 404 cho mã rạp / slug phim sai; Googlebot không thuộc htmlLimitedBots của Next, Bingbot thuộc nhưng cũng 200. Test (5b) hiện kiểm đúng hành vi này, không còn `test.fail`. Nguyên nhân: khi có loading.tsx, phản hồi đã bắt đầu stream nên `notFound()` trong generateMetadata không đổi được status; chưa điều tra sâu (ngoài phạm vi task test).
 - Sửa sau khi dispatcher chạy lại (4 test (3) đỏ khi chạy riêng/cache lạnh): nguyên nhân là test đo ngay sau `goto(load)` trong khi React còn giữ khung chờ Suspense, lưới thật còn nằm trong khối ẩn (mọi phần tử scrub có top 0, grid đầu là skeleton 8 thẻ) nên heuristic gán 15 "hàng đầu" và không thấy hàng sau. Không phải bản build cũ (BUILD_ID 10:59 sau merge phase 2 10:50) và không phải lỗi app. Sửa: `waitForRealContent` + bỏ qua phần tử không hiển thị khi đánh dấu; không đổi kỳ vọng. Kết quả: chạy riêng (3) 4 passed; toàn bộ 55 passed. Test (5b) do dispatcher sửa theo spec 3.6.1 đã chỉnh (bot cũng 200 + noindex).
 - Giới hạn: `/rap` và trang chủ cache chi tiết mọi rạp (`/cinemas/<mã>?date=`, cache 60s) nên /rap/<mã> chỉ lạnh khi đi từ trang không gọi API rạp (test dùng `window.next.router.push` từ /dieu-khoan, và chạy trước /rap). Nội dung /lich-chieu khi 500 chỉ kiểm tiêu đề, không kiểm chữ lỗi riêng.
-- Status: PASS (kèm 1 phát hiện lệch spec ở bot, test.fail)
+- Status: PASS (55 passed, không test.fail; reviewer round 1 FAIL chỉ vì tài liệu, đã sửa)

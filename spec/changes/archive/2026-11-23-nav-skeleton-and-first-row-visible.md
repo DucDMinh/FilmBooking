@@ -1,7 +1,7 @@
 ---
 id: nav-skeleton-and-first-row-visible
 type: feature
-status: in_progress
+status: done
 created: 2026-11-23
 ---
 
