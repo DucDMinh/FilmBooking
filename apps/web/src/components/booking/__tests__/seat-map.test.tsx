@@ -416,6 +416,29 @@ describe("SeatPicker — giữ ghế", () => {
     expect(screen.getByText(/Chọn ít nhất 1 ghế/)).toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
   });
+
+  it("DOB_REQUIRED: toast nêu rõ cần cập nhật ngày sinh, kèm nút tới hồ sơ (CR-017, R-68)", async () => {
+    const { ApiError } = await import("@/lib/api/client");
+    const message = "Vui lòng cập nhật ngày sinh trong hồ sơ trước khi đặt vé phim có giới hạn độ tuổi.";
+    vi.mocked(apiFetch).mockRejectedValueOnce(new ApiError("DOB_REQUIRED", message, 422));
+    renderPicker(range("E", 5));
+    fireEvent.click(seatButton(/Hàng E ghế 3,/));
+    fireEvent.click(screen.getByRole("button", { name: "Tiếp tục" }));
+    await flush();
+
+    expect(toastMock.error).toHaveBeenCalledTimes(1);
+    const [shownMessage, options] = toastMock.error.mock.calls[0] as [
+      string,
+      { action: { label: string; onClick: () => void } },
+    ];
+    expect(shownMessage).toBe(message);
+    expect(shownMessage).not.toMatch(/chưa hợp lệ/i);
+    expect(options.action.label).toBe("Cập nhật hồ sơ");
+    expect(mockPush).not.toHaveBeenCalled();
+
+    options.action.onClick();
+    expect(mockPush).toHaveBeenCalledWith("/tai-khoan");
+  });
 });
 
 describe("HoldCountdown", () => {
