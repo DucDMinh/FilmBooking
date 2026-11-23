@@ -1,9 +1,9 @@
 {
-  "specVersion": "3.5.2",
-  "scopeVersion": 33,
-  "generatedAt": "2026-11-20T17:26:22+07:00",
-  "trigger": "bug-fix",
-  "workItem": "bug/oauth-collision-message",
+  "specVersion": "3.6.0",
+  "scopeVersion": 34,
+  "generatedAt": "2026-11-23T10:00:00+07:00",
+  "trigger": "feature-update",
+  "workItem": "feature/nav-skeleton-first-row",
   "specRefs": [
     "R-138",
     "NFR-19",
@@ -56,7 +56,9 @@
     "R-20",
     "R-12",
     "R-21",
-    "R-23"
+    "R-23",
+    "NFR-20",
+    "AC-35"
   ],
   "changed": {
     "files": [
@@ -325,7 +327,14 @@
       "supabase/tests/071_tickets_seat_fk_lock_order.test.sql",
       "supabase/tests/072_tickets_seat_fk.test.sql",
       "apps/web/src/app/auth/callback/route.ts",
-      "apps/web/src/app/auth/callback/__tests__/route.test.ts"
+      "apps/web/src/app/auth/callback/__tests__/route.test.ts",
+      "apps/web/src/app/(public)/**/loading.tsx (mới, dự kiến: trang chủ, phim, phim/[slug], lich-chieu, rap, rap/[code], dat-ve/*, ve/*, tai-khoan/*)",
+      "apps/web/src/components/common/ (skeleton dùng chung, mới, dự kiến)",
+      "apps/web/src/components/motion/scrub.tsx (dự kiến: hàng đầu hiện tĩnh)",
+      "apps/web/src/app/globals.css (dự kiến: §CHUYỂN ĐỘNG THEO CUỘN + shimmer skeleton)",
+      "e2e/scrub/** (dự kiến: bổ sung kiểm hàng đầu hiện đủ + skeleton khi API chậm)",
+      ".context/design-spec.md (quy tắc skeleton + ngoại lệ hàng đầu của scroll-reveal)",
+      "SPECIFICATIONS.md (3.6.0: NFR-19 sửa, NFR-20, AC-35)"
     ],
     "modules": [
       "web-form-controls (select)",
@@ -381,7 +390,11 @@
       "supabase-migration sell_order_seats_lock_seats_first (khoá seats FOR KEY SHARE order by id ở đầu sell_order_seats; thứ tự khoá showtimes → orders → payments → seats → showtime_seat_states → tickets)",
       "supabase-migration tickets_seat_fk (FK tickets.seat_id → seats(id) ON DELETE RESTRICT + index tickets_seat_id_idx; HIGH_RISK_MIGRATION)",
       "supabase-rpc confirm_paid_order / confirm_zero_amount (qua sell_order_seats)",
-      "web-auth-callback (classifyOAuthError / buildRedirectForError: lỗi che \"Error creating identity\" → email_exists ở luồng đăng nhập)"
+      "web-auth-callback (classifyOAuthError / buildRedirectForError: lỗi che \"Error creating identity\" → email_exists ở luồng đăng nhập)",
+      "web-public-nav-skeleton (route loading.tsx nhóm (public) + skeleton dùng chung components/common: trang chủ, /phim, /phim/[slug], /lich-chieu, /rap, /rap/[code], /dat-ve/*, /ve/*, /tai-khoan/*) — NFR-20, AC-35",
+      "apps/web:motion (Scrub: dòng dữ liệu đầu tiên + tiêu đề phía trên hiện tĩnh, chuyển động theo cuộn từ hàng thứ hai) — NFR-19 sửa, AC-35",
+      "apps/web:pages home/phim/lich-chieu/rap (bố cục hàng đầu của mục dữ liệu)",
+      "e2e/scrub (bổ sung)"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -776,11 +789,32 @@
       "bug-oauth-collision-message/phase-1-task-01": [
         "apps/web/src/app/auth/callback/route.ts",
         "apps/web/src/app/auth/callback/__tests__/route.test.ts"
+      ],
+      "feature-nav-skeleton-first-row/phase-1": [
+        "SPECIFICATIONS.md",
+        "spec/changes/2026-11-23-nav-skeleton-and-first-row-visible.md",
+        "spec/updates/2026-11-23-nav-skeleton-and-first-row-visible.md",
+        "spec/CHANGELOG.md",
+        "spec/test-scope/current.json"
+      ],
+      "feature-nav-skeleton-first-row/phase-2 (dự kiến, code chưa build)": [
+        "apps/web/src/app/(public)/**/loading.tsx",
+        "apps/web/src/components/common/ (skeleton)",
+        "apps/web/src/components/motion/scrub.tsx",
+        "apps/web/src/app/globals.css",
+        "e2e/scrub/**",
+        ".context/design-spec.md"
       ]
     }
   },
   "impact": {
     "direct": [
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] web.nav.instant-skeleton (NFR-20, AC-35) — MODIFY (requirement ĐỔI: spec 3.6.0): ở MỌI route khách có tải dữ liệu (/, /phim, /phim/[slug], /lich-chieu, /rap, /rap/[code], /dat-ve/*, /ve/*, /tai-khoan/*) bấm liên kết/nút điều hướng từ trang khác (và giữa các trang khách) khi API chậm → URL đổi NGAY và khung trang + skeleton hiện ngay, dữ liệu điền vào sau khi về; không còn trạng thái 'đứng yên ở trang cũ chờ dữ liệu rồi mới chuyển'. Kiểm bằng cách làm chậm API (vd mock API có trễ) và bấm qua lại các route.",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] web.skeleton.layout-a11y (NFR-20, NFR-11, NFR-12) — skeleton khớp bố cục nội dung thật (không nhảy bố cục khi dữ liệu về, CLS < 0.1) ở 390×844 và 1280×800, không thanh cuộn ngang ở 360px; có `role=\"status\"`/`aria-busy=\"true\"` và nhãn cho trình đọc màn hình; KHÔNG dùng spinner toàn trang; dùng token/thành phần CYBERPLEX sẵn có.",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] web.skeleton.reduced-motion (NFR-20, NFR-19, WCAG 2.3.1) — shimmer/nhấp nháy của skeleton TẮT khi `prefers-reduced-motion: reduce` (skeleton tĩnh), không quá 3 lần/giây khi bật chuyển động.",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] web.skeleton.error-state (NFR-20) — tải dữ liệu lỗi vẫn vào `error.tsx`/trạng thái lỗi hiện có, không kẹt ở skeleton; `not-found` của trang chi tiết (phim/rạp không tồn tại) vẫn hiện đúng.",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] web.first-row.visible (NFR-19 sửa, AC-35) — trang chủ, /phim, /lich-chieu, /rap và chi tiết phim/rạp: dòng dữ liệu đầu tiên của mỗi mục (phim đang chiếu, suất chiếu/lịch chiếu, hệ thống rạp) CÙNG tiêu đề ngay phía trên nó luôn hiện đủ (opacity 1, không trượt/phóng/wipe) ở mọi vị trí cuộn, không chờ cuộn; kiểm ở 390×844 và 1280×800 (mục nằm ở màn đầu và mục vừa cuộn tới).",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] web.first-row.scrub-from-row-2 (NFR-19, AC-32) — chuyển động theo cuộn (hiện dần khi cuộn xuống, thu về khi cuộn lên) CHỈ áp cho các hàng từ hàng thứ hai trở đi; hàng đầu không bị Scrub làm mờ. Reduced-motion và Firefox (không hỗ trợ scroll-driven animations) vẫn hiển thị tĩnh đủ; admin/soát vé vẫn không có chuyển động cuộn.",
       "[scope v28 / bug-select-dropdown-theme] web.select.popup-theme (NFR-19, AC-31; CR-012 — BUG FIX, requirement KHÔNG đổi, không bump spec_version) — danh sách xổ xuống của `<select>` gốc nay theo token CYBERPLEX thay vì popup mặc định Windows: CSS toàn cục `apps/web/src/app/globals.css` (`@layer base`, bọc `@supports (appearance: base-select)`) `select, ::picker(select) { appearance: base-select }`; popup vuông, nền tối, viền, bóng, max-height; mục rê/bàn phím có vạch trái vàng, mục đã chọn nền nhấn vàng + dấu tick vàng; mũi tên `picker-icon` xoay khi mở; `option` cao tối thiểu 44px dưới md. Kiểm trên Chromium/Edge mới (hỗ trợ `base-select`) ở /lich-chieu (lọc rạp/phim/tỉnh), /phim (bộ lọc) và thanh Đặt vé nhanh trang chủ; chụp ảnh khi popup đang mở.",
       "[scope v28 / bug-select-dropdown-theme] web.select.closed-field (NFR-19, NFR-12) — ô đóng đồng nhất: hằng `SELECT_FIELD_CLASS` (`components/catalog/filter-field.ts`) áp cho 22 `<select>` ở 12 file (/lich-chieu, /phim, và admin: lịch chiếu + chi tiết suất, đơn hàng, đơn bị ảnh hưởng, nhật ký, khoá ghế, nhân sự rạp, gán vai trò, tạo suất hàng loạt, voucher) + QuickBookBar qua `home/home-hero.css`: vuông, viền/nền ô nhập, `px-3`, cao 44px (mobile) / 40px (md+), focus viền brand + ring, disabled mờ, `aria-invalid` viền danger; không còn ô lệch (`bg-transparent`, `px-2`). Chiều cao KHÔNG đổi. Test tự động: `select-theme.test.ts`.",
       "[scope v28 / bug-select-dropdown-theme] web.quick-book-bar.select-blocked (R-138, R-35, AC-31) — QuickBookBar khi CHƯA chọn tỉnh: click / Enter / ArrowDown ở ô Rạp KHÔNG xổ danh sách (popup không mở) mà mở hộp chọn tỉnh (ProvincePickerDialog); đã chọn tỉnh thì ô mở popup theo token CYBERPLEX; thanh vẫn cao 44px, rộng như trước, opacity 1; 4 ô Rạp → Phim → Ngày → Giờ và lỗi thiếu ô giữ nguyên.",
@@ -875,6 +909,10 @@
       "[scope v33 / bug-oauth-collision-message, CR-015] web.auth-callback.no-reflect (R-12) — `error_description` của GoTrue KHÔNG được phản chiếu ra URL/giao diện; server chỉ `console.warn` gọn (error, errorCode, category, flow, maskedIdentity cắt 64 ký tự), không ghi mô tả thô, code, state, token."
     ],
     "dependents": [
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] DEPENDENT QuickBookBar + hero trang chủ (R-138, AC-31, NFR-19) — skeleton/loading ở trang chủ phải khớp vị trí/cỡ thanh Đặt vé nhanh và hero (thanh vẫn cao 44px, opacity 1, không CLS); sau khi dữ liệu về, thanh hoạt động như cũ (Rạp → Phim → Ngày → Giờ, chưa chọn tỉnh mở hộp chọn tỉnh).",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] DEPENDENT SEO + trạng thái HTTP trang chi tiết (R-40, R-44, R-37, AC-28) — thêm `loading.tsx` làm Next stream phản hồi: kiểm `/phim/[slug]` và `/rap/[code]` vẫn có metadata/JSON-LD đúng, SSR lịch chiếu có trong HTML (R-46); mã phim/rạp không tồn tại vẫn ra trang 404 (nên kiểm cả mã HTTP, vì khi đã stream có thể là 200 + noindex); rạp CLOSED/TEMP_CLOSED/COMING_SOON vẫn 200 + thông báo (R-137).",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] DEPENDENT luồng đặt vé và trang cần đăng nhập (R-16, R-59, NFR-19) — /dat-ve/*, /ve/*, /tai-khoan/*: skeleton hiện ngay, khách chưa đăng nhập vẫn bị chuyển /dang-nhap?next=…, trang chọn ghế vẫn hiện đủ ngay khi vào (không bị skeleton/Scrub cản), giữ ghế/thanh toán không đổi; nhân sự vẫn bị chuyển khỏi trang khách (R-135) — skeleton không nhá ra trước khi chuyển hướng.",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] DEPENDENT bộ cuộn Playwright (`pnpm exec playwright test -c playwright.scrub.config.ts`, mock API `e2e/scrub/mock-api.mjs`) — các test AC-32 hiện có phải vẫn xanh; nên có thêm test hàng đầu hiện đủ và skeleton khi API trễ.",
       "[scope v26 / feature-cinema-status-notice] DEPENDENT huỷ suất/đơn affected (R-108, R-109, R-110, AC-24, AC-25) — job áp dụng lịch dùng chung `cancel_showtimes_core`: đơn `paid` -> `affected` hiện ở màn \"Đơn bị ảnh hưởng\"/hoàn tiền thủ công (R-110), xuất CSV, ghi nhận hoàn tiền đủ số tiền + mã giao dịch; huỷ suất TAY (một/nhiều suất, \"tất cả suất tương lai của rạp\") vẫn gửi email SHOWTIME_CANCELLED từng đơn và theo dõi/gửi lại như cũ. Retest luồng huỷ tay sau refactor core.",
       "[scope v26 / feature-cinema-status-notice] DEPENDENT bán vé khi rạp không OPEN (R-33, R-59, AC-10) — `hold_seats` / `confirm_paid_order` / `confirm_zero_amount` từ chối rạp không OPEN (`CINEMA_NOT_OPEN`): retest khi rạp vừa được job đổi sang CLOSED/TEMP_CLOSED/COMING_SOON và khi rạp ĐANG CÓ LỊCH (vẫn OPEN -> vẫn bán được, KHÔNG chặn trong 7 ngày chờ — khoảng hở PO chấp nhận). Suất tạo mới cho rạp không OPEN: spec chưa quy định (ghi nhận, không viết test kỳ vọng hành vi chặn).",
       "[scope v26 / feature-cinema-status-notice] DEPENDENT danh sách rạp / lịch chiếu công khai (R-33, R-34, R-37, R-43, R-46) — `/rap`, bản đồ rạp, `/lich-chieu`, `/phim/[slug]` chỉ hiện rạp OPEN; rạp có lịch đóng nhưng còn OPEN vẫn hiện và còn suất cho tới ngày hiệu lực; sau đó biến mất khỏi danh sách và `/rap/<mã>` hiện thông báo thay vì lịch.",
@@ -1089,10 +1127,17 @@
       "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION đăng nhập MXH lần đầu (user mới, email chưa có): vẫn tạo tài khoản và đăng nhập bình thường, không bị gán email_exists.",
       "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION đăng nhập MXH bằng tài khoản đã liên kết (Google/Facebook), kể cả nhân sự (chuyển về khu vực vai trò) và tôn trọng `next` (sanitizeNext).",
       "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION liên kết / huỷ liên kết MXH ở `/tai-khoan/bao-mat` (R-21, AC-05) và `identity_taken` (R-23): thông báo cũ giữ nguyên.",
-      "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION Facebook thiếu email → `/bo-sung-email` (missing_email) và các nhánh lỗi cũ (access_denied, dạng chữ `oauth_auto_merge_blocked` / `email_collision`) vẫn đi trước, không đổi."
+      "[scope v33 / bug-oauth-collision-message, CR-015] REGRESSION Facebook thiếu email → `/bo-sung-email` (missing_email) và các nhánh lỗi cũ (access_denied, dạng chữ `oauth_auto_merge_blocked` / `email_collision`) vẫn đi trước, không đổi.",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] REGRESSION AC-32 / NFR-19: reduced-motion → mọi phần tử hiện đủ ngay; tắt reduced-motion → cuộn xuống hiện dần, cuộn lên thu về (từ hàng thứ hai); cuộn tới cuối trang ở 390×844, 1280×800, 1440×900, 1920×1080 không còn phần tử ẩn một phần (mọi opacity = 1, trừ khối lời dẫn hero ghim); Tab → phần tử focus luôn hiện; không thanh cuộn ngang; không nhấp nháy quá 3 lần/giây.",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] REGRESSION AC-31 / R-138: thanh Đặt vé nhanh trang chủ không bị skeleton/loading làm đổi vị trí, cỡ, opacity; CLS < 0.1 ở trang chủ, /phim, /lich-chieu, /rap (kể cả lúc skeleton → dữ liệu).",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] REGRESSION NFR-11 / NFR-12: 360px không thanh cuộn ngang, skeleton và khối dữ liệu đạt tương phản ở trạng thái nghỉ, focus ring nhìn thấy, điều hướng bàn phím không bị skeleton chặn.",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] REGRESSION admin / soát vé: /admin, /staff/* KHÔNG đổi (ngoài phạm vi NFR-20, không có chuyển động cuộn; soát vé hiện kết quả tức thì).",
+      "[scope v34 / feature-nav-skeleton-first-row, CR-016] REGRESSION nội dung/nghiệp vụ trang khách không đổi: dữ liệu phim, lịch chiếu (mốc đóng bán R-67/AC-33), danh sách rạp, trang rạp đóng cửa (AC-28), vé của tôi, tài khoản hiển thị đúng như trước sau khi dữ liệu về; API/DB không đổi."
     ]
   },
   "acceptance": [
+    "CR nav-skeleton-and-first-row-visible A1 (AC-35, NFR-20): Given khách ở bất kỳ trang khách nào, API trả chậm When bấm liên kết sang trang khác (trang chủ, phim, chi tiết phim, lịch chiếu, rạp, chi tiết rạp, đặt vé, vé, tài khoản) Then URL đổi ngay và khung trang kèm skeleton hiện ngay (không chờ dữ liệu về), skeleton cùng bố cục nội dung thật rồi được thay bằng dữ liệu khi tải xong, CLS < 0.1, có `aria-busy`; reduced-motion thì không nhấp nháy; API lỗi thì hiện trạng thái lỗi, không kẹt ở skeleton. [NFR-20, NFR-19, NFR-11]",
+    "CR nav-skeleton-and-first-row-visible A2 (AC-35, NFR-19): Given khách mở trang chủ, /phim, /lich-chieu, /rap hoặc chi tiết phim/rạp ở 390×844 và 1280×800 When mở trang rồi cuộn tới mục dữ liệu (kể cả khi vừa vào khung nhìn và khi cuộn lên lại) Then dòng dữ liệu đầu tiên của mục (phim, suất chiếu, rạp) và tiêu đề phía trên đủ opacity 1, không cần cuộn thêm; các hàng sau vẫn hiện dần theo cuộn và AC-32 vẫn đúng. [NFR-19, NFR-20, AC-32]",
     "CR cinema-status-notice A1 (AC-26, R-33, R-136): Given rạp HN03 còn 3 suất tương lai đã bán vé When Admin chọn \"Đóng cửa\" Then rạp VẪN hoạt động ngay lúc đó (status không đổi), có `scheduled_status = CLOSED` + `scheduled_effective_at` = lúc xác nhận + đúng 7 ngày, mọi khách nhận email; đến ngày hiệu lực (job chạy) rạp `CLOSED`, lịch xoá, cả 3 suất `cancelled`, đơn `paid` của chúng -> `affected`, KHÔNG gửi email từng đơn; không còn yêu cầu huỷ hàng loạt trước khi đóng. [R-33, R-136, R-108, R-109]",
     "CR cinema-status-notice A2 (AC-27, R-136): Given Admin hẹn đóng/tạm đóng/mở lại/sắp mở rạp When xác nhận Then mỗi tài khoản có email đã xác nhận có đúng 1 dòng outbox `CINEMA_STATUS_NOTICE` (tài khoản chưa xác nhận/đã xoá không có), nội dung nêu rạp + ngày hiệu lực và (đóng/tạm đóng) hạn chót hoàn tiền = ngày hiệu lực, sau đó không giải quyết; `PATCH /cinemas/:id` với `status` khác hiện tại bị từ chối (VALIDATION_ERROR); hẹn trùng trạng thái hiện tại KHÔNG có lịch -> bị từ chối; ĐANG có lịch -> huỷ lịch + email đính chính tới toàn bộ khách (rạp tiếp tục hoạt động); hẹn lại -> thay lịch cũ, tính lại 7 ngày, gửi lại email; Manager/Staff không hẹn được; Admin/Manager qua PostgREST không update được `status`/`scheduled_*`. [R-136, R-32]",
     "CR cinema-status-notice A3 (AC-28, R-137): Given rạp `CLOSED`/`TEMP_CLOSED`/`COMING_SOON` When khách mở `/rap/<mã>` Then HTTP 200 + thông báo đúng trạng thái (\"đã đóng cửa\"/\"tạm đóng cửa\"/\"sắp khai trương\"), tên rạp, nút về danh sách rạp, KHÔNG lịch chiếu, KHÔNG 404; Given mã rạp không tồn tại Then vẫn 404; Given rạp `OPEN` có lịch đóng Then trang rạp bình thường + banner ngày hiệu lực. [R-137, R-37]",
@@ -1199,6 +1244,7 @@
     "[scope v30 / bug-admin-self-lock-last-admin-guard, CR-004] Bug-fix bảo mật / phân quyền, spec PATCH 3.5.2 (làm rõ R-105 + NFR-06, thêm AC-34). risk nâng `high`: auth/RBAC + migration có trigger trên `auth.users` / `auth.identities` / `user_roles` (không phá huỷ dữ liệu). Định nghĩa Admin hoạt động là quyết định user chốt 2026-11-20 (khớp ngoại lệ cron R-10/R-19). Reviewer STRICT PASS round 6 (round 1–5 FAIL, mỗi vòng một lỗi khác). Bên test cần DB có ≥ 2 Admin hoạt động (Admin seed là Admin hoạt động duy nhất trên DB local; cleanup của pgTAP 069 cần Admin seed). 13 file pgTAP cũ (010, 020, 030, 031, 033, 040–044, 050, 063, 090) đỏ trên DB local bẩn vì seed demo (`provinces_name_key`/`price_rules_chain_key`) — có từ trước, chưa xác nhận trên DB sạch. Residual: deadlock 40P01 hiếm (API 500 cho bên bị huỷ); web chưa kiểm hiển thị 409; 2 test web flaky `account.test.tsx` có sẵn (CR-013). Delta: `spec/updates/2026-11-20-admin-self-lock-last-admin-guard.md`.",
     "[scope v31 / bug-refund-method-required, CR-005] Bug-fix, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, đưa code về đúng R-110 / BR-ADM-14, đóng GAP-009). risk giữ `high` (không hạ). Reviewer PASS round 2. Bên test cần đơn `affected` (huỷ suất có đơn đã thanh toán) để ghi hoàn tiền; thử cả ngày tương lai theo giờ VN và đơn cũ đã `refunded_manual` trước bản sửa (hiển thị \"Chưa ghi\"). `refundedAt` đổi nghĩa (ngày người nhập), `processedAt` là thời điểm hệ thống. pgTAP 031 và 044 chưa xác nhận trên DB sạch (DB local bẩn vì seed demo, có từ trước). Delta: `spec/updates/2026-11-20-refund-method-required.md`.",
     "[scope v32 / bug-tickets-seat-fk, CR-002] Bug-fix toàn vẹn dữ liệu, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, không đổi API/web — chỉ SQL + tài liệu). risk giữ `high`. HIGH_RISK_MIGRATION `20261121100100_tickets_seat_fk.sql` (FK trên `tickets`: precheck vé mồ côi, lock_timeout, NOT VALID + VALIDATE, index; không destructive) đã áp trên DB local; rollback: bỏ FK + index `tickets_seat_id_idx`, khôi phục `sell_order_seats` bản trước. Reviewer STRICT PASS. Residual: test race pgTAP 071 đồng bộ bằng sleep nên khi hoàn nguyên bản sửa đỏ không ổn định 100%; pgTAP 040/041/043 chưa chạy lại được trên DB local bẩn (seed demo, có từ trước); chưa xác nhận trên DB sạch / DB staging thật. Đóng CR-002 hoãn từ bug-layer34-review phase-2-task-03. Delta: `spec/updates/2026-11-20-tickets-seat-fk.md`.",
-    "[scope v33 / bug-oauth-collision-message, CR-015] Bug-fix, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, đưa UI về đúng AC-04 / R-20). risk giữ `high` (không hạ). Chỉ đổi web `/auth/callback` + test; không đổi API/DB/migration. Reviewer NORMAL PASS round 2 (round 1 FAIL vì điều kiện theo `error_code=unexpected_failure` gán sai mọi lỗi 500 thành email_exists). Bên test cần: tài khoản đã đăng ký bằng mật khẩu và một tài khoản Google/Facebook cùng email (OAuth thật), hoặc mô phỏng redirect lỗi `/auth/callback?error=server_error&error_code=unexpected_failure&error_description=Error+creating+identity` (không cần Google thật). Residual: CHƯA kiểm end-to-end với Google thật (cần user đăng nhập); redirect thật của GoTrue suy ra từ log `500: Error creating identity`, chưa quan sát trên URL; không phân biệt được lỗi che 23514 do trùng email với lỗi tạo identity khác cùng mô tả (hiếm); Facebook chưa có log thực; 2 test web flaky `account.test.tsx` = CR-013. Delta: `spec/updates/2026-11-20-oauth-collision-message.md`."
+    "[scope v33 / bug-oauth-collision-message, CR-015] Bug-fix, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, đưa UI về đúng AC-04 / R-20). risk giữ `high` (không hạ). Chỉ đổi web `/auth/callback` + test; không đổi API/DB/migration. Reviewer NORMAL PASS round 2 (round 1 FAIL vì điều kiện theo `error_code=unexpected_failure` gán sai mọi lỗi 500 thành email_exists). Bên test cần: tài khoản đã đăng ký bằng mật khẩu và một tài khoản Google/Facebook cùng email (OAuth thật), hoặc mô phỏng redirect lỗi `/auth/callback?error=server_error&error_code=unexpected_failure&error_description=Error+creating+identity` (không cần Google thật). Residual: CHƯA kiểm end-to-end với Google thật (cần user đăng nhập); redirect thật của GoTrue suy ra từ log `500: Error creating identity`, chưa quan sát trên URL; không phân biệt được lỗi che 23514 do trùng email với lỗi tạo identity khác cùng mô tả (hiếm); Facebook chưa có log thực; 2 test web flaky `account.test.tsx` = CR-013. Delta: `spec/updates/2026-11-20-oauth-collision-message.md`.",
+    "[scope v34 / feature-nav-skeleton-first-row, CR-016] Feature MODIFY (UI trang khách), spec MINOR 3.6.0 (SỬA NFR-19, THÊM NFR-20 + AC-35; tổng 20/20 NFR, 31/31 AC). KHÔNG đổi API/DB/migration/nghiệp vụ. Rủi ro RIÊNG của change này là medium (shared skeleton + CSS Scrub toàn cục + thêm loading.tsx); trường `risk` của file này giữ `high` vì file là scope TÍCH LUỸ còn mang các vùng rủi ro cao của scope v25–v33 (RBAC, migration, auth) chưa retest xong — không hạ theo thông lệ các scope trước. Phát hành ở phase 1 (spec + plan), code CHƯA build: danh sách file/module là dự kiến theo plan (task-01 skeleton, task-02 hàng đầu hiện tĩnh, task-03 e2e); bên test chưa test được hành vi mới cho tới khi task PASS — sẽ phát hành lại scope (scopeVersion tăng) với file thật khi xong. Kiểm cần trình duyệt thật (điều hướng + cuộn); Chromium/Edge cho scroll-driven animations, Firefox dùng dự phòng tĩnh. Delta: `spec/updates/2026-11-23-nav-skeleton-and-first-row-visible.md`."
   ]
 }
