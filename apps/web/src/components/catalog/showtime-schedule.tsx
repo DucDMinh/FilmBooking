@@ -32,6 +32,11 @@ export interface ShowtimeScheduleProps {
   onlineCutoffMinutes?: number;
   now?: Date;
   className?: string;
+  /**
+   * Khối rạp/suất đầu tiên của lịch này là HÀNG ĐẦU của mục dữ liệu trên trang: hiện đủ ngay, không scrub (NFR-19, AC-35).
+   * Mặc định false: trang có nhiều lịch xếp chồng (vd /lich-chieu) chỉ truyền true cho lịch đầu tiên để các khối sau vẫn hiện dần theo cuộn.
+   */
+  first?: boolean;
 }
 
 const WEEKDAY_NAMES: Record<number, string> = {
@@ -93,7 +98,8 @@ export interface ScheduleDateStripProps {
 
 /**
  * Dải 7 ngày chọn lịch chiếu (controlled) - dùng chung cho ShowtimeSchedule và trang /lich-chieu.
- * Nhóm A (đặt vé): từng chip hiện lần lượt từ trái sang phải theo một timeline chung của dải (design-spec §16.4).
+ * Dải là hàng dữ liệu đầu tiên của mục lịch chiếu (một hàng ngang duy nhất ở mọi breakpoint) nên mọi chip đánh dấu `first`:
+ * hiện đủ ngay, không scrub (NFR-19, AC-35). `ScrubGroup n/i` giữ nguyên để không đổi cấu trúc, CSS bỏ qua animation của chip.
  */
 export function ScheduleDateStrip({
   selectedDate,
@@ -111,6 +117,7 @@ export function ScheduleDateStrip({
             key={day.dateString}
             as="button"
             kind="ltr"
+            first
             i={index}
             type="button"
             onClick={() => onSelect(day.dateString)}
@@ -134,6 +141,7 @@ export function ShowtimeSchedule({
   onlineCutoffMinutes = 15,
   now = new Date(),
   className,
+  first = false,
 }: Readonly<ShowtimeScheduleProps>) {
   const next7Days = generateNext7Days(now);
   const defaultDate = next7Days[0]?.dateString ?? getVnDateString(now);
@@ -200,7 +208,7 @@ export function ShowtimeSchedule({
         />
       ) : (
         <div className="space-y-4">
-          {filteredSchedule.map((group) => {
+          {filteredSchedule.map((group, groupIndex) => {
             // Nhóm suất theo định dạng (2D / 3D) và ngôn ngữ (Phụ đề / Lồng tiếng)
             const groupedByFormat = new Map<string, ShowtimeDto[]>();
             for (const st of group.showtimes) {
@@ -217,6 +225,8 @@ export function ShowtimeSchedule({
               <Scrub
                 key={group.cinema.code}
                 kind="ltr"
+                // Chỉ khối đầu của lịch đầu tiên trên trang (prop `first`) hiện đủ ngay (NFR-19, AC-35); các khối sau vẫn hiện dần theo cuộn.
+                first={first && groupIndex === 0}
                 className="frame"
               >
                 <div className="frame-in p-4 sm:p-6">

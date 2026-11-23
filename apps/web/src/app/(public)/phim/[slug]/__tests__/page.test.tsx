@@ -2,7 +2,8 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getVnDateString } from "@/lib/vn-date";
-import MovieDetailPage from "../page";
+import { ApiError } from "@/lib/api/client";
+import MovieDetailPage, { generateMetadata } from "../page";
 
 const apiFetch = vi.fn();
 const push = vi.fn();
@@ -147,5 +148,28 @@ describe("/phim/[slug] page (bug phim-detail: 6 ngày còn lại luôn rỗng, �
     mockApi("coming_soon", []);
     await renderPage();
     expect(screen.getByText(/Sắp chiếu - Lịch chiếu sẽ được cập nhật sớm/)).toBeInTheDocument();
+  });
+});
+
+describe("/phim/[slug] — slug sai: bot nhận 404 qua generateMetadata (spec 3.6.1, CR-016)", () => {
+  const meta = () => generateMetadata({ params: Promise.resolve({ slug: "spider-man" }) });
+  // vi.mock ở đầu file thay ApiError bằng lớp không tham số (status/code là field), nên dựng bằng Object.assign.
+  const MockedApiError = ApiError as unknown as new () => Error;
+  const apiError = (status: number, code = "") => Object.assign(new MockedApiError(), { status, code });
+
+  it("API trả 404: generateMetadata gọi notFound()", async () => {
+    apiFetch.mockRejectedValue(apiError(404, "NOT_FOUND"));
+    await expect(meta()).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+
+  it("lỗi 5xx hoặc lỗi mạng: KHÔNG notFound, trả metadata mặc định", async () => {
+    apiFetch.mockRejectedValue(apiError(500, "UNKNOWN"));
+    await expect(meta()).resolves.toMatchObject({ title: "Thông tin phim | CINEMO" });
+    apiFetch.mockRejectedValue(new TypeError("fetch failed"));
+    await expect(meta()).resolves.toMatchObject({ title: "Thông tin phim | CINEMO" });
+  });
+
+  it("phim có dữ liệu: metadata theo phim, không notFound", async () => {
+    await expect(meta()).resolves.toMatchObject({ title: expect.stringContaining("Người Nhện") as string });
   });
 });

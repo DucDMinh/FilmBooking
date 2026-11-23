@@ -24,6 +24,12 @@ type ScrubProps<Tag extends ElementType> = PolymorphicProps<Tag> & {
   i?: number;
   /** Tổng số phần tử của nhóm. Bỏ trống thì kế thừa `--n` từ <ScrubGroup n> (hoặc 1 khi phần tử đứng riêng). */
   n?: number;
+  /**
+   * Hàng đầu của một mục dữ liệu (và tiêu đề ngay phía trên nó): KHÔNG chạy scrub, luôn hiện đủ từ lúc vào khung nhìn
+   * (NFR-19, AC-35). Chỉ dùng cho phần tử chắc chắn nằm ở hàng đầu ở MỌI breakpoint; lưới nhiều cột thì để container
+   * `data-scrub-grid` quyết định theo số cột thật (xem globals.css), không đoán ở đây.
+   */
+  first?: boolean;
 };
 
 /** React ghi custom property nguyên văn (không thêm `px`), nên số thuần dùng được trong calc(). */
@@ -36,6 +42,7 @@ function Scrub<Tag extends ElementType = "div">({
   kind,
   i,
   n,
+  first,
   as,
   className,
   style,
@@ -45,6 +52,7 @@ function Scrub<Tag extends ElementType = "div">({
   return (
     <Component
       data-scrub={kind}
+      data-scrub-first={first ? "" : undefined}
       className={className}
       style={withScrubVars(style, { "--i": i, "--n": n })}
       {...rest}

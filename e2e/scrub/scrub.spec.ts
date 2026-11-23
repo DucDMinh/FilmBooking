@@ -171,6 +171,18 @@ async function traceElement(page: Page, selector: string, index: number, from: n
   );
 }
 
+/**
+ * Chỉ số (trong querySelectorAll) của thẻ phim đầu tiên ở HÀNG THỨ HAI (CR-016: hàng đầu không scrub nên các phép thử
+ * "hiện muộn / thu về / ẩn trong vùng inset" phải dùng hàng thứ hai). Số cột thật tự suy ra từ bố cục.
+ */
+async function secondRowCardIndex(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll('[data-testid^="movie-card-"]'));
+    const firstTop = Math.round(cards[0]?.getBoundingClientRect().top ?? 0);
+    return cards.findIndex((c) => Math.round(c.getBoundingClientRect().top) > firstTop + 10);
+  });
+}
+
 async function qfieldState(page: Page) {
   return page.evaluate(async () => {
     await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
@@ -206,17 +218,20 @@ test.describe("trang chủ 1280x800", () => {
     const pin = await page.evaluate(() => getComputedStyle(document.querySelector(".hs-pin") as Element).position);
     expect(pin).toBe("sticky");
 
-    // Thẻ phim hiện đủ rồi cuộn về đầu trang: phải thu về opacity 0 (đảo ngược), không kẹt hiện.
-    const cardTop = await page.evaluate(() => (document.querySelector('[data-testid^="movie-card-"]') as Element).getBoundingClientRect().top + window.scrollY);
+    // Thẻ phim HÀNG THỨ HAI hiện đủ rồi cuộn về đầu trang: phải thu về opacity 0 (đảo ngược), không kẹt hiện.
+    // (Hàng đầu không scrub, CR-016: luôn opacity 1 kể cả khi cuộn về đầu trang, xem test (i).)
+    const row2 = await secondRowCardIndex(page);
+    expect(row2, "lưới phim phải có hàng thứ hai").toBeGreaterThan(0);
+    const cardTop = await page.evaluate((idx) => (document.querySelectorAll('[data-testid^="movie-card-"]')[idx] as Element).getBoundingClientRect().top + window.scrollY, row2);
     await scrollToY(page, cardTop - 300);
-    const shown = await traceElement(page, '[data-testid^="movie-card-"]', 0, cardTop - 300, cardTop - 300, 1);
+    const shown = await traceElement(page, '[data-testid^="movie-card-"]', row2, cardTop - 300, cardTop - 300, 1);
     expect(shown[0]?.opacity).toBe(1);
     await scrollToY(page, 0);
-    const hidden = await traceElement(page, '[data-testid^="movie-card-"]', 0, 0, 0, 1);
+    const hidden = await traceElement(page, '[data-testid^="movie-card-"]', row2, 0, 0, 1);
     expect(hidden[0]?.opacity).toBe(0);
   });
 
-  test("(c) thẻ phim hiện muộn: bắt đầu khi cách mép dưới >= 200px; hàng 2 hoàn tất khi còn cách mép dưới >= 200px", async ({ page }) => {
+  test("(c) thẻ phim hiện muộn từ hàng 2: hàng 1 luôn hiện đủ; hàng 2 bắt đầu khi cách mép dưới >= 200px và hoàn tất khi còn cách mép dưới >= 200px", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
     const layout = await page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll('[data-testid^="movie-card-"]'));
@@ -226,16 +241,25 @@ test.describe("trang chủ 1280x800", () => {
     });
     expect(layout.count).toBeGreaterThanOrEqual(8);
     expect(layout.rowTops.length).toBeGreaterThanOrEqual(2);
-    const row1 = layout.tops.findIndex((t) => t === layout.rowTops[0]);
+    const row1Indexes = layout.tops.map((t, i) => (t === layout.rowTops[0] ? i : -1)).filter((i) => i >= 0);
     const row2Indexes = layout.tops.map((t, i) => (t === layout.rowTops[1] ? i : -1)).filter((i) => i >= 0);
+    const row2First = row2Indexes[0] ?? -1;
+    expect(row2First).toBeGreaterThan(0);
 
-    // Thẻ hàng 1 cột 0: lần đầu opacity > 0.02.
-    const from1 = Math.max(0, (layout.rowTops[0] ?? 0) - layout.innerHeight - 40);
-    const t1 = await traceElement(page, '[data-testid^="movie-card-"]', row1, from1, (layout.rowTops[0] ?? 0) + 200, 6);
+    // Hàng 1 (CR-016, NFR-19): mọi thẻ luôn opacity 1, scale 1, translate 0 ở MỌI vị trí cuộn, kể cả khi còn nằm dưới khung nhìn.
+    for (const idx of row1Indexes) {
+      const traced = await traceElement(page, '[data-testid^="movie-card-"]', idx, 0, (layout.rowTops[0] ?? 0) + 200, 40);
+      const moving = traced.filter((s) => s.opacity < 0.999 || Math.abs(s.scale - 1) > 0.002 || Math.abs(s.tx) > 0.5);
+      expect(moving, `thẻ hàng 1 #${idx} không được scrub: ${JSON.stringify(moving.slice(0, 2))}`).toEqual([]);
+    }
+
+    // Thẻ hàng 2 cột 0: lần đầu opacity > 0.02.
+    const from1 = Math.max(0, (layout.rowTops[1] ?? 0) - layout.innerHeight - 40);
+    const t1 = await traceElement(page, '[data-testid^="movie-card-"]', row2First, from1, (layout.rowTops[1] ?? 0) + 200, 6);
     const begin = t1.find((s) => s.opacity > 0.02);
-    expect(begin, "thẻ hàng 1 phải bắt đầu hiện").toBeTruthy();
+    expect(begin, "thẻ hàng 2 phải bắt đầu hiện").toBeTruthy();
     const beginGap = layout.innerHeight - (begin?.top ?? 0);
-    { const note = { type: "bắt đầu hiện (hàng 1, cột 0)", description: `đỉnh thẻ cách mép dưới ${Math.round(beginGap)}px` }; test.info().annotations.push(note); console.log(`[${note.type}] ${note.description}`); }
+    { const note = { type: "bắt đầu hiện (hàng 2, cột 0)", description: `đỉnh thẻ cách mép dưới ${Math.round(beginGap)}px` }; test.info().annotations.push(note); console.log(`[${note.type}] ${note.description}`); }
     expect(beginGap).toBeGreaterThanOrEqual(200);
 
     // Mọi thẻ hàng 2: tới lúc hoàn tất (opacity 1, scale 1, translate 0) thì đỉnh thẻ còn cách mép dưới >= 200px.
@@ -251,6 +275,187 @@ test.describe("trang chủ 1280x800", () => {
     }
     { const note = { type: "hoàn tất (hàng 2)", description: gaps.join(", ") }; test.info().annotations.push(note); console.log(`[${note.type}] ${note.description}`); }
   });
+});
+
+// ---------------------------------------------------------------------------------------------
+// (i) CR-016 (NFR-19, AC-35): hàng dữ liệu đầu + tiêu đề phía trên luôn hiện đủ ở mọi vị trí cuộn, mọi cỡ màn
+// ---------------------------------------------------------------------------------------------
+/** Phần tử "hàng đầu": đánh dấu tay `[data-scrub-first]` + con ở hàng trên cùng (theo bố cục thật) của mỗi `[data-scrub-grid]`. */
+const MARK_FIRST_ROW_SCRIPT = () => {
+  const out = new Set<Element>(document.querySelectorAll("[data-scrub-first]"));
+  for (const grid of document.querySelectorAll("[data-scrub-grid]")) {
+    const kids = Array.from(grid.children).filter((c) => c.hasAttribute("data-scrub"));
+    const tops = kids.map((c) => Math.round(c.getBoundingClientRect().top));
+    const minTop = Math.min(...tops);
+    kids.forEach((c, i) => {
+      if (tops[i] === minTop) out.add(c);
+    });
+  }
+  for (const el of document.querySelectorAll("[data-e2e-first]")) el.removeAttribute("data-e2e-first");
+  for (const el of out) el.setAttribute("data-e2e-first", "");
+  return out.size;
+};
+
+/** Cỡ màn của test (i): thêm 768x1024 để phủ khoảng 560-1023px (lưới phim 3 cột, lưới rạp 2 cột). */
+const SIZES_I = [...SIZES, { name: "768x1024", width: 768, height: 1024 }] as const;
+
+/** Route có hàng dữ liệu từ thứ hai trở đi ở mọi cỡ màn thử (fixture mock: 14 phim, 3 rạp, mỗi rạp nhiều suất). */
+const ROUTES_WITH_LATER_ROWS = ["/", "/phim", "/rap/SGN1", "/phim/phim-1", "/lich-chieu", "/lich-chieu?cinema=SGN1"];
+
+/**
+ * Đánh dấu `data-e2e-deepest` lên phần tử scrub SÂU NHẤT không phải hàng đầu, nằm trong nội dung (không tính footer) và đang gắn
+ * animation cuộn; trả đỉnh của nó, hoặc null nếu không có (hàng sau bị mất chuyển động). Tìm lại bằng thuộc tính vì ảnh tải xong
+ * làm bố cục dịch chuyển nên không so khớp theo toạ độ.
+ */
+async function markDeepestLaterScrub(page: Page): Promise<number | null> {
+  return page.evaluate(() => {
+    for (const el of document.querySelectorAll("[data-e2e-deepest]")) el.removeAttribute("data-e2e-deepest");
+    const later = Array.from(document.querySelectorAll("[data-scrub]:not([data-e2e-first])")).filter(
+      (el) => !el.closest("footer") && getComputedStyle(el).animationName.includes("scrubPop"),
+    );
+    if (later.length === 0) return null;
+    const deepest = later.reduce((a, b) => (b.getBoundingClientRect().top > a.getBoundingClientRect().top ? b : a));
+    deepest.setAttribute("data-e2e-deepest", "");
+    return Math.round(deepest.getBoundingClientRect().top + window.scrollY);
+  });
+}
+
+for (const size of SIZES_I) {
+  test(`(i) hàng đầu không scrub ${size.name}: hiện đủ ở mọi vị trí cuộn (kể cả vừa vào khung nhìn và khi cuộn lên lại)`, async ({ page }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    const problems: string[] = [];
+    for (const route of ["/", "/phim", "/rap", "/rap/SGN1", "/phim/phim-1", "/lich-chieu"]) {
+      await page.goto(route, { waitUntil: "load" });
+      await page.evaluate(MARK_FIRST_ROW_SCRIPT);
+      const tops = await page.evaluate(() =>
+        Array.from(document.querySelectorAll("[data-e2e-first]")).map((el) => Math.round(el.getBoundingClientRect().top + window.scrollY)),
+      );
+      if (tops.length === 0) problems.push(`${route}: không tìm thấy phần tử hàng đầu nào (kiểm thử rỗng)`);
+      const positions = new Set<number>([0]);
+      for (const top of tops) {
+        for (const delta of [size.height + 40, size.height - 40, 300, 0]) positions.add(Math.max(0, top - delta));
+      }
+      const ordered = [...positions].sort((a, b) => b - a); // từ dưới lên: mô phỏng cuộn lên lại
+      for (const y of [...ordered, ...[...ordered].reverse()]) {
+        await scrollToY(page, y);
+        const bad = await page.evaluate(() => {
+          const out: string[] = [];
+          for (const el of document.querySelectorAll("[data-e2e-first]")) {
+            const cs = getComputedStyle(el);
+            const tx = cs.translate === "none" ? "0" : cs.translate;
+            const sc = cs.scale === "none" ? "1" : cs.scale;
+            if (parseFloat(cs.opacity) < 0.999 || !/^(0(px)?\s?)+$/.test(tx) || Math.abs(parseFloat(sc) - 1) > 0.002) {
+              out.push(`${el.tagName.toLowerCase()}[${el.getAttribute("data-scrub")}] opacity ${cs.opacity} translate ${cs.translate} scale ${cs.scale}`);
+            }
+            // Hàng đầu không còn animation nên clip-path của wipe/media phải là "none" (bắt cả trạng thái giữa chừng, không chỉ "100%").
+            for (const inner of el.querySelectorAll("[data-scrub-wipe], [data-scrub-media]")) {
+              const clip = getComputedStyle(inner).clipPath;
+              if (clip !== "none") out.push(`clip ${clip}`);
+            }
+            for (const rule of el.querySelectorAll("[data-scrub-rule]")) {
+              const t = getComputedStyle(rule).transform;
+              if (t !== "none" && t !== "matrix(1, 0, 0, 1, 0, 0)") out.push(`rule ${t}`);
+            }
+            for (const beam of el.querySelectorAll("[data-scrub-beam]")) {
+              if (parseFloat(getComputedStyle(beam).opacity) > 0.001) out.push(`beam opacity ${getComputedStyle(beam).opacity}`);
+            }
+          }
+          return out;
+        });
+        for (const b of new Set(bad)) problems.push(`${route}@${y}: ${b}`);
+      }
+    }
+    expect(problems.slice(0, 20), problems.slice(0, 20).join("\n")).toEqual([]);
+  });
+
+  test(`(i2) hàng sau VẪN scrub ${size.name}: có phần tử scrub không phải hàng đầu, ẩn khi vừa ló mép dưới và phần clip/tia quét chạy giữa chừng`, async ({ page }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    const problems: string[] = [];
+    let hiddenChecked = 0;
+    for (const route of ROUTES_WITH_LATER_ROWS) {
+      await page.goto(route, { waitUntil: "load" });
+      await page.evaluate(MARK_FIRST_ROW_SCRIPT);
+      const deepest = await markDeepestLaterScrub(page);
+      if (deepest === null) {
+        problems.push(`${route}: không có phần tử scrub nào ngoài hàng đầu (hàng sau bị mất chuyển động)`);
+        continue;
+      }
+      // Phần tử sâu nhất: cuộn để đỉnh của nó nằm cách mép dưới 40px (trong vùng inset) thì phải đang ẩn một phần.
+      const y = deepest - (size.height - 40);
+      if (y < 0) continue; // phần tử đã nằm trọn trong màn hình lúc vào trang, không thể ép về vùng inset
+      await scrollToY(page, y);
+      const opacity = await page.evaluate(() => {
+        const el = document.querySelector("[data-e2e-deepest]");
+        return el ? parseFloat(getComputedStyle(el).opacity) : null;
+      });
+      hiddenChecked++;
+      if (opacity === null || opacity >= 0.999) problems.push(`${route}: phần tử hàng sau sâu nhất (top ${deepest}) không bị ẩn khi ló mép dưới (opacity ${opacity})`);
+    }
+    expect(hiddenChecked, "phải có ít nhất 1 route kiểm được trạng thái ẩn của hàng sau").toBeGreaterThan(0);
+
+    // Giữa chừng: thẻ phim hàng sau ở /phim có clip-path đang mở dở và tia quét đang chạy ở một vài vị trí cuộn.
+    await page.goto("/phim", { waitUntil: "load" });
+    await page.evaluate(MARK_FIRST_ROW_SCRIPT);
+    const beamTop = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('[data-scrub="beam"]:not([data-e2e-first])'));
+      const last = cards.at(-1);
+      last?.setAttribute("data-e2e-beam", "");
+      return last ? Math.round(last.getBoundingClientRect().top + window.scrollY) : -1;
+    });
+    if (beamTop < 0) problems.push("/phim: không có thẻ phim hàng sau");
+    else {
+      const from = Math.max(0, beamTop - size.height - 200);
+      let sawPartialClip = false;
+      let beamAnimation = "";
+      let sawHalfOpacity = false;
+      for (let y = from; y <= beamTop + 100; y += 12) {
+        await scrollToY(page, y);
+        const s = await page.evaluate(() => {
+          const card = document.querySelector("[data-e2e-beam]");
+          if (!card) return null;
+          const media = card.querySelector("[data-scrub-media]");
+          const beam = card.querySelector("[data-scrub-beam]");
+          return {
+            opacity: parseFloat(getComputedStyle(card).opacity),
+            clip: media ? getComputedStyle(media).clipPath : "none",
+            beamAnimation: beam ? getComputedStyle(beam).animationName : "",
+          };
+        });
+        if (!s) continue;
+        if (s.clip !== "none" && !s.clip.includes("100%") && s.opacity < 0.999) sawPartialClip = true;
+        beamAnimation = s.beamAnimation;
+        if (s.opacity > 0.01 && s.opacity < 0.99) sawHalfOpacity = true;
+      }
+      if (!sawPartialClip) problems.push("/phim: không thấy clip-path poster mở dở ở thẻ hàng sau");
+      // Tia quét có timeline riêng rất ngắn (phần tử cao 3px) nên không lấy mẫu được giữa chừng; kiểm animation còn gắn vào thẻ hàng sau.
+      if (!beamAnimation.includes("beamLine")) problems.push(`/phim: tia quét thẻ hàng sau mất animation (animation-name: ${beamAnimation})`);
+      if (!sawHalfOpacity) problems.push("/phim: không thấy opacity trung gian ở thẻ hàng sau");
+    }
+    expect(problems.slice(0, 20), problems.slice(0, 20).join("\n")).toEqual([]);
+  });
+}
+
+// M-1 hồi quy (reviewer round 1): trang có nhiều lịch xếp chồng chỉ khối ĐẦU của lịch đầu tiên được `first`.
+test.describe("(i3) /lich-chieu: chỉ khối suất đầu tiên không scrub, các khối sau vẫn hiện dần (AC-35)", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+  for (const route of ["/lich-chieu", "/lich-chieu?cinema=SGN1", "/phim/phim-1"]) {
+    test(route, async ({ page }) => {
+      await page.goto(route, { waitUntil: "load" });
+      const frames = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('[data-scrub="ltr"].frame')).map((el) => ({
+          first: el.hasAttribute("data-scrub-first"),
+          animation: getComputedStyle(el).animationName,
+        })),
+      );
+      expect(frames.length, `${route}: cần >= 2 khối suất để phân biệt hàng đầu và hàng sau`).toBeGreaterThanOrEqual(2);
+      expect(frames[0]?.first).toBe(true);
+      expect(frames[0]?.animation).toBe("none");
+      for (const [index, frame] of frames.slice(1).entries()) {
+        expect(frame.first, `${route}: khối thứ ${index + 2} không được đánh dấu first`).toBe(false);
+        expect(frame.animation, `${route}: khối thứ ${index + 2} phải còn scrub`).toContain("scrubPop");
+      }
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -297,16 +502,19 @@ test.describe("focus", () => {
 
   test("(e) phần tử nhận focus trong vùng inset đáy hiện đủ (card + poster + vòng focus)", async ({ page }) => {
     await page.goto("/", { waitUntil: "load" });
-    const cardTop = await page.evaluate(() => (document.querySelector('[data-testid^="movie-card-"]') as Element).getBoundingClientRect().top + window.scrollY);
-    // Đặt thẻ đầu tiên nhô 120px ở mép đáy: nằm trong vùng inset (opacity 0).
+    // Dùng thẻ ở hàng THỨ HAI: hàng đầu không scrub (CR-016) nên không bao giờ ẩn trong vùng inset.
+    const row2 = await secondRowCardIndex(page);
+    expect(row2, "lưới phim phải có hàng thứ hai").toBeGreaterThan(0);
+    const cardTop = await page.evaluate((idx) => (document.querySelectorAll('[data-testid^="movie-card-"]')[idx] as Element).getBoundingClientRect().top + window.scrollY, row2);
+    // Đặt thẻ hàng 2 nhô 120px ở mép đáy: nằm trong vùng inset (opacity 0).
     await scrollToY(page, cardTop - (800 - 120));
-    const before = await page.evaluate(() => {
-      const card = document.querySelector('[data-testid^="movie-card-"]') as Element;
+    const before = await page.evaluate((idx) => {
+      const card = document.querySelectorAll('[data-testid^="movie-card-"]')[idx] as Element;
       return { opacity: parseFloat(getComputedStyle(card).opacity), top: card.getBoundingClientRect().top };
-    });
+    }, row2);
     expect(before.opacity, "thẻ phải đang ẩn (trong vùng inset) trước khi focus").toBeLessThan(0.5);
-    const after = await page.evaluate(async () => {
-      const card = document.querySelector('[data-testid^="movie-card-"]') as Element;
+    const after = await page.evaluate(async (idx) => {
+      const card = document.querySelectorAll('[data-testid^="movie-card-"]')[idx] as Element;
       const link = card.querySelector("a") as HTMLElement;
       link.focus({ preventScroll: true });
       await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
@@ -322,7 +530,7 @@ test.describe("focus", () => {
         ring: `${lcs.boxShadow} | outline ${lcs.outlineStyle} ${lcs.outlineWidth}`,
         focusVisible: link.matches(":focus-visible"),
       };
-    });
+    }, row2);
     expect(after.focused).toBe(true);
     expect(after.opacity).toBe("1");
     expect(after.mediaClip).toBe("none");

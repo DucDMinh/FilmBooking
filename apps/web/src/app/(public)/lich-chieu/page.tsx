@@ -135,7 +135,7 @@ function CinemaResults({
         />
       ) : (
         <div className="space-y-6">
-          {Array.from(byMovie.values()).map(({ movie, showtimes: movieShowtimes }) => (
+          {Array.from(byMovie.values()).map(({ movie, showtimes: movieShowtimes }, movieIndex) => (
             <div key={movie.slug} className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
                 <Badge tone="brand">
@@ -150,6 +150,8 @@ function CinemaResults({
                 schedule={[{ cinema: detail.cinema, showtimes: movieShowtimes }]}
                 selectedDate={date}
                 hideDateStrip
+                // Chỉ phim đầu tiên là hàng đầu của kết quả (NFR-19, AC-35); các phim sau vẫn hiện dần theo cuộn.
+                first={movieIndex === 0}
               />
             </div>
           ))}
@@ -159,7 +161,7 @@ function CinemaResults({
   );
 }
 
-function MovieBlock({ data, date }: Readonly<{ data: MovieScheduleDto; date: string }>) {
+function MovieBlock({ data, date, first }: Readonly<{ data: MovieScheduleDto; date: string; first: boolean }>) {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-3">
@@ -173,7 +175,7 @@ function MovieBlock({ data, date }: Readonly<{ data: MovieScheduleDto; date: str
           Chi tiết phim
         </Link>
       </div>
-      <ShowtimeSchedule movie={data.movie} schedule={data.schedule} selectedDate={date} hideDateStrip />
+      <ShowtimeSchedule movie={data.movie} schedule={data.schedule} selectedDate={date} hideDateStrip first={first} />
     </section>
   );
 }
@@ -196,8 +198,8 @@ function MovieResults({ blocks, date }: Readonly<{ blocks: MovieScheduleDto[]; d
 
   return (
     <div className="space-y-6">
-      {blocks.map((data) => (
-        <MovieBlock key={data.movie.slug} data={data} date={date} />
+      {blocks.map((data, index) => (
+        <MovieBlock key={data.movie.slug} data={data} date={date} first={index === 0} />
       ))}
     </div>
   );
@@ -236,6 +238,7 @@ export default async function LichChieuPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
       <SectionHeading
+        first
         level="h1"
         title="Lịch chiếu phim"
         description="Tra cứu suất chiếu theo phim hoặc cụm rạp trên toàn hệ thống CINEMO"

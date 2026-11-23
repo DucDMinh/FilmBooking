@@ -28,26 +28,36 @@ interface PageProps {
   searchParams: Promise<{ date?: string | string[]; province?: string }>;
 }
 
-async function fetchMovieData(slug: string, date?: string, province?: string): Promise<MovieScheduleDto | null> {
+/** `missing` = API trả 404/NOT_FOUND cho slug này (khác lỗi mạng/5xx: `data` null nhưng `missing` false). */
+async function loadMovieData(
+  slug: string,
+  date?: string,
+  province?: string,
+): Promise<{ data: MovieScheduleDto | null; missing: boolean }> {
   const query = new URLSearchParams();
   if (date) query.set("date", date);
   if (province) query.set("province", province);
   const qs = query.toString() ? `?${query.toString()}` : "";
 
   try {
-    return await apiFetch<MovieScheduleDto>(`/movies/${slug}${qs}`, PUBLIC_CACHE);
+    return { data: await apiFetch<MovieScheduleDto>(`/movies/${slug}${qs}`, PUBLIC_CACHE), missing: false };
   } catch (error) {
-    if (error instanceof ApiError && (error.status === 404 || error.code === "NOT_FOUND")) {
-      return null;
-    }
-    // Trả về null khi không kết nối được hoặc lỗi máy chủ để SSR graceful
-    return null;
+    // data null khi không kết nối được hoặc lỗi máy chủ để SSR graceful
+    return { data: null, missing: error instanceof ApiError && (error.status === 404 || error.code === "NOT_FOUND") };
   }
+}
+
+async function fetchMovieData(slug: string, date?: string, province?: string): Promise<MovieScheduleDto | null> {
+  return (await loadMovieData(slug, date, province)).data;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const data = await fetchMovieData(slug);
+  const { data, missing } = await loadMovieData(slug);
+
+  // Spec 3.6.1 (CR-016): slug sai thì công cụ tìm kiếm phải nhận HTTP 404 (bot không stream skeleton nên đổi được status ở đây;
+  // trình duyệt thường đã nhận 200 + khung trang và được chấp nhận). Chỉ 404 thật từ API, lỗi 5xx/mạng giữ metadata mặc định.
+  if (missing) notFound();
 
   if (!data?.movie) {
     return {
@@ -100,7 +110,7 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
         {/* Khối Hero thông tin chi tiết phim */}
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr]">
           {/* Poster phim */}
-          <Scrub kind="left" className="space-y-4">
+          <Scrub kind="left" first className="space-y-4">
             <div className="frame">
             <div className="frame-in relative aspect-[2/3] w-full overflow-hidden bg-surface-elevated">
               {movie.posterUrl ? (
@@ -133,7 +143,7 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
           </Scrub>
 
           {/* Thông tin metadata và nội dung phim */}
-          <Scrub kind="right" className="flex flex-col justify-between space-y-6">
+          <Scrub kind="right" first className="flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="brand">{isComingSoon ? "Sắp chiếu" : "Đang chiếu"}</Badge>
@@ -209,6 +219,7 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
         {/* Luồng đặt vé: Stepper và Lịch chiếu */}
         <section id="lich-chieu" className="space-y-6 border-t border-border pt-8">
           <SectionHeading
+            first
             title="Lịch chiếu"
             description="Chọn ngày và suất chiếu phù hợp tại rạp gần bạn nhất"
           />
@@ -217,6 +228,7 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
           <BookingStepper currentStep={1} />
 
           <MovieShowtimeSchedule
+            first
             movie={movie}
             schedule={schedule}
             selectedDate={activeDate}

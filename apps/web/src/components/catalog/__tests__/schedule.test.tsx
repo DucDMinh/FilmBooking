@@ -238,6 +238,40 @@ describe("ShowtimeSchedule (showtime-schedule.tsx)", () => {
     expect(screen.getByRole("link", { name: /Đặt vé suất 15:00/i })).toBeInTheDocument();
   });
 
+  describe("prop `first` (hàng đầu không scrub, NFR-19 / AC-35)", () => {
+    const showtime = {
+      id: "st-today",
+      roomId: "room-1",
+      startsAt: "2026-11-15T08:00:00.000Z",
+      endsAt: "2026-11-15T10:18:00.000Z",
+      format: "2D",
+      languageMode: "SUBTITLED",
+      status: "ON_SALE",
+    } as const;
+    const twoCinemas = [
+      { cinema: { code: "HN01", name: "CINEMO Long Biên" }, showtimes: [showtime] },
+      { cinema: { code: "HN02", name: "CINEMO Cầu Giấy" }, showtimes: [{ ...showtime, id: "st-2" }] },
+    ];
+    const frames = (container: HTMLElement) => Array.from(container.querySelectorAll('[data-scrub="ltr"].frame'));
+
+    it("mặc định (không truyền first): không khối rạp nào bị đánh dấu, mọi khối vẫn scrub", () => {
+      const { container } = render(
+        <ShowtimeSchedule schedule={twoCinemas} selectedDate={todayVnStr} hideDateStrip now={fixedNow} />,
+      );
+      expect(frames(container)).toHaveLength(2);
+      expect(container.querySelectorAll("[data-scrub-first]")).toHaveLength(0);
+    });
+
+    it("first: chỉ khối rạp đầu tiên được đánh dấu, các khối sau vẫn scrub", () => {
+      const { container } = render(
+        <ShowtimeSchedule first schedule={twoCinemas} selectedDate={todayVnStr} hideDateStrip now={fixedNow} />,
+      );
+      const [firstFrame, secondFrame] = frames(container);
+      expect(firstFrame).toHaveAttribute("data-scrub-first");
+      expect(secondFrame).not.toHaveAttribute("data-scrub-first");
+    });
+  });
+
   it("phim sắp chiếu chưa có suất hiển thị thông báo 'Sắp chiếu - Lịch chiếu sẽ được cập nhật sớm' (R-45)", () => {
     const comingSoonMovie: MovieDto = {
       ...MOCK_MOVIE,

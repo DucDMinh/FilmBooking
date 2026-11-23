@@ -69,6 +69,7 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
     <div className="space-y-8">
       {/* Hero header */}
       <SectionHeading
+        first
         level="h1"
         kicker="Mạng lưới CINEMO toàn quốc"
         title="Hệ thống rạp chiếu phim"
@@ -102,7 +103,7 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
 
       {/* Danh sách rạp */}
       <section aria-labelledby="cinema-list-heading" className="space-y-6">
-        <SectionHeading id="cinema-list-heading" title={`${selectedProvinceName} (${cinemas.length} rạp)`} />
+        <SectionHeading first id="cinema-list-heading" title={`${selectedProvinceName} (${cinemas.length} rạp)`} />
 
         {cinemas.length === 0 ? (
           <EmptyState
@@ -121,7 +122,8 @@ export default async function RapPage({ searchParams }: Readonly<RapPageProps>) 
             }
           />
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          // data-scrub-grid="cinema": hàng đầu (1 / 2 / 3 thẻ theo grid-cols bên dưới) không scrub, xem globals.css
+          <div data-scrub-grid="cinema" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {cinemas.map((cinema, index) => {
               const cinemaId = cinema.id ?? "";
               const isFav = Boolean(cinemaId && favoriteIds.includes(cinemaId));
