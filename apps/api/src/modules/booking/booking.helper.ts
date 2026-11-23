@@ -106,13 +106,14 @@ interface BuildSummaryParams {
   seats: Array<{ seat_id: string; seat_label: string; seat_type: string; price_amount: number }>;
   combos?: Array<{ id: string; combo_id: string; combo_name: string; quantity: number; unit_price: number; total_price: number }> | null;
   voucher: { code: string; discount: number } | null;
+  noRefundWarning?: string;
 }
 
 /**
  * Xây dựng tóm tắt đơn hàng trả về cho khách (R-70).
  */
 export function buildBookingSummary(params: BuildSummaryParams): BookingSummaryResponse {
-  const { order, cinema, showtime, seats, combos, voucher } = params;
+  const { order, cinema, showtime, seats, combos, voucher, noRefundWarning } = params;
   const holdExpiresAt = order.hold_expires_at ? new Date(order.hold_expires_at) : null;
   const expiresInSeconds = holdExpiresAt ? Math.max(0, Math.floor((holdExpiresAt.getTime() - Date.now()) / 1000)) : 0;
   const movieRel = showtime?.movies as { age_rating?: string; poster_url?: string } | undefined;
@@ -166,12 +167,33 @@ export function buildBookingSummary(params: BuildSummaryParams): BookingSummaryR
       total: order.total_amount,
     },
     voucher,
+    ...(noRefundWarning ? { noRefundWarning } : {}),
     consent: {
       consented: Boolean(order.consent_at),
       consentAt: order.consent_at,
     },
     ageConfirmed: order.age_confirmed,
   };
+}
+
+/**
+ * Nội dung cảnh báo không hoàn tiền do Admin cấu hình (R-106). Thiếu, rỗng hoặc lỗi đọc thì trả undefined
+ * để web dùng nội dung mặc định: cấu hình không được làm hỏng tóm tắt đơn hay chặn thanh toán.
+ */
+export async function readNoRefundWarning(db: SupabaseClient): Promise<string | undefined> {
+  try {
+    const { data, error } = await db.from("app_settings").select("value").eq("key", "no_refund_warning").maybeSingle();
+    if (error) {
+      // Chỉ log mã/thông điệp lỗi, không log nội dung cấu hình.
+      logger.warn(`Cannot read app_settings.no_refund_warning: ${(error as { message?: string }).message ?? "unknown"}`);
+      return undefined;
+    }
+    const value = (data as { value?: unknown } | null)?.value;
+    return typeof value === "string" && value.trim() !== "" ? value : undefined;
+  } catch (err) {
+    logger.warn(`Cannot read app_settings.no_refund_warning: ${err instanceof Error ? err.message : String(err)}`);
+    return undefined;
+  }
 }
 
 /**

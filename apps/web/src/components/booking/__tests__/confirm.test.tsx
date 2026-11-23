@@ -7,6 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import OrderConfirmPage from "@/app/(public)/dat-ve/don/[id]/xac-nhan/page";
+import { DEFAULT_NO_REFUND_POLICY } from "@/components/booking/no-refund-warning";
 import { VoucherInput } from "@/components/booking/voucher-input";
 import type * as apiClient from "@/lib/api/client";
 import { ApiError, apiFetch } from "@/lib/api/client";
@@ -128,6 +129,47 @@ describe("OrderConfirmPage", () => {
     expect(screen.getByRole("button", { name: /Thanh toán 424\.000/ })).toBeInTheDocument();
     // Không tính lại ở client: chỉ 1 lần gọi API (tải đơn), combo giả không đi qua apiFetch.
     expect(mockedFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("CR-019: hiện nội dung cảnh báo Admin cấu hình thay câu mặc định, giữ xuống dòng, vẫn nêu rạp + giờ chiếu (R-71)", async () => {
+    mockedFetch.mockResolvedValueOnce(makeSummary({ noRefundWarning: "Vé không hoàn tiền.\nKiểm tra kỹ suất chiếu." }));
+    render(<OrderConfirmPage />);
+
+    const policy = await screen.findByTestId("no-refund-policy");
+    expect(policy).toHaveTextContent("Vé không hoàn tiền.");
+    expect(policy).toHaveTextContent("Kiểm tra kỹ suất chiếu.");
+    expect(policy.textContent).toBe("Vé không hoàn tiền.\nKiểm tra kỹ suất chiếu.");
+    expect(policy).toHaveClass("whitespace-pre-line");
+    expect(policy).toHaveClass("break-words");
+    expect(screen.queryByText(DEFAULT_NO_REFUND_POLICY)).not.toBeInTheDocument();
+    const warning = screen.getByRole("region", { name: "Cảnh báo không huỷ, không hoàn vé" });
+    expect(warning).toHaveTextContent("CINEMO Long Biên - 12 Nguyễn Văn Cừ, Long Biên");
+    expect(warning).toHaveTextContent("19:30");
+    expect(warning).toHaveTextContent("11/11/2026");
+  });
+
+  it("CR-019: nội dung Admin chứa HTML được hiển thị như chữ, không render thành phần tử", async () => {
+    mockedFetch.mockResolvedValueOnce(makeSummary({ noRefundWarning: '<img src=x onerror="alert(1)"><b>đậm</b>' }));
+    render(<OrderConfirmPage />);
+
+    const policy = await screen.findByTestId("no-refund-policy");
+    expect(policy.textContent).toBe('<img src=x onerror="alert(1)"><b>đậm</b>');
+    expect(policy.querySelector("img, b")).toBeNull();
+  });
+
+  it("CR-019: không có cấu hình (hoặc chỉ khoảng trắng) -> dùng câu mặc định, vẫn thanh toán được sau khi đồng ý", async () => {
+    const user = userEvent.setup();
+    mockedFetch.mockResolvedValueOnce(makeSummary({ noRefundWarning: "   " }));
+    render(<OrderConfirmPage />);
+
+    expect((await screen.findByTestId("no-refund-policy")).textContent).toBe(
+      "Vé đã thanh toán không thể huỷ, đổi hoặc hoàn tiền. Vui lòng kiểm tra kỹ suất chiếu, ghế và rạp trước khi thanh toán.",
+    );
+    expect(DEFAULT_NO_REFUND_POLICY).toBe(
+      "Vé đã thanh toán không thể huỷ, đổi hoặc hoàn tiền. Vui lòng kiểm tra kỹ suất chiếu, ghế và rạp trước khi thanh toán.",
+    );
+    await user.click(screen.getByRole("checkbox", { name: /đồng ý điều kiện vé/ }));
+    expect(screen.getByRole("button", { name: /Thanh toán 325\.000/ })).toBeEnabled();
   });
 
   it("đơn đang pending_payment: không cho đổi combo", async () => {

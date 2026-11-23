@@ -144,6 +144,8 @@ export interface BookingSummaryResponse {
     code: string;
     discount: number;
   } | null;
+  /** Nội dung cảnh báo không hoàn tiền Admin cấu hình (app_settings.no_refund_warning, R-106); vắng thì web dùng mặc định. */
+  noRefundWarning?: string;
   consent: {
     consented: boolean;
     consentAt: string | null;

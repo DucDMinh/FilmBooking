@@ -1,9 +1,9 @@
 {
   "specVersion": "3.7.0",
-  "scopeVersion": 37,
-  "generatedAt": "2026-11-23T20:30:00+07:00",
-  "trigger": "feature-update",
-  "workItem": "feature/concession-combo",
+  "scopeVersion": 38,
+  "generatedAt": "2026-11-23T22:00:00+07:00",
+  "trigger": "bug-fix",
+  "workItem": "bug/no-refund-warning-config",
   "specRefs": [
     "R-138",
     "NFR-19",
@@ -74,7 +74,8 @@
     "R-69",
     "R-72",
     "R-86",
-    "R-100"
+    "R-100",
+    "R-131"
   ],
   "changed": {
     "files": [
@@ -389,7 +390,11 @@
       "spec/updates/2026-11-23-concession-combo.md",
       "tasks/feature-concession-combo/phase-1-task-01.md",
       "tasks/feature-concession-combo/phase-2-task-02.md",
-      "tasks/feature-concession-combo/phase-3-task-03.md"
+      "tasks/feature-concession-combo/phase-3-task-03.md",
+      "apps/api/src/modules/booking/__tests__/booking-no-refund-warning.spec.ts",
+      "tasks/bug-no-refund-warning-config/phase-1-task-01.md",
+      "spec/changes/2026-11-23-no-refund-warning-config.md",
+      "spec/updates/2026-11-23-no-refund-warning-config.md"
     ],
     "modules": [
       "web-form-controls (select)",
@@ -462,7 +467,10 @@
       "web-booking-concession (concession-selector: ảnh/tên/mô tả/đơn giá + stepper tối đa 20; PriceBreakdown liệt kê combo; xac-nhan)",
       "web-ticket-combos (ket-qua + ve/[bookingCode] qua TicketDetail liệt kê combo)",
       "api-mail-ticket-combos (jobs.controller enrich combo từ order_combos cho email vé)",
-      "checkin-combos (checkin.service + staff checkin-result chỉ HIỂN THỊ combo của đơn)"
+      "checkin-combos (checkin.service + staff checkin-result chỉ HIỂN THỊ combo của đơn)",
+      "api-booking-no-refund-warning (booking.helper `loadNoRefundWarning`: đọc `app_settings.no_refund_warning`; booking.service `getBookingSummary` thêm `noRefundWarning?`; thiếu/rỗng/không phải chuỗi/lỗi đọc → bỏ trường, log chỉ message không log nội dung)",
+      "shared-schemas (booking: `BookingSummaryResponse.noRefundWarning?: string`)",
+      "web-booking-no-refund-warning (no-refund-warning.tsx: `NoRefundWarning` nhận `policyText`, fallback `DEFAULT_NO_REFUND_POLICY` = nguyên văn câu seed, `whitespace-pre-line break-words`, văn bản thuần; xac-nhan/page.tsx truyền `noRefundWarning`)"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -974,6 +982,24 @@
         "spec/CHANGELOG.md",
         "spec/test-scope/current.json",
         "docs/changes/TECHNICAL_REQUIREMENT_GAPS.md"
+      ],
+      "bug-no-refund-warning-config/phase-1-task-01": [
+        "apps/api/src/modules/booking/booking.helper.ts",
+        "apps/api/src/modules/booking/booking.service.ts",
+        "apps/api/src/modules/booking/__tests__/booking-no-refund-warning.spec.ts",
+        "packages/shared/src/schemas/booking.ts",
+        "apps/web/src/components/booking/no-refund-warning.tsx",
+        "apps/web/src/components/booking/__tests__/confirm.test.tsx",
+        "apps/web/src/app/(public)/dat-ve/don/[id]/xac-nhan/page.tsx",
+        "docs/API_SPEC.md",
+        "tasks/bug-no-refund-warning-config/phase-1-task-01.md"
+      ],
+      "bug-no-refund-warning-config/spec-publish-scope-38": [
+        "spec/changes/2026-11-23-no-refund-warning-config.md",
+        "spec/updates/2026-11-23-no-refund-warning-config.md",
+        "spec/CHANGELOG.md",
+        "spec/test-scope/current.json",
+        "docs/changes/TECHNICAL_REQUIREMENT_GAPS.md"
       ]
     }
   },
@@ -1092,7 +1118,13 @@
       "[scope v37 / feature-concession-combo, CR-018] web.confirm.concession-selector (R-69, R-70) — `/dat-ve/don/[id]/xac-nhan`: section 'Bắp nước & Combo' có ảnh, tên, mô tả, đơn giá VND và stepper [- n +] (tối đa 20/combo, không âm); mỗi lần đổi gọi `PUT /bookings/:id/combos` và PriceBreakdown liệt kê từng combo `tên × số lượng` + thành tiền, tổng thanh toán cập nhật ngay; combo không ảnh/ảnh lỗi dùng ảnh dự phòng (`remote-image`). Nhãn 'Bắp nước & Combo' nằm ở tiêu đề section, không phải dòng riêng trong PriceBreakdown.",
       "[scope v37 / feature-concession-combo, CR-018] web.ticket.combos (R-133, R-70) — `/dat-ve/don/[id]/ket-qua` và `/ve/[bookingCode]` (qua `TicketDetail`): đơn đã thanh toán có combo thì liệt kê tên × số lượng; đơn không có combo thì KHÔNG hiện mục combo.",
       "[scope v37 / feature-concession-combo, CR-018] mail.ticket.combos (R-86) — email vé có dòng 'Bắp nước'/'Combo' (tên × số lượng) cho đơn có combo (dữ liệu enrich từ `order_combos` ở `jobs.controller`); đơn không combo không có mục này. Đã có test template + enrichment (mail-templates.spec, outbox-job.e2e-spec).",
-      "[scope v37 / feature-concession-combo, CR-018] checkin.combos-display (R-100, R-98) — `/staff/soat-ve` quét QR hợp lệ: kết quả hiển thị combo của đơn (tên × số lượng) cho nhân viên phát bắp nước. MVP CHỈ HIỂN THỊ: KHÔNG có cờ 'đã phát/đã nhận combo' và không có màn nhận combo tách khỏi soát vé (GAP-037) — quét lại cùng mã vẫn thấy combo."
+      "[scope v37 / feature-concession-combo, CR-018] checkin.combos-display (R-100, R-98) — `/staff/soat-ve` quét QR hợp lệ: kết quả hiển thị combo của đơn (tên × số lượng) cho nhân viên phát bắp nước. MVP CHỈ HIỂN THỊ: KHÔNG có cờ 'đã phát/đã nhận combo' và không có màn nhận combo tách khỏi soát vé (GAP-037) — quét lại cùng mã vẫn thấy combo.",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] web.no-refund-warning.admin-config (R-106, R-71, R-131, R-133 (3)) — BUG FIX (requirement KHÔNG đổi, không bump spec_version 3.7.0): khối cảnh báo ở `/dat-ve/don/[id]/xac-nhan` nay hiển thị nội dung Admin lưu ở `app_settings.no_refund_warning` (`/admin/cau-hinh`, tối đa 1000 ký tự) thay cho câu cố định trong code. Admin đổi nội dung → khách thấy nội dung mới ở lần mở/tải lại trang xác nhận kế tiếp (không cần build lại, không cần đăng nhập lại).",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] api.bookings.get.noRefundWarning (R-106) — `GET /bookings/:id` (BookingSummaryResponse) thêm trường tuỳ chọn `noRefundWarning?: string`: có giá trị khi cấu hình là chuỗi không rỗng; cấu hình thiếu / rỗng / toàn khoảng trắng / không phải chuỗi / lỗi đọc DB → trường bị BỎ (không phải null, không phải chuỗi rỗng), API vẫn 200, không chặn thanh toán; lỗi đọc chỉ log `error.message`, KHÔNG log nội dung cấu hình. Không đổi route, quyền, mã lỗi hay DB/migration.",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] web.no-refund-warning.fallback (R-106, R-71) — thiếu / rỗng / toàn khoảng trắng / lỗi đọc cấu hình → web hiển thị câu mặc định `DEFAULT_NO_REFUND_POLICY` = NGUYÊN VĂN câu seed SQL `app_settings.no_refund_warning` (\"Vé đã thanh toán không thể huỷ, đổi hoặc hoàn tiền. Vui lòng kiểm tra kỹ suất chiếu, ghế và rạp trước khi thanh toán.\"); hằng này là bản sao của seed nên đổi seed bằng migration mới phải đổi cả hằng (GAP-041).",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] web.no-refund-warning.plain-text (R-106) — nội dung Admin hiển thị như VĂN BẢN THUẦN: ký tự xuống dòng được giữ (`whitespace-pre-line`), chuỗi dài không tràn (`break-words`, `min-w-0`), nội dung có HTML/script (vd `<b>`, `<img onerror>`, `<script>`) hiện đúng như chữ, KHÔNG được render thành thẻ (không `dangerouslySetInnerHTML`). Câu chính sách do Admin cấu hình không còn in đậm cụm \"không thể huỷ, đổi hoặc hoàn tiền\" như câu cố định cũ (chủ ý).",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] web.no-refund-warning.venue-line (R-71, R-133 (3)) — dòng địa điểm luôn hiển thị kể cả khi dùng nội dung Admin: \"Vé chỉ dùng tại {tên rạp} - {địa chỉ}, suất {giờ} ngày {ngày}.\" (tên rạp + địa chỉ + giờ chiếu theo giờ VN) tách khỏi câu chính sách; checkbox \"Tôi đã đọc và đồng ý\" và nút Thanh toán chỉ bật khi tick (AC-08) KHÔNG đổi.",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] web.no-refund-warning.policy-dialog-not-covered (R-133 (3), (5); GAP-041) — HIỆN TRẠNG ĐÃ BIẾT, không phải lỗi của scope này: `PolicyConfirmDialog` (hộp thoại xác nhận trước khi thanh toán), email vé (TICKET_ISSUED) và trang chi tiết vé (`/ve/[bookingCode]`, `/dat-ve/don/[id]/ket-qua`) CHƯA dùng `no_refund_warning`; hộp thoại vẫn dùng câu cố định \"Vé đã mua không huỷ, không đổi, không hoàn tiền.\" và chưa nêu ngoại lệ \"trừ rạp huỷ suất\". Test KHÔNG được kỳ vọng nội dung Admin ở 3 nơi này."
     ],
     "dependents": [
       "[scope v34 / feature-nav-skeleton-first-row, CR-016] DEPENDENT QuickBookBar + hero trang chủ (R-138, AC-31, NFR-19) — skeleton/loading ở trang chủ phải khớp vị trí/cỡ thanh Đặt vé nhanh và hero (thanh vẫn cao 44px, opacity 1, không CLS); sau khi dữ liệu về, thanh hoạt động như cũ (Rạp → Phim → Ngày → Giờ, chưa chọn tỉnh mở hộp chọn tỉnh).",
@@ -1186,7 +1218,10 @@
       "[scope v37 / feature-concession-combo, CR-018] DEPENDENT voucher (R-90..R-95, GAP-040) — `apply_voucher_core`/`sync_order_combos` giảm giá trên TOÀN subtotal (gồm combo), KHÔNG đọc `vouchers.applies_to`: voucher loại vé-only vẫn giảm được tiền combo (hiện trạng đã biết, không phải lỗi mới của test); `min_order` tính trên subtotal gồm combo; đổi combo làm tụt dưới `min_order` thì voucher bị gỡ.",
       "[scope v37 / feature-concession-combo, CR-018] DEPENDENT huỷ suất / hoàn tiền (R-110, AC-25, R-109) — đơn có combo bị huỷ/hoàn: spec chưa nói combo có được hoàn hay không (GAP-040); hoàn theo `total` của đơn. Test chỉ ghi nhận hành vi hiện tại, không khẳng định đúng/sai.",
       "[scope v37 / feature-concession-combo, CR-018] DEPENDENT báo cáo doanh thu (R-112 'tách vé và combo') — CHƯA kiểm: báo cáo hiện có tách tiền combo khỏi tiền vé hay không (CR-018 không đổi báo cáo). Bên test cần soát.",
-      "[scope v37 / feature-concession-combo, CR-018] DEPENDENT hợp đồng DTO — `BookingSummaryResponse.combos`, payload `mail.ticket`, DTO kết quả soát vé và `database.types.ts` có thêm `combos`/`order_combos`; client khác dùng các DTO này cần xử lý trường mới (mảng rỗng khi đơn không có combo)."
+      "[scope v37 / feature-concession-combo, CR-018] DEPENDENT hợp đồng DTO — `BookingSummaryResponse.combos`, payload `mail.ticket`, DTO kết quả soát vé và `database.types.ts` có thêm `combos`/`order_combos`; client khác dùng các DTO này cần xử lý trường mới (mảng rỗng khi đơn không có combo).",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] DEPENDENT hợp đồng DTO `BookingSummaryResponse` (`packages/shared`, `docs/API_SPEC.md`) — thêm trường tuỳ chọn `noRefundWarning`; client khác dùng DTO này coi trường là có thể vắng, không giả định luôn có.",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] DEPENDENT trang cấu hình Admin (R-106, `/admin/cau-hinh`) — không đổi; giới hạn 1000 ký tự và quyền chỉ Admin giữ nguyên. Giá trị Admin lưu nay hiển thị cho KHÁCH ở màn xác nhận đơn, nên nội dung nhập là nội dung công khai và hiện nguyên văn như chữ.",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] DEPENDENT bằng chứng đồng ý (R-71, R-133 (6), AC-08) — `POST /bookings/:id/consent` không đổi: phiên bản điều khoản vẫn là chuỗi điều khoản hiện hành (`CONSENT_VERSION_INVALID` giữ 409); nội dung cảnh báo Admin tại thời điểm đồng ý KHÔNG được lưu kèm bằng chứng đồng ý (hiện trạng)."
     ],
     "regression": [
       "[scope v26 / feature-cinema-status-notice] REGRESSION cancel_showtimes sau refactor core (R-108, R-109, AC-24, AC-25) — huỷ suất tay: suất `cancelled`, ghế nhả, đơn paid -> affected, email SHOWTIME_CANCELLED từng đơn, preview số đơn/vé, lý do bắt buộc, Manager chỉ rạp mình, race huỷ ‖ check-in/thanh toán không deadlock (pgTAP 043/064/065 không đổi kết quả).",
@@ -1335,7 +1370,10 @@
       "[scope v37 / feature-concession-combo, CR-018] REGRESSION đặt vé KHÔNG chọn combo (R-59..R-72): tổng tiền = tiền ghế − voucher như trước; PriceBreakdown không hiện dòng combo; vé/email/màn soát vé không có mục combo; thanh toán PayOS đơn không combo không đổi.",
       "[scope v37 / feature-concession-combo, CR-018] REGRESSION giữ ghế, đếm giờ giữ chỗ, đồng ý điều khoản (R-61..R-67, R-71) và áp/gỡ voucher (R-90..R-95) trên trang xác nhận không đổi khi trang có thêm section combo; đổi combo không làm kéo dài hay reset thời gian giữ ghế.",
       "[scope v37 / feature-concession-combo, CR-018] REGRESSION soát vé (R-97..R-99, R-101): quét QR hợp lệ / đã dùng / sai rạp / sai suất vẫn cho kết quả đúng, đơn không combo hiển thị như cũ; tải combo thất bại không được làm hỏng kết quả soát vé.",
-      "[scope v37 / feature-concession-combo, CR-018] REGRESSION ảnh từ xa (`remote-image`) dùng ở các màn khác (poster, ảnh rạp, avatar) không đổi hành vi khi ảnh lỗi / không có ảnh."
+      "[scope v37 / feature-concession-combo, CR-018] REGRESSION ảnh từ xa (`remote-image`) dùng ở các màn khác (poster, ảnh rạp, avatar) không đổi hành vi khi ảnh lỗi / không có ảnh.",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] REGRESSION checkbox gating + hộp thoại xác nhận (R-71, R-133, AC-08) — chưa tick → nút Thanh toán vô hiệu; tick → bật; hộp thoại trước thanh toán vẫn nêu đúng tên + địa chỉ rạp + giờ chiếu; luồng consent → thanh toán PayOS không đổi.",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] REGRESSION trang xác nhận đơn (R-69, R-72, R-90..R-95) — chọn combo, áp voucher, đồng hồ giữ chỗ, PriceBreakdown, liên kết \"Cập nhật hồ sơ\" khi `DOB_REQUIRED` không đổi khi khối cảnh báo nhận nội dung cấu hình; `GET /bookings/:id` vẫn trả đủ `seats`, `cinema`, `showtime`, `combos` như trước.",
+      "[scope v38 / bug-no-refund-warning-config, CR-019] REGRESSION bố cục (NFR-11, NFR-12) — nội dung Admin dài (tới 1000 ký tự, nhiều dòng, chuỗi không có khoảng trắng) không gây thanh cuộn ngang ở 360px / 390×844 và không làm mất checkbox hay nút Thanh toán khỏi màn hình khi cuộn."
     ]
   },
   "acceptance": [
@@ -1452,7 +1490,13 @@
     "[scope v37 / feature-concession-combo, CR-018] A6 (R-133, R-70): Given đơn đã thanh toán có combo When mở `/dat-ve/don/[id]/ket-qua` và `/ve/[bookingCode]` Then thấy danh sách combo tên × số lượng; đơn không combo thì không có mục combo.",
     "[scope v37 / feature-concession-combo, CR-018] A7 (R-86): Given đơn đã thanh toán có combo When gửi email vé Then email có dòng 'Bắp nước'/'Combo' liệt kê tên × số lượng; đơn không combo không có dòng này.",
     "[scope v37 / feature-concession-combo, CR-018] A8 (R-100, R-98): Given vé đơn có combo When nhân viên quét QR ở `/staff/soat-ve` (đúng rạp, hợp lệ) Then kết quả hiển thị combo của đơn để phát bắp nước; KHÔNG có nút/cờ 'đã phát combo' (MVP chỉ hiển thị — GAP-037). Test KHÔNG được kỳ vọng tính năng đánh dấu đã nhận combo.",
-    "[scope v37 / feature-concession-combo, CR-018] A9 (hiện trạng đã biết, KHÔNG phải lỗi của scope này): Admin chưa có màn/endpoint quản lý combo, combo chỉ qua seed (GAP-039); combo chung toàn chuỗi, chưa bật/tắt/giá theo rạp (GAP-038); voucher loại vé-only/combo-only vẫn giảm trên toàn subtotal (GAP-040); chưa có luồng nhận combo tại quầy tách khỏi soát vé (GAP-037)."
+    "[scope v37 / feature-concession-combo, CR-018] A9 (hiện trạng đã biết, KHÔNG phải lỗi của scope này): Admin chưa có màn/endpoint quản lý combo, combo chỉ qua seed (GAP-039); combo chung toàn chuỗi, chưa bật/tắt/giá theo rạp (GAP-038); voucher loại vé-only/combo-only vẫn giảm trên toàn subtotal (GAP-040); chưa có luồng nhận combo tại quầy tách khỏi soát vé (GAP-037).",
+    "[scope v38 / bug-no-refund-warning-config, CR-019] A1 (R-106, R-71): Given Admin lưu \"Nội dung cảnh báo không hoàn tiền\" = X ở `/admin/cau-hinh` When khách (đã đăng nhập) mở hoặc tải lại `/dat-ve/don/[id]/xac-nhan` của đơn đang giữ ghế Then khối cảnh báo hiển thị đúng X (không còn câu cố định cũ) kèm dòng \"Vé chỉ dùng tại {tên rạp} - {địa chỉ}, suất {giờ} ngày {ngày}\"; `GET /bookings/:id` trả `noRefundWarning` = X.",
+    "[scope v38 / bug-no-refund-warning-config, CR-019] A2 (R-106): Given Admin đổi X thành Y rồi lưu When khách mở lại (tải lại) trang xác nhận Then thấy Y ngay ở lần mở kế tiếp, không cần build/deploy lại.",
+    "[scope v38 / bug-no-refund-warning-config, CR-019] A3 (R-106, R-71): Given cấu hình thiếu, rỗng, toàn khoảng trắng hoặc đọc lỗi When mở trang xác nhận Then khối cảnh báo hiển thị câu mặc định đúng nguyên văn seed (\"Vé đã thanh toán không thể huỷ, đổi hoặc hoàn tiền. Vui lòng kiểm tra kỹ suất chiếu, ghế và rạp trước khi thanh toán.\"), API vẫn 200 (trường `noRefundWarning` vắng), checkbox và nút Thanh toán hoạt động bình thường.",
+    "[scope v38 / bug-no-refund-warning-config, CR-019] A4 (R-106): Given nội dung cấu hình chứa HTML như `<b>đậm</b> <img src=x onerror=alert(1)>` When hiển thị Then hiện đúng chuỗi ký tự đó như chữ, không có thẻ `<b>`/`<img>` trong DOM của khối cảnh báo, không chạy script; nội dung nhiều dòng giữ đúng xuống dòng.",
+    "[scope v38 / bug-no-refund-warning-config, CR-019] A5 (R-71, R-133 (3), AC-08): Given bất kỳ nội dung cấu hình nào (kể cả rỗng) When mở trang xác nhận Then dòng tên rạp + địa chỉ + giờ chiếu luôn có; chưa tick checkbox thì nút Thanh toán vô hiệu, tick thì bật; hộp thoại xác nhận trước thanh toán không đổi.",
+    "[scope v38 / bug-no-refund-warning-config, CR-019] A6 (hiện trạng đã biết, KHÔNG phải lỗi của scope này, GAP-041): `PolicyConfirmDialog`, email vé và trang chi tiết vé chưa dùng nội dung cấu hình Admin; hằng mặc định ở web là bản sao chữ seed SQL. Test KHÔNG được kỳ vọng nội dung Admin ở các nơi này."
   ],
   "risk": "high",
   "notes": [
@@ -1468,6 +1512,7 @@
     "[scope v34 / feature-nav-skeleton-first-row, CR-016] Feature MODIFY (UI trang khách), spec MINOR 3.6.0 (SỬA NFR-19, THÊM NFR-20 + AC-35; tổng 20/20 NFR, 31/31 AC). KHÔNG đổi API/DB/migration/nghiệp vụ. Rủi ro RIÊNG của change này là medium (shared skeleton + CSS Scrub toàn cục + thêm loading.tsx); trường `risk` của file này giữ `high` vì file là scope TÍCH LUỸ còn mang các vùng rủi ro cao của scope v25–v33 (RBAC, migration, auth) chưa retest xong — không hạ theo thông lệ các scope trước. Phát hành ở phase 1 (spec + plan), code CHƯA build: danh sách file/module là dự kiến theo plan (task-01 skeleton, task-02 hàng đầu hiện tĩnh, task-03 e2e); bên test chưa test được hành vi mới cho tới khi task PASS — sẽ phát hành lại scope (scopeVersion tăng) với file thật khi xong. Kiểm cần trình duyệt thật (điều hướng + cuộn); Chromium/Edge cho scroll-driven animations, Firefox dùng dự phòng tĩnh. Delta: `spec/updates/2026-11-23-nav-skeleton-and-first-row-visible.md`. [ĐÃ THAY THẾ bởi scope v35: code đã build, merge và kiểm chứng; danh sách file ở changed.files là file thật, không còn 'dự kiến'.]",
     "[scope v35 / feature-nav-skeleton-first-row, CR-016] Phát hành lại sau khi hiện thực xong, spec PATCH 3.6.1 (làm rõ R-137, AC-28, NFR-20: mã rạp/slug phim không tồn tại nhận HTTP 200 + noindex + giao diện không tìm thấy cho MỌI client kể cả Googlebot/Bingbot; không đổi mã R-*, user chấp nhận 2026-11-23). KHÔNG đổi API/DB/migration/nghiệp vụ. Rủi ro riêng medium; trường `risk` giữ `high` vì scope tích luỹ. Bộ Playwright `pnpm exec playwright test -c playwright.scrub.config.ts` ghi 55 passed (nav-skeleton 20 + scrub 35, task-03); test (5b) bot đã sửa theo 3.6.1. RESIDUAL: bot KHÔNG nhận 404 vì khung được stream trước khi biết mã sai; cách duy nhất để 404 thật là bỏ skeleton ở `/rap/[code]` và `/phim/[slug]` (đánh đổi NFR-20); CLS 0.3675 từng đo ở /phim/phim-1 khi tính cả shift sát lúc nhấn (hadRecentInput, không vào CLS chuẩn; không lặp lại); /rap và trang chủ cache chi tiết rạp 60s nên /rap/<mã> chỉ lạnh khi đi từ trang không gọi API rạp; chưa Lighthouse/axe chính thức; Firefox/Safari dự phòng tĩnh. Script `scripts/seed-showtimes-week.mjs` (seed suất chiếu N ngày tới, tooling, commit 06b6de2) có thể giúp bên test có dữ liệu. Delta: `spec/updates/2026-11-23-nav-skeleton-and-first-row-visible.md`.",
     "[scope v36 / bug-booking-error-messages, CR-017] Bug-fix, KHÔNG bump spec (giữ 3.6.1; không đổi requirement, đưa về đúng R-68/R-71/R-94). risk giữ `high` (không hạ, scope tích luỹ). Reviewer STRICT (round 1 FAIL do thiếu test SeatPicker DOB_REQUIRED, đã bổ sung; round 2 PASS). ĐỔI HTTP STATUS: `POST /bookings/holds` 400 → 422 (4 mã DOB_REQUIRED/SEAT_REQUIRED/DUPLICATE_SEATS/INVALID_SEATS), `POST /bookings/:id/consent` 400 → 409 (CONSENT_VERSION_INVALID), voucher lỗi lạ 400 → 500 INTERNAL_ERROR. Không đổi DB/migration/RPC/body request. Verify ở repo gốc sau merge 8ff2d52: shared 39, api 692, web 697 test PASS, typecheck + lint sạch. RESIDUAL: API gần như không phát SEAT_REQUIRED (zod seatIds.min(1) chặn trước bằng 400); VOUCHER_NOT_APPLICABLE_CINEMA chưa có đường phát từ apply_voucher_core; voucher mã lạ nay 500 sinh sự kiện Sentry; payment `resolveRedirectUrl` còn VALIDATION_ERROR khi WEB_ORIGIN cấu hình lệch; CHƯA chạy thật với Supabase local + tài khoản chưa có ngày sinh đặt phim T18. Bên test cần: tài khoản khách chưa nhập ngày sinh, phim T13/T16/T18, đơn đang giữ để thử consent/voucher. Delta: `spec/updates/2026-11-23-booking-error-messages.md`.",
-    "[scope v37 / feature-concession-combo, CR-018] Feature MODIFY, spec MINOR 3.7.0 (kích hoạt R-58, R-69, R-100 từ GĐ2 sang MVP; liên quan R-70, R-72, R-86, R-133). risk RIÊNG của change này là `high` (tiền / thanh toán: đổi công thức tổng tiền đơn, migration mới `20261123120000_concession_combo.sql` thêm bảng `combos`, `order_combos` và RPC `sync_order_combos`, ảnh hưởng PayOS, voucher, email vé, soát vé); trường `risk` giữ `high`. Scope 37 được hiệu chỉnh sau spec-validator final round 1 (FAIL vì scope chưa có entry combo và wording R-58/R-69/R-100 hứa quá): bổ sung specRefs R-58/R-69/R-72/R-86/R-100 + entry combo, làm rõ spec (cùng spec 3.7.0, chưa commit nên không tăng scopeVersion). HIỆN TRẠNG ĐÃ BIẾT (ghi trong `docs/changes/TECHNICAL_REQUIREMENT_GAPS.md`): GAP-037 chưa có đánh dấu/nhận combo tại quầy (MVP chỉ hiển thị khi soát vé); GAP-038 combo chung toàn chuỗi, BRD/roadmap GĐ2 mô tả theo rạp, chờ PO; GAP-039 chưa có Admin quản lý combo, ảnh seed `/images/combos/*.webp` chưa có asset; GAP-040 voucher `applies_to` chưa được áp theo loại, hoàn/huỷ/mốc giá chốt/tồn kho combo chưa quy định. Bên test cần: DB local đã áp migration 20261123120000, đơn đang giữ ghế để thử `PUT /bookings/:id/combos`, voucher có `min_order`. RESIDUAL: chưa có pgTAP cho `sync_order_combos` và chưa có e2e `PUT /bookings/:id/combos` (chỉ test mock `booking-combos.spec.ts`); chưa có test mail vé có combo. Delta: `spec/updates/2026-11-23-concession-combo.md`."
+    "[scope v37 / feature-concession-combo, CR-018] Feature MODIFY, spec MINOR 3.7.0 (kích hoạt R-58, R-69, R-100 từ GĐ2 sang MVP; liên quan R-70, R-72, R-86, R-133). risk RIÊNG của change này là `high` (tiền / thanh toán: đổi công thức tổng tiền đơn, migration mới `20261123120000_concession_combo.sql` thêm bảng `combos`, `order_combos` và RPC `sync_order_combos`, ảnh hưởng PayOS, voucher, email vé, soát vé); trường `risk` giữ `high`. Scope 37 được hiệu chỉnh sau spec-validator final round 1 (FAIL vì scope chưa có entry combo và wording R-58/R-69/R-100 hứa quá): bổ sung specRefs R-58/R-69/R-72/R-86/R-100 + entry combo, làm rõ spec (cùng spec 3.7.0, chưa commit nên không tăng scopeVersion). HIỆN TRẠNG ĐÃ BIẾT (ghi trong `docs/changes/TECHNICAL_REQUIREMENT_GAPS.md`): GAP-037 chưa có đánh dấu/nhận combo tại quầy (MVP chỉ hiển thị khi soát vé); GAP-038 combo chung toàn chuỗi, BRD/roadmap GĐ2 mô tả theo rạp, chờ PO; GAP-039 chưa có Admin quản lý combo, ảnh seed `/images/combos/*.webp` chưa có asset; GAP-040 voucher `applies_to` chưa được áp theo loại, hoàn/huỷ/mốc giá chốt/tồn kho combo chưa quy định. Bên test cần: DB local đã áp migration 20261123120000, đơn đang giữ ghế để thử `PUT /bookings/:id/combos`, voucher có `min_order`. RESIDUAL: chưa có pgTAP cho `sync_order_combos` và chưa có e2e `PUT /bookings/:id/combos` (chỉ test mock `booking-combos.spec.ts`); chưa có test mail vé có combo. Delta: `spec/updates/2026-11-23-concession-combo.md`.",
+    "[scope v38 / bug-no-refund-warning-config, CR-019] Bug-fix, KHÔNG bump spec (giữ 3.7.0; không đổi requirement, đưa web/API về đúng R-106 + R-71 + R-131/R-133). risk giữ `high` (không hạ, scope tích luỹ; riêng change này thấp: không đổi DB/migration/RPC/route, chỉ thêm 1 trường tuỳ chọn ở `GET /bookings/:id`). Reviewer NORMAL (round 1 FAIL M1: câu fallback web lệch chữ seed, nay dùng hằng `DEFAULT_NO_REFUND_POLICY` = nguyên văn seed + test, kèm m1 tràn chữ, m2 log; round 2 PASS). Verify reviewer round 2: shared 44, api 714 (32 file), web 760 (56 file), scripts 31 test PASS, typecheck + lint sạch. RESIDUAL: GAP-041 (PolicyConfirmDialog, email vé, chi tiết vé chưa dùng cấu hình; hằng mặc định web là bản sao seed SQL); CHƯA chạy thật với Supabase local + Admin đổi cấu hình rồi mở trang xác nhận (test mock); nội dung cảnh báo tại thời điểm đồng ý không lưu cùng bằng chứng đồng ý. Bên test cần: tài khoản Admin (đổi cấu hình), tài khoản khách và đơn đang giữ ghế; thử xoá trắng cấu hình để thấy câu mặc định. Delta: `spec/updates/2026-11-23-no-refund-warning-config.md`."
   ]
 }

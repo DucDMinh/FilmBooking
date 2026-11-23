@@ -17,11 +17,17 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
+/** Nguyên văn nội dung seed của app_settings.no_refund_warning (migration core_identity_chain): dùng khi chưa có cấu hình. */
+export const DEFAULT_NO_REFUND_POLICY =
+  "Vé đã thanh toán không thể huỷ, đổi hoặc hoàn tiền. Vui lòng kiểm tra kỹ suất chiếu, ghế và rạp trước khi thanh toán.";
+
 type Venue = Pick<BookingSummaryResponse, "cinema" | "showtime">;
 
 export interface NoRefundWarningProps extends Venue {
   agreed: boolean;
   onAgreedChange: (agreed: boolean) => void;
+  /** Nội dung Admin cấu hình (app_settings.no_refund_warning); vắng thì dùng câu mặc định. Luôn hiển thị như văn bản thuần. */
+  policyText?: string;
   /** Có khi phim T13+ mà đơn chưa xác nhận tuổi (R-68). */
   ageCheck?: { checked: boolean; onChange: (checked: boolean) => void };
 }
@@ -30,6 +36,7 @@ export interface NoRefundWarningProps extends Venue {
 export function NoRefundWarning({
   cinema,
   showtime,
+  policyText,
   agreed,
   onAgreedChange,
   ageCheck,
@@ -39,18 +46,23 @@ export function NoRefundWarning({
       aria-label="Cảnh báo không huỷ, không hoàn vé"
       className="space-y-3 border-l-[3px] border-danger bg-danger-soft p-4"
     >
-      <p className="flex items-start gap-2 text-body-sm">
+      <div className="flex items-start gap-2 text-body-sm">
         <TriangleAlert className="mt-0.5 size-4 shrink-0 text-danger-strong" aria-hidden="true" />
-        <span>
-          Vé đã mua <strong>không thể huỷ, đổi hoặc hoàn tiền</strong>, trừ trường hợp rạp huỷ suất. Vé chỉ dùng
-          tại{" "}
-          <strong>
-            {cinema.name} - {cinema.address}
-          </strong>
-          , suất <strong>{formatShowTime(showtime.startsAt)}</strong> ngày{" "}
-          <strong>{formatShowDate(showtime.startsAt)}</strong>.
-        </span>
-      </p>
+        <div className="min-w-0 space-y-1">
+          {/* Văn bản thuần: React tự thoát HTML, pre-line giữ xuống dòng Admin nhập, break-words chặn chuỗi liền dài tràn ngang. */}
+          <p data-testid="no-refund-policy" className="whitespace-pre-line break-words">
+            {policyText?.trim() || DEFAULT_NO_REFUND_POLICY}
+          </p>
+          <p>
+            Vé chỉ dùng tại{" "}
+            <strong>
+              {cinema.name} - {cinema.address}
+            </strong>
+            , suất <strong>{formatShowTime(showtime.startsAt)}</strong> ngày{" "}
+            <strong>{formatShowDate(showtime.startsAt)}</strong>.
+          </p>
+        </div>
+      </div>
       <div className="flex items-start gap-3">
         <Checkbox id="consent-no-refund" checked={agreed} onCheckedChange={(v) => onAgreedChange(v === true)} />
         <Label htmlFor="consent-no-refund" className="text-body-sm leading-snug">

@@ -26,6 +26,7 @@
 | CR-016 | Điều hướng tức thì kèm skeleton trang (bỏ chờ tải xong mới chuyển) + dòng dữ liệu đầu tiên (phim, lịch chiếu, hệ thống rạp) hiện ngay, không phải cuộn mới thấy | MODIFY | done | [2026-11-23-nav-skeleton-and-first-row-visible.md](archive/2026-11-23-nav-skeleton-and-first-row-visible.md) | 2026-11-23 | 2026-11-23 |
 | CR-017 | Lỗi đặt vé hiện chung chung "Dữ liệu chưa hợp lệ", cần ghi đúng nguyên nhân (thiếu ngày sinh, ghế không hợp lệ, điều khoản, voucher...) | BUG | done | [2026-11-23-booking-error-messages.md](archive/2026-11-23-booking-error-messages.md) | 2026-11-23 | 2026-11-23 |
 | CR-018 | Thêm chức năng đặt combo bắp nước vào đoạn thanh toán (kích hoạt R-58, R-69, R-72, R-100) | MODIFY | done | [2026-11-23-concession-combo.md](archive/2026-11-23-concession-combo.md) | 2026-11-23 | 2026-11-23 |
+| CR-019 | Nội dung cảnh báo không hoàn tiền Admin cấu hình (R-106) không hiển thị ở trang thanh toán, màn xác nhận dùng câu cố định | BUG | done | [2026-11-23-no-refund-warning-config.md](archive/2026-11-23-no-refund-warning-config.md) | 2026-11-23 | 2026-11-23 |
 
 ## Quy tắc tracking
 

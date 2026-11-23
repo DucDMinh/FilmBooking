@@ -150,6 +150,7 @@ export default function OrderConfirmPage() {
           <NoRefundWarning
             cinema={summary.cinema}
             showtime={summary.showtime}
+            policyText={summary.noRefundWarning}
             agreed={agreed}
             onAgreedChange={setAgreed}
             ageCheck={needsAge ? { checked: ageChecked, onChange: setAgeChecked } : undefined}

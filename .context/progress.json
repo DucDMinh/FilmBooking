@@ -522,6 +522,27 @@
       },
       "note": "Verify: pnpm test shared 44 / api 705 / web 757 PASS, typecheck + lint PASS; pgTAP 073 31/31 ok trong transaction rollback (migration chưa apply vào DB dev). Gap: GAP-037 (R-100 chưa có cờ đã phát, soát vé USED không kèm combo), GAP-038 (BRD per-cinema), GAP-039 (Admin CRUD combo + ảnh seed thiếu asset), GAP-040 (voucher applies_to, hoàn/huỷ/tồn kho). Residual: race voucher↔combo, voucher gỡ không báo, chưa e2e HTTP/Playwright, chưa kiểm trực quan responsive. 3 phase commit gộp một lần vì file chồng nhau và phase 1-2 chưa commit ở session trước.",
       "updatedAt": "2026-11-23T07:55:36.597Z"
+    },
+    {
+      "id": "no-refund-warning-config",
+      "title": "Nội dung cảnh báo không hoàn tiền Admin cấu hình (R-106) hiển thị ở khối cảnh báo trang xác nhận/thanh toán thay câu cố định (CR-019; spec 3.7.0 không bump, scope v38)",
+      "class": "BUG",
+      "status": "done",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 API trả noRefundWarning, web NoRefundWarning policyText + fallback nguyên văn seed, API_SPEC",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "NORMAL",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/bug-no-refund-warning-config-phase-1-task-01-round-2-review.md"
+          }
+        }
+      ],
+      "note": "Verify: pnpm test shared 44 / api 714 / web 760 PASS, typecheck + lint PASS. Gap GAP-041: PolicyConfirmDialog, email vé, chi tiết vé chưa dùng cấu hình; hằng mặc định web là bản sao chữ seed SQL. Residual: chưa kiểm trực quan 375/768/1280, chưa e2e luồng Admin đổi nội dung.",
+      "updatedAt": "2026-11-23T08:42:18.395Z"
     }
   ],
   "bugs": [
@@ -999,7 +1020,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-23T07:55:36.598Z",
+  "lastUpdated": "2026-11-23T08:42:18.395Z",
   "inProgressTask": null,
   "completedTasks": [
     {

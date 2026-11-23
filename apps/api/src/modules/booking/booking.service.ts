@@ -15,6 +15,7 @@ import {
   ensureOrderAccessOrThrow,
   handleHoldError,
   handleVoucherBusinessError,
+  readNoRefundWarning,
   resolveVoucherSummary,
   verifyOrderActionEligibility,
 } from "./booking.helper";
@@ -126,11 +127,12 @@ export class BookingService {
       }
     }
 
-    const [seatsRes, cinemaRes, showtimeRes, combosRes] = await Promise.all([
+    const [seatsRes, cinemaRes, showtimeRes, combosRes, noRefundWarning] = await Promise.all([
       userDb.from("order_seats").select("seat_id, seat_label, seat_type, price_amount").eq("order_id", orderId),
       userDb.from("cinemas").select("address, district").eq("id", order.cinema_id).maybeSingle(),
       userDb.from("showtimes").select("movie_id, format, movies(age_rating, poster_url)").eq("id", order.showtime_id).maybeSingle(),
       userDb.from("order_combos").select("id, combo_id, combo_name, quantity, unit_price, total_price").eq("order_id", orderId),
+      readNoRefundWarning(userDb),
     ]);
 
     const voucher = await resolveVoucherSummary(this.supabase.admin(), orderId, order.discount_amount);
@@ -142,6 +144,7 @@ export class BookingService {
       seats: seatsRes.data ?? [],
       combos: combosRes.data ?? [],
       voucher,
+      noRefundWarning,
     });
   }
 
