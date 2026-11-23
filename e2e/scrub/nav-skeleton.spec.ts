@@ -88,6 +88,16 @@ async function settleThenClick(link: Locator, page: Page): Promise<void> {
 }
 
 /**
+ * Chờ nội dung thật của trang: `load` có thể xảy ra khi React còn giữ khung chờ (loading.tsx / Suspense) và nội dung đã stream về vẫn nằm
+ * trong khối ẩn (React gom việc "mở" Suspense tối đa vài trăm ms), nhất là ở lần tải đầu khi cache còn lạnh. Đo trước lúc đó sẽ thấy
+ * các phần tử scrub có top = 0 (display:none) và khung chờ thay cho lưới thật.
+ */
+async function waitForRealContent(page: Page): Promise<void> {
+  await expect(page.locator(SKELETON)).toHaveCount(0, { timeout: 15_000 });
+  await page.waitForFunction(() => Array.from(document.querySelectorAll("[data-scrub]")).some((el) => el.getClientRects().length > 0));
+}
+
+/**
  * Điều hướng phía client bằng `window.next.router.push` (như bấm một <Link>), kèm sự kiện click giả ngay trước để bộ ghi lấy mốc t0.
  * /rap và trang chủ đều gọi `/cinemas/<mã>?date=` của mọi rạp (cache 60s) nên /rap/<mã> chỉ "lạnh" khi xuất phát từ trang không gọi API rạp.
  */
@@ -240,11 +250,12 @@ test.describe("(3) hàng đầu hiện ngay khi vừa ló, hàng sau hiện dầ
       const problems: string[] = [];
       for (const route of ["/", "/phim", "/rap"]) {
         await page.goto(route, { waitUntil: "load" });
+        await waitForRealContent(page);
         // Đánh dấu: hàng đầu = [data-scrub-first] + con ở hàng trên cùng của mỗi [data-scrub-grid]; "hàng sau" = phần tử scrub sâu nhất ngoài chân trang.
         const setup = await page.evaluate(() => {
           const first = new Set<Element>(document.querySelectorAll("[data-scrub-first]"));
           for (const grid of document.querySelectorAll("[data-scrub-grid]")) {
-            const kids = Array.from(grid.children).filter((c) => c.hasAttribute("data-scrub"));
+            const kids = Array.from(grid.children).filter((c) => c.hasAttribute("data-scrub") && c.getClientRects().length > 0);
             const tops = kids.map((c) => Math.round(c.getBoundingClientRect().top));
             const minTop = Math.min(...tops);
             kids.forEach((c, i) => { if (tops[i] === minTop) first.add(c); });
@@ -372,7 +383,7 @@ test.describe("(4) skeleton và prefers-reduced-motion", () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// (5) HTTP theo user-agent cho mã rạp / slug phim sai (spec 3.6.1: trình duyệt thường 200 + noindex, bot 404)
+// (5) HTTP theo user-agent cho mã rạp / slug phim sai (spec 3.6.1: mọi client 200 + noindex + giao diện không tìm thấy)
 // ---------------------------------------------------------------------------------------------
 const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 const GOOGLEBOT_UA = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
@@ -414,19 +425,20 @@ test("(5a) trình duyệt thường: mã rạp / slug phim sai nhận 200 + noin
   expect(problems, problems.join("\n")).toEqual([]);
 });
 
-// PHÁT HIỆN LỆCH SPEC (CR-016, builder phase-3-task-03): Next KHÔNG coi Googlebot là bot "htmlLimited" (Googlebot chạy được JS nên
-// được stream metadata như trình duyệt), nên `notFound()` trong generateMetadata không đổi được status: Googlebot nhận 200 + noindex.
-// Spec 3.6.1 viết "404 cho bot" nên kỳ vọng ở đây giữ nguyên là 404; `test.fail` chỉ ghi nhận lỗi đã biết để bộ kiểm không đỏ cố định
-// và sẽ báo "unexpected pass" khi lỗi được sửa (lúc đó xoá dòng test.fail).
-test("(5b) bot (Googlebot, Bingbot): mã rạp / slug phim sai nhận 404 (spec 3.6.1) [lỗi đã biết, test.fail]", async ({ request }) => {
-  test.fail(true, "Bot nhận 200 + noindex thay vì 404 (đo ở Googlebot và Bingbot), xem ghi chú phía trên");
+// ĐO THỰC TẾ (CR-016): khi có loading.tsx khung trang được stream trước nên `notFound()` (kể cả trong generateMetadata) không đổi được
+// status. Googlebot không thuộc htmlLimitedBots của Next (stream metadata như trình duyệt); Bingbot thuộc nhưng cũng nhận 200. Spec 3.6.1
+// ghi đúng hành vi này (user chấp nhận 2026-11-23): mọi client nhận 200 + noindex + giao diện không tìm thấy. Nếu sau này đổi cơ chế để
+// bot nhận 404 thật thì test này sẽ đỏ và phải cập nhật spec cùng lúc.
+test("(5b) bot (Googlebot, Bingbot): mã rạp / slug phim sai nhận 200 + noindex + giao diện không tìm thấy (spec 3.6.1)", async ({ request }) => {
   const problems: string[] = [];
   for (const [who, ua] of [["Googlebot", GOOGLEBOT_UA], ["Bingbot", BINGBOT_UA]] as const) {
     for (const path of WRONG_PATHS) {
       const r = await probe(request, path, ua);
       console.log(`[http ${who}] ${path}: ${describeProbe(r)}`);
       test.info().annotations.push({ type: `HTTP ${who}`, description: `${path}: ${describeProbe(r)}` });
-      if (r.status !== 404) problems.push(`${path}: ${who} nhận ${r.status}, spec 3.6.1 nói 404`);
+      if (r.status !== 200) problems.push(`${path}: ${who} nhận ${r.status}, spec 3.6.1 nói 200 (khi có skeleton)`);
+      if (!r.noindex) problems.push(`${path}: ${who} không có <meta robots noindex> (${r.robots || "không có thẻ robots"})`);
+      if (!r.notFoundUi) problems.push(`${path}: ${who} không thấy giao diện "Không tìm thấy trang"`);
     }
   }
   expect(problems, problems.join("\n")).toEqual([]);
