@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { HUD_LABEL } from "@/components/auth/auth-ui";
 import { ApiError, apiFetch } from "@/lib/api/client";
 
+const VOUCHER_CODE_MAX_LENGTH = 50; // khớp schema API applyVoucherSchema.code
+
 export interface VoucherInputProps {
   orderId: string;
   /** Mã đang áp dụng (nếu có). */
@@ -37,8 +39,15 @@ export function VoucherInput({ orderId, appliedCode, onChanged }: Readonly<Vouch
     }
   }
 
-  const apply = () =>
-    run(() => apiFetch(`/bookings/${orderId}/voucher`, { method: "POST", json: { code: code.trim() } }), true);
+  const apply = () => {
+    const trimmed = code.trim();
+    // Kiểm phía client để khách thấy đúng nguyên nhân thay vì lỗi biểu mẫu chung từ API.
+    if (!trimmed) return setError("Vui lòng nhập mã giảm giá.");
+    if (trimmed.length > VOUCHER_CODE_MAX_LENGTH) {
+      return setError(`Mã giảm giá tối đa ${VOUCHER_CODE_MAX_LENGTH} ký tự.`);
+    }
+    return run(() => apiFetch(`/bookings/${orderId}/voucher`, { method: "POST", json: { code: trimmed } }), true);
+  };
   const remove = () => run(() => apiFetch(`/bookings/${orderId}/voucher`, { method: "DELETE" }), false);
 
   if (appliedCode) {
@@ -67,7 +76,7 @@ export function VoucherInput({ orderId, appliedCode, onChanged }: Readonly<Vouch
       className="space-y-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (code.trim()) void apply();
+        void apply();
       }}
     >
       <Label htmlFor="voucher-code" className={HUD_LABEL}>Mã giảm giá</Label>

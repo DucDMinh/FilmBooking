@@ -24,9 +24,9 @@
 | 401 | `UNAUTHENTICATED`, `REAUTH_REQUIRED`, `PAYMENT_SIGNATURE_INVALID`, `JOB_SECRET_INVALID` |
 | 403 | `FORBIDDEN`, `FORBIDDEN_CINEMA`, `EMAIL_NOT_CONFIRMED`, `AGE_RESTRICTED` |
 | 404 | `NOT_FOUND`, `VOUCHER_NOT_FOUND`, `TICKET_NOT_FOUND` |
-| 409 | `CONFLICT`, `SEAT_TAKEN`, `SALES_CLOSED`, `HOLD_EXISTS`, `SHOWTIME_CANCELLED`, `SHOWTIME_NOT_OPEN`, `CINEMA_NOT_OPEN`, `MOVIE_NOT_PUBLISHED`, `CONSENT_REQUIRED`, `WRONG_CINEMA`, `TICKET_USED`, `TICKET_NOT_PAID`, `CHECKIN_OUTSIDE_WINDOW` |
+| 409 | `CONFLICT`, `SEAT_TAKEN`, `SALES_CLOSED`, `HOLD_EXISTS`, `SHOWTIME_CANCELLED`, `SHOWTIME_NOT_OPEN`, `CINEMA_NOT_OPEN`, `MOVIE_NOT_PUBLISHED`, `CONSENT_REQUIRED`, `CONSENT_VERSION_INVALID`, `WRONG_CINEMA`, `TICKET_USED`, `TICKET_NOT_PAID`, `CHECKIN_OUTSIDE_WINDOW` |
 | 410 | `HOLD_EXPIRED` |
-| 422 | `DISPOSABLE_EMAIL`, `ORPHAN_SEAT`, `HOLD_LIMIT`, `VOUCHER_EXPIRED`, `VOUCHER_EXHAUSTED`, `VOUCHER_MIN_ORDER`, `VOUCHER_NOT_APPLICABLE_SHOWTIME`, `VOUCHER_NOT_APPLICABLE_CINEMA`, `PAYMENT_AMOUNT_MISMATCH` (một số route nghiệp vụ cũng trả 422 cho dữ liệu sai: giá/ghi hoàn tiền thiếu trường) |
+| 422 | `DISPOSABLE_EMAIL`, `ORPHAN_SEAT`, `HOLD_LIMIT`, `DOB_REQUIRED`, `SEAT_REQUIRED`, `DUPLICATE_SEATS`, `INVALID_SEATS`, `VOUCHER_EXPIRED`, `VOUCHER_EXHAUSTED`, `VOUCHER_MIN_ORDER`, `VOUCHER_NOT_APPLICABLE_SHOWTIME`, `VOUCHER_NOT_APPLICABLE_CINEMA`, `PAYMENT_AMOUNT_MISMATCH` (một số route nghiệp vụ cũng trả 422 cho dữ liệu sai: giá/ghi hoàn tiền thiếu trường) |
 | 423 | `ACCOUNT_LOCKED` |
 | 429 | `RATE_LIMITED` |
 | 500 | `INTERNAL_ERROR` |
@@ -140,12 +140,12 @@ Liên kết MXH: API không tự tạo identity; web gọi link-intent rồi `su
 | Route | Guard | Ghi chú |
 |---|---|---|
 | `GET /showtimes/:id/seatmap` | Public | Sơ đồ + trạng thái ghế (HELD/SOLD, không lộ user) |
-| `POST /bookings/holds` | JWT | Giữ ghế (RPC `hold_seats`, TTL `seat_hold_minutes_web`, mặc định 10'); 409 `SEAT_TAKEN`/`HOLD_EXISTS`/`SALES_CLOSED`/`SHOWTIME_*`; 422 `HOLD_LIMIT`/`ORPHAN_SEAT`; 403 `AGE_RESTRICTED` |
+| `POST /bookings/holds` | JWT | Giữ ghế (RPC `hold_seats`, TTL `seat_hold_minutes_web`, mặc định 10'); 409 `SEAT_TAKEN`/`HOLD_EXISTS`/`SALES_CLOSED`/`SHOWTIME_*`; 422 `HOLD_LIMIT`/`ORPHAN_SEAT`/`DOB_REQUIRED` (chưa có ngày sinh khi đặt phim giới hạn tuổi)/`SEAT_REQUIRED`/`DUPLICATE_SEATS`/`INVALID_SEATS`; 403 `AGE_RESTRICTED`. `VALIDATION_ERROR` chỉ còn cho lỗi biểu mẫu (body sai schema) |
 | `GET /bookings/:id` | JWT chủ đơn; Admin / nhân sự của rạp đó cũng đọc được | Tóm tắt đơn; không ném lỗi khi hết hạn giữ: trả 200 kèm `expiresInSeconds: 0` (`HOLD_EXPIRED` 410 chỉ ở các route ghi: nhả ghế, age-confirm, consent, voucher, thanh toán); người khác -> 403 |
 | `DELETE /bookings/:id/hold` | JWT chủ đơn | Nhả ghế |
 | `POST /bookings/:id/age-confirm` | JWT chủ đơn | Xác nhận độ tuổi |
-| `POST /bookings/:id/consent` | JWT chủ đơn | Đồng ý điều khoản không huỷ/hoàn |
-| `POST /bookings/:id/voucher` | JWT chủ đơn | Áp voucher; lỗi `VOUCHER_*` (404/422); giới hạn 10 lần/phút/khách (R-95) |
+| `POST /bookings/:id/consent` | JWT chủ đơn | Đồng ý điều khoản không huỷ/hoàn; phiên bản điều khoản lạ -> 409 `CONSENT_VERSION_INVALID` |
+| `POST /bookings/:id/voucher` | JWT chủ đơn | Áp voucher; lỗi `VOUCHER_*` (404/422); mã lỗi RPC chưa ánh xạ hoặc lỗi RPC không mong đợi -> 500 `INTERNAL_ERROR` (không còn `VALIDATION_ERROR`); giới hạn 10 lần/phút/khách (R-95) |
 | `DELETE /bookings/:id/voucher` | JWT chủ đơn | Gỡ voucher |
 
 ### Thanh toán PayOS (`PaymentModule`)
