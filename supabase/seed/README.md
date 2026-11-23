@@ -71,3 +71,20 @@ Script dừng khi có >15 lỗi **liên tiếp** (lỗi lẻ được bỏ qua v
 - Mỗi đơn đi qua RPC thật: `hold_seats` (JWT khách) -> (tuỳ chọn `apply_voucher`) -> `confirm_paid` (service role, mô phỏng webhook PayOS). Sau đó mới lùi `created_at/paid_at` (orders, order_seats, showtime_seat_states, tickets, payments, voucher_redemptions, email_outbox) bằng UPDATE với `session_replication_role = replica`. **Chỉ DB local.** `audit_logs` (append-only) giữ mốc thời gian thật.
 - Đánh dấu đơn demo: `payments.transaction_ref LIKE 'DEMOSEED-%'`. `--count N` là **tổng** số đơn demo mong muốn: chạy lại chỉ bù phần thiếu (idempotent). `--reset-orders-demo` xoá đơn, vé, ghế, thanh toán, lượt voucher và dòng `email_outbox` của chúng; tài khoản khách demo được giữ.
 - Giới hạn: suất chiếu chỉ ở tương lai (RPC cấm giữ ghế suất đã qua), nên đơn "quá khứ" đặt cho suất sắp chiếu; không có vé `checked_in` (check-in có cửa sổ thời gian theo suất). Mỗi suất lấp tối đa ~40% ghế. Dòng `email_outbox` `TICKET_ISSUED` giữ nguyên trạng thái `PENDING` như RPC sinh ra.
+
+---
+
+## 5. Seed suất chiếu cho 7 ngày tới (luôn có lịch chiếu tính từ hôm nay)
+
+`seed.sql` §8.2 chỉ xếp lịch 7 ngày từ ngày seed lần đầu và chỉ dùng 3 phim, nên sau vài ngày trang khách hết suất. Script này bổ sung lịch từ HÔM NAY (giờ VN):
+
+```bash
+node scripts/seed-showtimes-week.mjs              # 7 ngày tới (mặc định)
+node scripts/seed-showtimes-week.mjs --days 14    # 1..30 ngày
+node scripts/seed-showtimes-week.mjs --dry-run    # chỉ đếm số suất sẽ thêm
+```
+
+- Chỉ chạy với DB loopback (cùng guard seed demo); không có `psql` thì dùng `docker exec` vào `supabase_db_filmbooking` (đổi bằng `SEED_DB_CONTAINER`).
+- Mỗi phòng seed (`30000000-...`) của rạp đang `OPEN` có 4 suất/ngày: 09:30, 13:30, 17:30, 21:00 (suất đã qua hoặc trong 30 phút tới bị bỏ). Sáng/trưa ưu tiên phim P, K, T13; chiều tối dùng mọi phim PUBLISHED đã phát hành; xoay vòng theo phòng, ngày, khung giờ.
+- Ngôn ngữ: phim tiếng Việt `ORIGINAL`, phim có lồng tiếng `DUBBED`, còn lại `SUBTITLED`; định dạng `3D` xen kẽ ở phòng hỗ trợ.
+- Idempotent: id suất cố định theo phòng + giờ (cùng công thức `seed.sql` §8.2), bỏ qua suất trùng hoặc chồng giờ với suất chưa huỷ trong cùng phòng. Chạy lại mỗi ngày để kéo dài lịch. Không động tới phim, đơn hàng, giá.
