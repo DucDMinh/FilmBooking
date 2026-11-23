@@ -54,7 +54,8 @@ select set_eq(
     ('report_payos_reconciliation(uuid)'),
     ('report_revenue(uuid,date,date,order_channel)'),
     ('resolve_manual_review(uuid,text,text,text,integer)'),
-    ('schedule_cinema_status(uuid,cinema_status)')$$,
+    ('schedule_cinema_status(uuid,cinema_status)'),
+    ('sync_order_combos(uuid,jsonb)')$$,
   'authenticated chỉ EXECUTE được các hàm trong allowlist'
 );
 
