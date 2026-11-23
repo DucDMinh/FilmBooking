@@ -140,6 +140,11 @@ export function SeatPicker({ showtimeId, initialSeatMap, ageRating, ageUnknown =
       if (takenNow.length === 0) toast.error(error.message);
       return;
     }
+    if (error instanceof ApiError && error.code === "DOB_REQUIRED") {
+      // Thiếu ngày sinh: kèm đường dẫn tới hồ sơ để khách tự xử lý (R-68).
+      toast.error(error.message, { action: { label: "Cập nhật hồ sơ", onClick: () => router.push("/tai-khoan") } });
+      return;
+    }
     toast.error(error instanceof Error ? error.message : "Không giữ được ghế. Vui lòng thử lại.");
   };
 

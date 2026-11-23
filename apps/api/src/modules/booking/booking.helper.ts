@@ -1,8 +1,11 @@
+import { Logger } from "@nestjs/common";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ERROR_CODES } from "@filmbooking/shared";
 import type { BookingSummaryResponse } from "@filmbooking/shared/schemas/booking";
 import type { AuthUser } from "../../common/auth/decorators";
 import { AppException } from "../../common/errors/app-exception";
+
+const logger = new Logger("BookingHelper");
 
 /**
  * Xử lý lỗi trả về từ RPC hold_seats (AC-01, AC-06, R-05, R-61..R-67).
@@ -27,14 +30,12 @@ export function handleHoldError(error: { message: string; code?: string }): neve
     throw new AppException(ERROR_CODES.AGE_RESTRICTED, msg);
   }
   if (msg.includes("EMAIL_NOT_CONFIRMED")) throw new AppException(ERROR_CODES.EMAIL_NOT_CONFIRMED, msg);
-  if (
-    msg.includes("DOB_REQUIRED") ||
-    msg.includes("SEAT_REQUIRED") ||
-    msg.includes("DUPLICATE_SEATS") ||
-    msg.includes("INVALID_SEATS")
-  ) {
-    throw new AppException(ERROR_CODES.VALIDATION_ERROR, msg);
-  }
+  // Mỗi lỗi nghiệp vụ của hold_seats có mã riêng để web hiện đúng nguyên nhân (CR-017);
+  // VALIDATION_ERROR chỉ dành cho lỗi biểu mẫu do zod pipe sinh ra.
+  if (msg.includes("DOB_REQUIRED")) throw new AppException(ERROR_CODES.DOB_REQUIRED, msg);
+  if (msg.includes("SEAT_REQUIRED")) throw new AppException(ERROR_CODES.SEAT_REQUIRED, msg);
+  if (msg.includes("DUPLICATE_SEATS")) throw new AppException(ERROR_CODES.DUPLICATE_SEATS, msg);
+  if (msg.includes("INVALID_SEATS")) throw new AppException(ERROR_CODES.INVALID_SEATS, msg);
   if (msg.includes("PERMISSION_DENIED")) throw new AppException(ERROR_CODES.FORBIDDEN, msg);
 
   throw new AppException(ERROR_CODES.INTERNAL_ERROR, msg);
@@ -62,6 +63,8 @@ export function handleVoucherBusinessError(errorCode?: string): never {
       throw new AppException(ERROR_CODES.VOUCHER_MIN_ORDER, "Đơn hàng chưa đạt giá trị tối thiểu để áp dụng voucher");
     case "VOUCHER_NOT_APPLICABLE":
       throw new AppException(ERROR_CODES.VOUCHER_NOT_APPLICABLE_SHOWTIME, "Voucher không áp dụng cho suất chiếu này");
+    case "VOUCHER_NOT_APPLICABLE_CINEMA":
+      throw new AppException(ERROR_CODES.VOUCHER_NOT_APPLICABLE_CINEMA, "Voucher không áp dụng cho rạp này");
     case "VOUCHER_ALREADY_APPLIED":
       throw new AppException(ERROR_CODES.CONFLICT, "Đơn hàng đã được áp dụng voucher");
     case "ORDER_NOT_FOUND":
@@ -72,7 +75,9 @@ export function handleVoucherBusinessError(errorCode?: string): never {
     case "FORBIDDEN":
       throw new AppException(ERROR_CODES.FORBIDDEN, "Không có quyền áp dụng voucher cho đơn này");
     default:
-      throw new AppException(ERROR_CODES.VALIDATION_ERROR, errorCode ?? "Lỗi áp dụng voucher");
+      // Mã RPC chưa được ánh xạ: không lộ mã nội bộ cho khách, ghi log để bổ sung ánh xạ.
+      logger.warn(`apply_voucher trả mã lỗi chưa ánh xạ: ${errorCode ?? "(rỗng)"}`);
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, "Không áp dụng được voucher");
   }
 }
 

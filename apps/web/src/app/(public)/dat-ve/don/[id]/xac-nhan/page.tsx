@@ -34,6 +34,7 @@ export default function OrderConfirmPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [payErrorNeedsProfile, setPayErrorNeedsProfile] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +60,7 @@ export default function OrderConfirmPage() {
     setDialogOpen(false);
     setPaying(true);
     setPayError(null);
+    setPayErrorNeedsProfile(false);
     try {
       if (needsAgeConfirm(summary)) await apiFetch(`/bookings/${id}/age-confirm`, { method: "POST", json: {} });
       // Phiên bản điều khoản do server quyết, client không gửi (R-71, R-133).
@@ -72,6 +74,7 @@ export default function OrderConfirmPage() {
       else router.push(`/dat-ve/don/${id}/ket-qua`);
     } catch (err) {
       if (err instanceof ApiError && err.code === "HOLD_EXPIRED") setExpired(true);
+      setPayErrorNeedsProfile(err instanceof ApiError && err.code === "DOB_REQUIRED");
       setPayError(
         err instanceof ApiError && err.code !== "UNKNOWN" ? err.message : "Không tạo được thanh toán. Thử lại.",
       );
@@ -143,6 +146,14 @@ export default function OrderConfirmPage() {
           {payError ? (
             <p role="alert" className="border-l-[3px] border-danger bg-danger-banner px-3 py-2 text-body-sm text-danger-strong">
               {payError}
+              {payErrorNeedsProfile ? (
+                <>
+                  {" "}
+                  <Link href="/tai-khoan" className="font-medium underline">
+                    Cập nhật hồ sơ
+                  </Link>
+                </>
+              ) : null}
             </p>
           ) : null}
           <div className="max-lg:sticky max-lg:bottom-0 max-lg:-mx-4 max-lg:border-t max-lg:border-border max-lg:bg-surface max-lg:p-4 space-y-2">

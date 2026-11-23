@@ -222,6 +222,36 @@ describe("OrderConfirmPage", () => {
     expect(screen.getByRole("button", { name: /Thanh toán 325\.000/ })).toBeEnabled();
   });
 
+  it("consent lỗi CONSENT_VERSION_INVALID: hiện đúng thông báo điều khoản, không phải 'Dữ liệu chưa hợp lệ'", async () => {
+    const user = userEvent.setup();
+    mockedFetch.mockResolvedValueOnce(makeSummary()).mockRejectedValueOnce(apiErrorOf("CONSENT_VERSION_INVALID"));
+    render(<OrderConfirmPage />);
+
+    await user.click(await screen.findByRole("checkbox", { name: /đồng ý điều kiện vé/ }));
+    await user.click(screen.getByRole("button", { name: /Thanh toán 325\.000/ }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Đồng ý và thanh toán" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(ERROR_MESSAGES.CONSENT_VERSION_INVALID);
+    expect(alert).not.toHaveTextContent("Dữ liệu chưa hợp lệ");
+  });
+
+  it("lỗi DOB_REQUIRED: hiện thông báo thiếu ngày sinh kèm link tới /tai-khoan", async () => {
+    const user = userEvent.setup();
+    mockedFetch
+      .mockResolvedValueOnce(makeSummary({ movie: { title: "X", ageRating: "T18", posterUrl: null } }))
+      .mockRejectedValueOnce(apiErrorOf("DOB_REQUIRED"));
+    render(<OrderConfirmPage />);
+
+    await user.click(await screen.findByRole("checkbox", { name: /đồng ý điều kiện vé/ }));
+    await user.click(screen.getByRole("checkbox", { name: /đủ độ tuổi/ }));
+    await user.click(screen.getByRole("button", { name: /Thanh toán 325\.000/ }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Đồng ý và thanh toán" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(ERROR_MESSAGES.DOB_REQUIRED);
+    expect(screen.getByRole("link", { name: "Cập nhật hồ sơ" })).toHaveAttribute("href", "/tai-khoan");
+  });
+
   it("có link Đổi ghế về chọn ghế của cùng suất và nhãn loại ghế tiếng Việt", async () => {
     mockedFetch.mockResolvedValueOnce(makeSummary());
     render(<OrderConfirmPage />);
@@ -255,6 +285,27 @@ describe("VoucherInput", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
     expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it("nhấn Enter khi ô trống: hiện thông báo riêng, không gọi API", async () => {
+    const user = userEvent.setup();
+    render(<VoucherInput orderId="order-1" appliedCode={null} onChanged={vi.fn()} />);
+
+    await user.type(screen.getByLabelText("Mã giảm giá"), "{Enter}");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Vui lòng nhập mã giảm giá.");
+    expect(mockedFetch).not.toHaveBeenCalled();
+  });
+
+  it("mã quá 50 ký tự: báo tối đa 50 ký tự, không gọi API", async () => {
+    const user = userEvent.setup();
+    render(<VoucherInput orderId="order-1" appliedCode={null} onChanged={vi.fn()} />);
+
+    await user.type(screen.getByLabelText("Mã giảm giá"), "A".repeat(51));
+    await user.click(screen.getByRole("button", { name: "Áp dụng" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Mã giảm giá tối đa 50 ký tự.");
+    expect(mockedFetch).not.toHaveBeenCalled();
   });
 
   it("áp dụng thành công gọi onChanged; có mã thì hiện nút gỡ", async () => {

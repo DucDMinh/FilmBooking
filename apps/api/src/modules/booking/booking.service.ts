@@ -173,7 +173,7 @@ export class BookingService {
     const order = await verifyOrderActionEligibility(this.supabase.forUser(user.jwt), this.supabase.admin(), user, orderId, "xác nhận điều khoản");
 
     if (version && version !== SERVER_CONSENT_VERSION) {
-      throw new AppException(ERROR_CODES.VALIDATION_ERROR, "Phiên bản điều khoản không hợp lệ");
+      throw new AppException(ERROR_CODES.CONSENT_VERSION_INVALID, "Phiên bản điều khoản không hợp lệ");
     }
     const enforcedVersion = SERVER_CONSENT_VERSION;
 
@@ -237,7 +237,8 @@ export class BookingService {
           { retryAfter: 60 },
         );
       }
-      throw new AppException(ERROR_CODES.VALIDATION_ERROR, msg);
+      // Lỗi nghiệp vụ voucher đi qua nhánh `ok:false` bên dưới; tới đây là lỗi DB/RPC không mong đợi.
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, msg);
     }
 
     const res = data as {
