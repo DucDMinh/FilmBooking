@@ -24,6 +24,7 @@
 | CR-014 | Chạy thật đăng nhập + liên kết Google/Facebook (key thật): đồng bộ tên biến env, cấu hình redirect, kiểm end-to-end | MODIFY | pending | [2026-11-20-real-oauth-google-facebook.md](2026-11-20-real-oauth-google-facebook.md) | 2026-11-20 | |
 | CR-015 | Đăng nhập Google/Facebook trùng email tài khoản có sẵn hiện thông báo chung thay vì "Email này đã có tài khoản…" (GoTrue che lỗi trigger AUTO_MERGE_BLOCKED) | BUG | done | [2026-11-20-oauth-collision-message.md](archive/2026-11-20-oauth-collision-message.md) | 2026-11-20 | 2026-11-20 |
 | CR-016 | Điều hướng tức thì kèm skeleton trang (bỏ chờ tải xong mới chuyển) + dòng dữ liệu đầu tiên (phim, lịch chiếu, hệ thống rạp) hiện ngay, không phải cuộn mới thấy | MODIFY | in_progress | [2026-11-23-nav-skeleton-and-first-row-visible.md](2026-11-23-nav-skeleton-and-first-row-visible.md) | 2026-11-23 | |
+| CR-017 | Lỗi đặt vé hiện chung chung "Dữ liệu chưa hợp lệ", cần ghi đúng nguyên nhân (thiếu ngày sinh, ghế không hợp lệ, điều khoản, voucher...) | BUG | in_progress | [2026-11-23-booking-error-messages.md](2026-11-23-booking-error-messages.md) | 2026-11-23 | |
 
 ## Quy tắc tracking
 
