@@ -35,6 +35,14 @@ const CINEMAS = [
   effectiveOnlineCutoffMinutes: 15,
 }));
 
+const CLOSED_CINEMA = {
+  ...CINEMAS[0],
+  id: "00000000-0000-4000-8000-000000000199",
+  code: "CLOSED1",
+  name: "CINEMO Đã Đóng",
+  status: "CLOSED",
+};
+
 const TITLES = [
   "Đêm Neon Cuối Cùng",
   "Hành Trình Qua Dải Ngân Hà Vô Tận Và Những Điều Chưa Kể",
@@ -187,6 +195,10 @@ function route(url) {
     return { body: known ? CINEMAS.filter((c) => c.provinceCode === province) : CINEMAS };
   }
   const cinema = /^\/cinemas\/([^/]+)$/.exec(path);
+  if (cinema && decodeURIComponent(cinema[1]) === CLOSED_CINEMA.code) {
+    // Rạp đã đóng cửa: chỉ có ở trang chi tiết (không nằm trong danh sách) để kiểm noindex (R-137) mà không đổi bố cục các lưới.
+    return { body: { cinema: CLOSED_CINEMA, rooms: [], showtimes: [] } };
+  }
   if (cinema) {
     const index = CINEMAS.findIndex((c) => c.code === decodeURIComponent(cinema[1]));
     if (index < 0) return { status: 404, body: { error: { code: "NOT_FOUND", message: "NOT_FOUND" } } };
@@ -222,13 +234,43 @@ function route(url) {
   return { status: 404, body: { error: { code: "NOT_FOUND", message: "NOT_FOUND" } } };
 }
 
-createServer((req, res) => {
+// Làm chậm / làm lỗi API để kiểm skeleton điều hướng (CR-016, NFR-20). Mặc định 0 / 0 = hành vi cũ.
+// Đặt lúc khởi động bằng env SCRUB_API_DELAY_MS, SCRUB_API_FAIL_STATUS; đổi lúc chạy bằng
+// GET /__mock/config?delay=1500&fail=500 (delay=0&fail=0 để trả về bình thường). Chỉ áp dụng cho endpoint dữ liệu
+// (không áp dụng cho /health, /__mock và ảnh).
+const chaos = {
+  delayMs: Number(process.env.SCRUB_API_DELAY_MS ?? 0),
+  failStatus: Number(process.env.SCRUB_API_FAIL_STATUS ?? 0),
+};
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", ORIGIN);
   const image = /^\/img\/(poster|banner)-(\d+)\.svg$/.exec(url.pathname);
   if (image) {
     const banner = image[1] === "banner";
     res.writeHead(200, { "content-type": "image/svg+xml", "cache-control": "public, max-age=3600", "access-control-allow-origin": "*" });
     res.end(svg(banner ? 1600 : 400, banner ? 900 : 600, Number(image[2]) * 47, banner ? "BANNER" : "POSTER"));
+    return;
+  }
+  if (url.pathname === "/__mock/config") {
+    const delay = url.searchParams.get("delay");
+    const fail = url.searchParams.get("fail");
+    if (delay !== null) chaos.delayMs = Math.max(0, Number(delay) || 0);
+    if (fail !== null) chaos.failStatus = Number(fail) || 0;
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify(chaos));
+    return;
+  }
+  const isData = url.pathname !== "/health";
+  if (process.env.SCRUB_API_LOG) console.log(`[mock] ${new Date().toISOString().slice(11, 23)} ${req.method} ${url.pathname}${url.search}`);
+  if (isData && chaos.delayMs > 0) await sleep(chaos.delayMs);
+  if (isData && chaos.failStatus >= 400) {
+    res.writeHead(chaos.failStatus, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: { code: "INTERNAL_ERROR", message: "INTERNAL_ERROR" } }));
     return;
   }
   const { status = 200, body } = route(url);

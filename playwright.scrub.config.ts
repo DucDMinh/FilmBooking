@@ -1,3 +1,4 @@
+import { rmSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 /**
@@ -13,6 +14,12 @@ const API_URL = `http://localhost:${API_PORT}`;
 const DIST_DIR = ".next/scrub";
 
 process.env.SCRUB_WEB_URL = WEB_URL;
+
+// Cache dữ liệu (fetch revalidate 60s) của bản build scrub nằm trên đĩa và sống qua các lần chạy. Xoá trước khi khởi server (chỉ ở tiến trình
+// điều phối, không phải worker) để mọi route "lần đầu" của nav-skeleton.spec.ts thật sự gọi mock API (đã làm chậm), không đọc lại bản cũ.
+if (process.env.TEST_WORKER_INDEX === undefined) {
+  rmSync(`apps/web/${DIST_DIR}/cache/fetch-cache`, { recursive: true, force: true });
+}
 
 const webEnv = {
   NEXT_DIST_DIR: DIST_DIR,
@@ -46,6 +53,7 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 30_000,
       env: { SCRUB_API_PORT: String(API_PORT) },
+      stdout: "pipe", // để thấy dòng [mock] khi bật SCRUB_API_LOG=1
     },
     {
       command: process.env.SCRUB_SKIP_BUILD ? startWeb : `pnpm --filter ./apps/web exec next build && ${startWeb}`,
