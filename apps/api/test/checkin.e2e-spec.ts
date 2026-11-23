@@ -35,6 +35,9 @@ interface RpcCall {
 let rpcCalls: RpcCall[] = [];
 let rpcPayload: Record<string, unknown> = {};
 let rpcError: { code: string; message: string } | null = null;
+/** Bảng đọc bằng client của nhân viên (RLS), tách khỏi `accessRows` đọc bằng service role. */
+const tableRows: Record<string, Record<string, unknown>[]> = {};
+let comboRowsError: { message: string } | null = null;
 
 /** Payload cố tình chứa PII để chứng minh API chỉ chuyển tiếp danh sách trắng. */
 const PII = { customer_name: "Nguyen Van A", customer_email: "a@x.vn", seat_label: "A1", full_name: "Nguyen Van A" };
@@ -53,13 +56,21 @@ const fakeClient = (jwt: string) => ({
     rpcCalls.push({ fn, args, jwtUsed: jwt });
     return { data: rpcError ? null : rpcPayload, error: rpcError };
   },
+  from: (table: string) => ({
+    select: () => ({
+      eq: async (column: string, value: string) => ({
+        data: comboRowsError ? null : (tableRows[table] ?? []).filter((row) => row[column] === value),
+        error: comboRowsError,
+      }),
+    }),
+  }),
 });
 
 const fakeAdmin = {
   from: (table: string) => ({
     select: () => ({
-      eq: async (_column: string, userId: string) => ({
-        data: (accessRows[table] ?? []).filter((row) => row.user_id === userId),
+      eq: async (column: string, value: string) => ({
+        data: (accessRows[table] ?? []).filter((row) => row[column] === value),
         error: null,
       }),
     }),
@@ -106,6 +117,7 @@ describe("checkin API", () => {
     rpcCalls = [];
     rpcError = null;
     rpcPayload = {};
+    comboRowsError = null;
   });
 
   const scan = async (as: string, payload: object) =>
@@ -202,9 +214,33 @@ describe("checkin API", () => {
         seatCount: 3,
         startsAt: "2026-12-01T12:00:00Z",
         checkedInAt: "2026-12-01T11:50:00Z",
+        combos: [],
       });
       expect(res.body.ticket).toBeUndefined();
       expect(JSON.stringify(res.body)).not.toMatch(/Nguyen|a@x\.vn|customer|ticket_id|ticketId/);
+    });
+
+    it("OK: kèm combo bắp nước của đơn (tên + số lượng), không lộ giá hay id nội bộ", async () => {
+      tableRows.order_combos = [
+        { order_id: uuid(90), combo_name: "Combo Solo", quantity: 2, unit_price: 99000, id: uuid(95) },
+        { order_id: uuid(99), combo_name: "Đơn khác", quantity: 1, unit_price: 1000, id: uuid(96) },
+      ];
+      try {
+        rpcPayload = { status: "OK", message: "m", order_id: uuid(90), seats: ["A1"], seat_count: 1 };
+        const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
+        expect(parsed(res).order?.combos).toEqual([{ name: "Combo Solo", quantity: 2 }]);
+        expect(JSON.stringify(res.body)).not.toMatch(/99000|unit_price/);
+      } finally {
+        delete tableRows.order_combos;
+      }
+    });
+
+    it("OK: đọc combo lỗi thì vẫn trả kết quả soát với combos rỗng (không làm hỏng lượt soát)", async () => {
+      comboRowsError = { message: "boom" };
+      rpcPayload = { status: "OK", message: "m", order_id: uuid(90), seats: ["A1"], seat_count: 1 };
+      const res = await scan(STAFF_HN01, { cinemaId: HN01, token: "qr" });
+      expect(res.status).toBe(200);
+      expect(parsed(res)).toMatchObject({ result: "OK", order: { combos: [] } });
     });
 
     it("OK: seats có phần tử không phải chuỗi bị lọc; seatCount luôn = số ghế đã lọc (bỏ qua seat_count của RPC)", async () => {

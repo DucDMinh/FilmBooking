@@ -141,12 +141,14 @@ Liên kết MXH: API không tự tạo identity; web gọi link-intent rồi `su
 |---|---|---|
 | `GET /showtimes/:id/seatmap` | Public | Sơ đồ + trạng thái ghế (HELD/SOLD, không lộ user) |
 | `POST /bookings/holds` | JWT | Giữ ghế (RPC `hold_seats`, TTL `seat_hold_minutes_web`, mặc định 10'); 409 `SEAT_TAKEN`/`HOLD_EXISTS`/`SALES_CLOSED`/`SHOWTIME_*`; 422 `HOLD_LIMIT`/`ORPHAN_SEAT`/`DOB_REQUIRED` (chưa có ngày sinh khi đặt phim giới hạn tuổi)/`SEAT_REQUIRED`/`DUPLICATE_SEATS`/`INVALID_SEATS`; 403 `AGE_RESTRICTED`. `VALIDATION_ERROR` chỉ còn cho lỗi biểu mẫu (body sai schema) |
-| `GET /bookings/:id` | JWT chủ đơn; Admin / nhân sự của rạp đó cũng đọc được | Tóm tắt đơn; không ném lỗi khi hết hạn giữ: trả 200 kèm `expiresInSeconds: 0` (`HOLD_EXPIRED` 410 chỉ ở các route ghi: nhả ghế, age-confirm, consent, voucher, thanh toán); người khác -> 403 |
+| `GET /bookings/:id` | JWT chủ đơn; Admin / nhân sự của rạp đó cũng đọc được | Tóm tắt đơn (kèm `combos?: [{ id, comboId, name, quantity, unitPrice, totalPrice }]` và `pricing.combosTotal?`; `pricing.subtotal` đã gồm combo); không ném lỗi khi hết hạn giữ: trả 200 kèm `expiresInSeconds: 0` (`HOLD_EXPIRED` 410 chỉ ở các route ghi: nhả ghế, age-confirm, consent, voucher, thanh toán); người khác -> 403 |
 | `DELETE /bookings/:id/hold` | JWT chủ đơn | Nhả ghế |
 | `POST /bookings/:id/age-confirm` | JWT chủ đơn | Xác nhận độ tuổi |
 | `POST /bookings/:id/consent` | JWT chủ đơn | Đồng ý điều khoản không huỷ/hoàn; phiên bản điều khoản lạ -> 409 `CONSENT_VERSION_INVALID` |
 | `POST /bookings/:id/voucher` | JWT chủ đơn | Áp voucher; lỗi `VOUCHER_*` (404/422); mã lỗi RPC chưa ánh xạ hoặc lỗi RPC không mong đợi -> 500 `INTERNAL_ERROR` (không còn `VALIDATION_ERROR`); giới hạn 10 lần/phút/khách (R-95) |
 | `DELETE /bookings/:id/voucher` | JWT chủ đơn | Gỡ voucher |
+| `GET /combos` | Public | Danh sách combo bắp nước đang bán `ComboDto[]` (`id, name, description, priceAmount, imageUrl, isActive, displayOrder`), xếp theo `displayOrder` (R-58) |
+| `PUT /bookings/:id/combos` | JWT chủ đơn | Body `{ items: [{ comboId, quantity 0..20 }] }` thay toàn bộ combo của đơn (RPC `sync_order_combos`), server tính lại `subtotal/discount/total` (voucher có thể bị gỡ nếu dưới mức tối thiểu); trả `BookingSummaryResponse`. Đơn không còn `holding` hoặc hết hạn giữ -> 410 `HOLD_EXPIRED`; combo không tồn tại/ngừng bán -> 404 `NOT_FOUND`; body sai schema/số lượng > 20 -> 400 `VALIDATION_ERROR` |
 
 ### Thanh toán PayOS (`PaymentModule`)
 
@@ -161,7 +163,7 @@ Liên kết MXH: API không tự tạo identity; web gọi link-intent rồi `su
 
 | Route | Guard | Ghi chú |
 |---|---|---|
-| `POST /checkin/scan` | Roles(STAFF)+Scope | 200; quét QR cấp đơn (`orders.qr_token`; QR vé cũ `tickets.qr_token` vẫn được chấp nhận) hoặc nhập mã đặt vé theo rạp (RPC `checkin_ticket`); MỘT lần quét soát cả đơn. Thành công (`result: OK`) trả `order { orderId, bookingCode, movieTitle, cinemaName, roomName, seats: string[] (xếp tự nhiên), seatCount, startsAt, checkedInAt }` (đã bỏ `ticket.ticketId/seatLabel/seatType`); `WRONG_CINEMA` chỉ trả `correctCinema`, không có ghế/tên khách/mã đặt vé; lỗi/kết quả khác: `USED`, `CANCELLED`, `EXPIRED`, `TOO_EARLY`, `NOT_PAID`, `NOT_FOUND` |
+| `POST /checkin/scan` | Roles(STAFF)+Scope | 200; quét QR cấp đơn (`orders.qr_token`; QR vé cũ `tickets.qr_token` vẫn được chấp nhận) hoặc nhập mã đặt vé theo rạp (RPC `checkin_ticket`); MỘT lần quét soát cả đơn. Thành công (`result: OK`) trả `order { orderId, bookingCode, movieTitle, cinemaName, roomName, seats: string[] (xếp tự nhiên), seatCount, startsAt, checkedInAt, combos: [{ name, quantity }] (bắp nước cần phát, rỗng nếu không mua; không kèm giá) }` (đã bỏ `ticket.ticketId/seatLabel/seatType`); `WRONG_CINEMA` chỉ trả `correctCinema`, không có ghế/tên khách/mã đặt vé; lỗi/kết quả khác: `USED`, `CANCELLED`, `EXPIRED`, `TOO_EARLY`, `NOT_PAID`, `NOT_FOUND` |
 
 ### Đơn hàng (`OrdersModule`; alias `/admin/...`)
 

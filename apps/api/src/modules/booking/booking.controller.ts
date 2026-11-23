@@ -1,12 +1,14 @@
-import { Body, Controller, Delete, Get, Headers, Inject, Ip, Param, Post, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, Inject, Ip, Param, Post, Put, Req } from "@nestjs/common";
 import {
   applyVoucherSchema,
   consentSchema,
   holdSeatsSchema,
+  updateOrderCombosSchema,
   uuidSchema,
   type ApplyVoucherInput,
   type ConsentInput,
   type HoldSeatsInput,
+  type UpdateOrderCombosInput,
 } from "@filmbooking/shared/schemas/booking";
 import type { AuthenticatedRequest } from "../../common/auth/access.service";
 import { CurrentUser, Public, type AuthUser } from "../../common/auth/decorators";
@@ -100,5 +102,26 @@ export class BookingController {
   @Delete("bookings/:id/voucher")
   removeVoucher(@CurrentUser() user: AuthUser, @Param("id", uuidParam) id: string) {
     return this.bookingService.removeVoucher(user, id);
+  }
+
+  /**
+   * Danh sách combo bắp nước công khai (R-58).
+   */
+  @Public()
+  @Get("combos")
+  getCombos() {
+    return this.bookingService.getCombos();
+  }
+
+  /**
+   * Cập nhật danh sách combo cho đơn hàng đang giữ chỗ (R-69).
+   */
+  @Put("bookings/:id/combos")
+  updateCombos(
+    @CurrentUser() user: AuthUser,
+    @Param("id", uuidParam) id: string,
+    @Body(new ZodValidationPipe(updateOrderCombosSchema)) body: UpdateOrderCombosInput,
+  ) {
+    return this.bookingService.updateCombos(user, id, body);
   }
 }

@@ -63,11 +63,18 @@ interface FakeOrderSeat {
   seat_label: string;
 }
 
+interface FakeOrderCombo {
+  order_id: string;
+  combo_name: string;
+  quantity: number;
+}
+
 function createFakeSupabase() {
   const outbox = new Map<string, OutboxRow>();
   const orders = new Map<string, FakeOrder>();
   const cinemas = new Map<string, FakeCinema>();
   const orderSeats = new Map<string, FakeOrderSeat[]>();
+  const orderCombos = new Map<string, FakeOrderCombo[]>();
   const orderSelects: string[] = [];
   const tablesQueried: string[] = [];
 
@@ -79,6 +86,7 @@ function createFakeSupabase() {
     orders.clear();
     cinemas.clear();
     orderSeats.clear();
+    orderCombos.clear();
     orderSelects.length = 0;
     tablesQueried.length = 0;
   };
@@ -139,6 +147,24 @@ function createFakeSupabase() {
             eq: (_col: string, val: unknown) => {
               const list = orderSeats.get(String(val)) ?? [];
               const data = list.map((s) => ({ seat_label: s.seat_label }));
+              return {
+                then: (resolve: (val: { data: unknown; error: null }) => void) => {
+                  resolve({ data, error: null });
+                },
+              };
+            },
+          }),
+        };
+      }
+
+      if (table === "order_combos") {
+        return {
+          select: () => ({
+            eq: (_col: string, val: unknown) => {
+              const data = (orderCombos.get(String(val)) ?? []).map((c) => ({
+                combo_name: c.combo_name,
+                quantity: c.quantity,
+              }));
               return {
                 then: (resolve: (val: { data: unknown; error: null }) => void) => {
                   resolve({ data, error: null });
@@ -243,6 +269,13 @@ function createFakeSupabase() {
     },
     setCinemas: (items: FakeCinema[]) => {
       for (const c of items) cinemas.set(c.id, c);
+    },
+    setOrderCombos: (items: FakeOrderCombo[]) => {
+      for (const c of items) {
+        const list = orderCombos.get(c.order_id) ?? [];
+        list.push(c);
+        orderCombos.set(c.order_id, list);
+      }
     },
     setOrderSeats: (items: FakeOrderSeat[]) => {
       for (const s of items) {
@@ -478,6 +511,43 @@ describe("Outbox Job & Email Worker", () => {
 
       const row = fakeDb.getRows().find((r) => r.id === "email-ticket-enrich")!;
       expect(row.status).toBe("SENT");
+    });
+
+    it("CR-018: đơn có combo -> email liệt kê 'tên × số lượng', tên combo bị escape HTML", async () => {
+      const orderId = "order-uuid-enrich-combo";
+      const cinemaId = "cinema-uuid-enrich-combo";
+      fakeDb.reset([ticketIssuedRow("email-ticket-combo", orderId, cinemaId)]);
+      fakeDb.setOrders([{ id: orderId, qr_token: "qr-token-order-combo" }]);
+      fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
+      fakeDb.setOrderSeats([{ order_id: orderId, seat_label: "A1" }]);
+      fakeDb.setOrderCombos([
+        { order_id: orderId, combo_name: "Combo Solo", quantity: 2 },
+        { order_id: orderId, combo_name: "Bắp <script>alert(1)</script>", quantity: 1 },
+      ]);
+
+      await runSendEmails();
+
+      const callArgs = sendMailMock.mock.calls[0]![0];
+      expect(callArgs.html).toContain("Bắp nước");
+      expect(callArgs.html).toContain("Combo Solo × 2");
+      expect(callArgs.html).not.toContain("<script>");
+      expect(callArgs.html).toContain("&lt;script&gt;");
+      expect(callArgs.text).toContain("Combo Solo × 2");
+    });
+
+    it("CR-018: đơn không có combo -> email không có khối bắp nước", async () => {
+      const orderId = "order-uuid-enrich-nocombo";
+      const cinemaId = "cinema-uuid-enrich-nocombo";
+      fakeDb.reset([ticketIssuedRow("email-ticket-nocombo", orderId, cinemaId)]);
+      fakeDb.setOrders([{ id: orderId, qr_token: "qr-token-order-nocombo" }]);
+      fakeDb.setCinemas([{ id: cinemaId, address: "Hà Nội" }]);
+      fakeDb.setOrderSeats([{ order_id: orderId, seat_label: "A1" }]);
+
+      await runSendEmails();
+
+      const callArgs = sendMailMock.mock.calls[0]![0];
+      expect(callArgs.html).not.toContain("Bắp nước");
+      expect(callArgs.text).not.toContain("Bắp nước");
     });
 
     it("B/M5: ghế lộn xộn từ DB -> email xếp tự nhiên theo hàng rồi số (A2 < A10 < B1 < B3 < C12)", async () => {

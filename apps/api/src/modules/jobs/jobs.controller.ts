@@ -56,6 +56,9 @@ export class JobsService {
     const hasSeats = Array.isArray(enriched.seats)
       ? enriched.seats.length > 0
       : Boolean(enriched.seats);
+    const hasCombos = Array.isArray(enriched.combos)
+      ? enriched.combos.length > 0
+      : Boolean(enriched.combos);
 
     const tasks: Promise<void>[] = [];
 
@@ -114,6 +117,26 @@ export class JobsService {
             }
           } catch (err) {
             this.logger.warn(`Failed to enrich seats for order ${orderId}: ${err}`);
+          }
+        })(),
+      );
+    }
+
+    if (!hasCombos && orderId) {
+      tasks.push(
+        (async () => {
+          try {
+            const { data, error } = await admin
+              .from("order_combos")
+              .select("combo_name, quantity")
+              .eq("order_id", orderId);
+            if (!error && Array.isArray(data) && data.length > 0) {
+              enriched.combos = data.map(
+                (c: { combo_name: string; quantity: number }) => `${c.combo_name} × ${c.quantity}`,
+              );
+            }
+          } catch (err) {
+            this.logger.warn(`Failed to enrich combos for order ${orderId}: ${err}`);
           }
         })(),
       );

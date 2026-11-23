@@ -133,8 +133,10 @@ export interface BookingSummaryResponse {
     type: string;
     price: number;
   }>;
+  combos?: OrderComboItemDto[];
   pricing: {
     subtotal: number;
+    combosTotal?: number;
     discount: number;
     total: number;
   };
@@ -148,3 +150,37 @@ export interface BookingSummaryResponse {
   };
   ageConfirmed: boolean;
 }
+
+// ── Combo bắp nước (R-58, R-69) ─────────────────────────────────────────
+export interface ComboDto {
+  id: string;
+  name: string;
+  description: string | null;
+  priceAmount: number;
+  imageUrl: string | null;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface OrderComboItemDto {
+  id: string;
+  comboId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+/** Số lượng tối đa mỗi combo trong một đơn (khớp RPC `sync_order_combos`). */
+export const MAX_COMBO_QUANTITY = 20;
+
+export const updateOrderCombosSchema = z.object({
+  items: z.array(
+    z.object({
+      comboId: uuidSchema,
+      quantity: z.number().int().min(0, "Số lượng không được âm").max(MAX_COMBO_QUANTITY, `Tối đa ${MAX_COMBO_QUANTITY} phần mỗi combo`),
+    }),
+  ),
+});
+export type UpdateOrderCombosInput = z.infer<typeof updateOrderCombosSchema>;
+

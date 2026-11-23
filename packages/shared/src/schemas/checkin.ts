@@ -56,6 +56,8 @@ export interface ScanTicketResponse {
     seatCount: number;
     startsAt: string;
     checkedInAt: string;
+    /** Combo bắp nước của đơn để nhân viên phát tại quầy (rỗng nếu đơn không mua combo). */
+    combos: { name: string; quantity: number }[];
   };
   used?: { checkedInAt: string; staffName: string };
   correctCinema?: { id: string; code: string; name: string; address: string | null };

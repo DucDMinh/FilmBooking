@@ -1,9 +1,9 @@
 {
-  "specVersion": "3.6.1",
-  "scopeVersion": 36,
-  "generatedAt": "2026-11-23T20:00:00+07:00",
-  "trigger": "bug-fix",
-  "workItem": "bug/booking-error-messages",
+  "specVersion": "3.7.0",
+  "scopeVersion": 37,
+  "generatedAt": "2026-11-23T20:30:00+07:00",
+  "trigger": "feature-update",
+  "workItem": "feature/concession-combo",
   "specRefs": [
     "R-138",
     "NFR-19",
@@ -69,7 +69,12 @@
     "R-93",
     "R-94",
     "R-95",
-    "AC-08"
+    "AC-08",
+    "R-58",
+    "R-69",
+    "R-72",
+    "R-86",
+    "R-100"
   ],
   "changed": {
     "files": [
@@ -371,7 +376,20 @@
       "apps/web/src/components/booking/__tests__/seat-map.test.tsx",
       "tasks/bug-booking-error-messages/phase-1-task-01.md",
       "spec/changes/2026-11-23-booking-error-messages.md",
-      "spec/updates/2026-11-23-booking-error-messages.md"
+      "spec/updates/2026-11-23-booking-error-messages.md",
+      "apps/api/src/modules/booking/booking.controller.ts",
+      "apps/api/src/modules/booking/__tests__/booking-combos.spec.ts",
+      "apps/web/src/components/booking/concession-selector.tsx",
+      "apps/web/src/components/booking/__tests__/concession-selector.test.tsx",
+      "apps/web/src/components/common/remote-image.tsx",
+      "packages/shared/src/schemas/booking.ts",
+      "packages/shared/src/__tests__/concession-schema.test.ts",
+      "supabase/migrations/20261123120000_concession_combo.sql",
+      "spec/changes/2026-11-23-concession-combo.md",
+      "spec/updates/2026-11-23-concession-combo.md",
+      "tasks/feature-concession-combo/phase-1-task-01.md",
+      "tasks/feature-concession-combo/phase-2-task-02.md",
+      "tasks/feature-concession-combo/phase-3-task-03.md"
     ],
     "modules": [
       "web-form-controls (select)",
@@ -438,7 +456,13 @@
       "shared-errors (packages/shared/src/errors.ts: ERROR_CODES + ERROR_HTTP_STATUS thêm 5 mã)",
       "web-api-error-messages (lib/api/error-messages.ts: thông báo tiếng Việt cho 5 mã mới)",
       "web-booking-errors-ui (seat-picker toast DOB_REQUIRED + nút Cập nhật hồ sơ, trang xác nhận liên kết /tai-khoan, voucher-input chặn ô trống / > 50 ký tự)",
-      "docs-api-spec (docs/API_SPEC.md: bảng mã lỗi theo HTTP status, /bookings/holds, /consent, /voucher)"
+      "docs-api-spec (docs/API_SPEC.md: bảng mã lỗi theo HTTP status, /bookings/holds, /consent, /voucher)",
+      "db-concession-combo (migration 20261123120000: bảng `combos` + `order_combos`, RPC `sync_order_combos`, seed 4 combo; danh mục chung toàn chuỗi, không có cinema_id)",
+      "api-booking-combos (`GET /combos` công khai, `PUT /bookings/:id/combos`, `BookingSummaryResponse.combos`)",
+      "web-booking-concession (concession-selector: ảnh/tên/mô tả/đơn giá + stepper tối đa 20; PriceBreakdown liệt kê combo; xac-nhan)",
+      "web-ticket-combos (ket-qua + ve/[bookingCode] qua TicketDetail liệt kê combo)",
+      "api-mail-ticket-combos (jobs.controller enrich combo từ order_combos cho email vé)",
+      "checkin-combos (checkin.service + staff checkin-result chỉ HIỂN THỊ combo của đơn)"
     ],
     "filesByWorkItem": {
       "bug-lich-chieu/phase-1-task-01": [
@@ -908,6 +932,48 @@
         "tasks/bug-booking-error-messages/phase-1-task-01.md",
         "spec/changes/2026-11-23-booking-error-messages.md",
         "spec/updates/2026-11-23-booking-error-messages.md"
+      ],
+      "feature-concession-combo/phase-1-task-01": [
+        "supabase/migrations/20261123120000_concession_combo.sql",
+        "packages/shared/src/database.types.ts",
+        "packages/shared/src/schemas/booking.ts",
+        "packages/shared/src/schemas/checkin.ts",
+        "packages/shared/src/__tests__/concession-schema.test.ts",
+        "tasks/feature-concession-combo/phase-1-task-01.md"
+      ],
+      "feature-concession-combo/phase-2-task-02": [
+        "apps/api/src/modules/booking/booking.controller.ts",
+        "apps/api/src/modules/booking/booking.helper.ts",
+        "apps/api/src/modules/booking/booking.service.ts",
+        "apps/api/src/modules/booking/__tests__/booking-combos.spec.ts",
+        "apps/api/src/modules/checkin/checkin.service.ts",
+        "apps/api/src/modules/jobs/jobs.controller.ts",
+        "apps/api/test/checkin.e2e-spec.ts",
+        "docs/API_SPEC.md",
+        "tasks/feature-concession-combo/phase-2-task-02.md"
+      ],
+      "feature-concession-combo/phase-3-task-03": [
+        "apps/web/src/components/booking/concession-selector.tsx",
+        "apps/web/src/components/booking/__tests__/concession-selector.test.tsx",
+        "apps/web/src/components/booking/order-summary.tsx",
+        "apps/web/src/components/booking/__tests__/confirm.test.tsx",
+        "apps/web/src/components/common/remote-image.tsx",
+        "apps/web/src/app/(public)/dat-ve/don/[id]/xac-nhan/page.tsx",
+        "apps/web/src/components/ticket/ticket-card.tsx",
+        "apps/web/src/components/ticket/ticket-data.ts",
+        "apps/web/src/components/ticket/__tests__/ticket.test.tsx",
+        "apps/web/src/components/staff/checkin-result.tsx",
+        "apps/web/src/components/staff/__tests__/checkin-result.test.tsx",
+        "apps/web/src/app/staff/__tests__/staff-pages.test.tsx",
+        "tasks/feature-concession-combo/phase-3-task-03.md"
+      ],
+      "feature-concession-combo/spec-3.7.0-publish": [
+        "SPECIFICATIONS.md",
+        "spec/changes/2026-11-23-concession-combo.md",
+        "spec/updates/2026-11-23-concession-combo.md",
+        "spec/CHANGELOG.md",
+        "spec/test-scope/current.json",
+        "docs/changes/TECHNICAL_REQUIREMENT_GAPS.md"
       ]
     }
   },
@@ -1019,7 +1085,14 @@
       "[scope v36 / bug-booking-error-messages, CR-017] api.booking.voucher-unmapped-error (R-90..R-95, R-94) — `POST /bookings/:id/voucher`: mã lỗi RPC chưa ánh xạ và lỗi RPC chung → 500 `INTERNAL_ERROR` 'Không áp dụng được voucher' (có log, không lộ mã nội bộ), KHÔNG còn 400 `VALIDATION_ERROR`; thêm case `VOUCHER_NOT_APPLICABLE_CINEMA` → 422; các mã `VOUCHER_*` đã ánh xạ giữ nguyên.",
       "[scope v36 / bug-booking-error-messages, CR-017] web.booking.error-messages (R-68, R-71, R-94) — web hiện thông báo tiếng Việt đúng nguyên nhân cho 5 mã mới thay vì 'Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại các trường.': DOB_REQUIRED 'Vui lòng cập nhật ngày sinh trong hồ sơ trước khi đặt vé phim có giới hạn độ tuổi.', SEAT_REQUIRED 'Bạn chưa chọn ghế…', DUPLICATE_SEATS 'Danh sách ghế bị trùng…', INVALID_SEATS 'Ghế đã chọn không hợp lệ cho suất chiếu này…', CONSENT_VERSION_INVALID 'Điều khoản đã được cập nhật. Vui lòng tải lại trang rồi xác nhận lại.'.",
       "[scope v36 / bug-booking-error-messages, CR-017] web.booking.dob-required-profile-link (R-68) — chọn ghế: toast lỗi `DOB_REQUIRED` kèm nút 'Cập nhật hồ sơ' đẩy tới `/tai-khoan`; trang xác nhận `/dat-ve/don/[id]/xac-nhan`: thông báo kèm liên kết 'Cập nhật hồ sơ' → `/tai-khoan`.",
-      "[scope v36 / bug-booking-error-messages, CR-017] web.booking.voucher-client-validation (R-94) — ô voucher: để trống rồi bấm Áp dụng hoặc Enter → 'Vui lòng nhập mã giảm giá.'; mã dài hơn 50 ký tự → 'Mã giảm giá tối đa 50 ký tự.' (khớp schema API), không gọi API; mã hợp lệ gửi đã `trim()`."
+      "[scope v36 / bug-booking-error-messages, CR-017] web.booking.voucher-client-validation (R-94) — ô voucher: để trống rồi bấm Áp dụng hoặc Enter → 'Vui lòng nhập mã giảm giá.'; mã dài hơn 50 ký tự → 'Mã giảm giá tối đa 50 ký tự.' (khớp schema API), không gọi API; mã hợp lệ gửi đã `trim()`.",
+      "[scope v37 / feature-concession-combo, CR-018] api.combos.list (R-58) — `GET /combos` công khai (không cần đăng nhập) trả combo `is_active=true` sắp theo `display_order`; seed demo 4 combo (Combo Solo, Combo Couple, Bắp phô mai, Nước ngọt). Danh mục + giá CHUNG toàn chuỗi (bảng `combos` không có `cinema_id`); bật/tắt + giá theo rạp là GĐ2 (GAP-038). Ảnh seed `/images/combos/*.webp` chưa có asset (GAP-039).",
+      "[scope v37 / feature-concession-combo, CR-018] api.booking.combos-update (R-69, R-72) — `PUT /bookings/:id/combos` chỉ chủ đơn và chỉ khi đơn đang giữ chỗ (holding, chưa hết hạn): số lượng mỗi combo 0..20 (ngoài khoảng → 400 `VALIDATION_ERROR`), combo không tồn tại/ngừng bán → 404 `NOT_FOUND`, đơn không phải holding hoặc hết hạn giữ → 410 `HOLD_EXPIRED`, không phải chủ đơn → không sửa được (mã RPC nội bộ INVALID_COMBO_QUANTITY/COMBO_NOT_FOUND/ORDER_NOT_HOLDING chỉ ở tầng DB). Đã có unit + pgTAP 073; chưa có test HTTP e2e cho endpoint.",
+      "[scope v37 / feature-concession-combo, CR-018] db.order-total.combo (R-72) — RPC `sync_order_combos`: `subtotal = Σ tiền ghế (order_seats) + Σ tiền combo (order_combos)`, `total = subtotal − discount`; `combo_name` và `unit_price` được snapshot lúc cập nhật combo của đơn (không phải lúc giữ ghế — GAP-040); khoá đơn `for update`. Nếu sau khi đổi combo `subtotal` < `min_order` của voucher đang áp → voucher bị gỡ (redemption RELEASED), total = subtotal.",
+      "[scope v37 / feature-concession-combo, CR-018] web.confirm.concession-selector (R-69, R-70) — `/dat-ve/don/[id]/xac-nhan`: section 'Bắp nước & Combo' có ảnh, tên, mô tả, đơn giá VND và stepper [- n +] (tối đa 20/combo, không âm); mỗi lần đổi gọi `PUT /bookings/:id/combos` và PriceBreakdown liệt kê từng combo `tên × số lượng` + thành tiền, tổng thanh toán cập nhật ngay; combo không ảnh/ảnh lỗi dùng ảnh dự phòng (`remote-image`). Nhãn 'Bắp nước & Combo' nằm ở tiêu đề section, không phải dòng riêng trong PriceBreakdown.",
+      "[scope v37 / feature-concession-combo, CR-018] web.ticket.combos (R-133, R-70) — `/dat-ve/don/[id]/ket-qua` và `/ve/[bookingCode]` (qua `TicketDetail`): đơn đã thanh toán có combo thì liệt kê tên × số lượng; đơn không có combo thì KHÔNG hiện mục combo.",
+      "[scope v37 / feature-concession-combo, CR-018] mail.ticket.combos (R-86) — email vé có dòng 'Bắp nước'/'Combo' (tên × số lượng) cho đơn có combo (dữ liệu enrich từ `order_combos` ở `jobs.controller`); đơn không combo không có mục này. Đã có test template + enrichment (mail-templates.spec, outbox-job.e2e-spec).",
+      "[scope v37 / feature-concession-combo, CR-018] checkin.combos-display (R-100, R-98) — `/staff/soat-ve` quét QR hợp lệ: kết quả hiển thị combo của đơn (tên × số lượng) cho nhân viên phát bắp nước. MVP CHỈ HIỂN THỊ: KHÔNG có cờ 'đã phát/đã nhận combo' và không có màn nhận combo tách khỏi soát vé (GAP-037) — quét lại cùng mã vẫn thấy combo."
     ],
     "dependents": [
       "[scope v34 / feature-nav-skeleton-first-row, CR-016] DEPENDENT QuickBookBar + hero trang chủ (R-138, AC-31, NFR-19) — skeleton/loading ở trang chủ phải khớp vị trí/cỡ thanh Đặt vé nhanh và hero (thanh vẫn cao 44px, opacity 1, không CLS); sau khi dữ liệu về, thanh hoạt động như cũ (Rạp → Phim → Ngày → Giờ, chưa chọn tỉnh mở hộp chọn tỉnh).",
@@ -1108,7 +1181,12 @@
       "[scope v36 / bug-booking-error-messages, CR-017] DEPENDENT test API/e2e đang kỳ vọng 400 `VALIDATION_ERROR` — các case giữ ghế (DOB/ghế trùng/ghế sai/chưa chọn), đồng ý điều khoản phiên bản sai và voucher lỗi lạ phải đổi sang 422 / 409 / 500 với mã mới (e2e `apps/api/test/booking.e2e-spec.ts` A/MAJOR-2 đã cập nhật: 409 `CONSENT_VERSION_INVALID`).",
       "[scope v36 / bug-booking-error-messages, CR-017] DEPENDENT catalog mã lỗi dùng chung (`packages/shared` `ERROR_CODES`/`ERROR_HTTP_STATUS`, web `Record<ErrorCode, string>`, `docs/API_SPEC.md`) — 5 mã mới phải có đủ status + thông báo web + tài liệu; client khác (nếu có) cần biết mã mới.",
       "[scope v36 / bug-booking-error-messages, CR-017] DEPENDENT giám sát lỗi (Sentry): voucher mã lạ / lỗi RPC chung nay trả 500 nên sinh sự kiện Sentry (trước đây 400, không sinh) — kỳ vọng mới, không phải hồi quy.",
-      "[scope v36 / bug-booking-error-messages, CR-017] DEPENDENT thanh toán / tạo đơn PayOS (R-73, R-76): `payment.service.ts` `resolveRedirectUrl` vẫn trả `VALIDATION_ERROR` khi returnUrl/cancelUrl sai origin (cố ý giữ; khách chỉ gặp khi `WEB_ORIGIN` cấu hình lệch)."
+      "[scope v36 / bug-booking-error-messages, CR-017] DEPENDENT thanh toán / tạo đơn PayOS (R-73, R-76): `payment.service.ts` `resolveRedirectUrl` vẫn trả `VALIDATION_ERROR` khi returnUrl/cancelUrl sai origin (cố ý giữ; khách chỉ gặp khi `WEB_ORIGIN` cấu hình lệch).",
+      "[scope v37 / feature-concession-combo, CR-018] DEPENDENT thanh toán PayOS (R-73, R-76) — số tiền gửi PayOS và kiểm khớp số tiền webhook dùng `total_amount` đã gồm tiền combo: thử đơn có combo thanh toán thành công và đơn đổi combo sau khi đã tạo link thanh toán (kiểm số tiền lệch, `AMOUNT_MISMATCH`).",
+      "[scope v37 / feature-concession-combo, CR-018] DEPENDENT voucher (R-90..R-95, GAP-040) — `apply_voucher_core`/`sync_order_combos` giảm giá trên TOÀN subtotal (gồm combo), KHÔNG đọc `vouchers.applies_to`: voucher loại vé-only vẫn giảm được tiền combo (hiện trạng đã biết, không phải lỗi mới của test); `min_order` tính trên subtotal gồm combo; đổi combo làm tụt dưới `min_order` thì voucher bị gỡ.",
+      "[scope v37 / feature-concession-combo, CR-018] DEPENDENT huỷ suất / hoàn tiền (R-110, AC-25, R-109) — đơn có combo bị huỷ/hoàn: spec chưa nói combo có được hoàn hay không (GAP-040); hoàn theo `total` của đơn. Test chỉ ghi nhận hành vi hiện tại, không khẳng định đúng/sai.",
+      "[scope v37 / feature-concession-combo, CR-018] DEPENDENT báo cáo doanh thu (R-112 'tách vé và combo') — CHƯA kiểm: báo cáo hiện có tách tiền combo khỏi tiền vé hay không (CR-018 không đổi báo cáo). Bên test cần soát.",
+      "[scope v37 / feature-concession-combo, CR-018] DEPENDENT hợp đồng DTO — `BookingSummaryResponse.combos`, payload `mail.ticket`, DTO kết quả soát vé và `database.types.ts` có thêm `combos`/`order_combos`; client khác dùng các DTO này cần xử lý trường mới (mảng rỗng khi đơn không có combo)."
     ],
     "regression": [
       "[scope v26 / feature-cinema-status-notice] REGRESSION cancel_showtimes sau refactor core (R-108, R-109, AC-24, AC-25) — huỷ suất tay: suất `cancelled`, ghế nhả, đơn paid -> affected, email SHOWTIME_CANCELLED từng đơn, preview số đơn/vé, lý do bắt buộc, Manager chỉ rạp mình, race huỷ ‖ check-in/thanh toán không deadlock (pgTAP 043/064/065 không đổi kết quả).",
@@ -1253,7 +1331,11 @@
       "[scope v35 / feature-nav-skeleton-first-row, CR-016 spec 3.6.1] REGRESSION AC-28 / R-137: rạp CLOSED / TEMP_CLOSED / COMING_SOON vẫn 200 + thông báo trạng thái, không lịch chiếu, không 404; rạp OPEN có lịch đóng vẫn hiện banner ngày hiệu lực; rạp OPEN bình thường không bị gắn noindex.",
       "[scope v36 / bug-booking-error-messages, CR-017] REGRESSION giữ ghế (R-61..R-67): chọn ghế thành công, `SEAT_TAKEN`, `HOLD_EXISTS`, `HOLD_LIMIT`, `ORPHAN_SEAT`, `SALES_CLOSED`, `AGE_RESTRICTED` giữ nguyên mã/status/thông báo; đếm giờ giữ ghế và gating checkbox điều khoản R-71 không đổi.",
       "[scope v36 / bug-booking-error-messages, CR-017] REGRESSION voucher (R-90..R-95): voucher hợp lệ giảm giá đúng; các mã `VOUCHER_EXPIRED` / `VOUCHER_EXHAUSTED` / `VOUCHER_MIN_ORDER` / `VOUCHER_NOT_APPLICABLE_SHOWTIME` / không tồn tại vẫn đúng thông báo riêng (R-94); rate limit 10 lần/phút/khách (R-95) không đổi; tối đa 1 voucher/đơn (R-92).",
-      "[scope v36 / bug-booking-error-messages, CR-017] REGRESSION lỗi biểu mẫu thật: body sai schema (zod pipe), returnUrl/cancelUrl sai origin, form admin vẫn hiện 'Dữ liệu chưa hợp lệ' (VALIDATION_ERROR không bị tách nhầm); mã lỗi lạ khác rơi về thông báo chung 'Đã có lỗi xảy ra'."
+      "[scope v36 / bug-booking-error-messages, CR-017] REGRESSION lỗi biểu mẫu thật: body sai schema (zod pipe), returnUrl/cancelUrl sai origin, form admin vẫn hiện 'Dữ liệu chưa hợp lệ' (VALIDATION_ERROR không bị tách nhầm); mã lỗi lạ khác rơi về thông báo chung 'Đã có lỗi xảy ra'.",
+      "[scope v37 / feature-concession-combo, CR-018] REGRESSION đặt vé KHÔNG chọn combo (R-59..R-72): tổng tiền = tiền ghế − voucher như trước; PriceBreakdown không hiện dòng combo; vé/email/màn soát vé không có mục combo; thanh toán PayOS đơn không combo không đổi.",
+      "[scope v37 / feature-concession-combo, CR-018] REGRESSION giữ ghế, đếm giờ giữ chỗ, đồng ý điều khoản (R-61..R-67, R-71) và áp/gỡ voucher (R-90..R-95) trên trang xác nhận không đổi khi trang có thêm section combo; đổi combo không làm kéo dài hay reset thời gian giữ ghế.",
+      "[scope v37 / feature-concession-combo, CR-018] REGRESSION soát vé (R-97..R-99, R-101): quét QR hợp lệ / đã dùng / sai rạp / sai suất vẫn cho kết quả đúng, đơn không combo hiển thị như cũ; tải combo thất bại không được làm hỏng kết quả soát vé.",
+      "[scope v37 / feature-concession-combo, CR-018] REGRESSION ảnh từ xa (`remote-image`) dùng ở các màn khác (poster, ảnh rạp, avatar) không đổi hành vi khi ảnh lỗi / không có ảnh."
     ]
   },
   "acceptance": [
@@ -1361,7 +1443,16 @@
     "[scope v36 / bug-booking-error-messages, CR-017] A2 (R-61..R-64): Given danh sách ghế trùng / ghế không hợp lệ cho suất / chưa chọn ghế When gọi giữ ghế (hoặc thao tác trên giao diện) Then lần lượt 422 `DUPLICATE_SEATS` / `INVALID_SEATS` / `SEAT_REQUIRED` (hoặc 400 zod nếu mảng rỗng), mỗi trường hợp một thông báo web riêng đúng nguyên nhân.",
     "[scope v36 / bug-booking-error-messages, CR-017] A3 (R-71, AC-08): Given phiên bản điều khoản gửi lên không hợp lệ When `POST /bookings/:id/consent` Then 409 `CONSENT_VERSION_INVALID` và web hiện 'Điều khoản đã được cập nhật. Vui lòng tải lại trang rồi xác nhận lại.'; phiên bản đúng vẫn ghi đồng ý và mở khoá thanh toán.",
     "[scope v36 / bug-booking-error-messages, CR-017] A4 (R-90..R-95): Given mã lỗi RPC voucher chưa ánh xạ hoặc lỗi RPC chung When áp voucher Then 500 `INTERNAL_ERROR` 'Không áp dụng được voucher' (không lộ mã nội bộ, không 'Dữ liệu chưa hợp lệ'); các mã `VOUCHER_*` đã biết vẫn hiện đúng thông báo riêng; ô trống → 'Vui lòng nhập mã giảm giá.', > 50 ký tự → 'Mã giảm giá tối đa 50 ký tự.' (không gọi API).",
-    "[scope v36 / bug-booking-error-messages, CR-017] A5: Given lỗi biểu mẫu thật (body sai schema, redirect sai origin) When gửi Then vẫn 400 `VALIDATION_ERROR` 'Dữ liệu chưa hợp lệ…' (không bị tách nhầm); mã lỗi không có trong bảng web rơi về thông báo chung 'Đã có lỗi xảy ra'."
+    "[scope v36 / bug-booking-error-messages, CR-017] A5: Given lỗi biểu mẫu thật (body sai schema, redirect sai origin) When gửi Then vẫn 400 `VALIDATION_ERROR` 'Dữ liệu chưa hợp lệ…' (không bị tách nhầm); mã lỗi không có trong bảng web rơi về thông báo chung 'Đã có lỗi xảy ra'.",
+    "[scope v37 / feature-concession-combo, CR-018] A1 (R-58): Given DB đã seed When `GET /combos` (không đăng nhập) Then 200, 4 combo đang bán (Solo, Couple, Bắp phô mai, Nước ngọt) theo `display_order`, mỗi combo có tên, mô tả, giá, ảnh; combo `is_active=false` không xuất hiện; cùng một danh mục + giá cho mọi rạp.",
+    "[scope v37 / feature-concession-combo, CR-018] A2 (R-69, R-72): Given đơn giữ 2 ghế (tổng ghế S) đang holding When khách chọn Combo Couple × 1 và Nước ngọt × 2 trên `/dat-ve/don/[id]/xac-nhan` Then `subtotal = S + giá Couple + 2 × giá Nước`, `total = subtotal − voucher`; PriceBreakdown liệt kê từng combo `tên × số lượng` + thành tiền; tổng thanh toán cập nhật ngay không cần tải lại; `GET /bookings/:id` trả `combos` khớp.",
+    "[scope v37 / feature-concession-combo, CR-018] A3 (R-69): Given stepper combo When bấm '−' ở 0 / bấm '+' ở 20 Then không đổi (không âm, tối đa 20/combo); gọi API với số lượng > 20 hoặc âm → từ chối 400 `VALIDATION_ERROR`; combo không tồn tại/ngừng bán → 404 `NOT_FOUND`.",
+    "[scope v37 / feature-concession-combo, CR-018] A4 (R-72, R-65): Given đơn hết hạn giữ / đã thanh toán / của khách khác When `PUT /bookings/:id/combos` Then 410 `HOLD_EXPIRED` (hết hạn hoặc không còn holding) / không sửa được (không phải chủ đơn); dữ liệu combo của đơn không đổi.",
+    "[scope v37 / feature-concession-combo, CR-018] A5 (R-72, R-92): Given đơn đang áp voucher có `min_order` M và subtotal ≥ M When khách giảm combo làm subtotal < M Then voucher bị gỡ khỏi đơn, total = subtotal; Given giá combo đổi trong bảng `combos` sau khi khách đã chọn Then đơn giữ `unit_price` đã snapshot lúc cập nhật combo của đơn (lưu ý: chưa quy định mốc chốt chính thức — GAP-040).",
+    "[scope v37 / feature-concession-combo, CR-018] A6 (R-133, R-70): Given đơn đã thanh toán có combo When mở `/dat-ve/don/[id]/ket-qua` và `/ve/[bookingCode]` Then thấy danh sách combo tên × số lượng; đơn không combo thì không có mục combo.",
+    "[scope v37 / feature-concession-combo, CR-018] A7 (R-86): Given đơn đã thanh toán có combo When gửi email vé Then email có dòng 'Bắp nước'/'Combo' liệt kê tên × số lượng; đơn không combo không có dòng này.",
+    "[scope v37 / feature-concession-combo, CR-018] A8 (R-100, R-98): Given vé đơn có combo When nhân viên quét QR ở `/staff/soat-ve` (đúng rạp, hợp lệ) Then kết quả hiển thị combo của đơn để phát bắp nước; KHÔNG có nút/cờ 'đã phát combo' (MVP chỉ hiển thị — GAP-037). Test KHÔNG được kỳ vọng tính năng đánh dấu đã nhận combo.",
+    "[scope v37 / feature-concession-combo, CR-018] A9 (hiện trạng đã biết, KHÔNG phải lỗi của scope này): Admin chưa có màn/endpoint quản lý combo, combo chỉ qua seed (GAP-039); combo chung toàn chuỗi, chưa bật/tắt/giá theo rạp (GAP-038); voucher loại vé-only/combo-only vẫn giảm trên toàn subtotal (GAP-040); chưa có luồng nhận combo tại quầy tách khỏi soát vé (GAP-037)."
   ],
   "risk": "high",
   "notes": [
@@ -1376,6 +1467,7 @@
     "[scope v33 / bug-oauth-collision-message, CR-015] Bug-fix, KHÔNG bump spec (giữ 3.5.2; không đổi requirement, đưa UI về đúng AC-04 / R-20). risk giữ `high` (không hạ). Chỉ đổi web `/auth/callback` + test; không đổi API/DB/migration. Reviewer NORMAL PASS round 2 (round 1 FAIL vì điều kiện theo `error_code=unexpected_failure` gán sai mọi lỗi 500 thành email_exists). Bên test cần: tài khoản đã đăng ký bằng mật khẩu và một tài khoản Google/Facebook cùng email (OAuth thật), hoặc mô phỏng redirect lỗi `/auth/callback?error=server_error&error_code=unexpected_failure&error_description=Error+creating+identity` (không cần Google thật). Residual: CHƯA kiểm end-to-end với Google thật (cần user đăng nhập); redirect thật của GoTrue suy ra từ log `500: Error creating identity`, chưa quan sát trên URL; không phân biệt được lỗi che 23514 do trùng email với lỗi tạo identity khác cùng mô tả (hiếm); Facebook chưa có log thực; 2 test web flaky `account.test.tsx` = CR-013. Delta: `spec/updates/2026-11-20-oauth-collision-message.md`.",
     "[scope v34 / feature-nav-skeleton-first-row, CR-016] Feature MODIFY (UI trang khách), spec MINOR 3.6.0 (SỬA NFR-19, THÊM NFR-20 + AC-35; tổng 20/20 NFR, 31/31 AC). KHÔNG đổi API/DB/migration/nghiệp vụ. Rủi ro RIÊNG của change này là medium (shared skeleton + CSS Scrub toàn cục + thêm loading.tsx); trường `risk` của file này giữ `high` vì file là scope TÍCH LUỸ còn mang các vùng rủi ro cao của scope v25–v33 (RBAC, migration, auth) chưa retest xong — không hạ theo thông lệ các scope trước. Phát hành ở phase 1 (spec + plan), code CHƯA build: danh sách file/module là dự kiến theo plan (task-01 skeleton, task-02 hàng đầu hiện tĩnh, task-03 e2e); bên test chưa test được hành vi mới cho tới khi task PASS — sẽ phát hành lại scope (scopeVersion tăng) với file thật khi xong. Kiểm cần trình duyệt thật (điều hướng + cuộn); Chromium/Edge cho scroll-driven animations, Firefox dùng dự phòng tĩnh. Delta: `spec/updates/2026-11-23-nav-skeleton-and-first-row-visible.md`. [ĐÃ THAY THẾ bởi scope v35: code đã build, merge và kiểm chứng; danh sách file ở changed.files là file thật, không còn 'dự kiến'.]",
     "[scope v35 / feature-nav-skeleton-first-row, CR-016] Phát hành lại sau khi hiện thực xong, spec PATCH 3.6.1 (làm rõ R-137, AC-28, NFR-20: mã rạp/slug phim không tồn tại nhận HTTP 200 + noindex + giao diện không tìm thấy cho MỌI client kể cả Googlebot/Bingbot; không đổi mã R-*, user chấp nhận 2026-11-23). KHÔNG đổi API/DB/migration/nghiệp vụ. Rủi ro riêng medium; trường `risk` giữ `high` vì scope tích luỹ. Bộ Playwright `pnpm exec playwright test -c playwright.scrub.config.ts` ghi 55 passed (nav-skeleton 20 + scrub 35, task-03); test (5b) bot đã sửa theo 3.6.1. RESIDUAL: bot KHÔNG nhận 404 vì khung được stream trước khi biết mã sai; cách duy nhất để 404 thật là bỏ skeleton ở `/rap/[code]` và `/phim/[slug]` (đánh đổi NFR-20); CLS 0.3675 từng đo ở /phim/phim-1 khi tính cả shift sát lúc nhấn (hadRecentInput, không vào CLS chuẩn; không lặp lại); /rap và trang chủ cache chi tiết rạp 60s nên /rap/<mã> chỉ lạnh khi đi từ trang không gọi API rạp; chưa Lighthouse/axe chính thức; Firefox/Safari dự phòng tĩnh. Script `scripts/seed-showtimes-week.mjs` (seed suất chiếu N ngày tới, tooling, commit 06b6de2) có thể giúp bên test có dữ liệu. Delta: `spec/updates/2026-11-23-nav-skeleton-and-first-row-visible.md`.",
-    "[scope v36 / bug-booking-error-messages, CR-017] Bug-fix, KHÔNG bump spec (giữ 3.6.1; không đổi requirement, đưa về đúng R-68/R-71/R-94). risk giữ `high` (không hạ, scope tích luỹ). Reviewer STRICT (round 1 FAIL do thiếu test SeatPicker DOB_REQUIRED, đã bổ sung; round 2 PASS). ĐỔI HTTP STATUS: `POST /bookings/holds` 400 → 422 (4 mã DOB_REQUIRED/SEAT_REQUIRED/DUPLICATE_SEATS/INVALID_SEATS), `POST /bookings/:id/consent` 400 → 409 (CONSENT_VERSION_INVALID), voucher lỗi lạ 400 → 500 INTERNAL_ERROR. Không đổi DB/migration/RPC/body request. Verify ở repo gốc sau merge 8ff2d52: shared 39, api 692, web 697 test PASS, typecheck + lint sạch. RESIDUAL: API gần như không phát SEAT_REQUIRED (zod seatIds.min(1) chặn trước bằng 400); VOUCHER_NOT_APPLICABLE_CINEMA chưa có đường phát từ apply_voucher_core; voucher mã lạ nay 500 sinh sự kiện Sentry; payment `resolveRedirectUrl` còn VALIDATION_ERROR khi WEB_ORIGIN cấu hình lệch; CHƯA chạy thật với Supabase local + tài khoản chưa có ngày sinh đặt phim T18. Bên test cần: tài khoản khách chưa nhập ngày sinh, phim T13/T16/T18, đơn đang giữ để thử consent/voucher. Delta: `spec/updates/2026-11-23-booking-error-messages.md`."
+    "[scope v36 / bug-booking-error-messages, CR-017] Bug-fix, KHÔNG bump spec (giữ 3.6.1; không đổi requirement, đưa về đúng R-68/R-71/R-94). risk giữ `high` (không hạ, scope tích luỹ). Reviewer STRICT (round 1 FAIL do thiếu test SeatPicker DOB_REQUIRED, đã bổ sung; round 2 PASS). ĐỔI HTTP STATUS: `POST /bookings/holds` 400 → 422 (4 mã DOB_REQUIRED/SEAT_REQUIRED/DUPLICATE_SEATS/INVALID_SEATS), `POST /bookings/:id/consent` 400 → 409 (CONSENT_VERSION_INVALID), voucher lỗi lạ 400 → 500 INTERNAL_ERROR. Không đổi DB/migration/RPC/body request. Verify ở repo gốc sau merge 8ff2d52: shared 39, api 692, web 697 test PASS, typecheck + lint sạch. RESIDUAL: API gần như không phát SEAT_REQUIRED (zod seatIds.min(1) chặn trước bằng 400); VOUCHER_NOT_APPLICABLE_CINEMA chưa có đường phát từ apply_voucher_core; voucher mã lạ nay 500 sinh sự kiện Sentry; payment `resolveRedirectUrl` còn VALIDATION_ERROR khi WEB_ORIGIN cấu hình lệch; CHƯA chạy thật với Supabase local + tài khoản chưa có ngày sinh đặt phim T18. Bên test cần: tài khoản khách chưa nhập ngày sinh, phim T13/T16/T18, đơn đang giữ để thử consent/voucher. Delta: `spec/updates/2026-11-23-booking-error-messages.md`.",
+    "[scope v37 / feature-concession-combo, CR-018] Feature MODIFY, spec MINOR 3.7.0 (kích hoạt R-58, R-69, R-100 từ GĐ2 sang MVP; liên quan R-70, R-72, R-86, R-133). risk RIÊNG của change này là `high` (tiền / thanh toán: đổi công thức tổng tiền đơn, migration mới `20261123120000_concession_combo.sql` thêm bảng `combos`, `order_combos` và RPC `sync_order_combos`, ảnh hưởng PayOS, voucher, email vé, soát vé); trường `risk` giữ `high`. Scope 37 được hiệu chỉnh sau spec-validator final round 1 (FAIL vì scope chưa có entry combo và wording R-58/R-69/R-100 hứa quá): bổ sung specRefs R-58/R-69/R-72/R-86/R-100 + entry combo, làm rõ spec (cùng spec 3.7.0, chưa commit nên không tăng scopeVersion). HIỆN TRẠNG ĐÃ BIẾT (ghi trong `docs/changes/TECHNICAL_REQUIREMENT_GAPS.md`): GAP-037 chưa có đánh dấu/nhận combo tại quầy (MVP chỉ hiển thị khi soát vé); GAP-038 combo chung toàn chuỗi, BRD/roadmap GĐ2 mô tả theo rạp, chờ PO; GAP-039 chưa có Admin quản lý combo, ảnh seed `/images/combos/*.webp` chưa có asset; GAP-040 voucher `applies_to` chưa được áp theo loại, hoàn/huỷ/mốc giá chốt/tồn kho combo chưa quy định. Bên test cần: DB local đã áp migration 20261123120000, đơn đang giữ ghế để thử `PUT /bookings/:id/combos`, voucher có `min_order`. RESIDUAL: chưa có pgTAP cho `sync_order_combos` và chưa có e2e `PUT /bookings/:id/combos` (chỉ test mock `booking-combos.spec.ts`); chưa có test mail vé có combo. Delta: `spec/updates/2026-11-23-concession-combo.md`."
   ]
 }

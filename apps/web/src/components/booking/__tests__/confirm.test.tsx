@@ -20,6 +20,33 @@ vi.mock("@/lib/api/client", async (importActual) => ({
   apiFetch: vi.fn(),
 }));
 
+// ConcessionSelector có test riêng; ở đây chỉ kiểm cách trang xác nhận nối nó với summary,
+// và để nó không tự gọi /combos làm lệch chuỗi mockResolvedValueOnce của các test thanh toán.
+vi.mock("@/components/booking/concession-selector", () => ({
+  ConcessionSelector: ({
+    onSummaryChanged,
+    disabled,
+  }: {
+    onSummaryChanged: (summary: BookingSummaryResponse) => void;
+    disabled?: boolean;
+  }) => (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() =>
+        onSummaryChanged(
+          makeSummary({
+            combos: [{ id: "oc1", comboId: "c1", name: "Combo Solo", quantity: 1, unitPrice: 99000, totalPrice: 99000 }],
+            pricing: { subtotal: 424000, combosTotal: 99000, discount: 0, total: 424000 },
+          }),
+        )
+      }
+    >
+      thêm combo giả
+    </button>
+  ),
+}));
+
 const push = vi.fn();
 const replace = vi.fn();
 // Next trả router ổn định giữa các lần render; mock phải giống vậy để effect tải đơn không chạy lại.
@@ -87,6 +114,26 @@ describe("OrderConfirmPage", () => {
     expect(screen.getByText("CINEMO Long Biên")).toBeInTheDocument();
     expect(screen.getByTestId("order-total")).toHaveTextContent("325.000 ₫");
     expect(screen.queryByRole("button", { name: /huỷ|hủy/i })).not.toBeInTheDocument();
+  });
+
+  it("đổi combo: summary mới từ server thay vào trang, tổng và nút Thanh toán cập nhật", async () => {
+    const user = userEvent.setup();
+    mockedFetch.mockResolvedValueOnce(makeSummary());
+    render(<OrderConfirmPage />);
+
+    await user.click(await screen.findByRole("button", { name: "thêm combo giả" }));
+
+    expect(screen.getByText("Combo Solo × 1")).toBeInTheDocument();
+    expect(screen.getByTestId("order-total")).toHaveTextContent("424.000 ₫");
+    expect(screen.getByRole("button", { name: /Thanh toán 424\.000/ })).toBeInTheDocument();
+    // Không tính lại ở client: chỉ 1 lần gọi API (tải đơn), combo giả không đi qua apiFetch.
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("đơn đang pending_payment: không cho đổi combo", async () => {
+    mockedFetch.mockResolvedValueOnce(makeSummary({ status: "pending_payment" }));
+    render(<OrderConfirmPage />);
+    expect(await screen.findByRole("button", { name: "thêm combo giả" })).toBeDisabled();
   });
 
   it("chưa tick thì nút Thanh toán disabled; tick xong mới enable", async () => {

@@ -22,6 +22,8 @@ export interface PaidOrderView {
   /** QR của cả đơn (R-85): chuỗi ngẫu nhiên 128-bit, không chứa PII. */
   qrToken: string;
   tickets: TicketView[];
+  /** Combo bắp nước đã mua (nhận tại quầy bằng QR/mã vé). */
+  combos: { name: string; quantity: number }[];
 }
 
 interface CinemaRow {
@@ -42,11 +44,12 @@ export interface OrderRow {
   cinemas: CinemaRow | CinemaRow[] | null;
   order_seats: { id: string; seat_label: string }[] | null;
   tickets: { order_seat_id: string; checked_in_at: string | null }[] | null;
+  order_combos: { combo_name: string; quantity: number }[] | null;
 }
 
 const ORDER_COLUMNS =
   "id, status, booking_code, movie_title, cinema_name, room_name, showtime_starts_at, showtime_ends_at, qr_token, " +
-  "cinemas(address, hotline), order_seats(id, seat_label), tickets(order_seat_id, checked_in_at)";
+  "cinemas(address, hotline), order_seats(id, seat_label), tickets(order_seat_id, checked_in_at), order_combos(combo_name, quantity)";
 
 // `affected` (suất bị rạp huỷ) vẫn hiện để khách biết đơn đã trả tiền cần hoàn (design màn 11).
 const VISIBLE_STATUSES: TicketOrderStatus[] = ["paid", "checked_in", "affected"];
@@ -74,6 +77,7 @@ export function toPaidOrderView(row: OrderRow): PaidOrderView | null {
     endsAt: row.showtime_ends_at,
     qrToken: row.qr_token,
     tickets,
+    combos: (row.order_combos ?? []).map((c) => ({ name: c.combo_name, quantity: c.quantity })),
   };
 }
 

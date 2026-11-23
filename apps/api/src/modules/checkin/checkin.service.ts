@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ERROR_CODES } from "@filmbooking/shared";
 import {
   SCAN_RESULT_COLOR,
@@ -60,6 +60,7 @@ function toResponse(payload: RpcPayload): ScanTicketResponse {
           seatCount: seats.length,
           startsAt: text(payload.starts_at),
           checkedInAt: text(payload.checked_in_at),
+          combos: [],
         },
       };
     }
@@ -87,6 +88,8 @@ function toResponse(payload: RpcPayload): ScanTicketResponse {
 
 @Injectable()
 export class CheckinService {
+  private readonly logger = new Logger(CheckinService.name);
+
   constructor(@Inject(SupabaseService) private readonly supabase: SupabaseService) {}
 
   /**
@@ -107,6 +110,26 @@ export class CheckinService {
     if (data === null || typeof data !== "object" || Array.isArray(data)) {
       throw new Error("checkin_ticket returned an unexpected payload");
     }
-    return toResponse(data as RpcPayload);
+    const response = toResponse(data as RpcPayload);
+    if (response.order) response.order.combos = await this.loadCombos(user, response.order.orderId);
+    return response;
+  }
+
+  /**
+   * Combo của đơn đã soát thành công, đọc bằng client của nhân viên: RLS `order_combos_select`
+   * (`can_view_order`) cho STAFF/MANAGER của rạp xem đơn của rạp mình. Lỗi đọc không được làm hỏng
+   * lượt soát đã ghi nhận nên chỉ log cảnh báo và trả rỗng.
+   */
+  private async loadCombos(user: AuthUser, orderId: string): Promise<{ name: string; quantity: number }[]> {
+    const { data, error } = await this.supabase
+      .forUser(user.jwt)
+      .from("order_combos")
+      .select("combo_name, quantity")
+      .eq("order_id", orderId);
+    if (error || !data) {
+      this.logger.warn(`Cannot load combos for checked-in order ${orderId}: ${error?.message ?? "no data"}`);
+      return [];
+    }
+    return data.map((row) => ({ name: text(row.combo_name), quantity: Number(row.quantity) }));
   }
 }

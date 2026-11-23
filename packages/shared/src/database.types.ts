@@ -355,6 +355,44 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"combos": {
+                  Row: {
+                    "created_at": string,"description": string | null,"display_order": number,"id": string,"image_url": string | null,"is_active": boolean,"name": string,"price_amount": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"description"?: string | null,"display_order"?: number,"id"?: string,"image_url"?: string | null,"is_active"?: boolean,"name": string,"price_amount": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"description"?: string | null,"display_order"?: number,"id"?: string,"image_url"?: string | null,"is_active"?: boolean,"name"?: string,"price_amount"?: number,"updated_at"?: string
+                  }
+                  Relationships: []
+                },"order_combos": {
+                  Row: {
+                    "combo_id": string,"combo_name": string,"created_at": string,"id": string,"order_id": string,"quantity": number,"total_price": number,"unit_price": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "combo_id": string,"combo_name": string,"created_at"?: string,"id"?: string,"order_id": string,"quantity": number,"total_price": number,"unit_price": number
+                  }
+                  Update: {
+                    "combo_id"?: string,"combo_name"?: string,"created_at"?: string,"id"?: string,"order_id"?: string,"quantity"?: number,"total_price"?: number,"unit_price"?: number
+                  }
+                  Relationships: [
+                    {
+                      foreignKeyName: "order_combos_combo_id_fkey"
+                      columns: ["combo_id"]
+                      isOneToOne: false
+                      referencedRelation: "combos"
+                      referencedColumns: ["id"]
+                    },{
+                      foreignKeyName: "order_combos_order_id_fkey"
+                      columns: ["order_id"]
+                      isOneToOne: false
+                      referencedRelation: "orders"
+                      referencedColumns: ["id"]
+                    }
+                  ]
                 },"order_seats": {
                   Row: {
                     "created_at": string,"id": string,"order_id": string,"price_amount": number,"seat_id": string,"seat_label": string,"seat_type": Database["public"]['Enums']["seat_type"]
@@ -1125,6 +1163,9 @@ isOneToOne: false
                            },
 "schedule_cinema_status":
 { Args: { "p_cinema_id": string,"p_status": Database["public"]['Enums']["cinema_status"] }; Returns: Json
+                           },
+"sync_order_combos":
+{ Args: { "p_items": Json,"p_order_id": string }; Returns: Json
                            },
 "sell_order_seats":
 { Args: { "p_order_id": string }; Returns: boolean

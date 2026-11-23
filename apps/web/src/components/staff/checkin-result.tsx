@@ -67,6 +67,18 @@ function Details({ response }: Readonly<{ response: ScanTicketResponse }>) {
           <Row label="Số ghế" value={`${order.seatCount} ghế`} />
           <Row label="Đã check-in lúc" value={formatDateTime(order.checkedInAt)} />
         </dl>
+        {order.combos.length > 0 ? (
+          <div className="flex flex-col gap-0.5 border-t border-current/20 pt-3">
+            <p className="text-caption text-fg-muted">Bắp nước & Combo cần phát</p>
+            <ul className="text-h3 font-bold text-fg">
+              {order.combos.map((combo, index) => (
+                <li key={`${combo.name}-${index}`}>
+                  {combo.name} × {combo.quantity}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     );
   }

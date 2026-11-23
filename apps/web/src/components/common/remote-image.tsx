@@ -9,6 +9,8 @@ interface RemoteImageProps {
   className?: string;
   /** true cho ảnh LCP (hero) → preload, không lazy. */
   priority?: boolean;
+  /** Gọi khi ảnh không tải được để cha đổi sang nội dung dự phòng. */
+  onError?: () => void;
 }
 
 function isOptimizable(src: string): boolean {
@@ -23,9 +25,9 @@ function isOptimizable(src: string): boolean {
  * Ảnh phủ kín khung cha (cha phải `relative` + có kích thước). Host đã khai trong next.config → next/image
  * (WebP/AVIF, srcset); host lạ do admin nhập → <img> thường để không làm vỡ trang.
  */
-export function RemoteImage({ src, alt, sizes, className, priority = false }: Readonly<RemoteImageProps>) {
+export function RemoteImage({ src, alt, sizes, className, priority = false, onError }: Readonly<RemoteImageProps>) {
   if (!isOptimizable(src)) {
-    return <img src={src} alt={alt} loading={priority ? "eager" : "lazy"} className={className} />;
+    return <img src={src} alt={alt} loading={priority ? "eager" : "lazy"} className={className} onError={onError} />;
   }
-  return <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={className} />;
+  return <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={className} onError={onError} />;
 }

@@ -474,6 +474,54 @@
       ],
       "note": "Builder không verify được trong worktree (junction node_modules bị classifier chặn); user chọn merge vào staging rồi verify ở repo gốc: shared 39, api 692, web 697->741 test PASS. Fix-forward: test e2e consent đổi sang 409 CONSENT_VERSION_INVALID; voucher Enter ở ô trống cần onKeyDown (nút disabled); thêm test SeatPicker DOB_REQUIRED. Đổi HTTP status: holds 400->422 (4 mã), consent 400->409, voucher mã lạ/lỗi RPC chung 400->500 (Sentry). Residual: payment resolveRedirectUrl khi WEB_ORIGIN lệch vẫn VALIDATION_ERROR; SEAT_REQUIRED không bao giờ phát từ API (zod chặn trước); VOUCHER_NOT_APPLICABLE_CINEMA chưa có đường phát; chưa gọi thật POST /bookings/holds với tài khoản thiếu ngày sinh trên Supabase local.",
       "updatedAt": "2026-11-23T04:40:53.811Z"
+    },
+    {
+      "id": "concession-combo",
+      "title": "Đặt combo bắp nước tại bước xác nhận thanh toán: danh mục combo chung toàn chuỗi, PUT /bookings/:id/combos, tính tiền subtotal = ghế + combo, hiển thị ở vé/email/soát vé (CR-018; spec 3.7.0, scope v37)",
+      "class": "MODIFY",
+      "status": "done",
+      "phases": [
+        {
+          "phase": 1,
+          "task": "task-01 DB combos/order_combos/sync_order_combos + DTO shared + spec 3.7.0",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 1,
+            "reportPath": ".context/review-reports/feature-concession-combo-phase-1-task-01-round-1-review.md"
+          }
+        },
+        {
+          "phase": 2,
+          "task": "task-02 API GET /combos, PUT /bookings/:id/combos, summary + email combos",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 1,
+            "reportPath": ".context/review-reports/feature-concession-combo-phase-2-task-02-round-1-review.md"
+          }
+        },
+        {
+          "phase": 3,
+          "task": "task-03 Web ConcessionSelector, xac-nhan/ket-qua/ve, soát vé hiển thị combo (+ checkin API combos)",
+          "status": "done",
+          "reviewer": {
+            "verdict": "PASS",
+            "level": "STRICT",
+            "rounds": 2,
+            "reportPath": ".context/review-reports/feature-concession-combo-phase-3-task-03-round-2-review.md"
+          }
+        }
+      ],
+      "specValidator": {
+        "verdict": "PASS",
+        "rounds": 2,
+        "reportPath": ".context/review-reports/feature-concession-combo-phase-final-spec-validation-round-2-review.md"
+      },
+      "note": "Verify: pnpm test shared 44 / api 705 / web 757 PASS, typecheck + lint PASS; pgTAP 073 31/31 ok trong transaction rollback (migration chưa apply vào DB dev). Gap: GAP-037 (R-100 chưa có cờ đã phát, soát vé USED không kèm combo), GAP-038 (BRD per-cinema), GAP-039 (Admin CRUD combo + ảnh seed thiếu asset), GAP-040 (voucher applies_to, hoàn/huỷ/tồn kho). Residual: race voucher↔combo, voucher gỡ không báo, chưa e2e HTTP/Playwright, chưa kiểm trực quan responsive. 3 phase commit gộp một lần vì file chồng nhau và phase 1-2 chưa commit ở session trước.",
+      "updatedAt": "2026-11-23T07:55:36.597Z"
     }
   ],
   "bugs": [
@@ -951,7 +999,7 @@
   ],
   "currentLayer": 9,
   "totalLayers": 9,
-  "lastUpdated": "2026-11-23T04:40:53.811Z",
+  "lastUpdated": "2026-11-23T07:55:36.598Z",
   "inProgressTask": null,
   "completedTasks": [
     {

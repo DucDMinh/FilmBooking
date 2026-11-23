@@ -549,3 +549,31 @@ describe("mail thông báo đổi trạng thái rạp (R-136, AC-27)", () => {
     });
   });
 });
+
+describe("mail vé: combo bắp nước (CR-018)", () => {
+  const ticket = PAYLOADS.TICKET_ISSUED!;
+
+  it("có combo -> hiện dòng 'Bắp nước' với 'tên × số lượng' ở cả HTML và text", () => {
+    const { html, text } = renderTicketEmail({ ...ticket, combos: ["Combo Solo × 2", "Bắp Phô Mai × 1"] });
+
+    expect(html).toContain("Bắp nước");
+    expect(html).toContain("Combo Solo × 2, Bắp Phô Mai × 1");
+    expect(text).toContain("Combo Solo × 2, Bắp Phô Mai × 1");
+  });
+
+  it("không có combo (thiếu hoặc mảng rỗng) -> không có khối bắp nước", () => {
+    for (const payload of [ticket, { ...ticket, combos: [] }]) {
+      const { html, text } = renderTicketEmail(payload);
+      expect(html).not.toContain("Bắp nước");
+      expect(text).not.toContain("Bắp nước");
+    }
+  });
+
+  it("tên combo do admin nhập bị escape HTML", () => {
+    const { html } = renderTicketEmail({ ...ticket, combos: ['<script>alert(1)</script> × 1', 'A"B × 2'] });
+
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("A&quot;B × 2");
+  });
+});

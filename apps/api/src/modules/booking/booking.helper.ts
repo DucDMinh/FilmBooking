@@ -104,6 +104,7 @@ interface BuildSummaryParams {
   cinema?: { address?: string; district?: string | null } | null;
   showtime?: { format?: string; movies?: unknown } | null;
   seats: Array<{ seat_id: string; seat_label: string; seat_type: string; price_amount: number }>;
+  combos?: Array<{ id: string; combo_id: string; combo_name: string; quantity: number; unit_price: number; total_price: number }> | null;
   voucher: { code: string; discount: number } | null;
 }
 
@@ -111,10 +112,20 @@ interface BuildSummaryParams {
  * Xây dựng tóm tắt đơn hàng trả về cho khách (R-70).
  */
 export function buildBookingSummary(params: BuildSummaryParams): BookingSummaryResponse {
-  const { order, cinema, showtime, seats, voucher } = params;
+  const { order, cinema, showtime, seats, combos, voucher } = params;
   const holdExpiresAt = order.hold_expires_at ? new Date(order.hold_expires_at) : null;
   const expiresInSeconds = holdExpiresAt ? Math.max(0, Math.floor((holdExpiresAt.getTime() - Date.now()) / 1000)) : 0;
   const movieRel = showtime?.movies as { age_rating?: string; poster_url?: string } | undefined;
+
+  const combosList = (combos ?? []).map((c) => ({
+    id: c.id,
+    comboId: c.combo_id,
+    name: c.combo_name,
+    quantity: c.quantity,
+    unitPrice: c.unit_price,
+    totalPrice: c.total_price,
+  }));
+  const combosTotal = combosList.reduce((sum, c) => sum + c.totalPrice, 0);
 
   return {
     id: order.id,
@@ -147,8 +158,10 @@ export function buildBookingSummary(params: BuildSummaryParams): BookingSummaryR
       type: s.seat_type,
       price: s.price_amount,
     })),
+    combos: combosList,
     pricing: {
       subtotal: order.subtotal_amount,
+      combosTotal,
       discount: order.discount_amount,
       total: order.total_amount,
     },

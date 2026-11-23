@@ -9,6 +9,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { BookingStepper } from "@/components/booking/booking-stepper";
+import { ConcessionSelector } from "@/components/booking/concession-selector";
 import { NoRefundWarning, PolicyConfirmDialog } from "@/components/booking/no-refund-warning";
 import { HoldCountdown, PriceBreakdown, ShowtimeInfo } from "@/components/booking/order-summary";
 import { VoucherInput } from "@/components/booking/voucher-input";
@@ -129,7 +130,17 @@ export default function OrderConfirmPage() {
       <h1 className="mt-2 font-heading text-h1 font-bold">Xác nhận đơn hàng</h1>
       <p className="mt-1 text-body-sm text-fg-secondary">Kiểm tra kỹ rạp, suất chiếu và ghế trước khi thanh toán.</p>
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_minmax(0,420px)]">
-        <ShowtimeInfo summary={summary} />
+        <div className="space-y-6">
+          <ShowtimeInfo summary={summary} />
+          {/* Giá/giảm giá sau khi đổi combo do server tính lại (R-72), client chỉ nhận summary mới. */}
+          <ConcessionSelector
+            orderId={id}
+            selectedCombos={summary.combos}
+            onSummaryChanged={setSummary}
+            onExpired={markExpired}
+            disabled={paying || summary.status !== "holding"}
+          />
+        </div>
         <aside className="frame">
          <div className="frame-in space-y-4 p-4 sm:p-6">
           <h2 className="font-heading text-h3 font-bold">Tổng thanh toán</h2>

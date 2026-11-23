@@ -39,6 +39,7 @@ describe("CheckinResult", () => {
         seatCount: 3,
         startsAt: "2026-11-13T12:30:00Z",
         checkedInAt: "2026-11-13T12:05:00Z",
+        combos: [{ name: "Combo Solo", quantity: 2 }],
       },
     };
     render(<CheckinResult response={response} onNext={() => undefined} />);
@@ -48,6 +49,30 @@ describe("CheckinResult", () => {
     expect(screen.getByText("Đã soát 3 ghế của đơn")).toBeInTheDocument();
     expect(screen.getByText("HN01-AAA")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveClass("bg-success-banner");
+    expect(screen.getByText("Bắp nước & Combo cần phát")).toBeInTheDocument();
+    expect(screen.getByText("Combo Solo × 2")).toBeInTheDocument();
+  });
+
+  it("OK không có combo: không hiện khối bắp nước", () => {
+    const response: ScanTicketResponse = {
+      ...base,
+      result: "OK",
+      color: "green",
+      order: {
+        orderId: "o",
+        bookingCode: "HN01-AAA",
+        movieTitle: "Phim A",
+        cinemaName: "CINEMO Long Biên",
+        roomName: "Phòng 03",
+        seats: ["C7"],
+        seatCount: 1,
+        startsAt: "2026-11-13T12:30:00Z",
+        checkedInAt: "2026-11-13T12:05:00Z",
+        combos: [],
+      },
+    };
+    render(<CheckinResult response={response} onNext={() => undefined} />);
+    expect(screen.queryByText(/Bắp nước/)).not.toBeInTheDocument();
   });
 
   it("USED (AC-12): nền đỏ, thời điểm + người soát lần đầu", () => {
@@ -87,6 +112,7 @@ describe("CheckinResult", () => {
         seatCount: 2,
         startsAt: "2026-11-13T12:30:00Z",
         checkedInAt: "2026-11-13T12:05:00Z",
+        combos: [],
       },
       customerName: "Nguyễn Văn Khách",
     } as ScanTicketResponse;

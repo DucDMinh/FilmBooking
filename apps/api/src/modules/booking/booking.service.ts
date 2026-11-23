@@ -2,7 +2,8 @@ import { HttpException, Inject, Injectable } from "@nestjs/common";
 import { ERROR_CODES } from "@filmbooking/shared";
 import type {
   AgeConfirmResponse, ApplyVoucherResponse, BookingSummaryResponse,
-  ConsentResponse, HoldSeatsInput, HoldSeatsResponse,
+  ComboDto, ConsentResponse, HoldSeatsInput, HoldSeatsResponse,
+  UpdateOrderCombosInput,
 } from "@filmbooking/shared/schemas/booking";
 import { AccessService, type AuthenticatedRequest } from "../../common/auth/access.service";
 import type { AuthUser } from "../../common/auth/decorators";
@@ -125,10 +126,11 @@ export class BookingService {
       }
     }
 
-    const [seatsRes, cinemaRes, showtimeRes] = await Promise.all([
+    const [seatsRes, cinemaRes, showtimeRes, combosRes] = await Promise.all([
       userDb.from("order_seats").select("seat_id, seat_label, seat_type, price_amount").eq("order_id", orderId),
       userDb.from("cinemas").select("address, district").eq("id", order.cinema_id).maybeSingle(),
       userDb.from("showtimes").select("movie_id, format, movies(age_rating, poster_url)").eq("id", order.showtime_id).maybeSingle(),
+      userDb.from("order_combos").select("id, combo_id, combo_name, quantity, unit_price, total_price").eq("order_id", orderId),
     ]);
 
     const voucher = await resolveVoucherSummary(this.supabase.admin(), orderId, order.discount_amount);
@@ -138,6 +140,7 @@ export class BookingService {
       cinema: cinemaRes.data,
       showtime: showtimeRes.data,
       seats: seatsRes.data ?? [],
+      combos: combosRes.data ?? [],
       voucher,
     });
   }
@@ -305,5 +308,73 @@ export class BookingService {
       discountAmount: 0,
       totalAmount: res.total_amount,
     };
+  }
+
+  /**
+   * Danh sách combo bắp nước công khai (R-58).
+   */
+  async getCombos(): Promise<ComboDto[]> {
+    const { data, error } = await this.supabase
+      .admin()
+      .from("combos")
+      .select("id, name, description, price_amount, image_url, is_active, display_order")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+
+    if (error) {
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, error.message);
+    }
+
+    return (data ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      priceAmount: c.price_amount,
+      imageUrl: c.image_url,
+      isActive: c.is_active,
+      displayOrder: c.display_order,
+    }));
+  }
+
+  /**
+   * Cập nhật combo cho đơn hàng đang giữ chỗ (R-69).
+   */
+  async updateCombos(
+    user: AuthUser,
+    orderId: string,
+    body: UpdateOrderCombosInput,
+  ): Promise<BookingSummaryResponse> {
+    const userDb = this.supabase.forUser(user.jwt);
+
+    await verifyOrderActionEligibility(userDb, this.supabase.admin(), user, orderId, "cập nhật combo");
+
+    const items = (body.items ?? []).map((it) => ({
+      combo_id: it.comboId,
+      quantity: it.quantity,
+    }));
+
+    const { error } = await userDb.rpc("sync_order_combos", {
+      p_order_id: orderId,
+      p_items: items,
+    });
+
+    if (error) {
+      const msg = error.message;
+      if (msg.includes("ORDER_NOT_HOLDING")) {
+        throw new AppException(ERROR_CODES.HOLD_EXPIRED, "Chỉ có thể đổi combo khi đơn đang giữ chỗ");
+      }
+      if (msg.includes("HOLD_EXPIRED")) {
+        throw new AppException(ERROR_CODES.HOLD_EXPIRED, "Thời gian giữ chỗ đã hết hạn");
+      }
+      if (msg.includes("COMBO_NOT_FOUND")) {
+        throw new AppException(ERROR_CODES.NOT_FOUND, "Combo không tồn tại hoặc đã ngừng bán");
+      }
+      if (msg.includes("INVALID_COMBO_QUANTITY")) {
+        throw new AppException(ERROR_CODES.VALIDATION_ERROR, "Số lượng combo không hợp lệ (tối đa 20)");
+      }
+      throw new AppException(ERROR_CODES.INTERNAL_ERROR, msg);
+    }
+
+    return this.getBooking(user, orderId);
   }
 }

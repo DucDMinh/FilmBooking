@@ -110,6 +110,7 @@ function order(overrides: Partial<PaidOrderView> = {}): PaidOrderView {
     startsAt: "2026-11-20T12:00:00Z",
     endsAt: "2026-11-20T14:00:00Z",
     qrToken: "o".repeat(32),
+    combos: [],
     tickets: [
       { seatLabel: "F7", checkedIn: false },
       { seatLabel: "F8", checkedIn: false },
@@ -236,6 +237,15 @@ describe("TicketDetail", () => {
     expect(Number(svg?.getAttribute("width"))).toBeGreaterThanOrEqual(240);
   });
 
+  it("đơn có combo: liệt kê tên × số lượng + hướng dẫn nhận tại quầy; đơn không combo thì không hiện", () => {
+    const { unmount } = render(<TicketDetail order={order({ combos: [{ name: "Combo Solo", quantity: 2 }] })} />);
+    expect(screen.getByText("Combo Solo × 2")).toBeInTheDocument();
+    expect(screen.getByText(/Nhận bắp nước tại quầy bắp nước của rạp bằng mã QR hoặc mã vé này/)).toBeInTheDocument();
+    unmount();
+    render(<TicketDetail order={order()} />);
+    expect(screen.queryByText(/Bắp nước/)).not.toBeInTheDocument();
+  });
+
   it("đơn affected: badge, hướng dẫn liên hệ CSKH, KHÔNG có QR", () => {
     render(<TicketDetail order={order({ status: "affected" })} />);
     expect(screen.getAllByText("Bị ảnh hưởng").length).toBeGreaterThan(0);
@@ -330,12 +340,14 @@ describe("ticket data", () => {
         { order_seat_id: "s1", checked_in_at: "x" },
       ],
       qr_token: "q".repeat(32),
+      order_combos: [{ combo_name: "Combo Solo", quantity: 2 }],
     };
     const view = toPaidOrderView(row);
     expect(view?.cinemaAddress).toBe("Addr");
     expect(view?.cinemaHotline).toBe("19");
     expect(view?.tickets.map((t) => t.seatLabel)).toEqual(["A2", "A10"]);
     expect(view?.qrToken).toBe("q".repeat(32));
+    expect(view?.combos).toEqual([{ name: "Combo Solo", quantity: 2 }]);
     expect(view?.tickets.every((t) => !("qrToken" in t))).toBe(true);
     expect(toPaidOrderView({ ...row, booking_code: null })).toBeNull();
   });

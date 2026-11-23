@@ -68,6 +68,7 @@ const okResponse: ScanTicketResponse = {
     seatCount: 2,
     startsAt: "2026-11-13T12:30:00Z",
     checkedInAt: "2026-11-13T12:05:00Z",
+    combos: [],
   },
 };
 

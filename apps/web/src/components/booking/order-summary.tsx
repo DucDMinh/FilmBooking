@@ -96,7 +96,7 @@ export function ShowtimeInfo({ summary }: Readonly<{ summary: BookingSummaryResp
 
 /** Dòng giá: dùng đúng số đã chốt từ server (R-72), không tính lại ở client. */
 export function PriceBreakdown({ summary }: Readonly<{ summary: BookingSummaryResponse }>) {
-  const { seats, pricing, voucher } = summary;
+  const { seats, combos, pricing, voucher } = summary;
   return (
     <dl className="space-y-2 text-body-sm">
       {seats.map((seat) => (
@@ -107,6 +107,16 @@ export function PriceBreakdown({ summary }: Readonly<{ summary: BookingSummaryRe
           <dd className="tabular">{formatVnd(seat.price)}</dd>
         </div>
       ))}
+      {combos && combos.length > 0 ? (
+        combos.map((combo) => (
+          <div key={combo.id} className="flex justify-between gap-2">
+            <dt className="text-fg-secondary">
+              {combo.name} × {combo.quantity}
+            </dt>
+            <dd className="tabular">{formatVnd(combo.totalPrice)}</dd>
+          </div>
+        ))
+      ) : null}
       <div className="flex justify-between gap-2 border-t border-border pt-2">
         <dt className="text-fg-secondary">Tạm tính</dt>
         <dd className="tabular">{formatVnd(pricing.subtotal)}</dd>

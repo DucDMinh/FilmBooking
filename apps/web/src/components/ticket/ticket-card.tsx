@@ -45,6 +45,29 @@ function OrderInfo({ order }: Readonly<{ order: PaidOrderView }>) {
   );
 }
 
+function ComboList({
+  combos,
+  showPickupNote,
+}: Readonly<{ combos: PaidOrderView["combos"]; showPickupNote: boolean }>) {
+  return (
+    <div className="space-y-1 border-t border-border pt-3">
+      <p className="text-caption text-fg-muted">Bắp nước & Combo</p>
+      <ul className="text-body-sm font-semibold">
+        {combos.map((combo, index) => (
+          <li key={`${combo.name}-${index}`}>
+            {combo.name} × {combo.quantity}
+          </li>
+        ))}
+      </ul>
+      {showPickupNote ? (
+        <p className="text-body-sm text-fg-secondary">
+          Nhận bắp nước tại quầy bắp nước của rạp bằng mã QR hoặc mã vé này.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 /** Thẻ vé rút gọn trong danh sách "Vé của tôi"; bấm để xem chi tiết. */
 export function TicketCard({ order }: Readonly<{ order: PaidOrderView }>) {
   return (
@@ -74,6 +97,7 @@ export function TicketDetail({ order }: Readonly<{ order: PaidOrderView }>) {
           {order.cinemaHotline ? (
             <p className="text-body-sm text-fg-secondary">Hotline rạp: {order.cinemaHotline}</p>
           ) : null}
+          {order.combos.length > 0 ? <ComboList combos={order.combos} showPickupNote={!affected} /> : null}
           {affected ? (
             <AffectedNotice hotline={order.cinemaHotline} />
           ) : (
