@@ -453,6 +453,49 @@
     [data-scrub-rule] { animation-name: drawX; animation-range: entry 20% entry 70%; }
     [data-scrub="beam"] [data-scrub-media] { animation-name: beamOpen; }
     [data-scrub="beam"] [data-scrub-beam] { animation-name: beamLine; }
+
+    /* NGOẠI LỆ HÀNG ĐẦU (NFR-19, AC-35, design-spec §16.4): hàng đầu của mỗi mục dữ liệu và tiêu đề ngay phía trên nó
+       không chạy scrub, luôn hiện đủ. Phải nằm SAU các quy tắc animation-name ở trên (cùng độ ưu tiên thì quy tắc sau thắng).
+       Không animation thì phần tử về kiểu gốc: opacity 1, không clip-path/transform; tia quét (opacity gốc 0) vẫn ẩn.
+       1) Phần tử đơn đánh dấu tay: <Scrub first> ghi data-scrub-first. */
+    [data-scrub][data-scrub-first] { animation: none; opacity: 1; translate: 0 0; scale: 1; }
+    [data-scrub][data-scrub-first] :is([data-scrub-wipe], [data-scrub-rule], [data-scrub-media], [data-scrub-beam]) {
+      animation: none;
+    }
+    /* 2) Lưới nhiều cột: container ghi data-scrub-grid, hàng đầu = N con đầu với N = số cột THẬT ở từng breakpoint.
+       Hai lưới có số cột khác nhau nên mỗi kiểu một bảng (đồng bộ với nơi định nghĩa lưới):
+         movie  = MovieGrid (movie-card.module.css): 2 cột < 560px, 3 cột 560-1023px, 4 cột >= 1024px.
+         cinema = lưới thẻ rạp (page.tsx và rap/page.tsx, `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`): 1 < 768px, 2 từ 768px, 3 từ 1024px.
+       Số cột chỉ tăng theo bề rộng nên tập hàng đầu cũng chỉ lớn dần: mỗi mốc chỉ cần thêm phần mở rộng, không phải gỡ. */
+    [data-scrub-grid="movie"] > [data-scrub]:nth-child(-n + 2),
+    [data-scrub-grid="cinema"] > [data-scrub]:nth-child(-n + 1) { animation: none; opacity: 1; translate: 0 0; scale: 1; }
+    :is(
+      [data-scrub-grid="movie"] > [data-scrub]:nth-child(-n + 2),
+      [data-scrub-grid="cinema"] > [data-scrub]:nth-child(-n + 1)
+    ) :is([data-scrub-wipe], [data-scrub-rule], [data-scrub-media], [data-scrub-beam]) { animation: none; }
+
+    @media (min-width: 560px) {
+      [data-scrub-grid="movie"] > [data-scrub]:nth-child(-n + 3) { animation: none; opacity: 1; translate: 0 0; scale: 1; }
+      [data-scrub-grid="movie"] > [data-scrub]:nth-child(-n + 3) :is([data-scrub-wipe], [data-scrub-rule], [data-scrub-media], [data-scrub-beam]) {
+        animation: none;
+      }
+    }
+    @media (min-width: 768px) {
+      [data-scrub-grid="cinema"] > [data-scrub]:nth-child(-n + 2) { animation: none; opacity: 1; translate: 0 0; scale: 1; }
+      [data-scrub-grid="cinema"] > [data-scrub]:nth-child(-n + 2) :is([data-scrub-wipe], [data-scrub-rule], [data-scrub-media], [data-scrub-beam]) {
+        animation: none;
+      }
+    }
+    @media (min-width: 1024px) {
+      [data-scrub-grid="movie"] > [data-scrub]:nth-child(-n + 4) { animation: none; opacity: 1; translate: 0 0; scale: 1; }
+      [data-scrub-grid="movie"] > [data-scrub]:nth-child(-n + 4) :is([data-scrub-wipe], [data-scrub-rule], [data-scrub-media], [data-scrub-beam]) {
+        animation: none;
+      }
+      [data-scrub-grid="cinema"] > [data-scrub]:nth-child(-n + 3) { animation: none; opacity: 1; translate: 0 0; scale: 1; }
+      [data-scrub-grid="cinema"] > [data-scrub]:nth-child(-n + 3) :is([data-scrub-wipe], [data-scrub-rule], [data-scrub-media], [data-scrub-beam]) {
+        animation: none;
+      }
+    }
   }
 }
 

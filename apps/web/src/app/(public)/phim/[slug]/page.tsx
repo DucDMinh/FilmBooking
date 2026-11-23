@@ -100,7 +100,7 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
         {/* Khối Hero thông tin chi tiết phim */}
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr]">
           {/* Poster phim */}
-          <Scrub kind="left" className="space-y-4">
+          <Scrub kind="left" first className="space-y-4">
             <div className="frame">
             <div className="frame-in relative aspect-[2/3] w-full overflow-hidden bg-surface-elevated">
               {movie.posterUrl ? (
@@ -133,7 +133,7 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
           </Scrub>
 
           {/* Thông tin metadata và nội dung phim */}
-          <Scrub kind="right" className="flex flex-col justify-between space-y-6">
+          <Scrub kind="right" first className="flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="brand">{isComingSoon ? "Sắp chiếu" : "Đang chiếu"}</Badge>
@@ -209,6 +209,7 @@ export default async function MovieDetailPage({ params, searchParams }: PageProp
         {/* Luồng đặt vé: Stepper và Lịch chiếu */}
         <section id="lich-chieu" className="space-y-6 border-t border-border pt-8">
           <SectionHeading
+            first
             title="Lịch chiếu"
             description="Chọn ngày và suất chiếu phù hợp tại rạp gần bạn nhất"
           />

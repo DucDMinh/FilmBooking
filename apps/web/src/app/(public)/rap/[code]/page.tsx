@@ -319,7 +319,7 @@ export default async function CinemaDetailPage({
         {/* Lịch chiếu phim tại rạp (R-37, R-42) */}
         <section aria-labelledby="showtimes-heading" className="space-y-6">
           <div className="space-y-4">
-            <SectionHeading id="showtimes-heading" title="Lịch chiếu phim" />
+            <SectionHeading first id="showtimes-heading" title="Lịch chiếu phim" />
 
             {/* Dải chọn ngày 7 ngày liên tiếp (DateStrip), nhóm A: từng chip trái sang phải */}
             <ScrubGroup
@@ -334,6 +334,7 @@ export default async function CinemaDetailPage({
                   <Scrub
                     as={Link}
                     kind="ltr"
+                    first
                     i={index}
                     key={d.dateStr}
                     href={`/rap/${encodeURIComponent(code)}?date=${d.dateStr}`}
@@ -359,8 +360,8 @@ export default async function CinemaDetailPage({
               {movieGroups.map(({ movie, slots }, index) => {
                 const rating = movie.ageRating as AgeRating;
                 return (
-                  // Hai bên (nhóm B): lẻ từ trái, chẵn từ phải.
-                  <Scrub key={movie.slug} kind={index % 2 === 0 ? "left" : "right"} className="frame">
+                  // Hai bên (nhóm B): lẻ từ trái, chẵn từ phải. Phim đầu tiên (hàng đầu của mục) hiện đủ ngay, không scrub (NFR-19, AC-35).
+                  <Scrub key={movie.slug} kind={index % 2 === 0 ? "left" : "right"} first={index === 0} className="frame">
                   <div className="frame-in flex flex-col gap-5 p-5 md:flex-row md:items-start md:p-6">
                     {/* Poster phim */}
                     <div className="chamfer-sm relative aspect-2/3 w-28 shrink-0 overflow-hidden bg-surface-elevated md:w-36">

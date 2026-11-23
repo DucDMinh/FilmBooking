@@ -29,9 +29,17 @@ function formatReleaseDate(dateStr: string): string {
   return dateStr;
 }
 
-/** Lưới phim 4 / 3 / 2 cột; MovieCard con trực tiếp tự lệch pha theo cột (movie-card.module.css). */
+/**
+ * Lưới phim 4 / 3 / 2 cột; MovieCard con trực tiếp tự lệch pha theo cột (movie-card.module.css).
+ * `data-scrub-grid="movie"` báo cho globals.css biết hàng đầu (4/3/2 thẻ đầu theo breakpoint) không chạy scrub (NFR-19, AC-35):
+ * đổi số cột ở `.grid` thì phải đổi bảng "movie" trong globals.css.
+ */
 export function MovieGrid({ children, className }: Readonly<{ children: ReactNode; className?: string }>) {
-  return <div className={cn(styles.grid, className)}>{children}</div>;
+  return (
+    <div data-scrub-grid="movie" className={cn(styles.grid, className)}>
+      {children}
+    </div>
+  );
 }
 
 function Poster({ movie, sizes }: Readonly<{ movie: MovieDto; sizes: string }>) {

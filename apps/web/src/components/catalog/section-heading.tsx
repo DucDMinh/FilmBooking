@@ -10,6 +10,8 @@ interface SectionHeadingProps {
   level?: "h1" | "h2";
   id?: string;
   className?: string;
+  /** Tiêu đề nằm ngay trên hàng dữ liệu đầu tiên của mục: không scrub, hiện đủ ngay (NFR-19, AC-35). */
+  first?: boolean;
 }
 
 /**
@@ -23,10 +25,11 @@ export function SectionHeading({
   level = "h2",
   id,
   className,
+  first,
 }: Readonly<SectionHeadingProps>) {
   const Heading = level;
   return (
-    <Scrub kind="down" className={className}>
+    <Scrub kind="down" first={first} className={className}>
       {kicker ? <p className="hud hud-brand mb-1">{kicker}</p> : null}
       <Heading
         id={id}

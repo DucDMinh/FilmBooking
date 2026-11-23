@@ -59,6 +59,7 @@ export default async function MoviesPage(props: MoviesPageProps) {
       {/* Header trang */}
       <div className="border-b border-border pb-6">
         <SectionHeading
+          first
           level="h1"
           title="Khám phá phim chiếu rạp"
           description="Tìm kiếm những bộ phim bom tấn đỉnh cao đang và sắp chiếu tại các cụm rạp CINEMO trên toàn quốc."

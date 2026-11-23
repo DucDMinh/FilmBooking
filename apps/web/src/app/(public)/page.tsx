@@ -46,10 +46,13 @@ const tabClass = (active: boolean) =>
     active ? "bg-brand text-fg-on-brand" : "bg-surface-control text-fg-secondary hover:text-brand",
   );
 
-/** Tiêu đề section: hud + h2 wipe + vạch gradient, vào từ trên xuống theo cuộn (nhóm B, không glitch). */
+/**
+ * Tiêu đề section: hud + h2 wipe + vạch gradient (nhóm B, không glitch). Cả hai section trang chủ đều có hàng dữ liệu đầu
+ * ngay bên dưới nên tiêu đề luôn `first`: hiện đủ ngay, không scrub (NFR-19, AC-35).
+ */
 function SectionHead({ kicker, title, description }: Readonly<{ kicker: string; title: string; description?: string }>) {
   return (
-    <Scrub kind="down" className="space-y-1">
+    <Scrub kind="down" first className="space-y-1">
       <p className="hud hud-brand">{kicker}</p>
       <h2 data-scrub-wipe className="text-h2 font-bold uppercase text-fg">
         {title}
@@ -191,7 +194,11 @@ export default async function HomePage(props: HomePageProps) {
         </div>
 
         {cinemas.length > 0 ? (
-          <div className="home-cinema-grid grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+          // data-scrub-grid="cinema": hàng đầu (1 / 2 / 3 thẻ theo grid-cols bên dưới) không scrub, xem globals.css
+          <div
+            data-scrub-grid="cinema"
+            className="home-cinema-grid grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3"
+          >
             {cinemas.map((cinema: CinemaDto, index) => (
               <Scrub key={cinema.code} kind={index % 2 === 0 ? "left" : "right"}>
                 <article

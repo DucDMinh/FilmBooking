@@ -236,6 +236,7 @@ export default async function LichChieuPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
       <SectionHeading
+        first
         level="h1"
         title="Lịch chiếu phim"
         description="Tra cứu suất chiếu theo phim hoặc cụm rạp trên toàn hệ thống CINEMO"
